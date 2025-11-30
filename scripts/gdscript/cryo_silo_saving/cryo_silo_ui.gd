@@ -16,13 +16,9 @@ class_name CryoUIController
 @onready var btn_sleep_wake: Button = $VBox/BtnSleepWake
 
 # Components
-@onready var control_panel: ControlPanel = $"../CryoSiloManager/ControlPanel"
-@onready var silo_manager: CryoSiloManager = $"../CryoSiloManager"
-@onready var display_terminal: Sprite3D = $"../CryoSiloManager/MeshTerminal/DisplayTerminal"
-@onready var terminal_light: OmniLight3D = $"../CryoSiloManager/MeshTerminal/TerminalLight"
+@onready var control_panel: Terminal3DManager = $"../../Crew Quarter/CryoSiloManager/Termina3dManager"
+@onready var silo_manager: CryoSiloManager = $"../../Crew Quarter/CryoSiloManager"
 
-@export var terminal_texture_off: Texture2D
-@export var terminal_texture_on: Texture2D
 var active_cryopod: CryoPod = null
 var player_at_panel: bool = false
 var is_initialized: bool = false
@@ -31,7 +27,7 @@ func _ready() -> void:
 	visible = false
 	_hide_all_buttons()
 	btn_terminal.text = "Activate Terminal"
-	display_terminal.modulate = Color (1.0, 1.0, 1.0, 0.1)
+	#display_terminal.modulate = Color (1.0, 1.0, 1.0, 0.1)
 	
 	# Connect buttons
 	btn_terminal.pressed.connect(_on_terminal_pressed)
@@ -48,34 +44,8 @@ func _ready() -> void:
 	
 	#_find_components()
 	_connect_signals()
-	_update_terminal_display()
 	
 	print("Cryo UI Controller: Initialized")
-
-## === AUTO-FIND COMPONENTS ===
-func _find_components() -> void:
-	var root = get_tree().current_scene
-	
-	control_panel = _find_node_by_type(root, ControlPanel)
-	if control_panel:
-		print("UI: ControlPanel found: %s" % control_panel.name)
-	else:
-		print("UI: ControlPanel NOT found!")
-	
-	silo_manager = _find_node_by_type(root, CryoSiloManager)
-	if silo_manager:
-		print("UI: SiloManager found: %s" % silo_manager.name)
-	else:
-		print("UI: SiloManager NOT found!")
-
-func _find_node_by_type(node: Node, type) -> Node:
-	if is_instance_of(node, type):
-		return node
-	for child in node.get_children():
-		var result = _find_node_by_type(child, type)
-		if result:
-			return result
-	return null
 
 ## === CONNECT SIGNALS ===
 func _connect_signals() -> void:
@@ -177,13 +147,12 @@ func _on_terminal_activated() -> void:
 	print("UI: Terminal ACTIVATED - showing controls")
 	btn_terminal.text = "Shutdown Terminal"
 	btn_terminal.visible = player_at_panel
-	_update_terminal_display()
+
 	_update_ui()
 
 func _on_terminal_deactivated() -> void:
 	print("UI: Terminal DEACTIVATED - hiding controls")
 	btn_terminal.text = "Activate Terminal"
-	_update_terminal_display()
 	_hide_all_buttons()
 	btn_terminal.visible = player_at_panel
 	
@@ -224,8 +193,6 @@ func _on_player_exited_capsule(capsule_id: int) -> void:
 func _update_ui() -> void:
 	if not is_initialized or not silo_manager or not control_panel:
 		return
-	
-	_update_terminal_display()
 	
 	var terminal_on = control_panel.is_computer_on
 	var silo_raised = silo_manager.is_silo_raised
@@ -308,27 +275,3 @@ func _lock_all_buttons(locked: bool) -> void:
 	btn_capsule_2.disabled = locked
 	btn_capsule_3.disabled = locked
 	btn_sleep_wake.disabled = locked
-	
-func _update_terminal_display() -> void:
-	if not display_terminal:
-		return
-
-	var on := control_panel and control_panel.is_computer_on
-
-	if on:
-		display_terminal.texture = terminal_texture_on
-		display_terminal.modulate = Color(1.0, 1.0, 1.0, 0.1)
-	else:
-		display_terminal.texture = terminal_texture_off
-		display_terminal.modulate = Color(1.0, 1.0, 1.0, 0.5)
-
-	_terminal_lighting(on)
-
-		
-func _terminal_lighting(is_on: bool) -> void:
-	if not terminal_light:
-		return
-	terminal_light.visible = is_on
-
-		
-		

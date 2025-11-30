@@ -1,4 +1,4 @@
-[gd_scene load_steps=94 format=4 uid="uid://bkfi5x6sf1w2a"]
+[gd_scene load_steps=95 format=4 uid="uid://bkfi5x6sf1w2a"]
 
 [ext_resource type="PackedScene" uid="uid://dbt6w4pr2h3re" path="res://scenes/elevator/lift.tscn" id="1_ljh6w"]
 [ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/InputDebugger/InputDebugger.tscn" id="1_qvqwg"]
@@ -60,6 +60,9 @@ size = Vector3(20, 12.5, 16.875488)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_i4gh3"]
 size = Vector3(110.912186, 12.5, 76.50923)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_c25gc"]
+viewport_path = NodePath("DECK_B/ViewportTerminal")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pk1hm"]
 bg_color = Color(0.6, 0.6, 0.6, 0.21568628)
@@ -705,6 +708,9 @@ exit_scene = false
 
 [node name="DECK_B" parent="." instance=ExtResource("5_jpp7u")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16543579, -44.49, 0.16543579)
+
+[node name="InteractiveTerminal3D" parent="DECK_B/Crew Quarter" index="5"]
+texture = SubResource("ViewportTexture_c25gc")
 
 [node name="DECK_A" parent="." instance=ExtResource("6_1lydy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -25.815723, 0)
@@ -1469,6 +1475,9 @@ continuous_interval = 2.0
 
 [editable path="Lift"]
 [editable path="DECK_B"]
+[editable path="DECK_B/Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R1"]
+[editable path="DECK_B/Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R2"]
+[editable path="DECK_B/Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R3"]
 [editable path="DECK_A"]
 [editable path="Player"]
 [editable path="Player/HUD"]

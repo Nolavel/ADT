@@ -12,7 +12,7 @@ signal sleep_sequence_completed
 signal wake_sequence_completed
 
 @onready var animation_player: AnimationPlayer = $Anima
-@onready var control_panel: ControlPanel = $ControlPanel
+@onready var control_panel: Terminal3DManager = $Termina3dManager
 
 # Ссылки на капсулы
 @export var cryopod_1: CryoPod
