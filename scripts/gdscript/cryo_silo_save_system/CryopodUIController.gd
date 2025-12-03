@@ -2,7 +2,7 @@ extends Control
 
 class_name CryopodUIController
 
-@export var cryo_ui_controller: CryoUIController
+#@export var cryo_ui_controller: CryoUIController
 @export var cryopod: CryoPod
 @export var cryosilo_manager: CryoBedSilo
 

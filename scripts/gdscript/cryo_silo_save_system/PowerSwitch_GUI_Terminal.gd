@@ -3,7 +3,7 @@ class_name PowerSwitchGUI
 
 @onready var btn_toggle: Button = $btn_Toggle  # Переименуем в btn_toggle, но в сцене остается btn_Boot
 @onready var _3d_screen: MeshInstance3D = $"../3D_Screen"
-@onready var debug_gui_2d: Control = $"../CryoUIController"
+#@onready var debug_gui_2d: Control = $"../CryoUIController"
 @onready var zone_terminal: ZoneTerminal = $"../ZoneTerminal"
 
 @export var on_texture: Texture2D
@@ -60,7 +60,7 @@ func _ready() -> void:
 	_setup_circle_area()
 	
 	_3d_screen.visible = false
-	debug_gui_2d.visible = false
+	#debug_gui_2d.visible = false
 	visible = false
 	modulate.a = 0.0
 	
@@ -405,10 +405,10 @@ func _turn_on_system() -> void:
 	
 	_3d_screen.visible = true
 	
-	if debug_gui_2d:
-		debug_gui_2d.visible = true
-		if debug_gui_2d.has_method("show_ui_with_buttons"):
-			debug_gui_2d.show_ui_with_buttons()
+	#if debug_gui_2d:
+		#debug_gui_2d.visible = true
+		#if debug_gui_2d.has_method("show_ui_with_buttons"):
+			#debug_gui_2d.show_ui_with_buttons()
 
 func _turn_off_system() -> void:
 	if zone_terminal and zone_terminal.is_terminal_on:
@@ -416,8 +416,8 @@ func _turn_off_system() -> void:
 	
 	_3d_screen.visible = false
 	
-	if debug_gui_2d:
-		debug_gui_2d.visible = false
+	#if debug_gui_2d:
+		#debug_gui_2d.visible = false
 
 # =========================
 # SHOW / HIDE ANIM

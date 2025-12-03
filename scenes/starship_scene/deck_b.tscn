@@ -1,4 +1,4 @@
-[gd_scene load_steps=158 format=4 uid="uid://bfy1a5q8xdayr"]
+[gd_scene load_steps=157 format=4 uid="uid://bfy1a5q8xdayr"]
 
 [ext_resource type="Texture2D" uid="uid://cy4888ytmhoxx" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_04.png" id="2_5qoga"]
 [ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="2_8v4a4"]
@@ -15,7 +15,6 @@
 [ext_resource type="Texture2D" uid="uid://b3up1bvrp8r6w" path="res://assets/textures/pins/pin_1.png" id="8_2woth"]
 [ext_resource type="Script" uid="uid://di3lmmwuay75t" path="res://scripts/gdscript/cryo_silo_save_system/ZoneTerminal.gd" id="10_4cnka"]
 [ext_resource type="Texture2D" uid="uid://b4wlg5iq1v428" path="res://assets/textures/prototype_tex_kenney/PNG/Red/texture_01.png" id="11_rb4y3"]
-[ext_resource type="Script" uid="uid://bw7wlemxw6vt" path="res://scripts/gdscript/cryo_silo_save_system/cryo_silo_ui.gd" id="11_w4a5j"]
 [ext_resource type="Shader" uid="uid://xxipf0ieq7ta" path="res://scripts/shader/elt_sreen.gdshader" id="13_2uhxq"]
 [ext_resource type="Texture2D" uid="uid://lsd07cg4vaw2" path="res://assets/textures/develop_signs/frame_terminal.png" id="13_2ujut"]
 [ext_resource type="Texture2D" uid="uid://cuwmo5y07fptw" path="res://assets/textures/prototype_tex_kenney/Vector/texture_01.svg" id="13_pmlcr"]
@@ -4159,8 +4158,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_w4a5j")
 transform = Transform3D(0.9999998, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 0.9999998, -0.87112427, -1.4333496, -1.8485413)
 ground_collision = NodePath("../../../Mesh_Crew_Quarter_Ground_0/StaticBody3D/CollisionShape3D")
 
-[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R1" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
-cryo_ui_controller = NodePath("../../../CryoUIController")
+[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R1" index="9" node_paths=PackedStringArray("cryosilo_manager")]
 cryosilo_manager = NodePath("../../..")
 
 [node name="Cryopod_Prok_R2" parent="Crew Quarter/CryoBedSilo/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
@@ -4168,8 +4166,7 @@ transform = Transform3D(0.9999998, 0, -7.1054274e-15, 0, 1, 0, 7.1054274e-15, 0,
 capsule_id = 2
 ground_collision = NodePath("../../../Mesh_Crew_Quarter_Ground_0/StaticBody3D/CollisionShape3D")
 
-[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R2" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
-cryo_ui_controller = NodePath("../../../CryoUIController")
+[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R2" index="9" node_paths=PackedStringArray("cryosilo_manager")]
 cryosilo_manager = NodePath("../../..")
 
 [node name="Cryopod_Prok_R3" parent="Crew Quarter/CryoBedSilo/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
@@ -4177,8 +4174,7 @@ transform = Transform3D(0.9999998, 0, -7.1054274e-15, 0, 1, 0, 7.1054274e-15, 0,
 capsule_id = 3
 ground_collision = NodePath("../../../Mesh_Crew_Quarter_Ground_0/StaticBody3D/CollisionShape3D")
 
-[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R3" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
-cryo_ui_controller = NodePath("../../../CryoUIController")
+[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R3" index="9" node_paths=PackedStringArray("cryosilo_manager")]
 cryosilo_manager = NodePath("../../..")
 
 [node name="CSGCombiner3D2" type="CSGCombiner3D" parent="Crew Quarter/CryoBedSilo"]
@@ -4481,7 +4477,7 @@ omni_range = 2.0
 omni_shadow_mode = 0
 
 [node name="3D_Screen" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo"]
-transform = Transform3D(-3.4969112e-08, -0.61283535, -0.5142303, 0, 0.5142303, -0.61283535, 0.8, -2.6787886e-08, -2.247772e-08, -9, 8, -2)
+transform = Transform3D(-0.0019408556, -0.6128335, -0.51422876, 3.7892059e-16, 0.5142303, -0.61283535, 0.7999976, -0.0014867813, -0.0012475585, -9, 8, -9.739)
 mesh = SubResource("PlaneMesh_ch5iq")
 skeleton = NodePath("../..")
 script = ExtResource("14_fkejt")
@@ -4504,7 +4500,7 @@ mesh = SubResource("PlaneMesh_2kj3i")
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.01, 0)
 text = "SILO"
 font = ExtResource("2_8v4a4")
-font_size = 62
+font_size = 50
 outline_size = 0
 
 [node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_SILO"]
@@ -4598,56 +4594,6 @@ ignore_occlusion_culling = true
 render_priority = 1
 texture = ExtResource("13_2ujut")
 
-[node name="CryoUIController" type="Control" parent="Crew Quarter/CryoBedSilo"]
-layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 1
-script = ExtResource("11_w4a5j")
-
-[node name="VBox" type="VBoxContainer" parent="Crew Quarter/CryoBedSilo/CryoUIController"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -33.5
-offset_top = -99.5
-offset_right = 33.5
-offset_bottom = 99.5
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="BtnSilo" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsules" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsule1" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsule2" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsule3" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnSleepWake" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
 [node name="PowerSwitch_GUI_Terminal" type="Control" parent="Crew Quarter/CryoBedSilo"]
 layout_mode = 3
 anchors_preset = 8
@@ -4689,6 +4635,7 @@ focus_mode = 0
 theme_override_fonts/font = ExtResource("2_8v4a4")
 theme_override_font_sizes/font_size = 25
 text = "Boot"
+flat = true
 icon_alignment = 1
 
 [node name="CSGCombiner3D" type="CSGCombiner3D" parent="Crew Quarter"]

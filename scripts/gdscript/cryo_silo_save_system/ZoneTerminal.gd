@@ -19,7 +19,7 @@ var terminal = self
 @onready var _3d_screen: MeshInstance3D = $"../3D_Screen"
 @onready var area_gui: Area3D = $"../3D_Screen/AreaGUI"
 @onready var power_switch_gui: PowerSwitchGUI = $"../PowerSwitch_GUI_Terminal"
-@onready var debug_gui_2d: Control = $"../CryoUIController"
+#@onready var debug_gui_2d: Control = $"../CryoUIController"
 
 @export var terminal_texture_off: Texture2D
 @export var terminal_texture_on: Texture2D
