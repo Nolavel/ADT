@@ -1,4 +1,4 @@
-[gd_scene load_steps=158 format=4 uid="uid://bfy1a5q8xdayr"]
+[gd_scene load_steps=139 format=4 uid="uid://bfy1a5q8xdayr"]
 
 [ext_resource type="Texture2D" uid="uid://cy4888ytmhoxx" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_04.png" id="2_5qoga"]
 [ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="2_8v4a4"]
@@ -7,23 +7,16 @@
 [ext_resource type="Texture2D" uid="uid://73f71f5y1hjr" path="res://assets/textures/prototype_tex_kenney/Vector/texture_08.svg" id="3_5tjto"]
 [ext_resource type="Texture2D" uid="uid://tyclr3xsg2g8" path="res://assets/textures/develop_signs/test_button.png" id="4_5tjto"]
 [ext_resource type="PackedScene" uid="uid://blm32ed47u8n5" path="res://scenes/starship_scene/cryopod_prok.tscn" id="4_n7p0j"]
-[ext_resource type="Script" uid="uid://cxx0okfhbtbgw" path="res://scripts/gdscript/cryo_silo_save_system/cryo_silo.gd" id="4_obn2h"]
+[ext_resource type="Script" uid="uid://cxx0okfhbtbgw" path="res://scripts/gdscript/cryo_silo_saving/cryo_silo.gd" id="4_obn2h"]
 [ext_resource type="Texture2D" uid="uid://b1bnq7ab0888o" path="res://assets/textures/pins/pin_09.png" id="5_87qho"]
 [ext_resource type="Texture2D" uid="uid://bsw2ip0l7l3go" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_01.png" id="5_fieg4"]
 [ext_resource type="Texture2D" uid="uid://rded2igqys0a" path="res://assets/textures/prototype_tex_kenney/Vector/texture_03.svg" id="7_qcuju"]
 [ext_resource type="Texture2D" uid="uid://c0qp2523u4vty" path="res://assets/textures/pins/pin_04.png" id="7_tf3ng"]
 [ext_resource type="Texture2D" uid="uid://b3up1bvrp8r6w" path="res://assets/textures/pins/pin_1.png" id="8_2woth"]
-[ext_resource type="Script" uid="uid://di3lmmwuay75t" path="res://scripts/gdscript/cryo_silo_save_system/ZoneTerminal.gd" id="10_4cnka"]
+[ext_resource type="Script" uid="uid://di3lmmwuay75t" path="res://scripts/gdscript/cryo_silo_saving/Terminal3dManager.gd" id="10_4cnka"]
 [ext_resource type="Texture2D" uid="uid://b4wlg5iq1v428" path="res://assets/textures/prototype_tex_kenney/PNG/Red/texture_01.png" id="11_rb4y3"]
-[ext_resource type="Script" uid="uid://bw7wlemxw6vt" path="res://scripts/gdscript/cryo_silo_save_system/cryo_silo_ui.gd" id="11_w4a5j"]
-[ext_resource type="Shader" uid="uid://xxipf0ieq7ta" path="res://scripts/shader/elt_sreen.gdshader" id="13_2uhxq"]
-[ext_resource type="Texture2D" uid="uid://lsd07cg4vaw2" path="res://assets/textures/develop_signs/frame_terminal.png" id="13_2ujut"]
+[ext_resource type="Script" uid="uid://bw7wlemxw6vt" path="res://scripts/gdscript/cryo_silo_saving/cryo_silo_ui.gd" id="11_w4a5j"]
 [ext_resource type="Texture2D" uid="uid://cuwmo5y07fptw" path="res://assets/textures/prototype_tex_kenney/Vector/texture_01.svg" id="13_pmlcr"]
-[ext_resource type="Script" uid="uid://brusup2kms0o4" path="res://scripts/gdscript/cryo_silo_save_system/3d_screen.gd" id="14_fkejt"]
-[ext_resource type="Script" uid="uid://cyfk7ev1a07v7" path="res://scripts/gdscript/cryo_silo_save_system/PowerSwitch_GUI_Terminal.gd" id="14_iq2wh"]
-[ext_resource type="Shader" uid="uid://cij1eus0quiqq" path="res://scripts/shader/hud_bg_panel.gdshader" id="15_14ny8"]
-[ext_resource type="Texture2D" uid="uid://cbwttsbck8iwn" path="res://assets/textures/pins/pin_cancel.png" id="15_ch5iq"]
-[ext_resource type="Texture2D" uid="uid://mmrx2d6p287a" path="res://assets/textures/pins/pin_finger.png" id="16_2ujut"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_87qho"]
 albedo_texture = ExtResource("2_hym86")
@@ -1542,9 +1535,6 @@ _surfaces = [{
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iq2wh"]
 albedo_texture = ExtResource("7_qcuju")
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_2woth"]
-radius = 0.6
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_14ny8"]
 albedo_texture = ExtResource("5_fieg4")
 
@@ -1563,65 +1553,15 @@ _surfaces = [{
 radius = 0.46679688
 height = 2.993042
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_fkejt"]
-render_priority = 0
-shader = ExtResource("13_2uhxq")
-shader_parameter/curvature = 0.1
-shader_parameter/vignette_strength = 0.7
-shader_parameter/scanline_strength = 0.35
-shader_parameter/scanline_density = 200.0
-shader_parameter/flicker_strength = 0.04
-shader_parameter/noise_strength = 0.2
-shader_parameter/tint_color = Color(0.5, 0.9, 0.7, 1)
+[sub_resource type="SphereShape3D" id="SphereShape3D_2woth"]
+radius = 0.6
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_ch5iq"]
-material = SubResource("ShaderMaterial_fkejt")
-size = Vector2(9, 9)
-subdivide_width = 32
-subdivide_depth = 32
+[sub_resource type="ViewportTexture" id="ViewportTexture_pmlcr"]
+viewport_path = NodePath("ViewportTerminal")
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_2ujut"]
-size = Vector3(8, 8, 0.25)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_2kj3i"]
-size = Vector2(3, 1)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_soi7q"]
-points = PackedVector3Array(1.5235113, 0.023804864, 0.52380955, -1.5235113, -0.023804864, -0.52380955, -1.5235113, 0.023804864, -0.52380955, 1.5235113, -0.023804864, -0.52380955, -1.5235113, -0.023804864, 0.52380955, -1.5235113, 0.023804864, 0.52380955, 1.5235113, 0.023804864, -0.52380955, 1.5235113, -0.023804864, 0.52380955)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_fkejt"]
-size = Vector2(3, 1)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_soi7q"]
-size = Vector2(3, 1)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_dhm8u"]
-size = Vector2(3, 1)
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_w4v2e"]
-size = Vector2(3, 1)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_fri6f"]
-shader = ExtResource("15_14ny8")
-shader_parameter/fade_start = 0.0
-shader_parameter/fade_end = 1.0
-shader_parameter/base_color = Color(0, 0, 0, 0.4627451)
-shader_parameter/fade_direction = 0
-shader_parameter/corner_radius = 0.0
-shader_parameter/fade_curve = 1.26700005692262
-
-[sub_resource type="Gradient" id="Gradient_ch5iq"]
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_2ujut"]
-gradient = SubResource("Gradient_ch5iq")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fkejt"]
-render_priority = 1
-albedo_texture = ExtResource("2_5qoga")
-
-[sub_resource type="BoxMesh" id="BoxMesh_fkejt"]
-material = SubResource("StandardMaterial3D_fkejt")
-size = Vector3(18, 5, 1)
+[sub_resource type="GDScript" id="GDScript_iq2wh"]
+script/source = "extends Sprite3D
+"
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_5tjto"]
 _surfaces = [{
@@ -3684,550 +3624,550 @@ shape = SubResource("ConvexPolygonShape3D_neb5r")
 [node name="CollisionShape3D10" type="CollisionShape3D" parent="Crew Quarter/Mesh_Crew_Quarter_Wall/StaticBody3D"]
 shape = SubResource("ConvexPolygonShape3D_ipven")
 
-[node name="CryoBedSilo" type="Node3D" parent="Crew Quarter" node_paths=PackedStringArray("cryopod_1", "cryopod_2", "cryopod_3")]
+[node name="CryoSiloManager" type="Node3D" parent="Crew Quarter" node_paths=PackedStringArray("cryopod_1", "cryopod_2", "cryopod_3")]
 transform = Transform3D(0.99999994, 0, 5.9604645e-08, 0, 1, 0, -5.9604645e-08, 0, 0.99999994, 37.31882, 0, 122.543)
 script = ExtResource("4_obn2h")
 cryopod_1 = NodePath("Lockers/Cryopod_Prok_R1")
 cryopod_2 = NodePath("Lockers/Cryopod_Prok_R2")
 cryopod_3 = NodePath("Lockers/Cryopod_Prok_R3")
 
-[node name="CSGCombiner3D" type="CSGCombiner3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="Crew Quarter/CryoSiloManager"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.275177, 0.29089355, 2.8658752)
 visible = false
 
-[node name="pf_crew_quarter2" type="CSGPolygon3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="pf_crew_quarter2" type="CSGPolygon3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(0.14, 0, 0, 0, -1.2239188e-08, 0.205, 0, -0.28, -8.960835e-09, 0, -0.004760742, -0.3802185)
 collision_layer = 3
 collision_mask = 3
 polygon = PackedVector2Array(20.5, 7.5, 20.5, 25, 10, 35, -10, 35, -20.5, 25, -20.5, 7.5, -10, -3, 10, -3)
 smooth_faces = true
 
-[node name="CSGCylinder3D" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8465729, 0.07989502, -1.8691406)
 radius = 1.1
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D2" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D2" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8465729, 0.07989502, -1.8691406)
 operation = 2
 radius = 1.0
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D11" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D11" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3483429, 0.10097599, -1.8691406)
 operation = 2
 radius = 1.0
 height = 0.033
 sides = 64
 
-[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -1.9221249, 0.19073486, -1.8476868)
 operation = 2
 size = Vector3(0.4, 0.32287598, 0.072021484)
 
-[node name="CSGCylinder3D3" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D3" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -0.75083923)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D4" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D4" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -2.9855957)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D5" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D5" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.5575485, -0.20672607, -1.8942108)
 radius = 0.25
 height = 1.5097656
 sides = 64
 
-[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, 0.56723785, 0.15698242, -1.8889008)
 operation = 2
 size = Vector3(0.76650393, 0.32287598, 0.4560547)
 
-[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.48328236, -0.8754647, 0, 0.87546456, -0.48328242, 1, -2.1124944e-08, -3.8267775e-08, -2.9635677, 0.14254022, -4.805191)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGCylinder3D16" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D16" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8465729, 0.07989502, -1.8691406)
 radius = 1.1
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D17" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D17" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8465729, 0.07989502, -1.8691406)
 operation = 2
 radius = 1.0
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D18" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D18" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3483429, 0.10097599, -1.8691406)
 operation = 2
 radius = 1.0
 height = 0.033
 sides = 64
 
-[node name="CSGBox3D9" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D9" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -1.9221249, 0.19073486, -1.8476868)
 operation = 2
 size = Vector3(0.4, 0.32287598, 0.072021484)
 
-[node name="CSGCylinder3D19" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D19" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -0.75083923)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D20" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D20" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -2.9855957)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D21" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D21" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.5575485, -0.20672607, -1.8942108)
 radius = 0.25
 height = 1.5097656
 sides = 64
 
-[node name="CSGBox3D10" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D10" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, 0.56723785, 0.15698242, -1.8889008)
 operation = 2
 size = Vector3(0.76650393, 0.32287598, 0.4560547)
 
-[node name="CSGBox3D11" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D11" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.48328236, -0.8754647, 0, 0.87546456, -0.48328242, 1, -2.1124944e-08, -3.8267775e-08, -2.9635677, 0.14254022, -4.805191)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D8" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D8" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.48328236, -0.8754647, 0, 0.87546456, -0.48328242, 1, -2.1124944e-08, -3.8267775e-08, -3.8766537, -0.17142463, -4.725128)
 operation = 2
 size = Vector3(14.109326, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.8480481, -0.5299193, 0, 0.52991927, -0.8480482, 1, -3.706936e-08, -2.316351e-08, 3.1842594, 0.14254022, -4.805191)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-1, -7.413872e-08, -4.632702e-08, 0, 0.52991927, -0.8480482, 8.742278e-08, -0.8480481, -0.5299193, 0.50115395, 0.18520379, 0.84776306)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D7" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D7" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-1, 8.0473086e-08, -3.41588e-08, 0, 0.39073104, 0.920505, 8.742278e-08, 0.9205048, -0.39073113, 0.50115395, 0.18520379, -10.632217)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGCylinder3D6" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D6" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.57149506, 0.07635498, -0.6207123)
 operation = 2
 radius = 0.055
 height = 1.2495117
 sides = 64
 
-[node name="CSGCylinder3D8" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D8" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 0.57149506, 0.07635498, -1.6564026)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D9" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D9" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 0.57149506, 0.07635498, -1.8951721)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D10" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D10" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 0.57149506, 0.07635498, -2.1306)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D7" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D7" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.57149506, 0.07635498, -3.1597443)
 operation = 2
 radius = 0.055
 height = 1.2495117
 sides = 64
 
-[node name="CSGCylinder3D22" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D22" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8465729, 0.07989502, -7.8735657)
 radius = 1.1
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D23" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D23" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8465729, 0.07989502, -7.8735657)
 operation = 2
 radius = 1.0
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D24" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D24" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3483429, 0.10097599, -7.8735657)
 operation = 2
 radius = 1.0
 height = 0.033
 sides = 64
 
-[node name="CSGBox3D12" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D12" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -1.9221249, 0.19073486, -7.852112)
 operation = 2
 size = Vector3(0.4, 0.32287598, 0.072021484)
 
-[node name="CSGCylinder3D25" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D25" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -6.7552643)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D26" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D26" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -8.990021)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D27" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D27" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.5575485, -0.20672607, -7.898636)
 radius = 0.25
 height = 1.5097656
 sides = 64
 
-[node name="CSGBox3D13" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D13" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, 0.56723785, 0.15698242, -7.893326)
 operation = 2
 size = Vector3(0.76650393, 0.32287598, 0.4560547)
 
-[node name="CSGBox3D14" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D14" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.48328236, -0.8754647, 0, 0.87546456, -0.48328242, 1, -2.1124944e-08, -3.8267775e-08, -2.9635677, 0.14254022, -10.809616)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D15" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D15" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -1.9221249, 0.19073486, -7.852112)
 operation = 2
 size = Vector3(0.4, 0.32287598, 0.072021484)
 
-[node name="CSGCylinder3D28" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D28" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -6.7552643)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D29" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D29" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -0.78946686, 0.083740234, -8.990021)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D30" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D30" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.5575485, -0.20672607, -7.898636)
 radius = 0.25
 height = 1.5097656
 sides = 64
 
-[node name="CSGBox3D16" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D16" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, 0.56723785, 0.15698242, -7.893326)
 operation = 2
 size = Vector3(0.76650393, 0.32287598, 0.4560547)
 
-[node name="CSGBox3D17" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D17" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.48328236, -0.8754647, 0, 0.87546456, -0.48328242, 1, -2.1124944e-08, -3.8267775e-08, -2.9635677, 0.14254022, -10.809616)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D18" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D18" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.371139e-08, -0.48328236, -0.8754647, 0, 0.87546456, -0.48328242, 1, -2.1124944e-08, -3.8267775e-08, -3.8766537, -0.17142463, -10.729553)
 operation = 2
 size = Vector3(14.109326, 0.32287598, 0.59851074)
 
-[node name="CSGBox3D21" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D21" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-1, 8.0473086e-08, -3.41588e-08, 0, 0.39073104, 0.920505, 8.742278e-08, 0.9205048, -0.39073113, 0.50115395, 0.18520379, -16.636642)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGCylinder3D31" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D31" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.57149506, 0.07635498, -6.6251373)
 operation = 2
 radius = 0.055
 height = 1.2495117
 sides = 64
 
-[node name="CSGCylinder3D32" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D32" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 0.57149506, 0.07635498, -7.6608276)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D33" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D33" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 0.57149506, 0.07635498, -7.899597)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D34" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D34" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 0.57149506, 0.07635498, -8.135025)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D35" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D35" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 0.57149506, 0.07635498, -9.164169)
 operation = 2
 radius = 0.055
 height = 1.2495117
 sides = 64
 
-[node name="CSGCylinder3D38" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D38" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 3.1211166, -0.17962658, -16.703964)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="CSGCylinder3D39" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D39" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 3.1211166, -0.17962658, -17.00145)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="CSGCylinder3D36" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D36" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0491257, 0.07989502, -4.82959)
 radius = 1.1
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D37" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D37" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0491257, 0.07989502, -4.82959)
 operation = 2
 radius = 1.0
 height = 0.2
 sides = 64
 
-[node name="CSGCylinder3D40" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D40" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5473557, 0.10097599, -4.82959)
 operation = 2
 radius = 1.0
 height = 0.033
 sides = 64
 
-[node name="CSGBox3D19" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D19" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -0.026426315, 0.19073486, -4.808136)
 operation = 2
 size = Vector3(0.4, 0.32287598, 0.072021484)
 
-[node name="CSGCylinder3D41" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D41" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 1.1062317, 0.083740234, -3.7112885)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D42" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D42" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 1.1062317, 0.083740234, -5.946045)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D43" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D43" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 2.453247, -0.20672607, -4.85466)
 radius = 0.25
 height = 1.5097656
 sides = 64
 
-[node name="CSGBox3D20" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D20" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, 2.4629364, 0.15698242, -4.84935)
 operation = 2
 size = Vector3(0.76650393, 0.32287598, 0.4560547)
 
-[node name="CSGBox3D23" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D23" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -0.026426315, 0.19073486, -4.808136)
 operation = 2
 size = Vector3(0.4, 0.32287598, 0.072021484)
 
-[node name="CSGCylinder3D44" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D44" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 1.1062317, 0.083740234, -3.7112885)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D45" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D45" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 1.1062317, 0.083740234, -5.946045)
 operation = 2
 radius = 0.055
 height = 1.5097656
 sides = 64
 
-[node name="CSGCylinder3D46" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D46" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 2.453247, -0.20672607, -4.85466)
 radius = 0.25
 height = 1.5097656
 sides = 64
 
-[node name="CSGBox3D24" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D24" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, 2.4629364, 0.15698242, -4.84935)
 operation = 2
 size = Vector3(0.76650393, 0.32287598, 0.4560547)
 
-[node name="CSGBox3D27" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGBox3D27" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-1, 8.0473086e-08, -3.41588e-08, 0, 0.39073104, 0.920505, 8.742278e-08, 0.9205048, -0.39073113, 2.3968525, 0.18520379, -13.592667)
 operation = 2
 size = Vector3(6.8665037, 0.32287598, 0.59851074)
 
-[node name="CSGCylinder3D47" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D47" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 2.4671936, 0.07635498, -3.5811615)
 operation = 2
 radius = 0.055
 height = 1.2495117
 sides = 64
 
-[node name="CSGCylinder3D48" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D48" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 2.4671936, 0.07635498, -4.616852)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D49" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D49" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 2.4671936, 0.07635498, -4.8556213)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D50" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D50" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(4.3711385e-08, -3.8213705e-15, 0.99999994, -8.742277e-08, -0.99999994, 0, 0.9999999, -8.742277e-08, -4.3711385e-08, 2.4671936, 0.07635498, -5.091049)
 operation = 2
 radius = 0.1
 height = 0.59
 sides = 64
 
-[node name="CSGCylinder3D51" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D51" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(1.9106853e-15, -4.3711385e-08, 0.99999994, -0.9999999, -4.3711385e-08, 0, 4.3711385e-08, -0.99999994, -4.3711385e-08, 2.4671936, 0.07635498, -6.1201935)
 operation = 2
 radius = 0.055
 height = 1.2495117
 sides = 64
 
-[node name="CSGCylinder3D52" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D52" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 5.016815, -0.17962658, -13.659988)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="CSGCylinder3D53" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D"]
+[node name="CSGCylinder3D53" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, 5.016815, -0.17962658, -13.957474)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="Lockers" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="Lockers" type="MeshInstance3D" parent="Crew Quarter/CryoSiloManager"]
 transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, -5.275177, 0.29089355, 2.8658752)
 mesh = SubResource("ArrayMesh_obn2h")
 surface_material_override/0 = SubResource("StandardMaterial3D_w4a5j")
 
-[node name="Cryopod_Prok_R1" parent="Crew Quarter/CryoBedSilo/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
+[node name="Cryopod_Prok_R1" parent="Crew Quarter/CryoSiloManager/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
 transform = Transform3D(0.9999998, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 0.9999998, -0.87112427, -1.4333496, -1.8485413)
 ground_collision = NodePath("../../../Mesh_Crew_Quarter_Ground_0/StaticBody3D/CollisionShape3D")
 
-[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R1" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
-cryo_ui_controller = NodePath("../../../CryoUIController")
+[node name="CryopodUIController" parent="Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R1" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
+cryo_ui_controller = NodePath("../../../../../ViewportTerminal/CryoUIController")
 cryosilo_manager = NodePath("../../..")
 
-[node name="Cryopod_Prok_R2" parent="Crew Quarter/CryoBedSilo/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
+[node name="Cryopod_Prok_R2" parent="Crew Quarter/CryoSiloManager/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
 transform = Transform3D(0.9999998, 0, -7.1054274e-15, 0, 1, 0, 7.1054274e-15, 0, 0.9999998, -0.871, -1.44, -7.849)
 capsule_id = 2
 ground_collision = NodePath("../../../Mesh_Crew_Quarter_Ground_0/StaticBody3D/CollisionShape3D")
 
-[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R2" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
-cryo_ui_controller = NodePath("../../../CryoUIController")
+[node name="CryopodUIController" parent="Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R2" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
+cryo_ui_controller = NodePath("../../../../../ViewportTerminal/CryoUIController")
 cryosilo_manager = NodePath("../../..")
 
-[node name="Cryopod_Prok_R3" parent="Crew Quarter/CryoBedSilo/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
+[node name="Cryopod_Prok_R3" parent="Crew Quarter/CryoSiloManager/Lockers" node_paths=PackedStringArray("ground_collision") instance=ExtResource("4_n7p0j")]
 transform = Transform3D(0.9999998, 0, -7.1054274e-15, 0, 1, 0, 7.1054274e-15, 0, 0.9999998, 1.1, -1.44, -4.849)
 capsule_id = 3
 ground_collision = NodePath("../../../Mesh_Crew_Quarter_Ground_0/StaticBody3D/CollisionShape3D")
 
-[node name="CryopodUIController" parent="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R3" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
-cryo_ui_controller = NodePath("../../../CryoUIController")
+[node name="CryopodUIController" parent="Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R3" index="9" node_paths=PackedStringArray("cryo_ui_controller", "cryosilo_manager")]
+cryo_ui_controller = NodePath("../../../../../ViewportTerminal/CryoUIController")
 cryosilo_manager = NodePath("../../..")
 
-[node name="CSGCombiner3D2" type="CSGCombiner3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="CSGCombiner3D2" type="CSGCombiner3D" parent="Crew Quarter/CryoSiloManager"]
 visible = false
 
-[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(-0.011414205, 0, -0.99993485, 0, 1, 0, 0.99993485, 0, -0.011414205, -5.1742992, -0.14489746, -1.9928284)
 size = Vector3(13.175712, 0.53796387, 7.755004)
 
-[node name="CSGSphere3D" type="CSGSphere3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGSphere3D" type="CSGSphere3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.3365784, -0.08691406, 2.8658752)
 radial_segments = 64
 rings = 12
 
-[node name="CSGSphere3D2" type="CSGSphere3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGSphere3D2" type="CSGSphere3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0920715, 0.072387695, 3.1450195)
 radius = 0.15
 radial_segments = 64
 rings = 12
 
-[node name="CSGCylinder3D12" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGCylinder3D12" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -2.1540604, 0.11126697, 4.2232056)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="CSGCylinder3D13" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGCylinder3D13" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -2.1540604, 0.11126697, 3.9257202)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="CSGCylinder3D14" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGCylinder3D14" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -2.1540604, 0.11126697, -7.833664)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="CSGCylinder3D15" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="CSGCylinder3D15" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(-4.3711385e-08, 0.99999994, 0, -0.99999994, -4.3711385e-08, 0, 0, 0, 1, -2.1540604, 0.11126697, -8.131149)
 operation = 2
 radius = 0.055
 height = 2.3048096
 sides = 64
 
-[node name="pf_crew_quarter" type="CSGPolygon3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="pf_crew_quarter" type="CSGPolygon3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(0.15, 0, 0, 0, -1.3113417e-08, 0.205, 0, -0.3, -8.960835e-09, -5.275177, 0.2532959, 2.7728882)
 operation = 2
 collision_layer = 3
@@ -4236,7 +4176,7 @@ polygon = PackedVector2Array(20.5, 7.5, 20.5, 25, 10, 35, -10, 35, -20.5, 25, -2
 depth = 40.0
 smooth_faces = true
 
-[node name="pf_crew_quarter2" type="CSGPolygon3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="pf_crew_quarter2" type="CSGPolygon3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(0.15, 0, 0, 0, -1.3113417e-08, 0.205, 0, -0.3, -8.960835e-09, -5.275177, 0.2532959, 2.7728882)
 collision_layer = 3
 collision_mask = 3
@@ -4244,7 +4184,7 @@ polygon = PackedVector2Array(20.5, 7.5, 20.5, 25, 10, 35, -10, 35, -20.5, 25, -2
 depth = 40.0
 smooth_faces = true
 
-[node name="pf_crew_quarter3" type="CSGPolygon3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D2"]
+[node name="pf_crew_quarter3" type="CSGPolygon3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D2"]
 transform = Transform3D(0.14, 0, 0, 0, -1.2239188e-08, 0.205, 0, -0.28, -8.960835e-09, -5.271408, 0.28466797, 2.4600067)
 operation = 2
 collision_layer = 3
@@ -4253,57 +4193,57 @@ polygon = PackedVector2Array(20.5, 7.5, 20.5, 25, 10, 35, -10, 35, -20.5, 25, -2
 depth = 48.65
 smooth_faces = true
 
-[node name="Cryo_Pit" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="Cryo_Pit" type="MeshInstance3D" parent="Crew Quarter/CryoSiloManager"]
 mesh = SubResource("ArrayMesh_qcuju")
 surface_material_override/0 = SubResource("StandardMaterial3D_4cnka")
 
-[node name="Anima" type="AnimationPlayer" parent="Crew Quarter/CryoBedSilo"]
+[node name="Anima" type="AnimationPlayer" parent="Crew Quarter/CryoSiloManager"]
 libraries = {
 &"": SubResource("AnimationLibrary_4cnka")
 }
 
-[node name="CSGCombiner3D3" type="CSGCombiner3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="CSGCombiner3D3" type="CSGCombiner3D" parent="Crew Quarter/CryoSiloManager"]
 visible = false
 
-[node name="правая" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3"]
+[node name="правая" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3"]
 transform = Transform3D(0.999987, 0, -7.7093887e-13, 0, 1, 0, 7.7093887e-13, 0, 0.999987, -5.182228, -0.09030759, 0.9920349)
 size = Vector3(7, 0.111, 6)
 
-[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3/правая"]
+[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3/правая"]
 transform = Transform3D(0.99999875, 0, 9.2370556e-14, 0, 1, 0, -9.2370556e-14, 0, 0.99999875, 0, -0.004, -2.911)
 operation = 2
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3/правая"]
+[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3/правая"]
 transform = Transform3D(0.99999875, 0, 9.2370556e-14, 0, 1, 0, -9.2370556e-14, 0, 0.99999875, -1, -0.004, -2.911)
 operation = 2
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3/правая"]
+[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3/правая"]
 transform = Transform3D(0.99999875, 0, 9.2370556e-14, 0, 1, 0, -9.2370556e-14, 0, 0.99999875, -2, -0.004, -2.911)
 operation = 2
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3/правая"]
+[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3/правая"]
 transform = Transform3D(0.99999875, 0, 9.2370556e-14, 0, 1, 0, -9.2370556e-14, 0, 0.99999875, 1, -0.004, -2.911)
 operation = 2
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3/правая"]
+[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3/правая"]
 transform = Transform3D(0.99999875, 0, 9.2370556e-14, 0, 1, 0, -9.2370556e-14, 0, 0.99999875, 2, -0.004, -2.911)
 operation = 2
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D3/правая"]
+[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D3/правая"]
 transform = Transform3D(0.99998826, 0, 1.4210855e-13, 0, 1, 0, -1.4210855e-13, 0, 0.99998826, -0.12732315, 0.040555358, -0.07714844)
 operation = 2
 size = Vector3(5.106, 0.05, 5.21)
 
-[node name="Sliding_hatche_right" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="Sliding_hatche_right" type="MeshInstance3D" parent="Crew Quarter/CryoSiloManager"]
 mesh = SubResource("ArrayMesh_w4a5j")
 surface_material_override/0 = SubResource("StandardMaterial3D_pmlcr")
 
-[node name="lbl_caution" type="Label3D" parent="Crew Quarter/CryoBedSilo/Sliding_hatche_right"]
+[node name="lbl_caution" type="Label3D" parent="Crew Quarter/CryoSiloManager/Sliding_hatche_right"]
 transform = Transform3D(-4.3711328e-08, 0.9999977, 4.371134e-08, 0, -4.37113e-08, 0.9999993, 0.99999833, 4.37113e-08, 1.9106831e-15, -5.10178, -0.01870346, 0.5460968)
 pixel_size = 0.015
 alpha_antialiasing_mode = 1
@@ -4317,50 +4257,50 @@ font = SubResource("FontFile_2woth")
 font_size = 22
 outline_size = 0
 
-[node name="Decal3" type="Decal" parent="Crew Quarter/CryoBedSilo/Sliding_hatche_right"]
+[node name="Decal3" type="Decal" parent="Crew Quarter/CryoSiloManager/Sliding_hatche_right"]
 transform = Transform3D(-4.3712763e-08, 0, -1.0000231, 0, 1.0000466, 0, 1.000026, 0, -4.3712635e-08, -5.2284203, -0.11810994, 0.510849)
 size = Vector3(2.4955902, 0.16300878, 1.8338486)
 texture_albedo = ExtResource("8_2woth")
 texture_emission = ExtResource("5_87qho")
 
-[node name="CSGCombiner3D4" type="CSGCombiner3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="CSGCombiner3D4" type="CSGCombiner3D" parent="Crew Quarter/CryoSiloManager"]
 visible = false
 
-[node name="левая" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4"]
+[node name="левая" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4"]
 transform = Transform3D(0.99998695, 0, -7.744916e-13, 0, 1, 0, 7.744916e-13, 0, 0.99998695, -5.182228, -0.09030759, -5.0228424)
 size = Vector3(7, 0.111, 6)
 
-[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4/левая"]
+[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4/левая"]
 transform = Transform3D(0.99999875, 0, 1.4210855e-13, 0, 1, 0, -1.4210855e-13, 0, 0.99999875, 0.009067535, -0.019259095, 3.1126099)
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4/левая"]
+[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4/левая"]
 transform = Transform3D(0.99999875, 0, 1.4210855e-13, 0, 1, 0, -1.4210855e-13, 0, 0.99999875, -0.9909401, -0.019259095, 3.1126099)
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4/левая"]
+[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4/левая"]
 transform = Transform3D(0.99999875, 0, 1.4210855e-13, 0, 1, 0, -1.4210855e-13, 0, 0.99999875, -1.9909325, -0.019259095, 3.1126404)
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4/левая"]
+[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4/левая"]
 transform = Transform3D(0.99999875, 0, 1.4210855e-13, 0, 1, 0, -1.4210855e-13, 0, 0.99999875, 1.0090904, -0.019259095, 3.1126099)
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4/левая"]
+[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4/левая"]
 transform = Transform3D(0.99999875, 0, 1.4210855e-13, 0, 1, 0, -1.4210855e-13, 0, 0.99999875, 2.0090752, -0.019259095, 3.1126099)
 size = Vector3(0.15, 0.15, 0.2)
 
-[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/CSGCombiner3D4/левая"]
+[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/CSGCombiner3D4/левая"]
 transform = Transform3D(0.99998826, 0, 1.4566126e-13, 0, 1, 0, -1.4566126e-13, 0, 0.99998826, -0.12732697, 0.040555358, 0.093063354)
 operation = 2
 size = Vector3(5.106, 0.05, 5.21)
 
-[node name="Sliding_hatche_left" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo"]
+[node name="Sliding_hatche_left" type="MeshInstance3D" parent="Crew Quarter/CryoSiloManager"]
 transform = Transform3D(0.9999999, 0, -3.5527137e-15, 0, 1, 0, 3.5527137e-15, 0, 0.9999999, 0, 0, 0)
 mesh = SubResource("ArrayMesh_rb4y3")
 surface_material_override/0 = SubResource("StandardMaterial3D_iq2wh")
 
-[node name="lbl_caution" type="Label3D" parent="Crew Quarter/CryoBedSilo/Sliding_hatche_left"]
+[node name="lbl_caution" type="Label3D" parent="Crew Quarter/CryoSiloManager/Sliding_hatche_left"]
 transform = Transform3D(-4.3711324e-08, 0.9999976, 4.3711335e-08, 0, -4.37113e-08, 0.9999993, 0.9999983, 4.3711296e-08, 1.9106827e-15, -5.10178, -0.01870346, -4.3466797)
 pixel_size = 0.015
 alpha_antialiasing_mode = 1
@@ -4372,324 +4312,112 @@ font = SubResource("FontFile_2woth")
 font_size = 22
 outline_size = 0
 
-[node name="Decal3" type="Decal" parent="Crew Quarter/CryoBedSilo/Sliding_hatche_left"]
+[node name="Decal3" type="Decal" parent="Crew Quarter/CryoSiloManager/Sliding_hatche_left"]
 transform = Transform3D(-4.3712767e-08, 0, -1.0000232, 0, 1.0000466, 0, 1.0000261, 0, -4.371264e-08, -5.2284203, -0.11810994, -4.3362427)
 size = Vector3(2.4955902, 0.16300878, 1.8338486)
 texture_albedo = ExtResource("8_2woth")
 texture_emission = ExtResource("5_87qho")
 
-[node name="ZoneTerminal" type="Area3D" parent="Crew Quarter/CryoBedSilo"]
-transform = Transform3D(0.9999998, 0, -7.1054274e-15, 0, 1, 0, 7.1054274e-15, 0, 0.9999998, -11.597166, 0, -1.706543)
-script = ExtResource("10_4cnka")
-terminal_texture_off = ExtResource("13_pmlcr")
-terminal_texture_on = ExtResource("11_rb4y3")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal"]
-transform = Transform3D(0.99998504, 0, -8.526513e-13, 0, 1, 0, 8.526513e-13, 0, 0.99998504, -1.9039288, 2.1467285, -0.34005737)
-shape = SubResource("SphereShape3D_2woth")
-debug_color = Color(0.89, 0.29369998, 0.42289832, 1)
-
-[node name="CSGCombiner3D" type="CSGCombiner3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal"]
-visible = false
-
-[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(1, 0, 7.1054274e-15, 0, 1, 0, -7.1054274e-15, 0, 1, -1.3964825, 0.63183594, -0.33288574)
-size = Vector3(0.28320313, 2.2636719, 0.33422852)
-
-[node name="CSGCylinder3D" type="CSGCylinder3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(1, 0, 7.1054274e-15, 0, 1, 0, -7.1054274e-15, 0, 1, -1.3024292, 1.0738525, -0.35656738)
-operation = 2
-radius = 0.2
-height = 1.9174805
-sides = 64
-
-[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(0.9763338, 0.21626921, -1.4099193e-09, -0.21626921, 0.9763338, -1.289065e-08, -1.4106227e-09, 1.28906485e-08, 1, -1.343235, 2.1707695, -0.32632446)
-size = Vector3(0.08911133, 0.5501709, 0.48910522)
-
-[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(0.9763338, 0.21626921, -1.4098802e-09, -0.21626921, 0.9763338, -1.289065e-08, -1.4106227e-09, 1.28906485e-08, 1, -1.2933788, 2.1023965, -0.32891846)
-size = Vector3(0.048950195, 0.68133545, 0.5493164)
-
-[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 9.3173624e-21, -7.1054274e-15, 1, -1.547514, 1.7663369, -0.3284912)
-size = Vector3(0.048950195, 0.39779663, 0.5493164)
-
-[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.1551977e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.48213196)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D7" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.1763736e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.37556458)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D8" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.1975494e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.26338196)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D9" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.2187252e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.14961243)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D10" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.239901e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.14961243)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D11" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.261077e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.26997375)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D12" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.2822527e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.374588)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D13" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.3034285e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.4799347)
-size = Vector3(0.048950195, 0.081258774, 0.07192993)
-
-[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/CSGCombiner3D"]
-transform = Transform3D(0.96774447, 0.25193426, -1.9218724e-09, -0.25193423, 0.96774447, -1.5016479e-08, -1.9225936e-09, 1.5016449e-08, 1, -1.4049263, 2.1325822, -0.3366089)
-operation = 2
-size = Vector3(0.08911133, 0.5561981, 0.4769287)
-
-[node name="MeshTerminalStation" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal"]
-transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 3.8146973e-06, 0, 0)
+[node name="MeshTerminal" type="MeshInstance3D" parent="Crew Quarter/CryoSiloManager"]
+transform = Transform3D(0.99999976, 0, -1.0658141e-14, 0, 1, 0, 1.0658141e-14, 0, 0.99999976, -11.597162, 0, -1.706543)
 material_override = SubResource("StandardMaterial3D_14ny8")
 lod_bias = 0.001
 ignore_occlusion_culling = true
 mesh = SubResource("ArrayMesh_fri6f")
-skeleton = NodePath("../..")
 
-[node name="DisplayTerminal" type="Sprite3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/MeshTerminalStation"]
+[node name="DisplayTerminal" type="Sprite3D" parent="Crew Quarter/CryoSiloManager/MeshTerminal"]
 transform = Transform3D(-0.0031256885, 0.27002913, -0.9628472, 0.00087657355, 0.9628522, 0.2700277, 0.9999948, 1.6094988e-08, -0.0032462762, -1.371582, 2.1254883, -0.33283997)
 modulate = Color(1, 1, 1, 0.49803922)
 pixel_size = 0.0004
 texture = ExtResource("13_pmlcr")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/MeshTerminalStation" groups=["ground"]]
+[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoSiloManager/MeshTerminal" groups=["ground"]]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/MeshTerminalStation/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crew Quarter/CryoSiloManager/MeshTerminal/StaticBody3D"]
 transform = Transform3D(0.99999225, 0, 0, 0, 1, 0, 0, 0, 0.99999225, -1.2687378, 1.0128784, -0.41711426)
 shape = SubResource("CapsuleShape3D_rb4y3")
 debug_color = Color(0, 11.618606, 13.50434, 0.41960785)
 
-[node name="TerminalLight" type="OmniLight3D" parent="Crew Quarter/CryoBedSilo/ZoneTerminal/MeshTerminalStation"]
+[node name="TerminalLight" type="OmniLight3D" parent="Crew Quarter/CryoSiloManager/MeshTerminal"]
 transform = Transform3D(-2.6182114e-08, 0.55726695, 0.8303337, 5.7574635e-08, 0.83033353, -0.55726683, -1.0000002, 3.3215738e-08, -5.3824326e-08, -1.815979, 2.8028564, -0.16174316)
 light_color = Color(1, 0.49, 0.49, 1)
 light_energy = 3.0
 omni_range = 2.0
 omni_shadow_mode = 0
 
-[node name="3D_Screen" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo"]
-transform = Transform3D(-3.4969112e-08, -0.61283535, -0.5142303, 0, 0.5142303, -0.61283535, 0.8, -2.6787886e-08, -2.247772e-08, -9, 8, -2)
-mesh = SubResource("PlaneMesh_ch5iq")
-skeleton = NodePath("../..")
-script = ExtResource("14_fkejt")
+[node name="Termina3dManager" type="Area3D" parent="Crew Quarter/CryoSiloManager"]
+transform = Transform3D(0.9999998, 0, -7.1054274e-15, 0, 1, 0, 7.1054274e-15, 0, 0.9999998, -11.597166, 0, -1.706543)
+script = ExtResource("10_4cnka")
+terminal_texture_off = ExtResource("13_pmlcr")
+terminal_texture_on = ExtResource("11_rb4y3")
 
-[node name="AreaGUI" type="Area3D" parent="Crew Quarter/CryoBedSilo/3D_Screen"]
-transform = Transform3D(1, 5.3290705e-15, 1.0658141e-14, 0, 1.0000004, -5.9604645e-08, 0, 5.9604645e-08, 1.0000004, 0, -0.13062859, 0.109609604)
-collision_layer = 524288
-collision_mask = 524288
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager"]
+transform = Transform3D(0.99998504, 0, -8.526513e-13, 0, 1, 0, 8.526513e-13, 0, 0.99998504, -1.9039288, 2.1467285, -0.34005737)
+shape = SubResource("SphereShape3D_2woth")
+debug_color = Color(0.89, 0.29369998, 0.42289832, 1)
 
-[node name="Collision" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI"]
-transform = Transform3D(1, 0, 0, 0, -4.371142e-08, 1.0000007, 0, -1.0000007, -4.371142e-08, -0.11294556, 0.09570122, 0.0019569397)
-shape = SubResource("BoxShape3D_2ujut")
-
-[node name="MeshBTN_SILO" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI"]
-transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.2, -3)
-cast_shadow = 0
-mesh = SubResource("PlaneMesh_2kj3i")
-
-[node name="lbl_btn_silo" type="Label3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_SILO"]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.01, 0)
-text = "SILO"
-font = ExtResource("2_8v4a4")
-font_size = 62
-outline_size = 0
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_SILO"]
-collision_layer = 524288
-collision_mask = 524288
-
-[node name="Collision" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_SILO/StaticBody3D"]
-shape = SubResource("ConvexPolygonShape3D_soi7q")
-
-[node name="MeshBTN_MANAGE_PIT" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI"]
-transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.2, -1.5)
-cast_shadow = 0
-mesh = SubResource("PlaneMesh_fkejt")
-
-[node name="lbl_btn_pit" type="Label3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_MANAGE_PIT"]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.01, 0)
-text = "PIT"
-font = ExtResource("2_8v4a4")
-font_size = 62
-outline_size = 0
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_MANAGE_PIT"]
-collision_layer = 524288
-collision_mask = 524288
-
-[node name="Collision" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_MANAGE_PIT/StaticBody3D"]
-shape = SubResource("ConvexPolygonShape3D_soi7q")
-
-[node name="MeshBTN_Cryopod_1" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI"]
-transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.2, 0)
-cast_shadow = 0
-mesh = SubResource("PlaneMesh_soi7q")
-
-[node name="lbl_btn_crypod_one" type="Label3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_1"]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.01, 0)
-text = "Cryopod R1"
-font = ExtResource("2_8v4a4")
-font_size = 62
-outline_size = 0
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_1"]
-collision_layer = 524288
-collision_mask = 524288
-
-[node name="Collision" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_1/StaticBody3D"]
-shape = SubResource("ConvexPolygonShape3D_soi7q")
-
-[node name="MeshBTN_Cryopod_2" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI"]
-transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.2, 1.5)
-cast_shadow = 0
-mesh = SubResource("PlaneMesh_dhm8u")
-
-[node name="lbl_btn_cryopod_two" type="Label3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_2"]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.01, 0)
-text = "Cryopod R2"
-font = ExtResource("2_8v4a4")
-font_size = 62
-outline_size = 0
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_2"]
-collision_layer = 524288
-collision_mask = 524288
-
-[node name="Collision" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_2/StaticBody3D"]
-shape = SubResource("ConvexPolygonShape3D_soi7q")
-
-[node name="MeshBTN_Cryopod_3" type="MeshInstance3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI"]
-transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.2, 3)
-cast_shadow = 0
-mesh = SubResource("PlaneMesh_w4v2e")
-
-[node name="lbl_btn_cryopod_three" type="Label3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_3"]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.01, 0)
-text = "Cryopod R1"
-font = ExtResource("2_8v4a4")
-font_size = 62
-outline_size = 0
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_3"]
-collision_layer = 524288
-collision_mask = 524288
-
-[node name="Collision" type="CollisionShape3D" parent="Crew Quarter/CryoBedSilo/3D_Screen/AreaGUI/MeshBTN_Cryopod_3/StaticBody3D"]
-shape = SubResource("ConvexPolygonShape3D_soi7q")
-
-[node name="IMG_Display" type="Sprite3D" parent="Crew Quarter/CryoBedSilo/3D_Screen"]
-transform = Transform3D(1.72, 0, 0, 0, -1.14523836e-07, -1, 0, 2.62, -4.371139e-08, 0, 0.001, 0)
-cast_shadow = 0
-lod_bias = 0.001
-ignore_occlusion_culling = true
-render_priority = 1
-texture = ExtResource("13_2ujut")
-
-[node name="CryoUIController" type="Control" parent="Crew Quarter/CryoBedSilo"]
-layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 1
-script = ExtResource("11_w4a5j")
-
-[node name="VBox" type="VBoxContainer" parent="Crew Quarter/CryoBedSilo/CryoUIController"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -33.5
-offset_top = -99.5
-offset_right = 33.5
-offset_bottom = 99.5
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="BtnSilo" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsules" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsule1" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsule2" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnCapsule3" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="BtnSleepWake" type="Button" parent="Crew Quarter/CryoBedSilo/CryoUIController/VBox"]
-layout_mode = 2
-text = "BUTTON"
-
-[node name="PowerSwitch_GUI_Terminal" type="Control" parent="Crew Quarter/CryoBedSilo"]
-layout_mode = 3
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = 10.0
-offset_right = 150.00073
-offset_bottom = 310.00024
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("14_iq2wh")
-on_texture = ExtResource("16_2ujut")
-off_texture = ExtResource("15_ch5iq")
-
-[node name="TextureRect" type="TextureRect" parent="Crew Quarter/CryoBedSilo/PowerSwitch_GUI_Terminal"]
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager"]
 visible = false
-material = SubResource("ShaderMaterial_fri6f")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 300.0
-offset_right = 300.0
-grow_horizontal = 2
-grow_vertical = 2
-rotation = 1.5707964
-texture = SubResource("GradientTexture1D_2ujut")
 
-[node name="btn_Toggle" type="Button" parent="Crew Quarter/CryoBedSilo/PowerSwitch_GUI_Terminal"]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 1.0
-offset_bottom = 75.0
-grow_horizontal = 2
-focus_mode = 0
-theme_override_fonts/font = ExtResource("2_8v4a4")
-theme_override_font_sizes/font_size = 25
-text = "Boot"
-icon_alignment = 1
+[node name="CSGBox3D" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(1, 0, 7.1054274e-15, 0, 1, 0, -7.1054274e-15, 0, 1, -1.3964825, 0.63183594, -0.33288574)
+size = Vector3(0.28320313, 2.2636719, 0.33422852)
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(1, 0, 7.1054274e-15, 0, 1, 0, -7.1054274e-15, 0, 1, -1.3024292, 1.0738525, -0.35656738)
+operation = 2
+radius = 0.2
+height = 1.9174805
+sides = 64
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(0.9763338, 0.21626921, -1.4099193e-09, -0.21626921, 0.9763338, -1.289065e-08, -1.4106227e-09, 1.28906485e-08, 1, -1.343235, 2.1707695, -0.32632446)
+size = Vector3(0.08911133, 0.5501709, 0.48910522)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(0.9763338, 0.21626921, -1.4098802e-09, -0.21626921, 0.9763338, -1.289065e-08, -1.4106227e-09, 1.28906485e-08, 1, -1.2933788, 2.1023965, -0.32891846)
+size = Vector3(0.048950195, 0.68133545, 0.5493164)
+
+[node name="CSGBox3D5" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 9.3173624e-21, -7.1054274e-15, 1, -1.547514, 1.7663369, -0.3284912)
+size = Vector3(0.048950195, 0.39779663, 0.5493164)
+
+[node name="CSGBox3D6" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.1551977e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.48213196)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D7" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.1763736e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.37556458)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D8" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.1975494e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.26338196)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D9" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.2187252e-20, -7.1054274e-15, 1, -1.6433201, 1.7829385, -0.14961243)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D10" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.239901e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.14961243)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D11" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.261077e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.26997375)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D12" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.2822527e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.374588)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D13" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(-4.3711385e-08, 1, 7.1054274e-15, -0.99999994, -4.371139e-08, 0, 3.3034285e-20, -7.1054274e-15, 1, -1.5310154, 1.7829385, -0.4799347)
+size = Vector3(0.048950195, 0.081258774, 0.07192993)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="Crew Quarter/CryoSiloManager/Termina3dManager/CSGCombiner3D"]
+transform = Transform3D(0.96774447, 0.25193426, -1.9218724e-09, -0.25193423, 0.96774447, -1.5016479e-08, -1.9225936e-09, 1.5016449e-08, 1, -1.4049263, 2.1325822, -0.3366089)
+operation = 2
+size = Vector3(0.08911133, 0.5561981, 0.4769287)
 
 [node name="CSGCombiner3D" type="CSGCombiner3D" parent="Crew Quarter"]
 
@@ -4708,9 +4436,14 @@ polygon = PackedVector2Array(20.5, 7.5, 20.5, 25, 10, 35, -10, 35, -20.5, 25, -2
 depth = 40.0
 smooth_faces = true
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Crew Quarter"]
-transform = Transform3D(0.7259388, 0, 0.6877593, 0, 1, 0, -0.6877593, 0, 0.7259388, 25.687433, 2.016754, 111.43918)
-mesh = SubResource("BoxMesh_fkejt")
+[node name="InteractiveTerminal3D" type="Sprite3D" parent="Crew Quarter"]
+transform = Transform3D(-0.06159886, 0.40391243, -0.912721, 0.02719788, 0.9147976, 0.40299574, 0.99772996, 7.1054274e-15, -0.06733604, 24.191883, 1.352417, 113.64511)
+cast_shadow = 0
+ignore_occlusion_culling = true
+billboard = 1
+render_priority = 1
+texture = SubResource("ViewportTexture_pmlcr")
+script = SubResource("GDScript_iq2wh")
 
 [node name="Mess Hall" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.623, 1, 52.772)
@@ -5041,6 +4774,61 @@ transform = Transform3D(-3.0597977e-08, 0, 0.7000001, 0, 0.70000005, 0, -0.70000
 [node name="Bulkhead_Door4" parent="." instance=ExtResource("2_ctven")]
 transform = Transform3D(0.7000001, 0, 0, 0, 0.70000005, 0, 0, 0, 0.7000001, 0.122, 3, 155.40149)
 
-[editable path="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R1"]
-[editable path="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R2"]
-[editable path="Crew Quarter/CryoBedSilo/Lockers/Cryopod_Prok_R3"]
+[node name="ViewportTerminal" type="SubViewport" parent="."]
+transparent_bg = true
+size = Vector2i(800, 800)
+
+[node name="CryoUIController" type="Control" parent="ViewportTerminal"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("11_w4a5j")
+
+[node name="VBox" type="VBoxContainer" parent="ViewportTerminal/CryoUIController"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -33.5
+offset_top = -99.5
+offset_right = 33.5
+offset_bottom = 99.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BtnTerminal" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[node name="BtnSilo" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[node name="BtnCapsules" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[node name="BtnCapsule1" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[node name="BtnCapsule2" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[node name="BtnCapsule3" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[node name="BtnSleepWake" type="Button" parent="ViewportTerminal/CryoUIController/VBox"]
+layout_mode = 2
+text = "BUTTON"
+
+[editable path="Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R1"]
+[editable path="Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R2"]
+[editable path="Crew Quarter/CryoSiloManager/Lockers/Cryopod_Prok_R3"]

@@ -1,8 +1,9 @@
 ## ============================================
-## CRYO_SILO_MANAGER.gd - Главный менеджер системы
+## CryoBedSilo.gd - Главный менеджер системы
+##                  управления хранилещем криоподов/криокапсул
 ## ============================================
 extends Node3D
-class_name CryoSiloManager
+class_name CryoBedSilo
 
 signal silo_state_changed(is_raised: bool)
 signal capsules_state_changed(are_raised: bool)
@@ -12,7 +13,6 @@ signal sleep_sequence_completed
 signal wake_sequence_completed
 
 @onready var animation_player: AnimationPlayer = $Anima
-@onready var control_panel: Terminal3DManager = $Termina3dManager
 
 # Ссылки на капсулы
 @export var cryopod_1: CryoPod

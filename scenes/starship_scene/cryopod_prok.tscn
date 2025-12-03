@@ -1,7 +1,7 @@
 [gd_scene load_steps=33 format=4 uid="uid://blm32ed47u8n5"]
 
-[ext_resource type="Script" uid="uid://vejft7iakdva" path="res://scripts/gdscript/cryo_silo_saving/cryopod.gd" id="1_hwv7a"]
-[ext_resource type="Script" uid="uid://c71w0jijbv7r2" path="res://scripts/gdscript/cryo_silo_saving/CryopodUIController.gd" id="2_edaat"]
+[ext_resource type="Script" uid="uid://vejft7iakdva" path="res://scripts/gdscript/cryo_silo_save_system/cryopod.gd" id="1_hwv7a"]
+[ext_resource type="Script" uid="uid://c71w0jijbv7r2" path="res://scripts/gdscript/cryo_silo_save_system/CryopodUIController.gd" id="2_edaat"]
 [ext_resource type="FontFile" uid="uid://cowpog37pn2l4" path="res://assets/fonts/Special_Elite/SpecialElite-Regular.ttf" id="3_au1fr"]
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_kgs7p"]

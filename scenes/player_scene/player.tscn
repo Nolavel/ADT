@@ -543,7 +543,7 @@ use_navigation = false
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5475097, 0)
 light_energy = 2.0
-omni_range = 15.0
+omni_range = 25.0
 
 [node name="player_base_mesh" type="Node3D" parent="."]
 transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, -1.0370535, 0)

@@ -179,6 +179,7 @@ toggle_scanner={
 
 3d_physics/layer_2="ground"
 3d_physics/layer_3="wall"
+3d_physics/layer_20="3D_GUI"
 
 [rendering]
 

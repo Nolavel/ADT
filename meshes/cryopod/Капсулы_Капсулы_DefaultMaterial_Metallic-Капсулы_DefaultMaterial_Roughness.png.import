@@ -2,17 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cmq7bjtyfp1kh"
-path.s3tc="res://.godot/imported/texture_04.svg-e806fb4edd59570593fd5800eb6f2807.s3tc.ctex"
+uid="uid://dlnremuhnhdm3"
+path.s3tc="res://.godot/imported/Капсулы_Капсулы_DefaultMaterial_Metallic-Капсулы_DefaultMaterial_Roughness.png-06fab8720320233e4e0dd7df79f66f15.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
+generator_parameters={
+"md5": "250b9b04c6ac0cb42b46e63d5f4c8692"
+}
 
 [deps]
 
-source_file="res://assets/textures/prototype_tex_kenney/Vector/texture_04.svg"
-dest_files=["res://.godot/imported/texture_04.svg-e806fb4edd59570593fd5800eb6f2807.s3tc.ctex"]
+source_file="res://meshes/cryopod/Капсулы_Капсулы_DefaultMaterial_Metallic-Капсулы_DefaultMaterial_Roughness.png"
+dest_files=["res://.godot/imported/Капсулы_Капсулы_DefaultMaterial_Metallic-Капсулы_DefaultMaterial_Roughness.png-06fab8720320233e4e0dd7df79f66f15.s3tc.ctex"]
 
 [params]
 
@@ -39,6 +42,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=0
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

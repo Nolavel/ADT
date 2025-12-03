@@ -4,7 +4,7 @@ class_name CryopodUIController
 
 @export var cryo_ui_controller: CryoUIController
 @export var cryopod: CryoPod
-@export var cryosilo_manager: CryoSiloManager
+@export var cryosilo_manager: CryoBedSilo
 
 @onready var panel_detect_cp = $PanelDetectCryoPod
 @onready var btn_unlock = $PanelDetectCryoPod/VBoxContainer/btn_UnlockCryopod

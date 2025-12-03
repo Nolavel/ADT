@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://duopur87278u8"
-path="res://.godot/imported/Sample.png-7d78c623336d81a2510b818d4d87affe.ctex"
+uid="uid://cbwttsbck8iwn"
+path="res://.godot/imported/pin_cancel.png-749c0c1e8f487c67822a361186538ea0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/prototype_tex_kenney/Sample.png"
-dest_files=["res://.godot/imported/Sample.png-7d78c623336d81a2510b818d4d87affe.ctex"]
+source_file="res://assets/textures/pins/pin_cancel.png"
+dest_files=["res://.godot/imported/pin_cancel.png-749c0c1e8f487c67822a361186538ea0.ctex"]
 
 [params]
 

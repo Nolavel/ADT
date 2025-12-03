@@ -1,6 +1,8 @@
 extends Control
 class_name MouseCursorUI
 
+signal button_3d_clicked(button_name: String)
+
 # === НАСТРОЙКИ КУРСОРА ===
 @export_group("Основной курсор")
 @export var cursor_radius: float = 8.0
@@ -34,6 +36,21 @@ class_name MouseCursorUI
 @export_group("Статичность")
 @export var mouse_stationary_px: float = 2.0
 @export var player_move_stationary_speed: float = 0.05
+
+# === НАСТРОЙКИ 3D КУРСОРА ===
+@export_group("3D UI")
+@export var bracket_3d_width: float = 8.0
+@export var bracket_3d_height: float = 20.0
+@export var bracket_3d_offset: float = 12.0  # Начальное расстояние от центра
+@export var bracket_3d_max_offset: float = 30.0  # Максимальное расстояние при наведении
+@export var bracket_3d_color: Color = Color(0.3, 0.8, 1.0, 0.9)
+@export var bracket_3d_animation_speed: float = 8.0
+
+# === СОСТОЯНИЕ 3D UI ===
+var is_over_3d_ui: bool = false
+var is_over_3d_button: bool = false
+var current_3d_button_name: String = ""
+var bracket_offset_current: float = 12.0
 
 # === ССЫЛКИ ===
 @onready var player: CharacterBody3D = $".."
@@ -129,6 +146,8 @@ func _process(delta: float) -> void:
 
 	# 3) Обновление состояния движения
 	_update_movement_state(delta, player_stationary)
+	# 6) Обновление 3D UI состояния
+	_update_3d_ui_state(delta)
 
 	# 4) Прыжок
 	if jump_is_charging:
@@ -318,6 +337,65 @@ func _draw() -> void:
 	# Дуга прыжка
 	if jump_arc_alpha > 0.0:
 		_draw_jump_arc()
+		
+	# === 3D UI КУРСОР ===
+	if is_over_3d_ui:
+		_draw_3d_ui_brackets()
+		
+func _update_3d_ui_state(delta: float) -> void:
+	# Проверяем raycast для 3D UI
+	var viewport := get_viewport()
+	var cam := viewport.get_camera_3d()
+	if not cam:
+		is_over_3d_ui = false
+		is_over_3d_button = false
+		return
+	
+	var mouse_pos: Vector2 = cursor_position
+	var from: Vector3 = cam.project_ray_origin(mouse_pos)
+	var dir: Vector3 = cam.project_ray_normal(mouse_pos)
+	var to: Vector3 = from + dir * 1000.0
+	
+	var space := get_world_3d()
+	if not space:
+		return
+	
+	var direct_space := space.direct_space_state
+	var params := PhysicsRayQueryParameters3D.create(from, to)
+	params.collision_mask = 1 << 19  # Слой 20 (3D_GUI)
+	
+	var result := direct_space.intersect_ray(params)
+	
+	if result.is_empty():
+		is_over_3d_ui = false
+		is_over_3d_button = false
+		bracket_offset_current = lerp(bracket_offset_current, bracket_3d_offset, bracket_3d_animation_speed * delta)
+		return
+	
+	# Попали в 3D UI область
+	var collider: Node = result.get("collider")
+	if collider:
+		is_over_3d_ui = true
+		
+		# Проверяем, это кнопка?
+		if collider is StaticBody3D:
+			var parent = collider.get_parent()
+			if parent and parent is MeshInstance3D:
+				is_over_3d_button = true
+				current_3d_button_name = parent.name
+				# Раздвигаем скобки
+				bracket_offset_current = lerp(bracket_offset_current, bracket_3d_max_offset, bracket_3d_animation_speed * delta)
+			else:
+				is_over_3d_button = false
+				bracket_offset_current = lerp(bracket_offset_current, bracket_3d_offset, bracket_3d_animation_speed * delta)
+		else:
+			is_over_3d_button = false
+			bracket_offset_current = lerp(bracket_offset_current, bracket_3d_offset, bracket_3d_animation_speed * delta)
+
+func get_world_3d() -> World3D:
+	if player:
+		return player.get_world_3d()
+	return get_viewport().get_world_3d()
 
 # 🔥 Рисуем индикаторы движения
 func _draw_movement_indicators() -> void:
@@ -473,6 +551,41 @@ func _draw_jump_arc() -> void:
 		else:
 			_draw_arc(cursor_position, jump_radius, start_angle, end_angle, jump_color, 2.0)
 
+func _draw_3d_ui_brackets() -> void:
+	var color = bracket_3d_color
+	if is_over_3d_button:
+		color = bracket_3d_color.lightened(0.3)
+	
+	# Левая скобка [
+	var left_offset = bracket_offset_current
+	_draw_bracket_left(cursor_position.x - left_offset, cursor_position.y, bracket_3d_width, bracket_3d_height, color)
+	
+	# Правая скобка ]
+	var right_offset = bracket_offset_current
+	_draw_bracket_right(cursor_position.x + right_offset, cursor_position.y, bracket_3d_width, bracket_3d_height, color)
+
+func _draw_bracket_left(x: float, y: float, width: float, height: float, color: Color) -> void:
+	var half_h = height / 2.0
+	var top = Vector2(x, y - half_h)
+	var bottom = Vector2(x, y + half_h)
+	var top_right = Vector2(x + width, y - half_h)
+	var bottom_right = Vector2(x + width, y + half_h)
+	
+	draw_line(top, bottom, color, 2.5, true)
+	draw_line(top, top_right, color, 2.5, true)
+	draw_line(bottom, bottom_right, color, 2.5, true)
+
+func _draw_bracket_right(x: float, y: float, width: float, height: float, color: Color) -> void:
+	var half_h = height / 2.0
+	var top = Vector2(x, y - half_h)
+	var bottom = Vector2(x, y + half_h)
+	var top_left = Vector2(x - width, y - half_h)
+	var bottom_left = Vector2(x - width, y + half_h)
+	
+	draw_line(top, bottom, color, 2.5, true)
+	draw_line(top, top_left, color, 2.5, true)
+	draw_line(bottom, bottom_left, color, 2.5, true)
+
 func _on_jump_performed() -> void:
 	if jump_animation_tween:
 		jump_animation_tween.kill()
@@ -482,6 +595,15 @@ func _on_jump_performed() -> void:
 	jump_animation_tween.tween_method(_set_jump_arc_progress, 0.0, 1.0, 0.15)
 	jump_animation_tween.tween_method(_set_jump_arc_progress, 1.0, 0.0, 0.25).set_delay(0.15)
 	jump_animation_tween.tween_method(_set_jump_arc_alpha, 0.8, 0.0, 0.4)
+	
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if is_over_3d_button:
+			_on_3d_button_clicked(current_3d_button_name)
+			get_viewport().set_input_as_handled()
+
+func _on_3d_button_clicked(button_name: String) -> void:
+	button_3d_clicked.emit(button_name)
 
 func _set_jump_arc_progress(value: float) -> void:
 	jump_arc_progress = value
