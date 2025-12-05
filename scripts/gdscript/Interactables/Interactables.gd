@@ -53,7 +53,6 @@ func throw_self(velocity: Vector3, angular_vel: Vector3) -> void:
 
 ## Обработка удара (об пол или другой ящик)
 func _on_ground_hit(_body: Node) -> void:
-	print("✅ Упал и ударился: ", name_interactable_object)
 	
 	## Возвращаем возможность подбора (через Area3D)
 	if interaction_area:

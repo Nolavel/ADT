@@ -1,6 +1,6 @@
 extends CharacterBody3D
 
-# --- Movement Parameters ---
+## --- Movement Parameters ---
 @export_group("Movement")
 @export var walk_speed: float = 5.0
 @export var run_speed: float = 10.0
@@ -11,30 +11,30 @@ extends CharacterBody3D
 @export var jump_force: float = 8.0
 @export var gravity: float = 20.0
 
-# --- Components ---
+## --- Components ---
 @onready var navigation_component: NavigationComponent = $NavComponent
 @onready var stamina_manager: StaminaManager = $StaminaManager
 @onready var animation_player: AnimationPlayer = $player_base_mesh/AnimationPlayer
 
-# --- Movement State ---
+## --- Movement State ---
 enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 var current_state: MovementState = MovementState.IDLE
 var speed: float = 0.0
 var target_speed: float = 0.0
 var movement_enabled: bool = true
 
-# --- Sprint State (для UI курсора) ---
+## --- Sprint State (для UI курсора) ---
 var is_running_mode: bool = false
 var wants_to_run: bool = false  # 🔥 НОВЫЙ: игрок хочет бежать (даже если не может)
 var sprint_blend: float = 0.0
 var sprint_blend_speed: float = 4.0
 
-# --- Signals ---
+## --- Signals ---
 signal movement_started
 signal movement_stopped
 signal state_changed(new_state: MovementState)
 
-# --- Initialization ---
+## --- Initialization ---
 func _ready():
 	$player_base_mesh/AnimationPlayer.play("new4/idle")
 	if navigation_component:
@@ -46,7 +46,7 @@ func _ready():
 	if stamina_manager == null:
 		push_warning("StaminaManager not found - stamina system will not work")
 
-# --- Public API ---
+## --- Public API ---
 func move_to_position(pos: Vector3) -> void:
 	if not movement_enabled:
 		print("⚠️ Player: Движение заблокировано, игнорируем move_to_position()")
@@ -74,7 +74,7 @@ func stop_moving(smooth: bool = true) -> void:
 		navigation_component.clear_path()
 	
 	is_running_mode = false
-	wants_to_run = false  # 🔥
+	wants_to_run = false 
 	
 	if smooth:
 		target_speed = 0.0
@@ -91,7 +91,7 @@ func stop_moving(smooth: bool = true) -> void:
 func is_moving() -> bool:
 	return current_state != MovementState.IDLE
 
-# 🔥 СИСТЕМА БЛОКИРОВКИ ДВИЖЕНИЯ
+## СИСТЕМА БЛОКИРОВКИ ДВИЖЕНИЯ
 func set_movement_enabled(enabled: bool):
 	movement_enabled = enabled
 	
@@ -119,7 +119,7 @@ func set_movement_enabled(enabled: bool):
 func is_movement_enabled() -> bool:
 	return movement_enabled
 
-# === МЕТОДЫ ДЛЯ КУРСОРА (совместимость с MouseCursorUI) ===
+## === МЕТОДЫ ДЛЯ КУРСОРА (совместимость с MouseCursorUI) ===
 
 ## Проверяет, находится ли игрок в спринте (беге)
 func is_currently_sprinting(current_velocity: Vector3) -> bool:
@@ -133,11 +133,11 @@ func is_currently_sprinting(current_velocity: Vector3) -> bool:
 func get_sprint_blend() -> float:
 	return sprint_blend
 
-## 🔥 НОВЫЙ: Проверяет, хочет ли игрок бежать (независимо от стамины)
+## Проверяет, хочет ли игрок бежать (независимо от стамины)
 func is_wanting_to_run() -> bool:
 	return wants_to_run
 
-# --- Physics Update ---
+## --- Physics Update ---
 func _physics_process(delta: float) -> void:
 	if not movement_enabled:
 		_apply_gravity(delta)
@@ -154,12 +154,12 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 
-# --- Sprint Blend (для плавной UI анимации) ---
+## --- Sprint Blend (для плавной UI анимации) ---
 func _update_sprint_blend(delta: float) -> void:
 	var target_blend = 1.0 if is_running_mode else 0.0
 	sprint_blend = lerp(sprint_blend, target_blend, sprint_blend_speed * delta)
 
-# --- Stamina Consumption (расход стамины при беге) ---
+## --- Stamina Consumption (расход стамины при беге) ---
 func _handle_stamina_consumption() -> void:
 	if not stamina_manager:
 		return
@@ -171,11 +171,11 @@ func _handle_stamina_consumption() -> void:
 			if not stamina_manager.is_consuming_stamina:
 				stamina_manager.start_consuming_stamina()
 		else:
-			# Стамина кончилась - принудительно переходим на ходьбу
+			## Стамина кончилась - принудительно переходим на ходьбу
 			if stamina_manager.is_consuming_stamina:
 				stamina_manager.stop_consuming_stamina()
 			
-			# 🔥 ВАЖНО: Снижаем РЕАЛЬНУЮ скорость, но НЕ сбрасываем wants_to_run
+			## Снижаем РЕАЛЬНУЮ скорость, но НЕ сбрасываем wants_to_run
 			target_speed = walk_speed
 			is_running_mode = false
 			print("⚠️ Стамина истощена - переход на ходьбу")
@@ -183,7 +183,7 @@ func _handle_stamina_consumption() -> void:
 		if stamina_manager.is_consuming_stamina:
 			stamina_manager.stop_consuming_stamina()
 
-# --- Jump Logic ---
+## --- Jump Logic ---
 func _handle_jump() -> void:
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		if stamina_manager and stamina_manager.try_jump():
@@ -191,17 +191,17 @@ func _handle_jump() -> void:
 		elif not stamina_manager:
 			velocity.y = jump_force
 
-# --- Gravity ---
+## --- Gravity ---
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-# --- Speed Interpolation ---
+## --- Speed Interpolation ---
 func _update_speed(delta: float) -> void:
 	var acceleration = (run_speed - walk_speed) / accel_time
 	speed = move_toward(speed, target_speed, delta * acceleration)
 
-# --- Navigation Movement ---
+## --- Navigation Movement ---
 func _handle_navigation(delta: float) -> void:
 	if not navigation_component or not navigation_component.has_active_path():
 		return
@@ -214,18 +214,25 @@ func _handle_navigation(delta: float) -> void:
 	direction.y = 0.0
 	var distance = direction.length()
 	
-	if distance > 0.15:
+	# 🔥 ДЕМПФИРОВАНИЕ: замедляемся, когда близко к точке
+	var distance_factor = clamp(distance / 1.0, 0.0, 1.0)  # 1.0 = радиус замедления
+	var effective_speed = speed * distance_factor
+	
+	if distance > 0.05:  # ✅ Уменьшил порог (было 0.15)
 		var normalized_dir = direction / distance
-		velocity.x = normalized_dir.x * speed
-		velocity.z = normalized_dir.z * speed
+		velocity.x = normalized_dir.x * effective_speed  # ✅ Используем сниженную скорость
+		velocity.z = normalized_dir.z * effective_speed
 		
 		if distance > 0.01:
 			var target_angle = atan2(normalized_dir.x, normalized_dir.z)
 			rotation.y = lerp_angle(rotation.y, target_angle, delta * 10.0)
 	else:
+		# ✅ Близко к точке - резко останавливаемся
+		velocity.x = 0.0
+		velocity.z = 0.0
 		navigation_component.advance_path()
 
-# --- Deceleration when not navigating ---
+## --- Deceleration when not navigating ---
 func _apply_deceleration(delta: float) -> void:
 	if navigation_component and navigation_component.has_active_path():
 		return
@@ -234,14 +241,16 @@ func _apply_deceleration(delta: float) -> void:
 		var decel_rate = run_speed / decel_time
 		velocity.x = move_toward(velocity.x, 0.0, delta * decel_rate)
 		velocity.z = move_toward(velocity.z, 0.0, delta * decel_rate)
+		speed = move_toward(speed, 0.0, delta * decel_rate)
 	else:
 		velocity.x = 0.0
 		velocity.z = 0.0
+		speed = 0.0
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
 			$player_base_mesh/AnimationPlayer.play("new4/idle")
 
-# --- State Management ---
+## --- State Management ---
 func _update_state() -> void:
 	var new_state: MovementState
 	
@@ -264,7 +273,7 @@ func _change_state(new_state: MovementState) -> void:
 	current_state = new_state
 	emit_signal("state_changed", new_state)
 
-# --- Navigation Callbacks ---
+## --- Navigation Callbacks ---
 func _on_path_updated() -> void:
 	if not movement_enabled:
 		return
@@ -276,7 +285,7 @@ func _on_path_updated() -> void:
 func _on_destination_reached() -> void:
 	stop_moving(true)
 
-# --- Getters ---
+## --- Getters ---
 func get_current_speed() -> float:
 	return speed
 

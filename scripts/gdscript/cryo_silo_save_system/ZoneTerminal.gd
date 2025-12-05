@@ -8,7 +8,7 @@ signal terminal_switch_ON
 signal terminal_switch_OFF
 signal player_entered_control_zone
 signal player_exited_control_zone
-signal movement_blocked  # 🔥 НОВЫЙ сигнал
+signal movement_blocked
 
 var player_in_zone: bool = false
 var is_terminal_on: bool = false
@@ -19,7 +19,6 @@ var terminal = self
 @onready var _3d_screen: MeshInstance3D = $"../3D_Screen"
 @onready var area_gui: Area3D = $"../3D_Screen/AreaGUI"
 @onready var power_switch_gui: PowerSwitchGUI = $"../PowerSwitch_GUI_Terminal"
-#@onready var debug_gui_2d: Control = $"../CryoUIController"
 
 @export var terminal_texture_off: Texture2D
 @export var terminal_texture_on: Texture2D
@@ -33,21 +32,19 @@ func _ready() -> void:
 	
 	camera = get_viewport().get_camera_3d()
 	if camera:
-		print("✅ Камера автоматически: ", camera.name)
+		pass
 	else:
 		print("✅ Камера для терминала не найдена")
 
-# 🔥 НОВЫЙ: отслеживаем попытки движения
 func _input(event: InputEvent) -> void:
 	if not is_terminal_on or not player:
 		return
 	
-	# Проверяем правую кнопку мыши
+	## Проверяем правую кнопку мыши
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			# Игрок пытается двигаться, но терминал включен
+			## Игрок пытается двигаться, но терминал включен
 			movement_blocked.emit()
-			print("⚠️ Движение заблокировано - выключите терминал!")
 
 func _process(delta: float) -> void:
 	if not is_terminal_on or not _3d_screen or not camera:
@@ -79,35 +76,30 @@ func _on_player_exited_zone(body: Node3D) -> void:
 		player = null  # 🔥 Очищаем ссылку
 		power_switch_gui.hide_with_anim()
 		
-		# 🔥 Если терминал включен - выключаем его при выходе
 		if is_terminal_on:
 			toggle_terminal()
 		
 		player_exited_control_zone.emit()
-		print("🚶 Игрок отошёл от панели управления")
+
 
 func toggle_terminal() -> void:
 	is_terminal_on = !is_terminal_on
 	_update_terminal_display_station()
 	
 	if is_terminal_on:
-		# 🔥 БЛОКИРУЕМ движение игрока
 		if player and player.has_method("set_movement_enabled"):
 			player.set_movement_enabled(false)
 		
 		if player_in_zone:
 			_update_terminal_display_station()
-			print("🔓 Terminal interactive: ENABLED")
 		
 		terminal_switch_ON.emit()
-		print("💻 Компьютер включён")
 	else:
 		# 🔥 РАЗБЛОКИРУЕМ движение игрока
 		if player and player.has_method("set_movement_enabled"):
 			player.set_movement_enabled(true)
 		
 		terminal_switch_OFF.emit()
-		print("💻 Компьютер выключен")
 
 func _update_terminal_display_station() -> void:
 	if not display_terminal_station:
