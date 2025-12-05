@@ -1,4 +1,4 @@
-[gd_scene load_steps=97 format=4 uid="uid://bkfi5x6sf1w2a"]
+[gd_scene load_steps=98 format=4 uid="uid://bkfi5x6sf1w2a"]
 
 [ext_resource type="PackedScene" uid="uid://dbt6w4pr2h3re" path="res://scenes/elevator/lift.tscn" id="1_ljh6w"]
 [ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/InputDebugger/InputDebugger.tscn" id="1_qvqwg"]
@@ -18,6 +18,7 @@
 [ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="13_gtgns"]
 [ext_resource type="PackedScene" uid="uid://qw57l1jftjmn" path="res://scenes/test_scene/hazard_cube.tscn" id="14_esmo2"]
 [ext_resource type="Script" uid="uid://uydn5no0tkhq" path="res://scripts/gdscript/outer_spaceship_modify/modify_spaceship.gd" id="15_vgvdj"]
+[ext_resource type="PackedScene" uid="uid://rycgrnb7n7wu" path="res://scenes/interactables/Interactables.tscn" id="19_gtgns"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1lydy"]
 margin = 1.0
@@ -1482,6 +1483,18 @@ continuous_interval = 2.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_gtgns")
+
+[node name="Interactables" parent="." instance=ExtResource("19_gtgns")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.338749, -43.14654, 173.52577)
+name_interactable_object = "BoxD1"
+interaction_type = 3
+can_throw = true
+
+[node name="Interactables2" parent="." instance=ExtResource("19_gtgns")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.338749, -43.14654, 174.80444)
+name_interactable_object = "Box2dddd"
+interaction_type = 1
+can_throw = true
 
 [editable path="Lift"]
 [editable path="DECK_B"]

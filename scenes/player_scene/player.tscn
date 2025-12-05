@@ -1,4 +1,4 @@
-[gd_scene load_steps=63 format=4 uid="uid://cilg46rmsc3k"]
+[gd_scene load_steps=65 format=4 uid="uid://cilg46rmsc3k"]
 
 [ext_resource type="PackedScene" uid="uid://k7hh8asqtpmd" path="res://scenes/hud_scene/hud.tscn" id="1_sneet"]
 [ext_resource type="Script" uid="uid://iteuvu1kmm7k" path="res://scripts/gdscript/player/player.gd" id="1_w8ad2"]
@@ -30,12 +30,13 @@
 [ext_resource type="Texture2D" uid="uid://cht3x06jqvtq8" path="res://assets/textures/player/Material__7_AO.jpeg" id="15_7tcbd"]
 [ext_resource type="Texture2D" uid="uid://c6rvmqxmq5gxj" path="res://assets/textures/player/Material__7_normal.png" id="16_foa28"]
 [ext_resource type="Texture2D" uid="uid://ct1wqp24eb7v7" path="res://assets/textures/player/Material__7_roughness.jpeg" id="17_uqcsq"]
-[ext_resource type="Script" uid="uid://c6fdejgw4480v" path="res://scripts/gdscript/player_managers/StaminaManager.gd" id="31_dssci"]
+[ext_resource type="Script" uid="uid://c6fdejgw4480v" path="res://scripts/gdscript/player_components/StaminaManager.gd" id="31_dssci"]
 [ext_resource type="Texture2D" uid="uid://bvosok2fh0g2m" path="res://assets/textures/pins/pin_step_walk.png" id="32_fp3m1"]
 [ext_resource type="Script" uid="uid://7ft3gsmqmrmi" path="res://scripts/gdscript/dynamic_cursor/dynamic_cursor_ui.gd" id="32_ftrmt"]
 [ext_resource type="Texture2D" uid="uid://d34gm7xpy2app" path="res://assets/textures/pins/pin_step_sprint.png" id="33_wmpjg"]
 [ext_resource type="Shader" uid="uid://djxhl7o2j304h" path="res://scripts/shader/GrainEffect.gdshader" id="35_r6nix"]
 [ext_resource type="Script" uid="uid://ct4tb6wvfbsco" path="res://scripts/gdscript/fade_by_distance/fade_by_distance.gd" id="36_1gbpw"]
+[ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://scripts/gdscript/player_components/InteractManager.gd" id="37_1gbpw"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
 
@@ -514,6 +515,10 @@ shader_parameter/time_speed = 1.0
 shader_parameter/effect_enabled = true
 shader_parameter/grain_color = Color(0, 0.8, 1, 1)
 shader_parameter/grain_color_mix = 0.5
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_0y6io"]
+radius = 2.0
+height = 5.0
 
 [node name="Player" type="CharacterBody3D" groups=["Player"]]
 platform_floor_layers = 3
@@ -1487,3 +1492,29 @@ grow_vertical = 2
 color = Color(1, 1, 1, 0.39215687)
 script = ExtResource("36_1gbpw")
 player = NodePath("..")
+
+[node name="InteractManager" type="Node3D" parent="."]
+script = ExtResource("37_1gbpw")
+
+[node name="PlayerFocusCast" type="ShapeCast3D" parent="InteractManager"]
+editor_description = "Этот шейпкаст служит для обнаружения интерактивных обьектов в фокусе перед игроком по группе \"Interactable\" и по слою \"Interactable\"
+"
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.21520996, 2.1754112)
+shape = SubResource("CapsuleShape3D_0y6io")
+target_position = Vector3(0, 0, 0)
+collision_mask = 512
+collide_with_areas = true
+debug_shape_custom_color = Color(12.606373, 18.892157, 0, 1)
+
+[node name="Label" type="Label" parent="InteractManager"]
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 10.0
+offset_top = 83.0
+offset_right = 267.0
+offset_bottom = 210.0
+grow_vertical = 2
+
+[node name="PickupSlot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1)

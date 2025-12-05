@@ -1,6 +1,8 @@
 # InputManager.gd
 extends Node3D
 
+class_name InputManager
+
 # === СИГНАЛЫ ===
 signal status_camera_toggled(status_is_active: bool)
 signal menu_pause_toggled(mp_is_active: bool)
@@ -101,6 +103,10 @@ func _physics_process(delta: float) -> void:
 	
 	var can_control_movement = current_ui_state == UIState.GAME
 	
+	if can_control_movement:
+		_handle_interact_action()
+	
+	
 	if can_control_movement and player_node.is_movement_enabled():
 		_handle_right_click(delta)
 		_handle_left_click()
@@ -117,6 +123,13 @@ func _physics_process(delta: float) -> void:
 # ============================================
 # ХОТКЕИ
 # ============================================
+
+func _handle_interact_action() -> void:
+	if Input.is_action_just_pressed("Interact"):
+		# Получаем InteractManager из player_node
+		var interact_manager = player_node.get_node("InteractManager")
+		if interact_manager and interact_manager.has_method("try_interact"):
+			interact_manager.try_interact()
 
 func _handle_scanner_toggle() -> void:
 	# Работает только в состоянии GAME
