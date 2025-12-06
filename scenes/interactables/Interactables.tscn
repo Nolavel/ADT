@@ -1,6 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://rycgrnb7n7wu"]
+[gd_scene load_steps=9 format=3 uid="uid://rycgrnb7n7wu"]
 
 [ext_resource type="Script" uid="uid://crb77033gqmom" path="res://scripts/gdscript/Interactables/Interactables.gd" id="1_kqh40"]
+[ext_resource type="Script" uid="uid://bmjsijadfn8ws" path="res://scripts/gdscript/Interactables/InteractiveVisualIndicatorgd.gd" id="2_5ye4m"]
+[ext_resource type="Texture2D" uid="uid://3rourbdq1gwo" path="res://assets/icons/icon_interactive.png" id="2_w618b"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_kqh40"]
 
@@ -38,3 +40,7 @@ collision_mask = 512
 
 [node name="Collision" type="CollisionShape3D" parent="Area"]
 shape = SubResource("BoxShape3D_w618b")
+
+[node name="InteractiveVisualIndicator" type="Node3D" parent="."]
+script = ExtResource("2_5ye4m")
+indicator_sprite_texture = ExtResource("2_w618b")

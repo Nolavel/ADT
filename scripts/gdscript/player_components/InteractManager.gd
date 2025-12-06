@@ -29,6 +29,7 @@ class_name InteractManager
 ## через него видем какой обьект в фокусе, name, его возможности, количество
 
 var current_interactable: InteractableObject = null
+var previous_interactable: InteractableObject = null ## Для отслеживания смены объекта
 var carried_item: InteractableObject = null
 var closest_distance: float = INF
 var detected_count: int = 0
@@ -52,11 +53,11 @@ func _physics_process(_delta: float) -> void:
 	update_debug_label()
 	
 func detect_interactable() -> void:
-	current_interactable = null
+	var new_interactable: InteractableObject = null
 	closest_distance = INF
 	detected_count = 0
 	
-	## collider
+	## Обнаружение коллайдеров
 	if player_focus_cast.is_colliding():
 		var collision_count = player_focus_cast.get_collision_count()
 		
@@ -64,7 +65,7 @@ func detect_interactable() -> void:
 			var collider = player_focus_cast.get_collider(i)
 			var potential_item: InteractableObject = null
 			
-			## 1. Если нашли сам InteractableObject (т.к. он теперь RigidBody)
+			## 1. Если нашли сам InteractableObject (RigidBody)
 			if collider is InteractableObject:
 				potential_item = collider
 			
@@ -74,7 +75,7 @@ func detect_interactable() -> void:
 					potential_item = collider.get_parent()
 			
 			if potential_item:
-				## ⚠️ ВАЖНО: Игнорируем объект, который уже в руках! 
+				## ⚠️ Игнорируем объект, который уже в руках
 				if potential_item == carried_item:
 					continue
 				
@@ -83,7 +84,19 @@ func detect_interactable() -> void:
 				
 				if distance < closest_distance:
 					closest_distance = distance
-					current_interactable = potential_item
+					new_interactable = potential_item
+	
+	## Обработка смены объекта в фокусе
+	if new_interactable != current_interactable:
+		## Уведомляем старый объект, что он больше не в фокусе
+		if current_interactable and current_interactable != carried_item:
+			current_interactable.on_lost_by_player()
+		
+		## Уведомляем новый объект, что он обнаружен
+		if new_interactable:
+			new_interactable.on_detected_by_player()
+		
+		current_interactable = new_interactable
 
 func update_debug_label() -> void:
 	if not debug_label:
@@ -165,6 +178,9 @@ func _pickup_item(item: InteractableObject) -> void:
 	
 	carried_item = item
 	
+	## даем знать item, что он подобран
+	item.on_picked_up()
+	
 	## 1. Отключаем физику (теперь это сам item)
 	item.freeze = true
 	
@@ -198,6 +214,8 @@ func _drop_item() -> void:
 	
 	var item = carried_item
 	carried_item = null
+	
+	item.on_dropped()
 	
 	## Отцепляем от игрока
 	item.reparent(get_tree().current_scene)
