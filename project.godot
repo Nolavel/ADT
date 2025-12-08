@@ -40,9 +40,9 @@ folder_colors={
 [global_group]
 
 Player=""
-ground="Cлой для передвижения игрока"
 wall=""
 interactables="Для интерактивный обьектов"
+floor="Cлой для передвижения игрока"
 
 [gui]
 
@@ -183,7 +183,7 @@ Interact={
 
 [layer_names]
 
-3d_physics/layer_2="ground"
+3d_physics/layer_2="floor"
 3d_physics/layer_3="wall"
 3d_physics/layer_4="PhysicsObjects"
 3d_physics/layer_10="Interactables"

@@ -1,9 +1,7 @@
 extends MeshInstance3D
 ## ЛИФТ
 
-## ВНИМАНИЕ - КНОПКА ДЭКА А СТОИТ В DISABLED (ДЛЯ DEMO НЕ НУЖЕН ДЭК А)
-
-@export var current_deck: String = "Deck-C"
+@export var current_deck: String = "Deck-B"
 @export var move_speed: float = 5.0 # скорость движения в единицах/сек
 @export var door_speed: float = 2.0
 @export var slowdown_distance: float = 1.5 # расстояние для начала замедления
@@ -14,19 +12,16 @@ extends MeshInstance3D
 @onready var lift_ui = $"../../WIDGETS/LiftUI"
 @onready var btn_deck_a = lift_ui.get_node("VBoxContainer/DECK_A")
 @onready var btn_deck_b = lift_ui.get_node("VBoxContainer/DECK_B")
-@onready var btn_deck_c = lift_ui.get_node("VBoxContainer/DECK_C")
 @onready var btn_out = lift_ui.get_node("VBoxContainer/OUT")
 
 @onready var mesh_door = $LIFT_DOOR
 
-# Три зоны вызова лифта (по одной на каждом этаже)
+# Две зоны вызова лифта (по одной на каждом этаже)
 @export var area_call_deck_a: Area3D
 @export var area_call_deck_b: Area3D
-@export var area_call_deck_c: Area3D
 
 @export var anima_shaft_door_deck_a: AnimationPlayer
 @export var anima_shaft_door_deck_b: AnimationPlayer
-@export var anima_shaft_door_deck_c: AnimationPlayer
 
 var lift_mesh := self
 var target_height: float = 0.0
@@ -44,9 +39,8 @@ var can_be_called_away: bool = true # можно ли увезти лифт с �
 var player_near_lift: bool = false # игрок рядом с лифтом (в любой зоне)
 
 @export var deck_positions = {
-	"Deck-A": 20.0,
-	"Deck-B": 10.0,
-	"Deck-C": -0.0
+	"Deck-A": -57.3,
+	"Deck-B": -65.3
 }
 
 var want_open_door: bool = false
@@ -62,7 +56,6 @@ func _ready() -> void:
 	
 	btn_deck_a.pressed.connect(_move_to_deck.bind("Deck-A"))
 	btn_deck_b.pressed.connect(_move_to_deck.bind("Deck-B"))
-	btn_deck_c.pressed.connect(_move_to_deck.bind("Deck-C"))
 	
 	btn_out.pressed.connect(_on_out_pressed)
 	
@@ -75,10 +68,15 @@ func _ready() -> void:
 	area_call_deck_b.body_entered.connect(_on_call_zone_entered.bind("Deck-B"))
 	area_call_deck_b.body_exited.connect(_on_call_zone_exited)
 	
-	area_call_deck_c.body_entered.connect(_on_call_zone_entered.bind("Deck-C"))
-	area_call_deck_c.body_exited.connect(_on_call_zone_exited)
+	# Определяем текущую позицию лифта по его высоте
+	await get_tree().process_frame
+	current_deck = _get_deck_by_height(lift_mesh.global_position.y)
+	print("🛗 Лифт изначально находится на: ", current_deck, " (высота: ", lift_mesh.global_position.y, ")")
 	
 	_update_ui()
+	
+	# Проверяем после загрузки сцены, есть ли игрок в зоне вызова
+	_check_initial_player_in_call_zones()
 
 func _on_out_pressed():
 	_open_door_lift()
@@ -135,7 +133,6 @@ func _on_call_zone_entered(body, deck_name: String):
 			_open_door_lift()
 
 
-
 func _on_call_zone_exited(body):
 	if body.name == "Player":
 		var previous_zone = player_current_zone_deck
@@ -172,10 +169,7 @@ func _open_door_lift():
 			anima_shaft_door_deck_a.play("open")
 		"Deck-B":
 			anima_shaft_door_deck_b.play("open")
-		"Deck-C":
-			anima_shaft_door_deck_c.play("open")
-	
-	
+
 
 func _close_door_lift():
 	if door_moving:
@@ -195,26 +189,18 @@ func _close_door_lift():
 			anima_shaft_door_deck_a.play("close")
 		"Deck-B":
 			anima_shaft_door_deck_b.play("close")
-		"Deck-C":
-			anima_shaft_door_deck_c.play("close")
 			
 	check_should_show_out_button()
 
 func _update_ui():
 	btn_deck_a.visible = false
 	btn_deck_b.visible = false
-	btn_deck_c.visible = false
 	
 	match current_deck:
 		"Deck-A":
 			btn_deck_b.visible = true
-			btn_deck_c.visible = true
 		"Deck-B":
 			btn_deck_a.visible = true
-			btn_deck_c.visible = true
-		"Deck-C":
-			btn_deck_a.visible = true
-			btn_deck_b.visible = true
 
 
 func _call_lift_to_deck(to_deck: String):
@@ -337,3 +323,43 @@ func check_should_close_door():
 func _wait_until_door_closed() -> void:
 	while door_moving:
 		await get_tree().process_frame
+
+func _check_initial_player_in_call_zones():
+	"""Проверяет при старте игры, находится ли игрок в зоне вызова лифта"""
+	var player = get_tree().get_first_node_in_group("player")
+	if not player:
+		player = get_node_or_null("../../Player")
+	
+	if not player:
+		print("⚠️ Игрок не найден при инициализации лифта")
+		return
+	
+	# Проверяем Deck A
+	var overlapping_a = area_call_deck_a.get_overlapping_bodies()
+	if player in overlapping_a:
+		print("✅ Игрок изначально в зоне Deck-A, вызываем лифт")
+		player_in_call_zone = true
+		player_current_zone_deck = "Deck-A"
+		want_open_door = true
+		
+		if current_deck == "Deck-A":
+			_open_door_lift()
+		else:
+			_call_lift_to_deck("Deck-A")
+		return
+	
+	# Проверяем Deck B
+	var overlapping_b = area_call_deck_b.get_overlapping_bodies()
+	if player in overlapping_b:
+		print("✅ Игрок изначально в зоне Deck-B, вызываем лифт")
+		player_in_call_zone = true
+		player_current_zone_deck = "Deck-B"
+		want_open_door = true
+		
+		if current_deck == "Deck-B":
+			_open_door_lift()
+		else:
+			_call_lift_to_deck("Deck-B")
+		return
+	
+	print("ℹ️ Игрок не в зоне вызова лифта при старте")

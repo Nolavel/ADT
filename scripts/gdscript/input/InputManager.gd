@@ -360,8 +360,8 @@ func _set_target_from_raycast() -> void:
 	if result:
 		var collider = result.collider
 		
-		## Валидная поверхность (группа ground)
-		if collider.is_in_group("ground"):
+		## Валидная поверхность (группа floor)
+		if collider.is_in_group("floor"):
 			player_node.move_to_position(result.position)
 			
 			## Показываем индикатор (зелёный/оранжевый)
@@ -369,7 +369,7 @@ func _set_target_from_raycast() -> void:
 				target_indicator.show_at_position(result.position, is_running)
 		else:
 			## Невалидная поверхность
-			_handle_invalid_click(collider, "не в группе 'ground'")
+			_handle_invalid_click(collider, "не в группе 'floor'")
 	else:
 		## Клик в пустоту
 		_handle_invalid_click(null, "не является ground")

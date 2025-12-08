@@ -1,7 +1,8 @@
-[gd_scene load_steps=13 format=3 uid="uid://6dopa316y1fc"]
+[gd_scene load_steps=14 format=3 uid="uid://6dopa316y1fc"]
 
 [ext_resource type="Script" uid="uid://b1eul5hgx5mk6" path="res://scripts/gdscript/cameras/camera_follow.gd" id="1_rynbu"]
 [ext_resource type="Shader" uid="uid://cbbql6fcxtel8" path="res://scripts/shader/hud3d_panel.gdshader" id="2_q5wn2"]
+[ext_resource type="PackedScene" uid="uid://2knmr0i5y4gv" path="res://assets/sci-fi spaceship 3d model_2.glb" id="3_752k3"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_rynbu"]
 font_color = Color(0, 0, 0, 1)
@@ -187,3 +188,6 @@ transform = Transform3D(1, 0, 0, 0, -0.06334782, 0.9979916, 0, -0.9979916, -0.06
 pixel_size = 0.001
 text = "актив
 слот"
+
+[node name="AuxScene" parent="." instance=ExtResource("3_752k3")]
+transform = Transform3D(0.018443964, 1.2863939e-09, -0.4996597, -0.28246382, 0.41243833, -0.010426602, 0.41215762, 0.28265628, 0.015213996, 0.0019836426, -0.7087097, -1.6557007)

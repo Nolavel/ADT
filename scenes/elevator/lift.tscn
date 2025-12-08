@@ -63,7 +63,7 @@ transform = Transform3D(1.25, 0, 0, 0, -3.278354e-08, -0.55, 0, 0.75, -2.4041263
 mesh = SubResource("ArrayMesh_le4uo")
 script = ExtResource("1_bvuwb")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="LIFT" groups=["ground"]]
+[node name="StaticBody3D" type="StaticBody3D" parent="LIFT" groups=["floor"]]
 collision_layer = 3
 collision_mask = 3
 
