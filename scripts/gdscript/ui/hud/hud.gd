@@ -12,7 +12,6 @@ extends CanvasLayer
 @export var btn_rotate_right: Button
 
 # === UI ЭЛЕМЕНТЫ ===
-@onready var face_player = $Face_player
 @onready var tabs_interface = $TABS_INTERFACE
 @onready var current_tabs = $TABS_INTERFACE/lbl_current_tabs
 
@@ -249,7 +248,6 @@ func _update_ui() -> void:
 	# Если активна Menu Pause - скрываем всё кроме неё
 	if menu_pause_active:
 		_animate_hide(btn_hud)
-		_animate_hide(face_player)
 		_animate_hide(tabs_interface)
 		# 🔥 ВАЖНО: Принудительно скрываем rotate кнопки
 		btn_rotate_left.visible = false
@@ -261,7 +259,6 @@ func _update_ui() -> void:
 		UIState.GAME:
 			_animate_hide(current_tabs)
 			_animate_show(btn_hud)
-			_animate_show(face_player)
 			_animate_hide(tabs_interface)
 			# 🔥 ВАЖНО: Принудительно скрываем rotate в GAME
 			btn_rotate_left.visible = false
@@ -270,7 +267,6 @@ func _update_ui() -> void:
 		
 		UIState.STATUS:
 			_animate_hide(btn_hud)
-			_animate_hide(face_player)
 			_animate_show(tabs_interface)
 			_animate_show(current_tabs)
 			_update_tab_buttons_disabled(btn_status)
@@ -283,7 +279,6 @@ func _update_ui() -> void:
 		
 		UIState.INVENTORY:
 			_animate_hide(btn_hud)
-			_animate_hide(face_player)
 			_animate_show(tabs_interface)
 			_update_tab_buttons_disabled(btn_inventory)
 			$TABS_INTERFACE/BoxBtnsConfigurate/anima_btn_highlighting.play("btn_invetory_activated")
@@ -294,7 +289,6 @@ func _update_ui() -> void:
 		
 		UIState.CRAFTING:
 			_animate_hide(btn_hud)
-			_animate_hide(face_player)
 			_animate_show(tabs_interface)
 			_animate_show(current_tabs)
 			_update_tab_buttons_disabled(btn_crafting)
@@ -305,7 +299,6 @@ func _update_ui() -> void:
 			current_tabs.text = "CRAFTING"
 		UIState.MAP:
 			_animate_hide(btn_hud)
-			_animate_hide(face_player)
 			_animate_show(tabs_interface)
 			_animate_show(current_tabs)
 			_update_tab_buttons_disabled(btn_map)

@@ -39,7 +39,7 @@ func open_capsule() -> void:
 	if is_open:
 		return
 	
-	animation_player.play("open_cryopod")
+	animation_player.play("unlock")
 	await animation_player.animation_finished
 	is_open = true
 	capsule_state_changed.emit(is_open, capsule_id)
@@ -49,7 +49,7 @@ func close_capsule() -> void:
 	if not is_open:
 		return
 	
-	animation_player.play_backwards("open_cryopod")
+	animation_player.play_backwards("unlock")
 	await animation_player.animation_finished
 	is_open = false
 	capsule_state_changed.emit(is_open, capsule_id)

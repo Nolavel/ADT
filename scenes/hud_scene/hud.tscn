@@ -1,9 +1,8 @@
-[gd_scene load_steps=32 format=3 uid="uid://k7hh8asqtpmd"]
+[gd_scene load_steps=31 format=3 uid="uid://k7hh8asqtpmd"]
 
 [ext_resource type="Script" uid="uid://cydaxgiijv43o" path="res://scripts/gdscript/ui/hud/hud.gd" id="1_2o185"]
 [ext_resource type="Shader" uid="uid://cij1eus0quiqq" path="res://scripts/shader/hud_bg_panel.gdshader" id="4_44x3s"]
 [ext_resource type="Script" uid="uid://gy8fxnutovxa" path="res://scripts/gdscript/ui/hud/hub_btn.gd" id="4_khysn"]
-[ext_resource type="Texture2D" uid="uid://c8mktkkqmid5k" path="res://assets/textures/hud/bg_face_2.png" id="5_khysn"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_khysn"]
 shader = ExtResource("4_44x3s")
@@ -578,30 +577,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 text = "S"
-
-[node name="Face_player" type="Control" parent="."]
-visible = false
-layout_mode = 3
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -75.0
-offset_top = -180.0
-offset_right = 75.000244
-offset_bottom = -29.99939
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="bg_face" type="TextureRect" parent="Face_player"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = ExtResource("5_khysn")
 
 [node name="TABS_INTERFACE" type="Control" parent="."]
 layout_mode = 3
