@@ -1,9 +1,9 @@
 [gd_scene load_steps=22 format=4 uid="uid://cnrmii8rji57j"]
 
-[ext_resource type="PackedScene" uid="uid://sxjhilc6nidu" path="res://meshes/bulkhead_door/Bulkhead_Door.glb" id="1_avikb"]
+[ext_resource type="PackedScene" uid="uid://sxjhilc6nidu" path="res://meshes/bulkhead_door_01/Bulkhead_Door.glb" id="1_avikb"]
 [ext_resource type="Script" uid="uid://b1tum62b2xc08" path="res://scripts/gdscript/bulkhead_door/bulkhead_door.gd" id="2_2u74c"]
-[ext_resource type="Texture2D" uid="uid://fxe1eqpyudau" path="res://meshes/bulkhead_door/Bulkhead_Door_Щлюз_DefaultMaterial_BaseColor.png" id="2_aik8w"]
-[ext_resource type="Texture2D" uid="uid://dq1qnn7lpfl6o" path="res://meshes/bulkhead_door/Bulkhead_Door_Щлюз_DefaultMaterial_Metallic-Щлюз_DefaultMaterial_Roughness.png" id="3_2u74c"]
+[ext_resource type="Texture2D" uid="uid://fxe1eqpyudau" path="res://meshes/bulkhead_door_01/Bulkhead_Door_Щлюз_DefaultMaterial_BaseColor.png" id="2_aik8w"]
+[ext_resource type="Texture2D" uid="uid://dq1qnn7lpfl6o" path="res://meshes/bulkhead_door_01/Bulkhead_Door_Щлюз_DefaultMaterial_Metallic-Щлюз_DefaultMaterial_Roughness.png" id="3_2u74c"]
 [ext_resource type="AudioStream" uid="uid://dbd5qdfcsx54x" path="res://assets/sound/foley_sounds/Bulkhead_Door.mp3" id="5_5r3p8"]
 [ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="6_xb7bm"]
 [ext_resource type="Texture2D" uid="uid://b3up1bvrp8r6w" path="res://assets/textures/pins/pin_1.png" id="7_n8wu6"]

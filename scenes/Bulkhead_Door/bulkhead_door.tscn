@@ -1,6 +1,6 @@
 [gd_scene load_steps=19 format=4 uid="uid://r36j7vk5xq3e"]
 
-[ext_resource type="PackedScene" uid="uid://bwfgcxb85m7c" path="res://meshes/bulkhead_door/Bulkhead_Door_0glb.glb" id="1_frk5r"]
+[ext_resource type="PackedScene" uid="uid://bwfgcxb85m7c" path="res://meshes/bulkhead_door_01/Bulkhead_Door_0glb.glb" id="1_frk5r"]
 [ext_resource type="Script" uid="uid://b1tum62b2xc08" path="res://scripts/gdscript/bulkhead_door/bulkhead_door.gd" id="2_0sjgx"]
 [ext_resource type="AudioStream" uid="uid://dbd5qdfcsx54x" path="res://assets/sound/foley_sounds/Bulkhead_Door.mp3" id="3_edfc6"]
 [ext_resource type="Texture2D" uid="uid://blveqmpt7st8w" path="res://assets/textures/develop_signs/develop.png" id="3_l5wfj"]

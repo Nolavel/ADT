@@ -35,6 +35,10 @@ signal fog_effect_toggled(is_paused: bool)
 ## --- Константы ---
 const GROUND_LAYER = 2
 
+var interact_button_pressed_time: float = 0.0
+var interact_button_held: bool = false
+const INTERACT_HOLD_TIME: float = 0.5  # 0.5 секунды
+
 ## --- Состояние ввода ---
 var right_click_duration: float = 0.0
 var is_running: bool = false
@@ -138,13 +142,28 @@ func _physics_process(delta: float) -> void:
 ## ХОТКЕИ
 ## ============================================
 
-## Обработка клавиши взаимодействия (E)
+## Обработка клавиши взаимодействия (E) или ЛКМ
 func _handle_interact_action() -> void:
-	if Input.is_action_just_pressed("Interact"):
-		## Получаем InteractManager из игрока
-		var interact_manager = player_node.get_node("InteractManager")
-		if interact_manager and interact_manager.has_method("try_interact"):
-			interact_manager.try_interact()
+	## Проверяем нажатие ЛКМ
+	if Input.is_action_just_pressed("Mouse_Left_Button"):
+		interact_button_pressed_time = 0.0
+		interact_button_held = true
+	
+	## удержание ЛКМ
+	elif Input.is_action_pressed("Mouse_Left_Button") and interact_button_held:
+		interact_button_pressed_time += get_process_delta_time()
+		
+		## Если удержано 0.5 сек — выполняем интеракт
+		if interact_button_pressed_time >= INTERACT_HOLD_TIME:
+			var interact_manager = player_node.get_node("InteractManager")
+			if interact_manager and interact_manager.has_method("try_interact"):
+				interact_manager.try_interact()
+				interact_button_held = false
+	
+	# Проверяем отпускание ЛКМ
+	elif Input.is_action_just_released("Mouse_Left_Button") and interact_button_held:
+		interact_button_held = false
+		interact_button_pressed_time = 0.0
 
 ## Переключение сканера местности (S)
 func _handle_scanner_toggle() -> void:

@@ -1,11 +1,13 @@
-[gd_scene load_steps=57 format=4 uid="uid://bfy1a5q8xdayr"]
+[gd_scene load_steps=59 format=4 uid="uid://bfy1a5q8xdayr"]
 
 [ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="1_kpfiv"]
 [ext_resource type="Texture2D" uid="uid://by6jx2q3b4m12" path="res://assets/textures/prototype_tex_kenney/PNG/Orange/texture_03.png" id="2_te1o0"]
 [ext_resource type="PackedScene" uid="uid://blm32ed47u8n5" path="res://scenes/starship_scene/cryopod_prok.tscn" id="4_0fsul"]
 [ext_resource type="PackedScene" uid="uid://dw6x145ypk40f" path="res://scenes/starship_scene/cryo_bed_silo.tscn" id="4_ro80n"]
+[ext_resource type="PackedScene" uid="uid://cwpodygnbmaok" path="res://scenes/ss_floor_00/sc_floor_00.tscn" id="7_al4b0"]
 [ext_resource type="Texture2D" uid="uid://b1bnq7ab0888o" path="res://assets/textures/pins/pin_09.png" id="8_kh1d7"]
 [ext_resource type="PackedScene" uid="uid://c1lajuqwq28x6" path="res://scenes/lamp/lamp.tscn" id="10_nfjwp"]
+[ext_resource type="PackedScene" uid="uid://cdlj7d0b48f5k" path="res://scenes/Bulkhead_Door/bulkhead_door_2.tscn" id="11_fkogg"]
 [ext_resource type="Texture2D" uid="uid://tyclr3xsg2g8" path="res://assets/textures/develop_signs/test_button.png" id="19_beauj"]
 [ext_resource type="Texture2D" uid="uid://c0qp2523u4vty" path="res://assets/textures/pins/pin_04.png" id="20_c3wfb"]
 [ext_resource type="PackedScene" uid="uid://cnrmii8rji57j" path="res://scenes/Bulkhead_Door/bulkhead_door_0.tscn" id="21_vk1tk"]
@@ -2260,7 +2262,7 @@ albedo_texture = ExtResource("2_te1o0")
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_blvtq"]
 points = PackedVector3Array(5.077377, 0.13809523, 4.015873, -5.077377, -0.17936507, -4.079365, -5.077377, 0.13809523, -4.079365, 5.077377, -0.17936507, -4.079365, -5.077377, -0.17936507, 4.015873, -5.077377, 0.13809523, 4.015873, 5.077377, 0.13809523, -4.079365, 5.077377, -0.17936507, 4.015873)
 
-[node name="DECK_B" type="Node3D"]
+[node name="DECK_A" type="Node3D"]
 
 [node name="Bridge" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 85.86181)
@@ -2571,12 +2573,6 @@ shape = SubResource("ConvexPolygonShape3D_6lkmi")
 [node name="Bulkhead_Door" parent="." instance=ExtResource("21_vk1tk")]
 transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, -0.015, 2.8827085, 191.89435)
 
-[node name="Bulkhead_Door2" parent="." instance=ExtResource("21_vk1tk")]
-transform = Transform3D(-3.0597977e-08, 0, 0.7000001, 0, 0.70000005, 0, -0.7000001, 0, -3.0597977e-08, -3.8162763, 3, 172.65582)
-
-[node name="Bulkhead_Door3" parent="." instance=ExtResource("21_vk1tk")]
-transform = Transform3D(-3.0597977e-08, 0, 0.7000001, 0, 0.70000005, 0, -0.7000001, 0, -3.0597977e-08, 3.9544606, 3, 172.61977)
-
 [node name="Bulkhead_Door4" parent="." instance=ExtResource("21_vk1tk")]
 transform = Transform3D(0.7000001, 0, 0, 0, 0.70000005, 0, 0, 0, 0.7000001, 0.122, 3, 155.40149)
 
@@ -2748,6 +2744,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.715187, 0, 147.27806)
 
 [node name="MeshChamberAIRoomFloor" type="MeshInstance3D" parent="AI Unkle Room"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.732, 1.049, 0.844)
+visible = false
 mesh = SubResource("BoxMesh_2ujut")
 surface_material_override/0 = SubResource("StandardMaterial3D_viqxy")
 
@@ -2791,6 +2788,22 @@ visible = false
 size = Vector3(3.2832298, 4.6862245, 0.1370697)
 texture_albedo = ExtResource("8_kh1d7")
 
+[node name="sc_floor_00" parent="AI Unkle Room" instance=ExtResource("7_al4b0")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, -3.085638, 1.049, 0.84399414)
+
+[node name="sc_floor_01" parent="AI Unkle Room" instance=ExtResource("7_al4b0")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 2.0574894, 1.049, 0.84399414)
+
 [node name="Lamp" parent="." instance=ExtResource("10_nfjwp")]
-transform = Transform3D(-8.742278e-08, 0, -2, 0, 2, 0, 2, 0, -8.742278e-08, 14.284502, 2.159411, 170.65312)
+transform = Transform3D(-2, 0, -1.7484555e-07, 0, 2, 0, 1.7484555e-07, 0, -2, 3.936773, 4.4000626, 172.6744)
+mode = 2
+
+[node name="Bulkhead_Door_02" parent="." instance=ExtResource("11_fkogg")]
+transform = Transform3D(-8.742278e-08, 0, -2, 0, 2, 0, 2, 0, -8.742278e-08, 4.4000363, 2.837519, 172.5006)
+
+[node name="Lamp2" parent="." instance=ExtResource("10_nfjwp")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -3.2498636, 4.4000626, 172.58466)
 mode = 3
+
+[node name="Bulkhead_Door_03" parent="." instance=ExtResource("11_fkogg")]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, -3.7446265, 2.837519, 172.59033)

@@ -53,7 +53,7 @@ func _physics_process(_delta: float) -> void:
 	update_debug_label()
 	
 func detect_interactable() -> void:
-	var new_interactable: InteractableObject = null
+	var new_interactable: InteractableObject = null  # ✅ Всегда null по умолчанию
 	closest_distance = INF
 	detected_count = 0
 	
@@ -86,15 +86,18 @@ func detect_interactable() -> void:
 					closest_distance = distance
 					new_interactable = potential_item
 	
+	## 🔥 КРИТИЧНО! Этот блок теперь ВСЕГДА выполняется, даже если is_colliding() == false
 	## Обработка смены объекта в фокусе
 	if new_interactable != current_interactable:
 		## Уведомляем старый объект, что он больше не в фокусе
 		if current_interactable and current_interactable != carried_item:
 			current_interactable.on_lost_by_player()
+			print("🚫 Объект потерян из фокуса: ", current_interactable.name_interactable_object)
 		
 		## Уведомляем новый объект, что он обнаружен
 		if new_interactable:
 			new_interactable.on_detected_by_player()
+			print("👁️ Объект обнаружен: ", new_interactable.name_interactable_object)
 		
 		current_interactable = new_interactable
 

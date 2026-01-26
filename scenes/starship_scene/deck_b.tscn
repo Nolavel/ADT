@@ -717,26 +717,26 @@ albedo_texture = ExtResource("1_ctven")
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_fllmx"]
 points = PackedVector3Array(5.077377, 0.13809523, 5.077377, -5.077377, -0.17936507, -5.077377, -5.077377, 0.13809523, -5.077377, 5.077377, -0.17936507, -5.077377, -5.077377, -0.17936507, 5.077377, -5.077377, 0.13809523, 5.077377, 5.077377, 0.13809523, -5.077377, 5.077377, -0.17936507, 5.077377)
 
-[node name="DECK_C" type="Node3D"]
+[node name="DECK_B" type="Node3D"]
 
-[node name="Lobby C" type="Node3D" parent="."]
+[node name="Lobby B" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -66.115585, 102.86461)
 
-[node name="MeshLiftLobbyFloor" type="MeshInstance3D" parent="Lobby C"]
+[node name="MeshLiftLobbyFloor" type="MeshInstance3D" parent="Lobby B"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.909, 96.608)
 mesh = SubResource("BoxMesh_jvcv2")
 surface_material_override/0 = SubResource("StandardMaterial3D_8v4a4")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Lobby C/MeshLiftLobbyFloor" groups=["floor"]]
+[node name="StaticBody3D" type="StaticBody3D" parent="Lobby B/MeshLiftLobbyFloor" groups=["floor"]]
 collision_layer = 3
 collision_mask = 3
 physics_material_override = SubResource("PhysicsMaterial_jok53")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lobby C/MeshLiftLobbyFloor/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lobby B/MeshLiftLobbyFloor/StaticBody3D"]
 shape = SubResource("ConvexPolygonShape3D_t5jqd")
 debug_color = Color(0, 11.618606, 13.50434, 1)
 
-[node name="lbl_Hold" type="Label3D" parent="Lobby C"]
+[node name="lbl_Hold" type="Label3D" parent="Lobby B"]
 transform = Transform3D(1.0000002, 0, 0, 0, 1.0000001, 0, 0, 0, 1, 3.4298756, 4.0878143, 88.23978)
 pixel_size = 0.015
 alpha_antialiasing_mode = 1
@@ -747,27 +747,27 @@ font = SubResource("FontFile_5qoga")
 font_size = 26
 outline_size = 0
 
-[node name="Decal" type="Decal" parent="Lobby C/lbl_Hold"]
+[node name="Decal" type="Decal" parent="Lobby B/lbl_Hold"]
 transform = Transform3D(1, 0, 0, 0, 1, 8.3518705e-23, 0, 8.3518724e-23, 1, 0.05439496, 0.011067867, -0.05000305)
 size = Vector3(4.525415, 0.93636817, 1.539)
 texture_albedo = ExtResource("4_5tjto")
 texture_emission = ExtResource("4_5tjto")
 emission_energy = 0.1
 
-[node name="Decal2" type="Decal" parent="Lobby C/lbl_Hold"]
+[node name="Decal2" type="Decal" parent="Lobby B/lbl_Hold"]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 8.3518705e-23, -1.3576237e-29, 0, 1, -0.0100131035, 0.028127193, -0.05000305)
 size = Vector3(1.4435194, 2.7355347, 1.1842041)
 texture_albedo = ExtResource("4_5tjto")
 texture_emission = ExtResource("4_5tjto")
 emission_energy = 0.55
 
-[node name="Decal3" type="Decal" parent="Lobby C/lbl_Hold"]
+[node name="Decal3" type="Decal" parent="Lobby B/lbl_Hold"]
 transform = Transform3D(0.011309458, -0.99993604, -4.3708596e-08, 0.99993604, 0.011309458, -4.321704e-08, 4.3709527e-08, -4.321797e-08, 1, 0.015594482, -0.05447769, -0.029743195)
 visible = false
 size = Vector3(3.2832298, 4.6862245, 0.1370697)
 texture_albedo = ExtResource("5_87qho")
 
-[node name="lbl_deck_b" type="Label3D" parent="Lobby C"]
+[node name="lbl_deck_b" type="Label3D" parent="Lobby B"]
 transform = Transform3D(1.0000002, 0, 0, 0, 1.0000001, 0, 0, 0, 0.9999999, 0.054, 5.5565033, 87.99042)
 pixel_size = 0.0075
 render_priority = 2
@@ -778,13 +778,13 @@ font = ExtResource("2_8v4a4")
 font_size = 40
 outline_size = 0
 
-[node name="Decal" type="Decal" parent="Lobby C/lbl_deck_b"]
+[node name="Decal" type="Decal" parent="Lobby B/lbl_deck_b"]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.0036860593, -0.05076933, 0.029312134)
 size = Vector3(0.34357905, 1.4920391, 1.6976162)
 texture_albedo = ExtResource("7_tf3ng")
 texture_emission = ExtResource("7_tf3ng")
 
-[node name="Decal2" type="Decal" parent="Lobby C/lbl_deck_b"]
+[node name="Decal2" type="Decal" parent="Lobby B/lbl_deck_b"]
 transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0.010491502, 0.28533888, 0.029312134)
 size = Vector3(0.40898418, 1.5024761, 1.6976162)
 texture_albedo = ExtResource("7_tf3ng")

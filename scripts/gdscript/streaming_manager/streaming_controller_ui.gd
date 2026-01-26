@@ -7,7 +7,7 @@ class_name StreamingControllerUI
 
 @onready var lbl_deck_a: Label = $Lbl_DECK_A
 @onready var lbl_deck_b: Label = $Lbl_DECK_B
-@onready var lbl_deck_c: Label = $Lbl_DECK_C
+@onready var lbl_eva_zone: Label = $Lbl_EVA_Zone
 @onready var lbl_chunk_sector: Label = $Lbl_ChunkSector
 @onready var img_deck_current: TextureRect = $img_Pin_Deck
 
@@ -18,17 +18,17 @@ const POSITIONS = {
 	"DECK_A": {
 		"A": Vector2(95, -3),
 		"B": Vector2(170, -3),
-		"C": Vector2(245, -3)
+		"EVA": Vector2(245, -3)
 	},
 	"DECK_B": {
 		"A": Vector2(20, -3),
 		"B": Vector2(95, -3),
-		"C": Vector2(170, -3)
+		"EVA": Vector2(170, -3)
 	},
-	"DECK_C": {
+	"EVA_ZONE": {
 		"A": Vector2(-55, -3),
 		"B": Vector2(20, -3),
-		"C": Vector2(95, -3)
+		"EVA": Vector2(95, -3)
 	}
 }
 
@@ -451,13 +451,13 @@ func _hide_deck_labels() -> void:
 	# ВСЕ лейблы деков полностью исчезают (как раньше)
 	transition_tween.tween_property(lbl_deck_a, "modulate:a", 0.0, HIDE_DURATION)
 	transition_tween.tween_property(lbl_deck_b, "modulate:a", 0.0, HIDE_DURATION)
-	transition_tween.tween_property(lbl_deck_c, "modulate:a", 0.0, HIDE_DURATION)
+	transition_tween.tween_property(lbl_eva_zone, "modulate:a", 0.0, HIDE_DURATION)
 	transition_tween.tween_property(img_deck_current, "modulate:a", 0.0, HIDE_DURATION)
 	
 	# Проваливание вниз
 	transition_tween.tween_property(lbl_deck_a, "position:y", lbl_deck_a.position.y + 5, HIDE_DURATION)
 	transition_tween.tween_property(lbl_deck_b, "position:y", lbl_deck_b.position.y + 5, HIDE_DURATION)
-	transition_tween.tween_property(lbl_deck_c, "position:y", lbl_deck_c.position.y + 5, HIDE_DURATION)
+	transition_tween.tween_property(lbl_eva_zone, "position:y", lbl_eva_zone.position.y + 5, HIDE_DURATION)
 	transition_tween.tween_property(img_deck_current, "position:y", img_deck_current.position.y + 5, HIDE_DURATION)
 	
 	# Chunk и пин только приглушаются
@@ -486,14 +486,14 @@ func _show_deck_labels() -> void:
 	# Восстанавливаем позиции
 	transition_tween.tween_property(lbl_deck_a, "position:y", positions["A"].y, SHOW_DURATION)
 	transition_tween.tween_property(lbl_deck_b, "position:y", positions["B"].y, SHOW_DURATION)
-	transition_tween.tween_property(lbl_deck_c, "position:y", positions["C"].y, SHOW_DURATION)
+	transition_tween.tween_property(lbl_eva_zone, "position:y", positions["EVA"].y, SHOW_DURATION)
 	transition_tween.tween_property(img_deck_current, "position:y", img_deck_current.position.y - 5, SHOW_DURATION)
 	
 	# Устанавливаем альфу: активный = 1.0, неактивные = 0.7 (спящий режим 0.49)
 	var alpha_values = _get_deck_alpha_values(current_deck, false)
 	transition_tween.tween_property(lbl_deck_a, "modulate:a", alpha_values[0], SHOW_DURATION)
 	transition_tween.tween_property(lbl_deck_b, "modulate:a", alpha_values[1], SHOW_DURATION)
-	transition_tween.tween_property(lbl_deck_c, "modulate:a", alpha_values[2], SHOW_DURATION)
+	transition_tween.tween_property(lbl_eva_zone, "modulate:a", alpha_values[2], SHOW_DURATION)
 	
 	transition_tween.tween_property(lbl_chunk_sector, "modulate:a", 1.0, SHOW_DURATION)
 	transition_tween.tween_property(img_deck_current, "modulate:a", 1.0, SHOW_DURATION)
@@ -507,7 +507,7 @@ func _get_deck_alpha_values(deck_name: String, sleeping: bool = false) -> Array[
 	match deck_name:
 		"DECK_A": return [active_alpha, inactive_alpha, inactive_alpha]
 		"DECK_B": return [inactive_alpha, active_alpha, inactive_alpha]
-		"DECK_C": return [inactive_alpha, inactive_alpha, active_alpha]
+		"EVA_ZONE": return [inactive_alpha, inactive_alpha, active_alpha]
 		_: return [inactive_alpha, inactive_alpha, inactive_alpha]
 
 # ============ DECK ANIMATION ============
@@ -531,13 +531,13 @@ func _animate_to_deck(deck_name: String) -> void:
 	
 	transition_tween.tween_property(lbl_deck_a, "position", target_positions["A"], TRANSITION_DURATION)
 	transition_tween.tween_property(lbl_deck_b, "position", target_positions["B"], TRANSITION_DURATION)
-	transition_tween.tween_property(lbl_deck_c, "position", target_positions["C"], TRANSITION_DURATION)
+	transition_tween.tween_property(lbl_eva_zone, "position", target_positions["EVA"], TRANSITION_DURATION)
 	
 	_highlight_current_deck(deck_name)
 
 func _highlight_current_deck(deck_name: String) -> void:
-	var labels = [lbl_deck_a, lbl_deck_b, lbl_deck_c]
-	var deck_index = {"DECK_A": 0, "DECK_B": 1, "DECK_C": 2}.get(deck_name, 0)
+	var labels = [lbl_deck_a, lbl_deck_b, lbl_eva_zone]
+	var deck_index = {"DECK_A": 0, "DECK_B": 1, "EVA_ZONE": 2}.get(deck_name, 0)
 	
 	for i in labels.size():
 		var current_alpha = labels[i].modulate.a
@@ -605,7 +605,7 @@ func _trigger_chromatic_flash() -> void:
 	flash_tween.set_trans(Tween.TRANS_ELASTIC)
 	flash_tween.set_ease(Tween.EASE_OUT)
 	
-	var labels = [lbl_deck_a, lbl_deck_b, lbl_deck_c]
+	var labels = [lbl_deck_a, lbl_deck_b, lbl_eva_zone]
 	for label in labels:
 		var original_scale = label.scale
 		flash_tween.tween_property(label, "scale", original_scale * 1.05, 0.1)
@@ -618,7 +618,7 @@ func _trigger_hologram_flicker() -> void:
 	var flicker_tween = create_tween()
 	flicker_tween.set_parallel(true)
 	
-	var labels = [lbl_deck_a, lbl_deck_b, lbl_deck_c]
+	var labels = [lbl_deck_a, lbl_deck_b, lbl_eva_zone]
 	for label in labels:
 		var current_alpha = label.modulate.a
 		flicker_tween.tween_property(label, "modulate:a", current_alpha * 0.3, 0.05)

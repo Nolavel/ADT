@@ -96,7 +96,7 @@ stacked_outline_count = 1
 
 [sub_resource type="LabelSettings" id="LabelSettings_gtgns"]
 font = ExtResource("13_gtgns")
-font_size = 30
+font_size = 20
 stacked_outline_count = 1
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_esmo2"]
@@ -1057,14 +1057,14 @@ label_settings = SubResource("LabelSettings_83qik")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Lbl_DECK_C" type="Label" parent="WIDGETS/StreamingControllerUI"]
+[node name="Lbl_EVA_Zone" type="Label" parent="WIDGETS/StreamingControllerUI"]
 layout_mode = 0
 offset_left = 170.0
 offset_top = -3.0
 offset_right = 322.00006
 offset_bottom = 39.0
 rotation = -1.5707964
-text = "DECK C"
+text = "EVA ZONE"
 label_settings = SubResource("LabelSettings_gtgns")
 horizontal_alignment = 1
 vertical_alignment = 1
