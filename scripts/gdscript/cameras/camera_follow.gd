@@ -55,6 +55,14 @@ var follow_player_rotation: bool = false
 @export var map_pitch_deg: float = -10.0
 @export var map_transition_duration: float = 0.5
 
+@export_subgroup("VEHICLE")
+@export var vehicle_offset: Vector3 = Vector3(0, 2.5, 6.0)
+@export var vehicle_pitch_deg: float = -18.0
+@export var vehicle_transition_duration: float = 0.5
+@export var vehicle_follow_speed: float = 6.0
+
+var followed_vehicle: Node3D = null
+
 
 @export_group("Camera Effects")
 @export_subgroup("X-Ray Wall System")
@@ -76,6 +84,10 @@ var follow_player_rotation: bool = false
 @export var xray_hologram_flicker: float = 1  # 0-1
 @export var xray_edge_glow: float = 1
 @export var xray_chromatic: float = 0
+
+
+@export_subgroup("ANIMATION_PLAYER")
+@export var player_animation_player: AnimationPlayer
 
 # Переменные состояния
 var xray_viewport: SubViewport
@@ -162,7 +174,7 @@ var topdown_follow_start_yaw: float = 0.0
 var topdown_follow_target_yaw: float = 0.0
 
 # === УНИФИЦИРОВАННАЯ СИСТЕМА СОСТОЯНИЙ ===
-enum CameraState { GAME, STATUS, INVENTORY, MENU_PAUSE, MAP, INTERACT, CRAFTING }
+enum CameraState { GAME, STATUS, INVENTORY, MENU_PAUSE, MAP, INTERACT, CRAFTING, VEHICLE }
 var current_state: CameraState = CameraState.GAME
 var saved_game_transform: Transform3D
 
@@ -314,6 +326,24 @@ func _process(delta):
 			_update_status_orbit(delta)
 		if not shake_enabled_in_game_only:
 			_apply_shake(delta)
+			
+	elif current_state == CameraState.VEHICLE:
+		if followed_vehicle and not state_animating:
+			# Позиция: сзади и чуть выше машины
+			var desired_pos = followed_vehicle.global_position + \
+				followed_vehicle.global_transform.basis * vehicle_offset
+			
+			global_position = global_position.lerp(
+				desired_pos, 
+				vehicle_follow_speed * delta
+			)
+			
+			# Смотрим на машину с наклоном вниз по X
+			var look_target = followed_vehicle.global_position + Vector3(0, 0.5, 0)
+			look_at(look_target, Vector3.UP)
+			
+			# Дополнительный pitch вниз поверх look_at
+			rotation.x = deg_to_rad(vehicle_pitch_deg)
 	# СТАТИЧЕСКИЕ СОСТОЯНИЯ - камера заморожена
 	else:
 		if not state_animating:
@@ -321,6 +351,8 @@ func _process(delta):
 		if not shake_enabled_in_game_only:
 			_apply_shake(delta)
 			
+			
+	
 	_update_labels()
 
 # ============================================
@@ -444,6 +476,10 @@ func _return_to_game():
 # ОБРАБОТЧИКИ СИГНАЛОВ
 # ============================================
 func _on_status_camera_toggled(active: bool):
+	
+	if current_state == CameraState.VEHICLE:
+		return  # 🔥 Игнорируем из машины
+		
 	if active:
 		_transition_to_state(
 			CameraState.STATUS,
@@ -464,10 +500,11 @@ func _on_menu_pause_toggled(active: bool):
 		)
 		#await get_tree().create_timer(0.6).timeout
 
-		$"../Player/player_base_mesh/AnimationPlayer".play("new3/legs_idle_2")
+		if player_animation_player:
+			player_animation_player.play("new3/legs_idle_2")
 		
 	else:
-		$"../Player/player_base_mesh/AnimationPlayer".play("new4/idle")
+		player_animation_player.play("new4/idle")
 		_return_to_game()
 
 func _on_pause_menu_continue():
@@ -478,6 +515,9 @@ func _on_pause_menu_continue():
 	_return_to_game()
 
 func _on_inventory_camera_toggled(active: bool):
+	if current_state == CameraState.VEHICLE:
+		return  # 🔥 Игнорируем из машины
+		
 	if active:
 		_transition_to_state(
 			CameraState.INVENTORY,
@@ -490,6 +530,10 @@ func _on_inventory_camera_toggled(active: bool):
 		_return_to_game()
 
 func _on_crafting_camera_toggled(active: bool):
+	
+	if current_state == CameraState.VEHICLE:
+		return  # 🔥 Игнорируем из машины
+		
 	if active:
 		_transition_to_state(
 			CameraState.CRAFTING,
@@ -1312,3 +1356,18 @@ func get_current_direction_name() -> String:
 		OrbitalPosition.SOUTH: return "South"
 		OrbitalPosition.WEST: return "West"
 		_: return "Unknown"
+		
+		
+		
+func enter_vehicle_mode(vehicle: Node3D) -> void:
+	followed_vehicle = vehicle
+	_transition_to_state(
+		CameraState.VEHICLE,
+		vehicle_offset,
+		vehicle_pitch_deg,
+		vehicle_transition_duration
+	)
+
+func exit_vehicle_mode() -> void:
+	followed_vehicle = null
+	_return_to_game()

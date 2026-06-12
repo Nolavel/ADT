@@ -5,10 +5,11 @@ class_name InteractableObject
 ## а также слой 10 (бит 9, значение 512 = Interactables) 
 
 enum InteractionType {
-	BUTTON,             ## просто кнопка/терминал
-	CARRY_ONLY,         ## можно поднять и нести, но не класть в инвентарь
-	INVENTORY_ONLY,     ## сразу в инвентарь, без переноса в руках
-	CARRY_AND_INVENTORY ## можно и нести, и положить в инвентарь
+	BUTTON,              ## просто кнопка/терминал
+	CARRY_ONLY,          ## можно поднять и нести, но не класть в инвентарь
+	INVENTORY_ONLY,      ## сразу в инвентарь, без переноса в руках
+	CARRY_AND_INVENTORY, ## можно и нести, и положить в инвентарь
+	VEHICLE
 }
 
 ## ОСНОВНЫЕ ПАРАМЕТРЫ

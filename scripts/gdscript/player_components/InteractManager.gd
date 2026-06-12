@@ -142,6 +142,8 @@ func update_debug_label() -> void:
 			InteractableObject.InteractionType.CARRY_AND_INVENTORY:
 				abilities.append("✋ Поднять")
 				abilities.append("🎒 В инвентарь")
+			InteractableObject.InteractionType.VEHICLE:
+				abilities.append("🚗 Войти в машину")
 		
 		if current_interactable.can_throw:
 			abilities.append("💨 Бросить")
@@ -175,6 +177,8 @@ func try_interact() -> void:
 			_pickup_item(current_interactable)
 		InteractableObject.InteractionType.BUTTON:
 			_activate_button(current_interactable)
+		InteractableObject.InteractionType.VEHICLE:  # flying car
+			_enter_vehicle(current_interactable)
 			
 func _pickup_item(item: InteractableObject) -> void:
 	if carried_item: return
@@ -237,6 +241,17 @@ func _drop_item() -> void:
 	
 	## Запуск
 	item.throw_self(throw_force, spin)
+	
+# заглушка — сюда придёт логика угона
+func _enter_vehicle(vehicle: InteractableObject) -> void:
+	print("🚗 Взаимодействие с транспортом: ", vehicle.name_interactable_object)
+	if get_parent().visible == true:
+		get_parent().visible = false
+		get_parent().set_physics_process(false)
+	else:
+		get_parent().visible = true
+		get_parent().set_physics_process(true)
+	# TODO: передать управление PlayerDriver
 
 func get_interaction_type_name(type: InteractableObject.InteractionType) -> String:
 	match type:
@@ -248,4 +263,6 @@ func get_interaction_type_name(type: InteractableObject.InteractionType) -> Stri
 			return "Инвентарный предмет"
 		InteractableObject.InteractionType.CARRY_AND_INVENTORY:
 			return "Переносимый + Инвентарь"
+		InteractableObject.InteractionType.VEHICLE:
+			return "Транспортное средство"
 	return "Неизвестно"

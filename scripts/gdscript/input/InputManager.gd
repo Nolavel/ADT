@@ -61,7 +61,7 @@ var camera: Camera3D
 var hud_node: CanvasLayer
 
 ## --- Состояния UI ---
-enum UIState { GAME, STATUS, INVENTORY, CRAFTING, MENU_PAUSE, MAP }
+enum UIState { GAME, STATUS, INVENTORY, CRAFTING, MENU_PAUSE, MAP, VEHICLE }
 var current_ui_state: UIState = UIState.GAME
 
 ## ============================================
@@ -115,6 +115,12 @@ func _ready():
 func _physics_process(delta: float) -> void:
 	if not player_node:
 		return
+		
+	# Если в машине — отдельная ветка, ничего общего с пешим управлением
+	if current_ui_state == UIState.VEHICLE:
+		_handle_vehicle_controls(delta)
+		_handle_vehicle_pause()  # только пауза доступна
+		return  # ← выходим, остальное не выполняется
 	
 	## Проверяем возможность управления движением
 	var can_control_movement = current_ui_state == UIState.GAME
@@ -142,19 +148,26 @@ func _physics_process(delta: float) -> void:
 ## ХОТКЕИ
 ## ============================================
 
-## Обработка клавиши взаимодействия (E) или ЛКМ
+## Обработка клавиши взаимодействия (R) 
 func _handle_interact_action() -> void:
 	## Проверяем нажатие ЛКМ
-	if Input.is_action_just_pressed("Mouse_Left_Button"):
+	if Input.is_action_just_pressed("Interact"):
 		interact_button_pressed_time = 0.0
 		interact_button_held = true
 	
 	## удержание ЛКМ
-	elif Input.is_action_pressed("Mouse_Left_Button") and interact_button_held:
+	elif Input.is_action_pressed("Interact") and interact_button_held:
 		interact_button_pressed_time += get_process_delta_time()
 		
 		## Если удержано 0.5 сек — выполняем интеракт
 		if interact_button_pressed_time >= INTERACT_HOLD_TIME:
+			
+			# Проверяем — может игрок стоит у машины?
+			var nearby_vehicle = _check_nearby_vehicle()
+			if nearby_vehicle:
+				_enter_vehicle(nearby_vehicle)
+				interact_button_held = false
+				return
 			var interact_manager = player_node.get_node("InteractManager")
 			if interact_manager and interact_manager.has_method("try_interact"):
 				interact_manager.try_interact()
@@ -164,6 +177,25 @@ func _handle_interact_action() -> void:
 	elif Input.is_action_just_released("Mouse_Left_Button") and interact_button_held:
 		interact_button_held = false
 		interact_button_pressed_time = 0.0
+
+func _check_nearby_vehicle() -> FlyingCar:
+	# Ищем FlyingCar в ближайших узлах через группу
+	var vehicles = get_tree().get_nodes_in_group("vehicle")
+	for v in vehicles:
+		if v is FlyingCar and not v.is_occupied:
+			if player_node.global_position.distance_to(v.global_position) < 3.5:
+				return v
+	return null
+
+func _enter_vehicle(vehicle: FlyingCar) -> void:
+	current_ui_state = UIState.VEHICLE
+	
+	# Получаем camera_controller через камеру
+	var cam = get_viewport().get_camera_3d()
+	vehicle.setup_references(self, cam)
+	vehicle.enter_vehicle(player_node)
+	
+	print("🚗 InputManager: вход в машину")
 
 ## Переключение сканера местности (S)
 func _handle_scanner_toggle() -> void:
@@ -490,3 +522,52 @@ func _switch_to_tabs_state(new_state: UIState):
 	
 	status_notifier = false
 	print("🔄 Хоткей: %s → %s" % [UIState.keys()[old_state], UIState.keys()[new_state]])
+
+
+func _handle_vehicle_controls(delta: float) -> void:
+	var active_vehicle = _get_active_vehicle()
+	if not active_vehicle:
+		return
+	
+	# Передаём ввод машине через метод
+	var input = {
+		"forward": float(Input.is_action_pressed("move_forward") or Input.is_action_pressed("ui_up")) \
+		 - float(Input.is_action_pressed("move_backward") or Input.is_action_pressed("ui_down")),
+		"strafe":  float(Input.is_action_pressed("move_right") or Input.is_action_pressed("ui_right")) \
+				 - float(Input.is_action_pressed("move_left") or Input.is_action_pressed("ui_left")),
+		"vertical": float(Input.is_action_pressed("jump")) \
+				  - float(Input.is_action_pressed("crouch")),
+		"turn": float(Input.is_action_pressed("lean_left")) \
+			  - float(Input.is_action_pressed("lean_right")),
+		"exit": Input.is_action_just_pressed("Interact"),
+		"engine_start": Input.is_action_just_pressed("move_forward") or \
+						Input.is_action_just_pressed("ui_up"),
+		"shutdown": Input.is_action_just_pressed("crouch")
+	}
+	
+	active_vehicle.receive_input(input, delta)
+
+func _handle_vehicle_pause() -> void:
+	# В машине доступна только пауза
+	if Input.is_action_just_released("pause"):
+		if menu_pause_active:
+			menu_pause_active = false
+			current_ui_state = UIState.VEHICLE  # возвращаемся в VEHICLE не в GAME
+			menu_pause_toggled.emit(false)
+			fog_effect_toggled.emit(false)
+		else:
+			menu_pause_active = true
+			menu_pause_toggled.emit(true)
+			fog_effect_toggled.emit(true)
+
+func _get_active_vehicle() -> FlyingCar:
+	var vehicles = get_tree().get_nodes_in_group("vehicle")
+	for v in vehicles:
+		if v is FlyingCar and v.is_occupied:
+			return v
+	return null
+
+# Вызывается из FlyingCar когда игрок вышел
+func on_exit_vehicle() -> void:
+	current_ui_state = UIState.GAME
+	print("🚗 InputManager: игрок вышел из машины → GAME")

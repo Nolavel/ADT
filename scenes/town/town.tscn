@@ -1,25 +1,24 @@
-[gd_scene load_steps=97 format=4 uid="uid://bkfi5x6sf1w2a"]
+[gd_scene load_steps=96 format=4 uid="uid://cx1ax7lewd5xd"]
 
-[ext_resource type="PackedScene" uid="uid://dbt6w4pr2h3re" path="res://scenes/elevator/lift.tscn" id="1_ljh6w"]
-[ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/InputDebugger/InputDebugger.tscn" id="1_qvqwg"]
-[ext_resource type="PackedScene" uid="uid://cnhshfsm2gpjs" path="res://tools/ScanFolderFiles/ScanFolderFiles.tscn" id="2_20gf8"]
-[ext_resource type="PackedScene" uid="uid://duxn5rqcau5dw" path="res://tools/StatsDisplay/StatsDisplay.tscn" id="3_q7uyv"]
-[ext_resource type="PackedScene" uid="uid://cilg46rmsc3k" path="res://scenes/player_scene/player.tscn" id="4_20gf8"]
-[ext_resource type="PackedScene" uid="uid://bfy1a5q8xdayr" path="res://scenes/starship_scene/deck_a.tscn" id="5_jpp7u"]
-[ext_resource type="PackedScene" uid="uid://6dopa316y1fc" path="res://scenes/cameras/camera_follow/camera_follow.tscn" id="6_etu2o"]
-[ext_resource type="PackedScene" uid="uid://bfyoljtoigx70" path="res://scenes/starship_scene/deck_b.tscn" id="7_gmljn"]
-[ext_resource type="PackedScene" uid="uid://ge4joff5iiay" path="res://scenes/input_scene/input_scene.tscn" id="7_ljh6w"]
-[ext_resource type="Script" uid="uid://bsmksrysssmkj" path="res://scripts/gdscript/streaming_manager/StreamingManager.gd" id="9_83qik"]
-[ext_resource type="Texture2D" uid="uid://b3up1bvrp8r6w" path="res://assets/textures/pins/pin_1.png" id="11_c25gc"]
-[ext_resource type="Script" uid="uid://b0hx4xwbebjya" path="res://scripts/gdscript/ui/widgets/menu_pause.gd" id="11_gmljn"]
-[ext_resource type="Script" uid="uid://doti3p5xvdnso" path="res://scripts/gdscript/streaming_manager/streaming_controller_ui.gd" id="11_gtgns"]
-[ext_resource type="Shader" uid="uid://cij1eus0quiqq" path="res://scripts/shader/hud_bg_panel.gdshader" id="12_0b00k"]
-[ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="13_gtgns"]
-[ext_resource type="PackedScene" uid="uid://qw57l1jftjmn" path="res://scenes/test_scene/hazard_cube.tscn" id="14_esmo2"]
-[ext_resource type="Script" uid="uid://cgtwfahpd38mo" path="res://tools/CheckerIndicators/ToolsCheckerNeeds_HP.gd" id="18_c25gc"]
-[ext_resource type="Script" uid="uid://d3mfuttrhuf34" path="res://tools/CheckerIndicators/ToolsCheckerNeeds_Oxygen.gd" id="19_5yrnl"]
-[ext_resource type="PackedScene" uid="uid://rycgrnb7n7wu" path="res://scenes/interactables/Interactables.tscn" id="19_gtgns"]
-[ext_resource type="PackedScene" uid="uid://8xmk2iwndlhk" path="res://scenes/middlecity.tscn" id="20_5yrnl"]
+[ext_resource type="PackedScene" uid="uid://dbt6w4pr2h3re" path="res://scenes/elevator/lift.tscn" id="1_8ppgb"]
+[ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/InputDebugger/InputDebugger.tscn" id="2_uencb"]
+[ext_resource type="PackedScene" uid="uid://cnhshfsm2gpjs" path="res://tools/ScanFolderFiles/ScanFolderFiles.tscn" id="3_kpyne"]
+[ext_resource type="PackedScene" uid="uid://duxn5rqcau5dw" path="res://tools/StatsDisplay/StatsDisplay.tscn" id="4_bmq6r"]
+[ext_resource type="PackedScene" uid="uid://bfy1a5q8xdayr" path="res://scenes/starship_scene/deck_a.tscn" id="5_y8ety"]
+[ext_resource type="PackedScene" uid="uid://bfyoljtoigx70" path="res://scenes/starship_scene/deck_b.tscn" id="6_n6lam"]
+[ext_resource type="PackedScene" uid="uid://cilg46rmsc3k" path="res://scenes/player_scene/player.tscn" id="7_jvuuf"]
+[ext_resource type="PackedScene" uid="uid://6dopa316y1fc" path="res://scenes/cameras/camera_follow/camera_follow.tscn" id="8_0qx66"]
+[ext_resource type="PackedScene" uid="uid://ge4joff5iiay" path="res://scenes/input_scene/input_scene.tscn" id="9_2psjx"]
+[ext_resource type="Script" uid="uid://doti3p5xvdnso" path="res://scripts/gdscript/streaming_manager/streaming_controller_ui.gd" id="10_ja67r"]
+[ext_resource type="Texture2D" uid="uid://b3up1bvrp8r6w" path="res://assets/textures/pins/pin_1.png" id="11_jt3ti"]
+[ext_resource type="FontFile" uid="uid://6dkd18d8i6x8" path="res://assets/fonts/CGF_Locust_Resistance/cgf-locust-resistance.regular.ttf" id="12_1rypj"]
+[ext_resource type="Script" uid="uid://b0hx4xwbebjya" path="res://scripts/gdscript/ui/widgets/menu_pause.gd" id="13_1t3so"]
+[ext_resource type="Shader" uid="uid://cij1eus0quiqq" path="res://scripts/shader/hud_bg_panel.gdshader" id="14_o67w5"]
+[ext_resource type="Script" uid="uid://bsmksrysssmkj" path="res://scripts/gdscript/streaming_manager/StreamingManager.gd" id="15_jga1g"]
+[ext_resource type="PackedScene" uid="uid://qw57l1jftjmn" path="res://scenes/test_scene/hazard_cube.tscn" id="16_486j8"]
+[ext_resource type="PackedScene" uid="uid://rycgrnb7n7wu" path="res://scenes/interactables/Interactables.tscn" id="17_h1vui"]
+[ext_resource type="Script" uid="uid://cgtwfahpd38mo" path="res://tools/CheckerIndicators/ToolsCheckerNeeds_HP.gd" id="18_lgswj"]
+[ext_resource type="Script" uid="uid://d3mfuttrhuf34" path="res://tools/CheckerIndicators/ToolsCheckerNeeds_Oxygen.gd" id="19_lp6a5"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_vgvdj"]
 margin = 1.0
@@ -78,30 +77,30 @@ border_width_right = 10
 border_width_bottom = 2
 
 [sub_resource type="LabelSettings" id="LabelSettings_c25gc"]
-font = ExtResource("13_gtgns")
+font = ExtResource("12_1rypj")
 font_size = 25
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_5yrnl"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_pk1hm"]
-font = ExtResource("13_gtgns")
+font = ExtResource("12_1rypj")
 font_size = 30
 stacked_outline_count = 1
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_pk1hm"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_83qik"]
-font = ExtResource("13_gtgns")
+font = ExtResource("12_1rypj")
 font_size = 30
 stacked_outline_count = 1
 
 [sub_resource type="LabelSettings" id="LabelSettings_gtgns"]
-font = ExtResource("13_gtgns")
+font = ExtResource("12_1rypj")
 font_size = 20
 stacked_outline_count = 1
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_esmo2"]
-shader = ExtResource("12_0b00k")
+shader = ExtResource("14_o67w5")
 shader_parameter/fade_start = 0.0
 shader_parameter/fade_end = 1.0
 shader_parameter/base_color = Color(0.3882353, 0.60784316, 0.24313726, 0.78431374)
@@ -115,7 +114,7 @@ shader_parameter/fade_curve = 0.69100002956262
 gradient = SubResource("Gradient_0b00k")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_p1hpk"]
-shader = ExtResource("12_0b00k")
+shader = ExtResource("14_o67w5")
 shader_parameter/fade_start = 0.0
 shader_parameter/fade_end = 1.0
 shader_parameter/base_color = Color(0.39, 0.109199986, 0.109199986, 0.78431374)
@@ -514,10 +513,11 @@ points = PackedVector3Array(-3.871056, 11.571013, 1.5151609, -2.326914, 6.937422
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_1lydy"]
 points = PackedVector3Array(-3.871056, 11.571013, 1.5151609, -2.326914, 6.9374223, -3.602659, -2.0571578, 6.8343, -3.759828, -2.0571578, 6.8343, 3.767528, -2.0564516, 11.774808, -3.7623394, -4.0878024, 7.03499, -0.6439808, -2.0492277, 11.791664, 3.795729, -3.7777512, 11.622004, -1.7627993, -3.556315, 6.9888625, 2.2078815, -3.000777, 6.8906107, -2.984227, -3.0010855, 11.710357, 2.9838865, -4.086763, 11.570045, 0.65098816, -4.086763, 7.037415, 0.65098816, -3.000777, 11.71685, -2.984227, -3.7777512, 6.985457, -1.7627993, -3.0010855, 6.897104, 2.9838865, -4.0878024, 11.572471, -0.6439808, -3.442742, 11.595877, -2.397403, -3.3376029, 11.636996, 2.5588756, -3.975794, 7.045171, 1.1865469, -2.43458, 6.920213, 3.5227973, -3.9772286, 7.0414042, -1.1808192, -3.442742, 7.0115843, -2.397403, -2.6566994, 11.712884, 3.3313377, -2.326914, 11.670038, -3.602659, -3.7761412, 11.616367, 1.7662039, -3.7761412, 6.9910936, 1.7662039, -3.9772286, 11.566056, -1.1808192, -3.3376029, 6.9704638, 2.5588756, -3.556315, 11.618598, 2.2078815, -3.975794, 11.56229, 1.1865469, -2.43458, 11.687247, 3.5227973)
 
-[sub_resource type="Sky" id="Sky_5yrnl"]
+[sub_resource type="Sky" id="Sky_c25gc"]
 
 [sub_resource type="Environment" id="Environment_gtgns"]
-sky = SubResource("Sky_5yrnl")
+background_mode = 2
+sky = SubResource("Sky_c25gc")
 
 [sub_resource type="BoxMesh" id="BoxMesh_x6j0r"]
 size = Vector3(3, 15, 3)
@@ -560,7 +560,7 @@ top_radius = 1.0
 bottom_radius = 1.0
 height = 3.0
 
-[node name="NEWMAN" type="Node3D"]
+[node name="Starship" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.40562496, 0.91398156, 0.01030787, -0.883279, -0.39485028, 0.2528074, 0.23513135, 0.093440264, 0.9674617, 0, 41.4318, 0)
@@ -712,7 +712,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.675642, 0.89509964, 31.1734
 shape = SubResource("BoxShape3D_i4gh3")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Lift" parent="." instance=ExtResource("1_ljh6w")]
+[node name="Lift" parent="." instance=ExtResource("1_8ppgb")]
 transform = Transform3D(-4.3711385e-08, 0, 1.9999999, 0, 1, 0, -0.99999994, 0, -8.742277e-08, -8.848132, -63.175, 200.0808)
 
 [node name="LIFT" parent="Lift" index="0" node_paths=PackedStringArray("area_call_deck_a", "area_call_deck_b", "anima_shaft_door_deck_a", "anima_shaft_door_deck_b")]
@@ -721,20 +721,26 @@ area_call_deck_b = NodePath("../../Lift_Section/AreaCallDeckB")
 anima_shaft_door_deck_a = NodePath("../../Lift_Section/AccessShaft/Section_Lift_A/anima_sec_lift_a")
 anima_shaft_door_deck_b = NodePath("../../Lift_Section/AccessShaft/Section_Lift_B/anima_sec_lift_b")
 
-[node name="InputDebugger" parent="." instance=ExtResource("1_qvqwg")]
+[node name="InputDebugger" parent="." instance=ExtResource("2_uencb")]
 
-[node name="ProjectStats_AND_ExitTrigger" parent="." instance=ExtResource("2_20gf8")]
+[node name="ProjectStats_AND_ExitTrigger" parent="." instance=ExtResource("3_kpyne")]
 exit_scene = false
 
-[node name="StatsDisplay" parent="." instance=ExtResource("3_q7uyv")]
+[node name="StatsDisplay" parent="." instance=ExtResource("4_bmq6r")]
 
-[node name="DECK_B" parent="." instance=ExtResource("5_jpp7u")]
+[node name="DECK_B" parent="." instance=ExtResource("5_y8ety")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16543579, -58, 0.16543579)
 
-[node name="DECK_C" parent="." instance=ExtResource("7_gmljn")]
+[node name="DECK_C" parent="." instance=ExtResource("6_n6lam")]
 
-[node name="Player" parent="." instance=ExtResource("4_20gf8")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -469.16904, 36.081905, -4.973007)
+[node name="Player" parent="." instance=ExtResource("7_jvuuf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.692142, -54.03623, 167.71707)
+walk_speed = 5.0
+run_speed = 10.0
+accel_time = 0.55
+decel_time = 0.8
+jump_force = 8.0
+gravity = 20.0
 
 [node name="HUD" parent="Player" index="0" node_paths=PackedStringArray("btn_hud", "btn_return", "btn_status", "btn_inventory", "btn_crafting", "btn_map", "btn_rotate_left", "btn_rotate_right")]
 layer = 2
@@ -931,7 +937,7 @@ transform = Transform3D(0.075962506, 0.9958376, 0.05036942, -0.16126487, 0.06212
 [node name="FadeByDistance" parent="Player" index="11"]
 input_manager = NodePath("../../InputManager")
 
-[node name="CameraFollow" parent="." node_paths=PackedStringArray("target", "player_animation_player") instance=ExtResource("6_etu2o")]
+[node name="CameraFollow" parent="." node_paths=PackedStringArray("target") instance=ExtResource("8_0qx66")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.035042, -54.09886, 25.64135)
 projection = 0
 target = NodePath("../Player")
@@ -944,9 +950,9 @@ status_offset = Vector3(0, 1, -3)
 menu_pause_offset = Vector3(0, 1, -7)
 map_offset = Vector3(0.23, 1, 0.1)
 map_pitch_deg = -50.0
-player_animation_player = NodePath("../Player/player_base_mesh/AnimationPlayer")
+shake_area = NodePath("")
 
-[node name="InputManager" parent="." node_paths=PackedStringArray("menu_pause", "camera_follow", "label_debug") instance=ExtResource("7_ljh6w")]
+[node name="InputManager" parent="." node_paths=PackedStringArray("menu_pause", "camera_follow", "label_debug") instance=ExtResource("9_2psjx")]
 player = NodePath("../Player")
 menu_pause = NodePath("../WIDGETS/Menu_Pause")
 hud = NodePath("../Player/HUD")
@@ -1002,7 +1008,7 @@ offset_bottom = -185.99994
 grow_horizontal = 0
 grow_vertical = 0
 scale = Vector2(0.8, 0.8)
-script = ExtResource("11_gtgns")
+script = ExtResource("10_ja67r")
 
 [node name="img_Pin_Deck" type="TextureRect" parent="WIDGETS/StreamingControllerUI"]
 layout_mode = 0
@@ -1011,7 +1017,7 @@ offset_top = -168.99997
 offset_right = 1006.4121
 offset_bottom = 3360.4111
 scale = Vector2(0.085, 0.085)
-texture = ExtResource("11_c25gc")
+texture = ExtResource("11_jt3ti")
 
 [node name="Lbl_ChunkSector" type="Label" parent="WIDGETS/StreamingControllerUI"]
 layout_mode = 0
@@ -1076,7 +1082,7 @@ offset_right = 200.0
 offset_bottom = 75.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("11_gmljn")
+script = ExtResource("13_1t3so")
 input_manager = NodePath("../../InputManager")
 
 [node name="bg_left_wing" type="TextureRect" parent="WIDGETS/Menu_Pause"]
@@ -1348,7 +1354,7 @@ omni_range = 7.0
 omni_attenuation = 0.34
 
 [node name="StreamingManager" type="Node3D" parent="." node_paths=PackedStringArray("chunks_deck_a", "chunks_deck_b")]
-script = ExtResource("9_83qik")
+script = ExtResource("15_jga1g")
 chunks_deck_a = [NodePath("../COMMAND_DECK_A/Lift Lobby A"), NodePath("../COMMAND_DECK_A/Transit Corridor"), NodePath("../COMMAND_DECK_A/Mess Hall"), NodePath("../COMMAND_DECK_A/Crew Quarter"), NodePath("../COMMAND_DECK_A/Bridge"), NodePath("../COMMAND_DECK_A/Transition Hall A"), NodePath("../COMMAND_DECK_A/AI Chamber"), NodePath("../COMMAND_DECK_A/Reactor Bay"), NodePath("../COMMAND_DECK_A/Access Shaft"), NodePath("../COMMAND_DECK_A/Ladder Shaft")]
 chunks_deck_b = [NodePath("../DROP_DECK_B/Lift Lobby B"), NodePath("../DROP_DECK_B/Lift Shaft"), NodePath("../DROP_DECK_B/Transition Hall B"), NodePath("../DROP_DECK_B/Airlock Ramp"), NodePath("../DROP_DECK_B/Hold"), NodePath("../DROP_DECK_B/Ladder Shaft")]
 
@@ -1364,7 +1370,7 @@ grow_vertical = 0
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HazardCube" parent="." node_paths=PackedStringArray("player", "camera") instance=ExtResource("14_esmo2")]
+[node name="HazardCube" parent="." node_paths=PackedStringArray("player", "camera") instance=ExtResource("16_486j8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.04645, -55.59313, 183.52931)
 player = NodePath("../Player")
 camera = NodePath("../CameraFollow")
@@ -1374,13 +1380,13 @@ continuous_interval = 2.0
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_gtgns")
 
-[node name="Interactables" parent="." instance=ExtResource("19_gtgns")]
+[node name="Interactables" parent="." instance=ExtResource("17_h1vui")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.338749, -43.14654, 173.52577)
 name_interactable_object = "BoxD1"
 interaction_type = 3
 can_throw = true
 
-[node name="Interactables2" parent="." instance=ExtResource("19_gtgns")]
+[node name="Interactables2" parent="." instance=ExtResource("17_h1vui")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.338749, -43.14654, 174.80444)
 name_interactable_object = "Box2dddd"
 interaction_type = 1
@@ -1395,7 +1401,7 @@ mesh = SubResource("BoxMesh_x6j0r")
 
 [node name="Dev_Tools_HP" type="Node3D" parent="." node_paths=PackedStringArray("hp_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.767365, -55.469482, 178.2787)
-script = ExtResource("18_c25gc")
+script = ExtResource("18_lgswj")
 hp_bar = NodePath("../CameraFollow/ONBOARD_HUD_3D/MeshHealthBar")
 
 [node name="IncreaseHP" type="Area3D" parent="Dev_Tools_HP"]
@@ -1430,7 +1436,7 @@ text = "hp -"
 
 [node name="Dev_Tools_Oxygen" type="Node3D" parent="." node_paths=PackedStringArray("oxygen_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.767365, -55.469482, 188.25253)
-script = ExtResource("19_5yrnl")
+script = ExtResource("19_lp6a5")
 oxygen_bar = NodePath("../CameraFollow/ONBOARD_HUD_3D/MeshOxygen")
 
 [node name="IncreaseOxygen" type="Area3D" parent="Dev_Tools_Oxygen"]
@@ -1463,12 +1469,8 @@ pixel_size = 0.01
 billboard = 1
 text = "oxygen -"
 
-[node name="MIDDLECITY" parent="." instance=ExtResource("20_5yrnl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -450, 0, 0)
-
 [editable path="Lift"]
 [editable path="DECK_B"]
 [editable path="Player"]
 [editable path="Player/HUD"]
 [editable path="CameraFollow"]
-[editable path="MIDDLECITY"]

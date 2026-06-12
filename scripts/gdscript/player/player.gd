@@ -11,6 +11,9 @@ extends CharacterBody3D
 @export var jump_force: float = 8.0
 @export var gravity: float = 20.0
 
+@export_group("Animation")
+@export var player_animation_player: AnimationPlayer
+
 ## --- Components ---
 @onready var navigation_component: NavigationComponent = $NavComponent
 @onready var stamina_manager: StaminaManager = $StaminaManager
@@ -36,7 +39,7 @@ signal state_changed(new_state: MovementState)
 
 ## --- Initialization ---
 func _ready():
-	$player_base_mesh/AnimationPlayer.play("new4/idle")
+	player_animation_player.play("new4/idle")
 	if navigation_component:
 		navigation_component.path_updated.connect(_on_path_updated)
 		navigation_component.destination_reached.connect(_on_destination_reached)
@@ -79,12 +82,12 @@ func stop_moving(smooth: bool = true) -> void:
 	if smooth:
 		target_speed = 0.0
 		_change_state(MovementState.DECELERATING)
-		$player_base_mesh/AnimationPlayer.play("new4/walk")
+		player_animation_player.play("new4/walk")
 	else:
 		target_speed = 0.0
 		speed = 0.0
 		_change_state(MovementState.IDLE)
-		$player_base_mesh/AnimationPlayer.play("new4/idle")
+		player_animation_player.play("new4/idle")
 	
 	emit_signal("movement_stopped")
 
@@ -110,7 +113,7 @@ func set_movement_enabled(enabled: bool):
 		
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
-			$player_base_mesh/AnimationPlayer.play("new4/idle")
+			player_animation_player.play("new4/idle")
 		
 		print("🔒 Player: Движение ЗАБЛОКИРОВАНО")
 	else:
@@ -140,8 +143,8 @@ func is_wanting_to_run() -> bool:
 ## --- Physics Update ---
 func _physics_process(delta: float) -> void:
 	if not movement_enabled:
-		_apply_gravity(delta)
-		move_and_slide()
+		#_apply_gravity(delta)
+		#move_and_slide()
 		return
 	
 	_update_sprint_blend(delta)
@@ -248,7 +251,7 @@ func _apply_deceleration(delta: float) -> void:
 		speed = 0.0
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
-			$player_base_mesh/AnimationPlayer.play("new4/idle")
+			player_animation_player.play("new4/idle")
 
 ## --- State Management ---
 func _update_state() -> void:
@@ -258,13 +261,13 @@ func _update_state() -> void:
 		new_state = MovementState.DECELERATING if speed > 0.1 else MovementState.IDLE
 	elif is_running_mode:
 		new_state = MovementState.RUNNING
-		$player_base_mesh/AnimationPlayer.play("new4/root-sneak-run-s")
+		player_animation_player.play("new4/root-sneak-run-s")
 	elif target_speed > walk_speed + 0.1:
 		new_state = MovementState.RUNNING
-		$player_base_mesh/AnimationPlayer.play("new4/root-sneak-run-s")
+		player_animation_player.play("new4/root-sneak-run-s")
 	else:
 		new_state = MovementState.WALKING
-		$player_base_mesh/AnimationPlayer.play("new4/root-sneak-walk")
+		player_animation_player.play("new4/root-sneak-walk")
 	
 	if new_state != current_state:
 		_change_state(new_state)
