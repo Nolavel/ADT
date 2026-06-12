@@ -1,4 +1,4 @@
-[gd_scene load_steps=97 format=4 uid="uid://bkfi5x6sf1w2a"]
+[gd_scene format=4 uid="uid://bkfi5x6sf1w2a"]
 
 [ext_resource type="PackedScene" uid="uid://dbt6w4pr2h3re" path="res://scenes/elevator/lift.tscn" id="1_ljh6w"]
 [ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/InputDebugger/InputDebugger.tscn" id="1_qvqwg"]
@@ -560,159 +560,159 @@ top_radius = 1.0
 bottom_radius = 1.0
 height = 3.0
 
-[node name="NEWMAN" type="Node3D"]
+[node name="NEWMAN" type="Node3D" unique_id=1694550832]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=746224897]
 transform = Transform3D(-0.40562496, 0.91398156, 0.01030787, -0.883279, -0.39485028, 0.2528074, 0.23513135, 0.093440264, 0.9674617, 0, 41.4318, 0)
 shadow_enabled = true
 sky_mode = 2
 
-[node name="COMMAND_DECK_A" type="Area3D" parent="."]
+[node name="COMMAND_DECK_A" type="Area3D" parent="." unique_id=1015952779]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -58, 150)
 visible = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="COMMAND_DECK_A"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="COMMAND_DECK_A" unique_id=1962444311]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7653961, 3.1088867, 25.908875)
 shape = SubResource("BoxShape3D_vgvdj")
 debug_color = Color(0, 11.708403, 0, 1)
 
-[node name="Lift Lobby A" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Lift Lobby A" type="Area3D" parent="COMMAND_DECK_A" unique_id=704948485]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 51.576416)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Lift Lobby A"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Lift Lobby A" unique_id=52937342]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.070179, -1.093811)
 shape = SubResource("BoxShape3D_p1hpk")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Transit Corridor" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Transit Corridor" type="Area3D" parent="COMMAND_DECK_A" unique_id=724405030]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 23.596191)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Transit Corridor"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Transit Corridor" unique_id=1747911436]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.32200623, 2.1106148, -0.080596924)
 shape = SubResource("BoxShape3D_vvv2t")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Mess Hall" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Mess Hall" type="Area3D" parent="COMMAND_DECK_A" unique_id=1013614839]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.882683, 0, 24.541534)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Mess Hall"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Mess Hall" unique_id=598264387]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.898682, 2.0769234, -0.94044495)
 shape = SubResource("BoxShape3D_8b5nv")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Crew Quarter" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Crew Quarter" type="Area3D" parent="COMMAND_DECK_A" unique_id=917861863]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.889229, 0, 24.541534)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Crew Quarter"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Crew Quarter" unique_id=166994050]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.210152, 2.619709, -0.9636688)
 shape = SubResource("BoxShape3D_p3du2")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Bridge" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Bridge" type="Area3D" parent="COMMAND_DECK_A" unique_id=247310032]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36685944, 0, -16.463928)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Bridge"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Bridge" unique_id=73936977]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.30299377, 2.6776924, -2.744934)
 shape = SubResource("BoxShape3D_gnabq")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Transition Hall A" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Transition Hall A" type="Area3D" parent="COMMAND_DECK_A" unique_id=2021959245]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36685944, 0, -0.56427)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Transition Hall A"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Transition Hall A" unique_id=2138634211]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18273807, 2.6776924, -2.5484314)
 shape = SubResource("BoxShape3D_pk1hm")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="AI Chamber" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="AI Chamber" type="Area3D" parent="COMMAND_DECK_A" unique_id=1396210276]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.43357, 0, 0.34178162)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/AI Chamber"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/AI Chamber" unique_id=2066737241]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4376659, 2.6776924, -1.4974823)
 shape = SubResource("BoxShape3D_5yrnl")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Reactor Bay" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Reactor Bay" type="Area3D" parent="COMMAND_DECK_A" unique_id=1765216733]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36685944, 0, 70.79828)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Reactor Bay"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Reactor Bay" unique_id=291745550]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8091316, 2.6877327, -2.744934)
 shape = SubResource("BoxShape3D_gtgns")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Access Shaft" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Access Shaft" type="Area3D" parent="COMMAND_DECK_A" unique_id=541452596]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4121094, -6.0802, 51.576416)
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Access Shaft"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Access Shaft" unique_id=1523275815]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.6210938, 4.841198, -1.6746063)
 shape = SubResource("BoxShape3D_d32e2")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Ladder Shaft" type="Area3D" parent="COMMAND_DECK_A"]
+[node name="Ladder Shaft" type="Area3D" parent="COMMAND_DECK_A" unique_id=1392222466]
 
-[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Ladder Shaft"]
+[node name="Chunk" type="CollisionShape3D" parent="COMMAND_DECK_A/Ladder Shaft" unique_id=1245505709]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.93219, -2.4724617, -2.997696)
 shape = SubResource("BoxShape3D_03urq")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="DROP_DECK_B" type="Area3D" parent="."]
+[node name="DROP_DECK_B" type="Area3D" parent="." unique_id=2072049699]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -63.97674, 150)
 visible = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DROP_DECK_B"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DROP_DECK_B" unique_id=1937922483]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.286541, -1.3927956, 16.159607)
 shape = SubResource("BoxShape3D_x6j0r")
 debug_color = Color(0, 11.708403, 0, 1)
 
-[node name="Lift Lobby B" type="Area3D" parent="DROP_DECK_B"]
+[node name="Lift Lobby B" type="Area3D" parent="DROP_DECK_B" unique_id=1001863253]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 51.576416)
 
-[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Lift Lobby B"]
+[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Lift Lobby B" unique_id=1229031096]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6335945, -2.3432617)
 shape = SubResource("BoxShape3D_c25gc")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Lift Shaft" type="Area3D" parent="DROP_DECK_B"]
+[node name="Lift Shaft" type="Area3D" parent="DROP_DECK_B" unique_id=739553127]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4121094, 0, 51.576416)
 
-[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Lift Shaft"]
+[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Lift Shaft" unique_id=1298087275]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.6210938, 4.841198, -1.6746063)
 shape = SubResource("BoxShape3D_d32e2")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Ladder Shaft" type="Area3D" parent="DROP_DECK_B"]
+[node name="Ladder Shaft" type="Area3D" parent="DROP_DECK_B" unique_id=1191629704]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4121094, 0, 51.576416)
 
-[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Ladder Shaft"]
+[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Ladder Shaft" unique_id=1429599035]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2800446, 9.597744, -54.52559)
 shape = SubResource("BoxShape3D_03urq")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Transition Hall B" type="Area3D" parent="DROP_DECK_B"]
+[node name="Transition Hall B" type="Area3D" parent="DROP_DECK_B" unique_id=292252961]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.2068329)
 
-[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Transition Hall B"]
+[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Transition Hall B" unique_id=1512150608]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3881836, 0.6335945, -2.3432617)
 shape = SubResource("BoxShape3D_clgra")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Airlock Ramp" type="Area3D" parent="DROP_DECK_B"]
+[node name="Airlock Ramp" type="Area3D" parent="DROP_DECK_B" unique_id=292095065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -19.58168)
 
-[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Airlock Ramp"]
+[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Airlock Ramp" unique_id=1634946369]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015991211, 0.6335945, 2.0723267)
 shape = SubResource("BoxShape3D_pfvpg")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Hold" type="Area3D" parent="DROP_DECK_B"]
+[node name="Hold" type="Area3D" parent="DROP_DECK_B" unique_id=586938879]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7.8744354)
 
-[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Hold"]
+[node name="Chunk" type="CollisionShape3D" parent="DROP_DECK_B/Hold" unique_id=722870413]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.675642, 0.89509964, 31.173492)
 shape = SubResource("BoxShape3D_i4gh3")
 debug_color = Color(0, 0, 13.469126, 1)
 
-[node name="Lift" parent="." instance=ExtResource("1_ljh6w")]
+[node name="Lift" parent="." unique_id=355445672 instance=ExtResource("1_ljh6w")]
 transform = Transform3D(-4.3711385e-08, 0, 1.9999999, 0, 1, 0, -0.99999994, 0, -8.742277e-08, -8.848132, -63.175, 200.0808)
 
 [node name="LIFT" parent="Lift" index="0" node_paths=PackedStringArray("area_call_deck_a", "area_call_deck_b", "anima_shaft_door_deck_a", "anima_shaft_door_deck_b")]
@@ -721,19 +721,19 @@ area_call_deck_b = NodePath("../../Lift_Section/AreaCallDeckB")
 anima_shaft_door_deck_a = NodePath("../../Lift_Section/AccessShaft/Section_Lift_A/anima_sec_lift_a")
 anima_shaft_door_deck_b = NodePath("../../Lift_Section/AccessShaft/Section_Lift_B/anima_sec_lift_b")
 
-[node name="InputDebugger" parent="." instance=ExtResource("1_qvqwg")]
+[node name="InputDebugger" parent="." unique_id=1134380583 instance=ExtResource("1_qvqwg")]
 
-[node name="ProjectStats_AND_ExitTrigger" parent="." instance=ExtResource("2_20gf8")]
+[node name="ProjectStats_AND_ExitTrigger" parent="." unique_id=807878186 instance=ExtResource("2_20gf8")]
 exit_scene = false
 
-[node name="StatsDisplay" parent="." instance=ExtResource("3_q7uyv")]
+[node name="StatsDisplay" parent="." unique_id=1402694545 instance=ExtResource("3_q7uyv")]
 
-[node name="DECK_B" parent="." instance=ExtResource("5_jpp7u")]
+[node name="DECK_B" parent="." unique_id=337269983 instance=ExtResource("5_jpp7u")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16543579, -58, 0.16543579)
 
-[node name="DECK_C" parent="." instance=ExtResource("7_gmljn")]
+[node name="DECK_C" parent="." unique_id=237124179 instance=ExtResource("7_gmljn")]
 
-[node name="Player" parent="." instance=ExtResource("4_20gf8")]
+[node name="Player" parent="." unique_id=402071966 instance=ExtResource("4_20gf8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -469.16904, 36.081905, -4.973007)
 
 [node name="HUD" parent="Player" index="0" node_paths=PackedStringArray("btn_hud", "btn_return", "btn_status", "btn_inventory", "btn_crafting", "btn_map", "btn_rotate_left", "btn_rotate_right")]
@@ -931,7 +931,7 @@ transform = Transform3D(0.075962506, 0.9958376, 0.05036942, -0.16126487, 0.06212
 [node name="FadeByDistance" parent="Player" index="11"]
 input_manager = NodePath("../../InputManager")
 
-[node name="CameraFollow" parent="." node_paths=PackedStringArray("target", "player_animation_player") instance=ExtResource("6_etu2o")]
+[node name="CameraFollow" parent="." unique_id=1356177674 node_paths=PackedStringArray("target", "player_animation_player") instance=ExtResource("6_etu2o")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.035042, -54.09886, 25.64135)
 projection = 0
 target = NodePath("../Player")
@@ -946,17 +946,17 @@ map_offset = Vector3(0.23, 1, 0.1)
 map_pitch_deg = -50.0
 player_animation_player = NodePath("../Player/player_base_mesh/AnimationPlayer")
 
-[node name="InputManager" parent="." node_paths=PackedStringArray("menu_pause", "camera_follow", "label_debug") instance=ExtResource("7_ljh6w")]
+[node name="InputManager" parent="." unique_id=1074447172 node_paths=PackedStringArray("menu_pause", "camera_follow", "label_debug") instance=ExtResource("7_ljh6w")]
 player = NodePath("../Player")
 menu_pause = NodePath("../WIDGETS/Menu_Pause")
 hud = NodePath("../Player/HUD")
 camera_follow = NodePath("../CameraFollow")
 label_debug = NodePath("../LabelDebug")
 
-[node name="WIDGETS" type="CanvasLayer" parent="."]
+[node name="WIDGETS" type="CanvasLayer" parent="." unique_id=34052759]
 follow_viewport_enabled = true
 
-[node name="LiftUI" type="Control" parent="WIDGETS"]
+[node name="LiftUI" type="Control" parent="WIDGETS" unique_id=923859131]
 z_index = 50
 layout_mode = 3
 anchors_preset = 8
@@ -971,24 +971,24 @@ offset_bottom = 50.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="WIDGETS/LiftUI"]
+[node name="VBoxContainer" type="VBoxContainer" parent="WIDGETS/LiftUI" unique_id=367417524]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="DECK_A" type="Button" parent="WIDGETS/LiftUI/VBoxContainer"]
+[node name="DECK_A" type="Button" parent="WIDGETS/LiftUI/VBoxContainer" unique_id=2049228230]
 layout_mode = 2
 text = "DECK A"
 
-[node name="DECK_B" type="Button" parent="WIDGETS/LiftUI/VBoxContainer"]
+[node name="DECK_B" type="Button" parent="WIDGETS/LiftUI/VBoxContainer" unique_id=198377804]
 layout_mode = 2
 text = "DECK B"
 
-[node name="OUT" type="Button" parent="WIDGETS/LiftUI/VBoxContainer"]
+[node name="OUT" type="Button" parent="WIDGETS/LiftUI/VBoxContainer" unique_id=1229283655]
 layout_mode = 2
 text = "OUT"
 
-[node name="StreamingControllerUI" type="Control" parent="WIDGETS"]
+[node name="StreamingControllerUI" type="Control" parent="WIDGETS" unique_id=1043556546]
 layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
@@ -1004,7 +1004,7 @@ grow_vertical = 0
 scale = Vector2(0.8, 0.8)
 script = ExtResource("11_gtgns")
 
-[node name="img_Pin_Deck" type="TextureRect" parent="WIDGETS/StreamingControllerUI"]
+[node name="img_Pin_Deck" type="TextureRect" parent="WIDGETS/StreamingControllerUI" unique_id=1355006324]
 layout_mode = 0
 offset_left = 77.000015
 offset_top = -168.99997
@@ -1013,7 +1013,7 @@ offset_bottom = 3360.4111
 scale = Vector2(0.085, 0.085)
 texture = ExtResource("11_c25gc")
 
-[node name="Lbl_ChunkSector" type="Label" parent="WIDGETS/StreamingControllerUI"]
+[node name="Lbl_ChunkSector" type="Label" parent="WIDGETS/StreamingControllerUI" unique_id=1858778486]
 layout_mode = 0
 offset_left = -80.0
 offset_top = 2.0
@@ -1025,7 +1025,7 @@ label_settings = SubResource("LabelSettings_c25gc")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Lbl_DECK_A" type="Label" parent="WIDGETS/StreamingControllerUI"]
+[node name="Lbl_DECK_A" type="Label" parent="WIDGETS/StreamingControllerUI" unique_id=1921900052]
 layout_mode = 0
 offset_left = 20.0
 offset_top = -3.0
@@ -1038,7 +1038,7 @@ label_settings = SubResource("LabelSettings_pk1hm")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Lbl_DECK_B" type="Label" parent="WIDGETS/StreamingControllerUI"]
+[node name="Lbl_DECK_B" type="Label" parent="WIDGETS/StreamingControllerUI" unique_id=69947361]
 layout_mode = 0
 offset_left = 95.0
 offset_top = -3.0
@@ -1051,7 +1051,7 @@ label_settings = SubResource("LabelSettings_83qik")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Lbl_EVA_Zone" type="Label" parent="WIDGETS/StreamingControllerUI"]
+[node name="Lbl_EVA_Zone" type="Label" parent="WIDGETS/StreamingControllerUI" unique_id=250970493]
 layout_mode = 0
 offset_left = 170.0
 offset_top = -3.0
@@ -1063,7 +1063,7 @@ label_settings = SubResource("LabelSettings_gtgns")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Menu_Pause" type="Control" parent="WIDGETS"]
+[node name="Menu_Pause" type="Control" parent="WIDGETS" unique_id=298232657]
 layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -1079,7 +1079,7 @@ grow_vertical = 2
 script = ExtResource("11_gmljn")
 input_manager = NodePath("../../InputManager")
 
-[node name="bg_left_wing" type="TextureRect" parent="WIDGETS/Menu_Pause"]
+[node name="bg_left_wing" type="TextureRect" parent="WIDGETS/Menu_Pause" unique_id=1370450342]
 material = SubResource("ShaderMaterial_esmo2")
 layout_mode = 1
 anchors_preset = 15
@@ -1094,7 +1094,7 @@ grow_vertical = 2
 rotation = 3.1415927
 texture = SubResource("GradientTexture2D_vgvdj")
 
-[node name="bg_right_wing" type="TextureRect" parent="WIDGETS/Menu_Pause"]
+[node name="bg_right_wing" type="TextureRect" parent="WIDGETS/Menu_Pause" unique_id=386285739]
 material = SubResource("ShaderMaterial_p1hpk")
 layout_mode = 1
 anchors_preset = 15
@@ -1106,7 +1106,7 @@ grow_horizontal = 2
 grow_vertical = 2
 texture = SubResource("GradientTexture2D_x6j0r")
 
-[node name="btn_continue" type="Button" parent="WIDGETS/Menu_Pause"]
+[node name="btn_continue" type="Button" parent="WIDGETS/Menu_Pause" unique_id=636890387]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -1122,7 +1122,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_esmo2")
 theme_override_styles/hover = SubResource("StyleBoxFlat_vgvdj")
 text = "        Continue           "
 
-[node name="btn_last save session" type="Button" parent="WIDGETS/Menu_Pause"]
+[node name="btn_last save session" type="Button" parent="WIDGETS/Menu_Pause" unique_id=1935538131]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -1138,7 +1138,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_p1hpk")
 theme_override_styles/hover = SubResource("StyleBoxFlat_x6j0r")
 text = "LAST SAVE SESSION"
 
-[node name="btn_settings" type="Button" parent="WIDGETS/Menu_Pause"]
+[node name="btn_settings" type="Button" parent="WIDGETS/Menu_Pause" unique_id=1487278995]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -1157,7 +1157,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_p1hpk")
 theme_override_styles/hover = SubResource("StyleBoxFlat_x6j0r")
 text = "SETTINGS"
 
-[node name="btn_main_menu" type="Button" parent="WIDGETS/Menu_Pause"]
+[node name="btn_main_menu" type="Button" parent="WIDGETS/Menu_Pause" unique_id=1512507379]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -1176,7 +1176,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_p1hpk")
 theme_override_styles/hover = SubResource("StyleBoxFlat_x6j0r")
 text = "MAIN MENU"
 
-[node name="btn_out" type="Button" parent="WIDGETS/Menu_Pause"]
+[node name="btn_out" type="Button" parent="WIDGETS/Menu_Pause" unique_id=1137666355]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -1195,85 +1195,83 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_gtgns")
 theme_override_styles/hover = SubResource("StyleBoxFlat_5yrnl")
 text = "OUT"
 
-[node name="Lift_Section" type="Node3D" parent="."]
+[node name="Lift_Section" type="Node3D" parent="." unique_id=989642532]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5480194, 0, 0)
 
-[node name="AreaCallDeckA" type="Area3D" parent="Lift_Section"]
+[node name="AreaCallDeckA" type="Area3D" parent="Lift_Section" unique_id=391578190]
 transform = Transform3D(1.0000001, 0, 0, 0, 1, 0, 0, 0, 1, 0, -58, 199.31512)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AreaCallDeckA"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AreaCallDeckA" unique_id=875448562]
 transform = Transform3D(1, 0, 0, 0, 1, -7.1054274e-15, 0, 0, 1, -1.2611082, 2.321869, 1.1552582)
 shape = SubResource("BoxShape3D_83qik")
 debug_color = Color(0, 0, 0, 1)
 
-[node name="AreaCallDeckB" type="Area3D" parent="Lift_Section"]
+[node name="AreaCallDeckB" type="Area3D" parent="Lift_Section" unique_id=737983327]
 transform = Transform3D(1.0000001, 0, 0, 0, 1, 0, 0, 0, 1, -3.1399536, -64.34833, 208.29718)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AreaCallDeckB"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AreaCallDeckB" unique_id=906854871]
 transform = Transform3D(1, 0, 0, 0, 1, -7.1054274e-15, 0, 0, 1, 3.1379385, 0.986084, -4.895981)
 shape = SubResource("BoxShape3D_jpp7u")
 debug_color = Color(0, 0, 0, 1)
 
-[node name="AccessShaft" type="Node3D" parent="Lift_Section"]
+[node name="AccessShaft" type="Node3D" parent="Lift_Section" unique_id=1976354944]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -13.427076, -59.805515, 199.69267)
 
-[node name="CSGCombiner3D" type="CSGCombiner3D" parent="Lift_Section/AccessShaft"]
+[node name="CSGCombiner3D" type="CSGCombiner3D" parent="Lift_Section/AccessShaft" unique_id=1485344189]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.239315, 0)
 visible = false
 material_override = SubResource("StandardMaterial3D_83qik")
 
-[node name="CSGMesh3D" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D"]
+[node name="CSGMesh3D" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D" unique_id=1085526418]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36044502, 9.334347, 0)
 mesh = SubResource("CylinderMesh_ljh6w")
 
-[node name="CSGMesh3D2" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D"]
+[node name="CSGMesh3D2" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D" unique_id=1049580153]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36044502, 9.430119, 0)
 operation = 2
 mesh = SubResource("CylinderMesh_83qik")
 
-[node name="CSGMesh3D3" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D"]
+[node name="CSGMesh3D3" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D" unique_id=663207072]
 transform = Transform3D(0.0016929659, 0, -0.99999857, 0, 1, 0, 0.99999857, 0, 0.0016929659, 1.7295654, 8.404774, -0.21842957)
 operation = 2
 mesh = SubResource("BoxMesh_ljh6w")
 
-[node name="Section_Lift_B" type="MeshInstance3D" parent="Lift_Section/AccessShaft"]
+[node name="Section_Lift_B" type="MeshInstance3D" parent="Lift_Section/AccessShaft" unique_id=1685268341]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -12.239315, 0)
 mesh = SubResource("ArrayMesh_jpp7u")
 surface_material_override/0 = SubResource("StandardMaterial3D_gmljn")
 
-[node name="l_Door_Shaft" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_B"]
+[node name="l_Door_Shaft" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_B" unique_id=1038100033]
 transform = Transform3D(-3.8466023e-08, 0, -0.9, 0, 0.55, 0, 0.88, 0, -3.934025e-08, 0.23652792, 3.1559448, -0.31832886)
 mesh = SubResource("ArrayMesh_0b00k")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_vgvdj")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_B/l_Door_Shaft"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_B/l_Door_Shaft" unique_id=1989898898]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_B/l_Door_Shaft/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_B/l_Door_Shaft/StaticBody3D" unique_id=390104599]
 shape = SubResource("ConvexPolygonShape3D_ljh6w")
 
-[node name="h_Door_Shaft2" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_B"]
+[node name="h_Door_Shaft2" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_B" unique_id=1820771689]
 transform = Transform3D(-3.8466023e-08, 0, -0.9, 0, 0.55, 0, 0.88, 0, -3.934025e-08, 0.23652792, 5.8351135, -0.48188782)
 mesh = SubResource("ArrayMesh_esmo2")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_p1hpk")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_B/h_Door_Shaft2"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_B/h_Door_Shaft2" unique_id=2029616764]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_B/h_Door_Shaft2/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_B/h_Door_Shaft2/StaticBody3D" unique_id=477180061]
 shape = SubResource("ConvexPolygonShape3D_83qik")
 
-[node name="anima_sec_lift_b" type="AnimationPlayer" parent="Lift_Section/AccessShaft/Section_Lift_B"]
-libraries = {
-&"": SubResource("AnimationLibrary_jpp7u")
-}
+[node name="anima_sec_lift_b" type="AnimationPlayer" parent="Lift_Section/AccessShaft/Section_Lift_B" unique_id=579443553]
+libraries/ = SubResource("AnimationLibrary_jpp7u")
 
-[node name="sec_light" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_B"]
+[node name="sec_light" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_B" unique_id=988811139]
 transform = Transform3D(-0.036713496, 0.9993258, 0, -0.9993258, -0.036713496, 0, 0, 0, 1, 0.35547394, 11.513243, -4.535797)
 mesh = SubResource("CylinderMesh_jpp7u")
 surface_material_override/0 = SubResource("StandardMaterial3D_x6j0r")
 
-[node name="light" type="OmniLight3D" parent="Lift_Section/AccessShaft/Section_Lift_B/sec_light"]
+[node name="light" type="OmniLight3D" parent="Lift_Section/AccessShaft/Section_Lift_B/sec_light" unique_id=648653816]
 transform = Transform3D(-0.84384394, -0.06773963, 0.5322957, -0.067739636, 0.9975113, 0.01955562, -0.5322958, -0.019555625, -0.84633267, 0, 0, -0.054000854)
 light_color = Color(1, 1, 0.45882353, 1)
 light_energy = 0.1
@@ -1282,63 +1280,61 @@ shadow_enabled = true
 omni_range = 7.0
 omni_attenuation = 0.34
 
-[node name="Shaft_A-B" type="MeshInstance3D" parent="Lift_Section/AccessShaft"]
+[node name="Shaft_A-B" type="MeshInstance3D" parent="Lift_Section/AccessShaft" unique_id=966500263]
 transform = Transform3D(1, 0, 0, 0, 0.285, 0, 0, 0, 1, 0, -2.1229706, 0)
 mesh = SubResource("ArrayMesh_ljh6w")
 surface_material_override/0 = SubResource("StandardMaterial3D_jpp7u")
 
-[node name="CSGCombiner3D2" type="CSGCombiner3D" parent="Lift_Section/AccessShaft"]
+[node name="CSGCombiner3D2" type="CSGCombiner3D" parent="Lift_Section/AccessShaft" unique_id=548547098]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 18.542519, 0)
 visible = false
 material_override = SubResource("StandardMaterial3D_ljh6w")
 
-[node name="CSGMesh3D" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D2"]
+[node name="CSGMesh3D" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D2" unique_id=1836858534]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36044502, 9.334347, 0)
 mesh = SubResource("CylinderMesh_ljh6w")
 
-[node name="CSGMesh3D2" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D2"]
+[node name="CSGMesh3D2" type="CSGMesh3D" parent="Lift_Section/AccessShaft/CSGCombiner3D2" unique_id=236954640]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.36044502, 9.430119, 0)
 operation = 2
 mesh = SubResource("CylinderMesh_83qik")
 
-[node name="Section_Lift_A" type="MeshInstance3D" parent="Lift_Section/AccessShaft"]
+[node name="Section_Lift_A" type="MeshInstance3D" parent="Lift_Section/AccessShaft" unique_id=143099126]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.49, 0)
 mesh = SubResource("ArrayMesh_1lydy")
 surface_material_override/0 = SubResource("StandardMaterial3D_0b00k")
 
-[node name="l_Door_Shaft" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_A"]
+[node name="l_Door_Shaft" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_A" unique_id=1415197515]
 transform = Transform3D(-3.8466023e-08, 0, -0.9, 0, 0.55, 0, 0.88, 0, -3.934025e-08, 0.23652792, 3.1559448, -0.31832886)
 mesh = SubResource("ArrayMesh_0b00k")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_vgvdj")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_A/l_Door_Shaft"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_A/l_Door_Shaft" unique_id=1711629302]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_A/l_Door_Shaft/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_A/l_Door_Shaft/StaticBody3D" unique_id=939684494]
 shape = SubResource("ConvexPolygonShape3D_jpp7u")
 
-[node name="h_Door_Shaft2" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_A"]
+[node name="h_Door_Shaft2" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_A" unique_id=234853547]
 transform = Transform3D(-3.8466023e-08, 0, -0.9, 0, 0.55, 0, 0.88, 0, -3.934025e-08, 0.23652792, 5.8351135, -0.48188782)
 mesh = SubResource("ArrayMesh_esmo2")
 skeleton = NodePath("../..")
 surface_material_override/0 = SubResource("StandardMaterial3D_p1hpk")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_A/h_Door_Shaft2"]
+[node name="StaticBody3D" type="StaticBody3D" parent="Lift_Section/AccessShaft/Section_Lift_A/h_Door_Shaft2" unique_id=392074143]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_A/h_Door_Shaft2/StaticBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lift_Section/AccessShaft/Section_Lift_A/h_Door_Shaft2/StaticBody3D" unique_id=466101407]
 shape = SubResource("ConvexPolygonShape3D_1lydy")
 
-[node name="anima_sec_lift_a" type="AnimationPlayer" parent="Lift_Section/AccessShaft/Section_Lift_A"]
-libraries = {
-&"": SubResource("AnimationLibrary_jpp7u")
-}
+[node name="anima_sec_lift_a" type="AnimationPlayer" parent="Lift_Section/AccessShaft/Section_Lift_A" unique_id=383235470]
+libraries/ = SubResource("AnimationLibrary_jpp7u")
 
-[node name="sec_light" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_A"]
+[node name="sec_light" type="MeshInstance3D" parent="Lift_Section/AccessShaft/Section_Lift_A" unique_id=2058819741]
 transform = Transform3D(-0.036713496, 0.9993258, 0, -0.9993258, -0.036713496, 0, 0, 0, 1, 0.35547394, 11.513243, -4.535797)
 mesh = SubResource("CylinderMesh_jpp7u")
 surface_material_override/0 = SubResource("StandardMaterial3D_x6j0r")
 
-[node name="light" type="OmniLight3D" parent="Lift_Section/AccessShaft/Section_Lift_A/sec_light"]
+[node name="light" type="OmniLight3D" parent="Lift_Section/AccessShaft/Section_Lift_A/sec_light" unique_id=2086867838]
 transform = Transform3D(-0.84384394, -0.06773963, 0.5322957, -0.067739636, 0.9975113, 0.01955562, -0.5322958, -0.019555625, -0.84633267, 0, 0, -0.054000854)
 light_color = Color(1, 1, 0.45882353, 1)
 light_energy = 0.1
@@ -1347,12 +1343,12 @@ shadow_enabled = true
 omni_range = 7.0
 omni_attenuation = 0.34
 
-[node name="StreamingManager" type="Node3D" parent="." node_paths=PackedStringArray("chunks_deck_a", "chunks_deck_b")]
+[node name="StreamingManager" type="Node3D" parent="." unique_id=1139482125 node_paths=PackedStringArray("chunks_deck_a", "chunks_deck_b")]
 script = ExtResource("9_83qik")
 chunks_deck_a = [NodePath("../COMMAND_DECK_A/Lift Lobby A"), NodePath("../COMMAND_DECK_A/Transit Corridor"), NodePath("../COMMAND_DECK_A/Mess Hall"), NodePath("../COMMAND_DECK_A/Crew Quarter"), NodePath("../COMMAND_DECK_A/Bridge"), NodePath("../COMMAND_DECK_A/Transition Hall A"), NodePath("../COMMAND_DECK_A/AI Chamber"), NodePath("../COMMAND_DECK_A/Reactor Bay"), NodePath("../COMMAND_DECK_A/Access Shaft"), NodePath("../COMMAND_DECK_A/Ladder Shaft")]
 chunks_deck_b = [NodePath("../DROP_DECK_B/Lift Lobby B"), NodePath("../DROP_DECK_B/Lift Shaft"), NodePath("../DROP_DECK_B/Transition Hall B"), NodePath("../DROP_DECK_B/Airlock Ramp"), NodePath("../DROP_DECK_B/Hold"), NodePath("../DROP_DECK_B/Ladder Shaft")]
 
-[node name="LabelDebug" type="Label" parent="."]
+[node name="LabelDebug" type="Label" parent="." unique_id=789859360]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -1364,106 +1360,106 @@ grow_vertical = 0
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HazardCube" parent="." node_paths=PackedStringArray("player", "camera") instance=ExtResource("14_esmo2")]
+[node name="HazardCube" parent="." unique_id=1999789018 node_paths=PackedStringArray("player", "camera") instance=ExtResource("14_esmo2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.04645, -55.59313, 183.52931)
 player = NodePath("../Player")
 camera = NodePath("../CameraFollow")
 shake_mode = 1
 continuous_interval = 2.0
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2009774235]
 environment = SubResource("Environment_gtgns")
 
-[node name="Interactables" parent="." instance=ExtResource("19_gtgns")]
+[node name="Interactables" parent="." unique_id=944691334 instance=ExtResource("19_gtgns")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.338749, -43.14654, 173.52577)
 name_interactable_object = "BoxD1"
 interaction_type = 3
 can_throw = true
 
-[node name="Interactables2" parent="." instance=ExtResource("19_gtgns")]
+[node name="Interactables2" parent="." unique_id=1994993738 instance=ExtResource("19_gtgns")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.338749, -43.14654, 174.80444)
 name_interactable_object = "Box2dddd"
 interaction_type = 1
 can_throw = true
 
-[node name="Ladder" type="Node3D" parent="."]
+[node name="Ladder" type="Node3D" parent="." unique_id=1600576697]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6253052, -61.890198, 144.32779)
 
-[node name="MeshLadder" type="MeshInstance3D" parent="Ladder"]
+[node name="MeshLadder" type="MeshInstance3D" parent="Ladder" unique_id=581400815]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.166321, 0, 2.6948853)
 mesh = SubResource("BoxMesh_x6j0r")
 
-[node name="Dev_Tools_HP" type="Node3D" parent="." node_paths=PackedStringArray("hp_bar")]
+[node name="Dev_Tools_HP" type="Node3D" parent="." unique_id=129453168 node_paths=PackedStringArray("hp_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.767365, -55.469482, 178.2787)
 script = ExtResource("18_c25gc")
 hp_bar = NodePath("../CameraFollow/ONBOARD_HUD_3D/MeshHealthBar")
 
-[node name="IncreaseHP" type="Area3D" parent="Dev_Tools_HP"]
+[node name="IncreaseHP" type="Area3D" parent="Dev_Tools_HP" unique_id=649207485]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12371826, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_HP/IncreaseHP"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_HP/IncreaseHP" unique_id=2054482242]
 shape = SubResource("CylinderShape3D_gtgns")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_HP/IncreaseHP"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_HP/IncreaseHP" unique_id=2056479465]
 mesh = SubResource("CylinderMesh_5yrnl")
 
-[node name="Label3D" type="Label3D" parent="Dev_Tools_HP/IncreaseHP"]
+[node name="Label3D" type="Label3D" parent="Dev_Tools_HP/IncreaseHP" unique_id=1532551790]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6699829, 0)
 pixel_size = 0.01
 billboard = 1
 text = "hp +"
 
-[node name="DecreaseHP" type="Area3D" parent="Dev_Tools_HP"]
+[node name="DecreaseHP" type="Area3D" parent="Dev_Tools_HP" unique_id=1967165447]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3815918, 0, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_HP/DecreaseHP"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_HP/DecreaseHP" unique_id=315465206]
 shape = SubResource("CylinderShape3D_pk1hm")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_HP/DecreaseHP"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_HP/DecreaseHP" unique_id=654627489]
 mesh = SubResource("CylinderMesh_clgra")
 
-[node name="Label3D" type="Label3D" parent="Dev_Tools_HP/DecreaseHP"]
+[node name="Label3D" type="Label3D" parent="Dev_Tools_HP/DecreaseHP" unique_id=889519030]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6699829, 0)
 pixel_size = 0.01
 billboard = 1
 text = "hp -"
 
-[node name="Dev_Tools_Oxygen" type="Node3D" parent="." node_paths=PackedStringArray("oxygen_bar")]
+[node name="Dev_Tools_Oxygen" type="Node3D" parent="." unique_id=1968584569 node_paths=PackedStringArray("oxygen_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.767365, -55.469482, 188.25253)
 script = ExtResource("19_5yrnl")
 oxygen_bar = NodePath("../CameraFollow/ONBOARD_HUD_3D/MeshOxygen")
 
-[node name="IncreaseOxygen" type="Area3D" parent="Dev_Tools_Oxygen"]
+[node name="IncreaseOxygen" type="Area3D" parent="Dev_Tools_Oxygen" unique_id=1170751697]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.12371826, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_Oxygen/IncreaseOxygen"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_Oxygen/IncreaseOxygen" unique_id=1976129819]
 shape = SubResource("CylinderShape3D_gtgns")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_Oxygen/IncreaseOxygen"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_Oxygen/IncreaseOxygen" unique_id=1871633052]
 mesh = SubResource("CylinderMesh_gtgns")
 
-[node name="Label3D" type="Label3D" parent="Dev_Tools_Oxygen/IncreaseOxygen"]
+[node name="Label3D" type="Label3D" parent="Dev_Tools_Oxygen/IncreaseOxygen" unique_id=1605394258]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6699829, 0)
 pixel_size = 0.01
 billboard = 1
 text = "oxygen +"
 
-[node name="DecreaseOxygen" type="Area3D" parent="Dev_Tools_Oxygen"]
+[node name="DecreaseOxygen" type="Area3D" parent="Dev_Tools_Oxygen" unique_id=69944419]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3815918, 0, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_Oxygen/DecreaseOxygen"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dev_Tools_Oxygen/DecreaseOxygen" unique_id=720950727]
 shape = SubResource("CylinderShape3D_pk1hm")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_Oxygen/DecreaseOxygen"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Dev_Tools_Oxygen/DecreaseOxygen" unique_id=502751351]
 mesh = SubResource("CylinderMesh_clgra")
 
-[node name="Label3D" type="Label3D" parent="Dev_Tools_Oxygen/DecreaseOxygen"]
+[node name="Label3D" type="Label3D" parent="Dev_Tools_Oxygen/DecreaseOxygen" unique_id=810573313]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6699829, 0)
 pixel_size = 0.01
 billboard = 1
 text = "oxygen -"
 
-[node name="MIDDLECITY" parent="." instance=ExtResource("20_5yrnl")]
+[node name="MIDDLECITY" parent="." unique_id=1707232432 instance=ExtResource("20_5yrnl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -450, 0, 0)
 
 [editable path="Lift"]

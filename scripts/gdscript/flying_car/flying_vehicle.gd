@@ -42,6 +42,12 @@ var _player_original_parent: Node = null
 @export var start_lift_duration: float = 0.6
 @export var floor_check_distance: float = 1.2  # raycast вниз для глушения
 
+
+# === ДВИГАТЕЛИ (ВИЗУАЛ) ===
+@onready var thruster_fl: Node3D = $CarMesh/Thrusters/FL
+@onready var thruster_fr: Node3D = $CarMesh/Thrusters/FR
+@onready var thruster_bl: Node3D = $CarMesh/Thrusters/BL
+@onready var thruster_br: Node3D = $CarMesh/Thrusters/BR
 # === ВНУТРЕННИЕ ПЕРЕМЕННЫЕ ===
 var current_velocity: Vector3 = Vector3.ZERO
 var _input_manager: InputManager = null
@@ -107,10 +113,16 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if engine_state == EngineState.OFF:
-		linear_velocity.y -= 20.0 * delta
-		linear_velocity.y = maxf(linear_velocity.y, -20.0)
+		# Ждем нажатия W (или стрелки вверх) для запуска
+		if Input.is_action_just_pressed("move_forward") or Input.is_action_just_pressed("ui_up"):
+			_start_engine_lift()
+		else:
+			# Гравитация в выключенном состоянии
+			linear_velocity.y -= 20.0 * delta
+			linear_velocity.y = maxf(linear_velocity.y, -20.0)
+		return
 
-	return
+	#return
 		
 
 
@@ -236,6 +248,7 @@ func receive_input(input: Dictionary, delta: float) -> void:
 
 	_update_tilt(delta)
 	_update_idle_drift(delta)
+	_update_thruster_visuals(delta, input_forward, input_strafe)
 	print("RUNNING")
 	print(linear_velocity)
 
@@ -328,8 +341,8 @@ func enter_vehicle(player: CharacterBody3D) -> void:
 	on_player_entered_vehicle()
 
 	# Сразу заводим — не ждём W
-	_start_engine_lift()
-	print("🚗 Игрок сел — двигатель заводится")
+	#_start_engine_lift()
+	#print("🚗 Игрок сел — двигатель заводится")
 
 func _exit_vehicle() -> void:
 	if not _input_manager or not _player_original_parent:
@@ -370,3 +383,23 @@ func on_player_exited_vehicle() -> void:
 		
 func _has_vertical_input() -> bool:
 	return Input.is_action_pressed("jump") or Input.is_action_pressed("crouch")
+
+
+# ============================================
+# АНИМАЦИЯ СОПЕЛ
+# ============================================
+func _update_thruster_visuals(delta: float, input_forward: float, input_strafe: float) -> void:
+	# Угол наклона сопел в радианах (30 градусов)
+	var max_angle = deg_to_rad(30.0)
+	
+	# Добавили минусы (-) перед инпутами для инверсии направления
+	var target_x = -input_forward * max_angle # Если наклонялись не туда при W/S
+	var target_z = -input_strafe * max_angle  # Если наклонялись не туда при стрейфах
+	
+	var thrusters = [thruster_fl, thruster_fr, thruster_bl, thruster_br]
+	
+	for t in thrusters:
+		if t:
+			# Плавно поворачиваем сопла к нужной цели
+			t.rotation.x = lerp(t.rotation.x, target_x, 10.0 * delta)
+			t.rotation.z = lerp(t.rotation.z, target_z, 10.0 * delta)
