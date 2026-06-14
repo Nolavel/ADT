@@ -180,9 +180,12 @@ move_duration = 10.0
 repeat_interval = 4.0
 
 [node name="FlyingVehicle" type="RigidBody3D" parent="units" unique_id=813182323 groups=["vehicle"]]
+physics_interpolation_mode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.0367227, 1.4413526, 0)
+mass = 500.0
 physics_material_override = SubResource("PhysicsMaterial_oj87v")
 script = ExtResource("4_0u7dy")
+thruster_tilt_speed = 15.0
 
 [node name="VehicleConfig" type="Node" parent="units/FlyingVehicle" unique_id=1868188557]
 

@@ -60,9 +60,20 @@ var follow_player_rotation: bool = false
 @export var vehicle_pitch_deg: float = -18.0
 @export var vehicle_transition_duration: float = 0.5
 @export var vehicle_follow_speed: float = 6.0
+var _ghost_target_pos: Vector3 = Vector3.ZERO   # виртуальная точка позади машины
+var _ghost_cam_pos: Vector3 = Vector3.ZERO      # позиция камеры (тоже сглаженная)
+var _ghost_initialized: bool = false
+var _strafe_arc: float = 0.0
+
+var _smoothed_veh_pos: Vector3 = Vector3.ZERO
+var _smoothed_veh_basis: Basis = Basis()
 
 var followed_vehicle: Node3D = null
-
+var _spring_velocity := Vector3.ZERO
+var _spring_offset: Vector3 = Vector3.ZERO   # текущий offset в локальном пространстве машины
+var _prev_desired_world: Vector3 = Vector3.ZERO  # для вычисления скорости → FOV
+var _cam_world_pos: Vector3 = Vector3.ZERO   # сглаженная мировая позиция камеры
+var _smoothed_fov: float = 60.0              # сглаженный FOV без спайков
 
 @export_group("Camera Effects")
 @export_subgroup("X-Ray Wall System")
@@ -108,6 +119,19 @@ const RAYCAST_INTERVAL: float = 0.008  # 125 Hz
 @export var shake_frequency: float = 20.0  # Частота вибрации (Hz)
 @export var shake_smooth_recovery: bool = true  # Плавное возвращение к нормали
 @export var shake_area: NodePath
+
+# === Новые экспорты для Vehicle ===
+@export_subgroup("VEHICLE_ARCADE")
+@export var vehicle_spring_stiffness: float = 8.0   # жёсткость пружины
+@export var vehicle_spring_damping: float = 4.0     # демпфирование
+@export var vehicle_speed_fov_base: float = 60.0    # FOV в покое
+@export var vehicle_speed_fov_max: float = 80.0     # FOV на макс. скорости
+@export var vehicle_speed_fov_factor: float = 0.3   # чувствительность FOV к скорости
+@export var vehicle_look_ahead: float = 3.0         # смещение точки взгляда вперёд
+@export var vehicle_height_follow: bool = true      # следить за высотой
+@export var vehicle_rotation_speed: float = 8.0  # скорость поворота камеры к машине
+var _vehicle_cam_velocity: Vector3 = Vector3.ZERO   # скорость камеры (для пружины)
+var _vehicle_prev_pos: Vector3 = Vector3.ZERO       # для вычисления скорости машины
 
 # === ORBITAL SYSTEM ===
 enum OrbitalPosition { NORTH, EAST, SOUTH, WEST }
@@ -327,23 +351,11 @@ func _process(delta):
 		if not shake_enabled_in_game_only:
 			_apply_shake(delta)
 			
-	elif current_state == CameraState.VEHICLE:
-		if followed_vehicle and not state_animating:
-			# Позиция: сзади и чуть выше машины
-			var desired_pos = followed_vehicle.global_position + \
-				followed_vehicle.global_transform.basis * vehicle_offset
+	#elif current_state == CameraState.VEHICLE:
+		#if followed_vehicle and not state_animating:
+			#_update_vehicle_camera_arcade(delta)
 			
-			global_position = global_position.lerp(
-				desired_pos, 
-				vehicle_follow_speed * delta
-			)
 			
-			# Смотрим на машину с наклоном вниз по X
-			var look_target = followed_vehicle.global_position + Vector3(0, 0.5, 0)
-			look_at(look_target, Vector3.UP)
-			
-			# Дополнительный pitch вниз поверх look_at
-			rotation.x = deg_to_rad(vehicle_pitch_deg)
 	# СТАТИЧЕСКИЕ СОСТОЯНИЯ - камера заморожена
 	else:
 		if not state_animating:
@@ -355,6 +367,10 @@ func _process(delta):
 	
 	_update_labels()
 
+
+func _physics_process(delta: float) -> void:
+	if current_state == CameraState.VEHICLE and followed_vehicle and not state_animating:
+		_update_vehicle_camera_arcade(delta)
 # ============================================
 # УНИФИЦИРОВАННАЯ АНИМАЦИЯ СОСТОЯНИЙ (25% - 50% - 25%)
 # ============================================
@@ -1359,15 +1375,69 @@ func get_current_direction_name() -> String:
 		
 		
 		
+# ✅ Fix: отдельный расчёт для Vehicle
 func enter_vehicle_mode(vehicle: Node3D) -> void:
 	followed_vehicle = vehicle
-	_transition_to_state(
-		CameraState.VEHICLE,
-		vehicle_offset,
-		vehicle_pitch_deg,
-		vehicle_transition_duration
-	)
+	if current_state == CameraState.GAME:
+		saved_game_transform = global_transform
+	
+	_cam_world_pos = global_position
+	_smoothed_fov = fov
+	_ghost_initialized = false  # ← сброс при входе
+	
+	current_state = CameraState.VEHICLE
+	_smoothed_veh_pos = vehicle.global_position
+	_smoothed_veh_basis = vehicle.global_transform.basis
 
 func exit_vehicle_mode() -> void:
 	followed_vehicle = null
+	fov = _smoothed_fov  # выходим с текущим FOV, не резко
+	_cam_world_pos = Vector3.ZERO
 	_return_to_game()
+
+func _update_vehicle_camera_arcade(delta: float) -> void:
+	var veh := followed_vehicle
+	if veh == null:
+		return
+
+	# Только yaw — pitch/roll физики игнорируем
+	var veh_yaw := veh.global_basis.get_euler().y
+	var yaw_basis := Basis.from_euler(Vector3(0.0, veh_yaw, 0.0))
+
+	# === СНАЧАЛА сглаживаем позицию самой машины ===
+	# Это убирает physics jitter ещё на входе
+	_smoothed_veh_pos = _smoothed_veh_pos.lerp(veh.global_position, 1.0 - exp(-20.0 * delta))
+
+	# === GHOST TARGET — точка ПЕРЕД машиной (куда едем) ===
+	# -Z в локальных = вперёд в Godot, Y = высота центра тачки
+	var ghost_offset := Vector3(0.0, 1.0, -4.0)
+	var desired_ghost := _smoothed_veh_pos + yaw_basis * ghost_offset
+
+	# Инициализация при первом входе
+	if not _ghost_initialized:
+		_ghost_target_pos = desired_ghost
+		_ghost_cam_pos = _smoothed_veh_pos + yaw_basis * vehicle_offset
+		_ghost_initialized = true
+
+	# Ghost ползёт медленно — "гироскоп", не реагирует на рывки
+	_ghost_target_pos = _ghost_target_pos.lerp(desired_ghost, 1.0 - exp(-5.0 * delta))
+
+	# === ПОЗИЦИЯ КАМЕРЫ — тянется к сглаженной позиции, не к veh напрямую ===
+	var desired_cam := _smoothed_veh_pos + yaw_basis * vehicle_offset
+	_ghost_cam_pos = _ghost_cam_pos.lerp(desired_cam, 1.0 - exp(-vehicle_spring_stiffness * delta))
+	global_position = _ghost_cam_pos
+
+	# === СМОТРИМ НА GHOST TARGET ===
+	var dir := _ghost_target_pos - global_position
+	if dir.length_squared() > 0.001:
+		var desired_basis := Basis.looking_at(dir.normalized(), Vector3.UP)
+		var rot_t := 1.0 - exp(-vehicle_rotation_speed * delta)
+		global_transform.basis = Basis(
+			Quaternion(global_transform.basis).slerp(Quaternion(desired_basis), rot_t)
+		)
+
+	# === FOV ===
+	var lag := global_position.distance_to(desired_cam)
+	var target_fov := lerpf(vehicle_speed_fov_base, vehicle_speed_fov_max, clampf(lag / 5.0, 0.0, 1.0))
+	_smoothed_fov = lerpf(_smoothed_fov, target_fov, 1.0 - exp(-3.0 * delta))
+	fov = _smoothed_fov

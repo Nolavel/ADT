@@ -195,6 +195,12 @@ Interact={
 3d_physics/layer_10="Interactables"
 3d_physics/layer_20="3D_GUI"
 
+[physics]
+
+common/max_physics_steps_per_frame=10
+common/physics_jitter_fix=1.0
+common/physics_interpolation=true
+
 [rendering]
 
 renderer/rendering_method="mobile"
