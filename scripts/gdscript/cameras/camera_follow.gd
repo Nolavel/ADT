@@ -351,9 +351,9 @@ func _process(delta):
 		if not shake_enabled_in_game_only:
 			_apply_shake(delta)
 			
-	#elif current_state == CameraState.VEHICLE:
-		#if followed_vehicle and not state_animating:
-			#_update_vehicle_camera_arcade(delta)
+	elif current_state == CameraState.VEHICLE:
+		if followed_vehicle and not state_animating:
+			_update_vehicle_camera_arcade(delta)
 			
 			
 	# СТАТИЧЕСКИЕ СОСТОЯНИЯ - камера заморожена
@@ -368,9 +368,7 @@ func _process(delta):
 	_update_labels()
 
 
-func _physics_process(delta: float) -> void:
-	if current_state == CameraState.VEHICLE and followed_vehicle and not state_animating:
-		_update_vehicle_camera_arcade(delta)
+
 # ============================================
 # УНИФИЦИРОВАННАЯ АНИМАЦИЯ СОСТОЯНИЙ (25% - 50% - 25%)
 # ============================================

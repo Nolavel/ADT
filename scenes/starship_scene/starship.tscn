@@ -1518,33 +1518,7 @@ text = "oxygen -"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -450, 0, 0)
 
 [node name="FlyingVehicle" parent="MIDDLECITY/units" parent_id_path=PackedInt32Array(1707232432, 1299013020) index="1" unique_id=813182323]
-hover_thrust = 1225.0
-vertical_thrust = 1200.0
-horizontal_thrust = 10500.0
-max_thruster_angle = 30.0
-yaw_torque = 400.0
-max_yaw_speed = 2.0
-max_speed_kmh = 120.0
-air_drag = 0.05
-tilt_responsiveness = 25.0
-pid_p = 6.0
-pid_d = 4.0
-pid_i = 0.1
-stabilizer_deadzone = 0.05
-tilt_pitch_forward = 6.0
-tilt_pitch_brake = 5.0
-tilt_roll_strafe = 10.0
 tilt_speed = 8.0
-drift_amplitude = 1.2
-drift_frequency = 0.4
-drift_idle_time = 1.5
-lift_thrust_multiplier = 1.8
-lift_duration = 0.8
-name_interactable_object = "Box"
-interaction_type = 0
-can_throw = false
-can_use_in_hands = false
-enable_visual_indicator = true
 
 [editable path="Lift"]
 [editable path="DECK_B"]

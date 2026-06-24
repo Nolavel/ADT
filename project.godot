@@ -18,6 +18,11 @@ config/name="Prok"
 config/features=PackedStringArray("4.6", "C#", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GameManager="*uid://4w3ef62sbngh"
+StreamManager="*uid://bw0ayj727r68s"
+
 [display]
 
 window/size/viewport_width=1920
@@ -33,6 +38,7 @@ project/assembly_name="Prok"
 
 folder_colors={
 "res://assets/": "green",
+"res://data/": "purple",
 "res://garbage/": "gray",
 "res://meshes/": "green",
 "res://refs/": "red",
