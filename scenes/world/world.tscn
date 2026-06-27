@@ -4,3 +4,5 @@
 
 [node name="World" type="Node3D" unique_id=738196799]
 script = ExtResource("1_dphjl")
+
+[node name="StreamContainer" type="Node3D" parent="." unique_id=854905517]

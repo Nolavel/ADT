@@ -42,20 +42,22 @@ func _process(_delta: float) -> void:
 		_update_stream(player_pos)
 
 
-func initialize(container: Node3D, player: Node3D) -> void:
+func initialize(container: Node3D, player: Node3D = null) -> void:
 	_stream_container = container
-	_player           = player
+	_player = player
 
-	var ok: bool = _load_world_data(GameManager.world_data_path)
+	var ok := _load_world_data(GameManager.world_data_path)
 	if not ok:
-		push_error("[StreamManager] ❌ Failed to load world data from: %s" % GameManager.world_data_path)
+		push_error("[StreamManager] Failed to load world data")
 		return
 
-	_initialized         = true
-	_last_check_position = Vector3(INF, INF, INF)
+	_initialized = true
 
-	print("[StreamManager] ✅ Initialized with %d skyscrapers" % _world_data.size())
-	initialized.emit(_world_data.size())
+	print("[StreamManager] Loaded %d skyscrapers" % _world_data.size())
+
+	# ===== ВРЕМЕННЫЙ ДЕБАГ =====
+	for sc_id in _world_data.keys():
+		_load_skyscraper(sc_id)
 
 
 func force_update() -> void:
@@ -74,6 +76,9 @@ func reset() -> void:
 
 
 func _load_world_data(path: String) -> bool:
+	print("--------------------------------")
+	print("Loading file:", path)
+	print("Exists:", FileAccess.file_exists(path))
 	if not FileAccess.file_exists(path):
 		push_warning("[StreamManager] ⚠️ World data file not found: %s" % path)
 		_world_data = {}
@@ -84,6 +89,7 @@ func _load_world_data(path: String) -> bool:
 		return false
 
 	var json_string: String = file.get_as_text()
+	print(json_string)
 	file.close()
 
 	var json: JSON = JSON.new()
@@ -93,6 +99,8 @@ func _load_world_data(path: String) -> bool:
 		return false
 
 	var raw = json.data
+	print("JSON type:", typeof(raw))
+	print(raw)
 	if raw is Array:
 		for entry in raw:
 			if entry is Dictionary and entry.has("id"):
@@ -168,10 +176,15 @@ func _load_skyscraper(sc_id: String) -> void:
 	var instance: Node3D   = packed.instantiate()
 	instance.name          = sc_id
 	instance.global_position = _vec3_from_array(data.get("position", [0.0, 0.0, 0.0]))
+	print("Spawned at:", instance.global_position)
+	print("========================================")
 
 	_stream_container.add_child(instance)
 	_loaded_ids[sc_id] = instance
 	skyscraper_loaded.emit(sc_id)
+	print("")
+	print("========================================")
+	print("Loading skyscraper:", sc_id)
 
 
 func _unload_skyscraper(sc_id: String) -> void:

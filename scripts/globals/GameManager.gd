@@ -51,7 +51,7 @@ var spawn_point: Vector3 = Vector3(
 # MapSource.gd сохраняет экспорт сюда.
 # StreamManager.gd загружает отсюда при старте World.
 
-var world_data_path: String = "user://world_data.json"
+var world_data_path: String = "user://data/world_data.json"
 
 # ── 🎮 СОСТОЯНИЕ СЕССИИ ─────────────────────────────────────────────────────
 # Заполняется во время игры. StreamManager и другие системы

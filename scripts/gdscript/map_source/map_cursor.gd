@@ -53,15 +53,15 @@ const RAY_COLLISION_MASK: int = 1
 # ── Ссылки на ноды ───────────────────────────────────────────────────────────
 # Пути идут от корня сцены MapSource (родитель CameraSource → корень сцены).
 
-@onready var city_zone: StaticBody3D = $"../../CityZone/StaticBody3D"
+@onready var city_zone: StaticBody3D = $"../../../CityZone/StaticBody3D"
 
-@onready var strata_doggerland: Area3D = $"../../STRATA_Doggerland"
-@onready var strata_manifold:   Area3D = $"../../STRATA_Manifold"
-@onready var strata_glare:      Area3D = $"../../STRATA_Glare"
+@onready var strata_doggerland: Area3D = $"../../../STRATA_Doggerland"
+@onready var strata_manifold:   Area3D = $"../../../STRATA_Manifold"
+@onready var strata_glare:      Area3D = $"../../../STRATA_Glare"
 
-@onready var district_central: Area3D = $"../../District_CENTRAL"
-@onready var district_south:   Area3D = $"../../District_SOUTH"
-@onready var district_north:   Area3D = $"../../District_NORTH"
+@onready var district_central: Area3D = $"../../../District_CENTRAL"
+@onready var district_south:   Area3D = $"../../../District_SOUTH"
+@onready var district_north:   Area3D = $"../../../District_NORTH"
 
 ## Камера-родитель — нужна для project_ray_*
 @onready var _camera: Camera3D = $".."
@@ -89,6 +89,7 @@ var _hit_point:    Vector3 = Vector3.ZERO
 var _has_hit:      bool    = false
 ## ID небоскрёба под курсором (пусто если нет)
 var _hovered_sc:   String  = ""
+var _tower_strata: String = ""
 
 
 # ── Жизненный цикл ───────────────────────────────────────────────────────────
@@ -138,6 +139,7 @@ func _cast_ray() -> void:
 		_has_hit     = false
 		_hit_point   = Vector3.ZERO
 		_hovered_sc  = ""
+		_tower_strata = ""
 		return
 
 	# Луч попал — запоминаем точку и тело
@@ -155,6 +157,11 @@ func _cast_ray() -> void:
 
 		if _hovered_tower:
 			_hovered_sc = _hovered_tower.skyscraper_name
+			
+		_tower_strata = ""
+
+		if collider.has_meta("strata_name"):
+			_tower_strata = str(collider.get_meta("strata_name"))
 
 ## Ищем sc_id поднимаясь вверх по иерархии от collider до корня сцены.
 ## Raycast бьёт в CollisionShape/StaticBody — sc_id может быть на 1-2 уровня выше.
@@ -222,7 +229,10 @@ func _update_hud() -> void:
 	lines.append("Высота: %.0f м" % height)
 	lines.append("──────────────────────")
 	lines.append("X: %.0f  Z: %.0f" % [_hit_point.x, _hit_point.z])
-
+	
+	if _tower_strata != "":
+		lines.append("Слой башни: %s" % _tower_strata)
+	
 	_label_info.text = "\n".join(lines)
 
 
@@ -306,12 +316,12 @@ func _build_hud() -> void:
 
 	# ── Подсказка управления (правый верх) ───────────────────────────────────
 	var label_help          := Label.new()
-	label_help.text          = "WASD — движение\nКолесо — зум\nEscape — выход"
-	label_help.add_theme_font_size_override("font_size", 11)
+	label_help.text = "Управление:\nWASD / ←↑↓→ — движение\nПКМ + A/D — поворот камеры\nПКМ + W/S — наклон камеры\nКолесо мыши — высота\nEsc — выход"
+	label_help.add_theme_font_size_override("font_size", 15)
 	label_help.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7, 0.8))
 	# Прибиваем к правому верхнему углу
 	label_help.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	label_help.position = Vector2(-180.0, 16.0)
+	label_help.position = Vector2(-280.0, 16.0)
 	_canvas.add_child(label_help)
 
 ## Вызвать в _ready() чтобы увидеть реальные AABB всех Area3D и позиции небоскрёбов.

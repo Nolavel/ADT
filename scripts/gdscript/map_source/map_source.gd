@@ -89,10 +89,10 @@ var _skyscraper_data: Dictionary = {}
 
 func _ready() -> void:
 	add_to_group("map_source")
-	#DirAccess.make_dir_recursive_absolute("res://data")
-	#_load_data()
-	#_register_scene_skyscrapers()
-	#print("[MapSource] ✅ Ready. Skyscrapers registered: %d" % _skyscraper_data.size())
+	_load_data()
+	_register_scene_skyscrapers()
+	export_data()
+	print("[MapSource] ✅ Ready. Skyscrapers registered: %d" % _skyscraper_data.size())
 	#debug_full_scene_dump()  # ← временно
 
 

@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://btyn3081k3ola"]
+
+[ext_resource type="Script" uid="uid://cpv3hwfj3u35d" path="res://scripts/gdscript/map_source/sc_001.gd" id="1_ib03f"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_6p1b7"]
+size = Vector3(10, 1320, 10)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_n2pes"]
+points = PackedVector3Array(8.668638, 661.82306, 8.668638, -6.9526625, -661.82306, -6.9526625, -6.9526625, -661.82306, 8.668638, -6.9526625, 661.82306, -6.9526625, 8.668638, -661.82306, -6.9526625, 8.668638, -661.82306, 8.668638, -6.9526625, 661.82306, 8.668638, 8.668638, 661.82306, -6.9526625)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6w48d"]
+size = Vector3(100, 500, 100)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_6w48d"]
+points = PackedVector3Array(57.131977, 253.96825, 57.131977, -50, -235.87383, -50, -53.95738, -253.96825, 57.131977, 57.131977, -253.96825, -53.95738, -50, 235.87383, -50, 57.131977, -253.96825, 57.131977, -53.95738, 253.96825, 57.131977, 57.131977, 253.96825, -53.95738)
+
+[sub_resource type="BoxMesh" id="BoxMesh_agfqh"]
+size = Vector3(80, 500, 80)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_cfm0j"]
+points = PackedVector3Array(40, 234.5743, 40, -40, -230.88022, -40, -40, -230.88022, 39.36508, 40, -234.5743, 40, 39.36508, -230.88022, -40, -40, 230.88022, -40, -40, 230.88022, 39.36508, 39.36508, 230.88022, -40)
+
+[sub_resource type="BoxMesh" id="BoxMesh_n58pn"]
+size = Vector3(60, 320, 60)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_272my"]
+points = PackedVector3Array(33.49206, 162.47606, 33.49206, -30, -149.97789, -30, -32.539684, -162.47606, 33.49206, 33.49206, -162.47606, -32.539684, -30, 149.97789, -30, 33.49206, -162.47606, 33.49206, -32.539684, 162.47606, 33.49206, 33.49206, 162.47606, -32.539684)
+
+[node name="SC001" type="Node3D" unique_id=1531042291]
+script = ExtResource("1_ib03f")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1421042640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 670, 0)
+mesh = SubResource("BoxMesh_6p1b7")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=2066125708 groups=["skyscraper"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 665.74884, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1986905062]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2511597, 0)
+shape = SubResource("ConvexPolygonShape3D_n2pes")
+
+[node name="Dog" type="MeshInstance3D" parent="." unique_id=199608027]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 260, 0)
+mesh = SubResource("BoxMesh_6w48d")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Dog" unique_id=391265938]
+metadata/strata_name = "Dog"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dog/StaticBody3D" unique_id=421158717]
+shape = SubResource("ConvexPolygonShape3D_6w48d")
+
+[node name="Man" type="MeshInstance3D" parent="." unique_id=1678945262]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 760, 0)
+mesh = SubResource("BoxMesh_agfqh")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Man" unique_id=1282487714]
+metadata/strata_name = "Man"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Man/StaticBody3D" unique_id=1731662395]
+shape = SubResource("ConvexPolygonShape3D_cfm0j")
+
+[node name="Gla" type="MeshInstance3D" parent="." unique_id=1302031782]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1170, 0)
+mesh = SubResource("BoxMesh_n58pn")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Gla" unique_id=366375449]
+metadata/strata_name = "GLA"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Gla/StaticBody3D" unique_id=1230554703]
+shape = SubResource("ConvexPolygonShape3D_272my")

@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://bq552rdni7eh3" path="res://scripts/gdscript/map_source/map_cursor.gd" id="3_nqtne"]
 [ext_resource type="Script" uid="uid://dgdycarheixri" path="res://scripts/gdscript/map_source/map_camera.gd" id="3_wrbia"]
 [ext_resource type="Texture2D" uid="uid://p80uqckupev6" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_07.png" id="4_6p1b7"]
-[ext_resource type="Script" uid="uid://cpv3hwfj3u35d" path="res://scripts/gdscript/map_source/sc_001.gd" id="4_lx4ds"]
+[ext_resource type="PackedScene" uid="uid://btyn3081k3ola" path="res://scenes/sc_placeholders/sc_001.tscn" id="4_6w48d"]
 [ext_resource type="Texture2D" uid="uid://cjltkwabuxkyc" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_05.png" id="5_nqtne"]
 [ext_resource type="Script" uid="uid://45ki68uq8hm8" path="res://scripts/gdscript/map_source/spawner.gd" id="7_6w48d"]
 
@@ -45,38 +45,8 @@ size = Vector2(2500, 9200)
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_agfqh"]
 points = PackedVector3Array(-1285.3846, 35.384617, -4635.385, 1262.3077, 35.384617, 4635.385, 1262.3077, 35.384617, -4635.385, -1285.3846, 35.384617, 4635.385)
 
-[sub_resource type="BoxMesh" id="BoxMesh_6p1b7"]
-size = Vector3(10, 1320, 10)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_6p1b7"]
-points = PackedVector3Array(65.2381, 670.4762, 65.2381, -60.476196, -670.4762, -60.476196, -60.476196, -670.4762, 65.2381, -60.476196, 670.4762, -60.476196, 65.2381, -670.4762, -60.476196, 65.2381, -670.4762, 65.2381, -60.476196, 670.4762, 65.2381, 65.2381, 670.4762, -60.476196)
-
-[sub_resource type="BoxMesh" id="BoxMesh_6w48d"]
-size = Vector3(100, 500, 100)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_6w48d"]
-points = PackedVector3Array(57.131977, 253.96825, 57.131977, -50, -235.87383, -50, -53.95738, -253.96825, 57.131977, 57.131977, -253.96825, -53.95738, -50, 235.87383, -50, 57.131977, -253.96825, 57.131977, -53.95738, 253.96825, 57.131977, 57.131977, 253.96825, -53.95738)
-
-[sub_resource type="BoxMesh" id="BoxMesh_agfqh"]
-size = Vector3(80, 500, 80)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_cfm0j"]
-points = PackedVector3Array(40, 234.5743, 40, -40, -230.88022, -40, -40, -230.88022, 39.36508, 40, -234.5743, 40, 39.36508, -230.88022, -40, -40, 230.88022, -40, -40, 230.88022, 39.36508, 39.36508, 230.88022, -40)
-
-[sub_resource type="BoxMesh" id="BoxMesh_n58pn"]
-size = Vector3(60, 320, 60)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_272my"]
-points = PackedVector3Array(33.49206, 162.47606, 33.49206, -30, -149.97789, -30, -32.539684, -162.47606, 33.49206, 33.49206, -162.47606, -32.539684, -30, 149.97789, -30, 33.49206, -162.47606, 33.49206, -32.539684, 162.47606, 33.49206, 33.49206, 162.47606, -32.539684)
-
 [node name="MapSource" type="Node3D" unique_id=1797648371]
 script = ExtResource("1_r5tvp")
-
-[node name="MapCamera" type="Camera3D" parent="." unique_id=998545364]
-script = ExtResource("3_wrbia")
-
-[node name="MapCursor" type="Node" parent="MapCamera" unique_id=666944901]
-script = ExtResource("3_nqtne")
 
 [node name="District_CENTRAL" type="Area3D" parent="." unique_id=1836058696 groups=["district_area"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 90.02991)
@@ -145,45 +115,18 @@ shape = SubResource("ConvexPolygonShape3D_agfqh")
 
 [node name="Skyscrapers" type="Node3D" parent="." unique_id=342622999]
 
-[node name="SC001" type="Node3D" parent="Skyscrapers" unique_id=1578941064]
-script = ExtResource("4_lx4ds")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Skyscrapers/SC001" unique_id=530014098]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 670, 0)
-mesh = SubResource("BoxMesh_6p1b7")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Skyscrapers/SC001" unique_id=2061738891 groups=["skyscraper"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 665.74884, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Skyscrapers/SC001/StaticBody3D" unique_id=2055011277]
-shape = SubResource("ConvexPolygonShape3D_6p1b7")
-
-[node name="Dog" type="MeshInstance3D" parent="Skyscrapers/SC001" unique_id=1078776979]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 260, 0)
-mesh = SubResource("BoxMesh_6w48d")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Skyscrapers/SC001/Dog" unique_id=18654816]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Skyscrapers/SC001/Dog/StaticBody3D" unique_id=1016324930]
-shape = SubResource("ConvexPolygonShape3D_6w48d")
-
-[node name="Man" type="MeshInstance3D" parent="Skyscrapers/SC001" unique_id=1036197353]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 760, 0)
-mesh = SubResource("BoxMesh_agfqh")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Skyscrapers/SC001/Man" unique_id=109622647]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Skyscrapers/SC001/Man/StaticBody3D" unique_id=2122970383]
-shape = SubResource("ConvexPolygonShape3D_cfm0j")
-
-[node name="Gla" type="MeshInstance3D" parent="Skyscrapers/SC001" unique_id=875972209]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1170, 0)
-mesh = SubResource("BoxMesh_n58pn")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Skyscrapers/SC001/Gla" unique_id=1232622499]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Skyscrapers/SC001/Gla/StaticBody3D" unique_id=1432807893]
-shape = SubResource("ConvexPolygonShape3D_272my")
+[node name="SC001" parent="Skyscrapers" unique_id=1531042291 instance=ExtResource("4_6w48d")]
 
 [node name="Spawner" type="Node3D" parent="." unique_id=221293653]
 script = ExtResource("7_6w48d")
+
+[node name="CameraPivot" type="Node3D" parent="." unique_id=1786806719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 900, 0)
+
+[node name="MapCamera" type="Camera3D" parent="CameraPivot" unique_id=998545364]
+script = ExtResource("3_wrbia")
+
+[node name="MapCursor" type="Node" parent="CameraPivot/MapCamera" unique_id=666944901]
+script = ExtResource("3_nqtne")
+
+[editable path="Skyscrapers/SC001"]
