@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://bpmh71ufs4qyg"]
+
+[ext_resource type="Script" uid="uid://vg368drj41e4" path="res://scripts/gdscript/resourses/CityZoneData.gd" id="1_e4cvp"]
+[ext_resource type="Script" uid="uid://b7tqqbk2k4e4i" path="res://scripts/gdscript/resourses/WorldData.gd" id="2_xy5s7"]
+[ext_resource type="Script" uid="uid://df5adq7w1iw73" path="res://scripts/gdscript/resourses/TowerData.gd" id="3_ke6ng"]
+
+[sub_resource type="Resource" id="Resource_e4cvp"]
+script = ExtResource("1_e4cvp")
+size = Vector3(6600, 10, 6600)
+
+[sub_resource type="Resource" id="Resource_xy5s7"]
+script = ExtResource("3_ke6ng")
+id = "T-001"
+position = Vector3(200, 0, 0)
+height = 1320.0
+district = "A1"
+scene_path = "res://scenes/towers/T001.tscn"
+strata_ids = {
+"doggerland": "T-001-DG",
+"glare": "T-001-GL",
+"manifold": "T-001-MF"
+}
+
+[resource]
+script = ExtResource("2_xy5s7")
+towers = Array[ExtResource("3_ke6ng")]([SubResource("Resource_xy5s7")])
+city_zone = SubResource("Resource_e4cvp")
+spawn_point = Vector3(-611.2564, 10, -397.90057)

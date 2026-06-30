@@ -33,7 +33,7 @@ extends Node3D
 
 ## Y верхней поверхности CityZone. Дефолтная высота спавна если
 ## пользователь не двигал Spawner — игрок появится на полу города.
-const DEFAULT_SPAWN_Y: float = 10.0
+const DEFAULT_SPAWN_Y: float = 25.0
 
 ## Цвет визуального маркера в редакторе
 const GIZMO_COLOR: Color = Color(1.0, 0.9, 0.0, 0.9)   # жёлтый
@@ -82,8 +82,7 @@ func save_spawn_point() -> void:
 	if spawn_pos.y < DEFAULT_SPAWN_Y:
 		spawn_pos.y = DEFAULT_SPAWN_Y
 		push_warning("[Spawner] ⚠️ Spawn Y was below CityZone, clamped to %.1f" % DEFAULT_SPAWN_Y)
-
-	GameManager.set_spawn_point(spawn_pos)
+	WorldSystems.set_spawn_point(spawn_pos)
 	print("[Spawner] 💾 Spawn point saved: ", spawn_pos)
 
 

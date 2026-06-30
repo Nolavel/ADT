@@ -13,8 +13,8 @@ extends Camera3D
 
 @export_group("Bounds")
 @export var bounds_padding: float = 200.0
-@export var world_half_x: float = 1300.0
-@export var world_half_z: float = 4600.0
+@export var world_half_x: float = 4800.0
+@export var world_half_z: float = 4800.0
 
 @export_group("Orbit")
 @export var orbit_speed: float = 120.0

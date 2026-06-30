@@ -20,8 +20,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameManager="*uid://4w3ef62sbngh"
-StreamManager="*uid://bw0ayj727r68s"
+WorldSystems="*uid://4w3ef62sbngh"
+StreamingSystems="*uid://bw0ayj727r68s"
 
 [display]
 
@@ -54,6 +54,8 @@ wall=""
 interactables="Для интерактивный обьектов"
 floor="Cлой для передвижения игрока"
 vehicle=""
+world_root="get_first_node_in_group (быстрый доступ для инстанса в главной сцене"
+district=""
 
 [gui]
 
