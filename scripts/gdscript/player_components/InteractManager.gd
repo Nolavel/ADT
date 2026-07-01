@@ -18,7 +18,7 @@ class_name InteractManager
 ## Этот шейпкаст служит для обнаружения интерактивных обьектов в фокусе
 ## перед игроком по группе "Interactable" и по слою "Interactable"
 
-@export var input_manager: InputManager
+@export var input_manager: InputSystems
 ## добывить через ссылку в главной сцене // там прописано взаимодействие с обьектом
 ## пока сделаем прототип по клавише R (Interact)
 

@@ -23,6 +23,8 @@ albedo_texture = ExtResource("5_nqtne")
 [sub_resource type="PlaneMesh" id="PlaneMesh_n58pn"]
 size = Vector2(6600, 6600)
 
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_6w48d"]
+
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_agfqh"]
 points = PackedVector3Array(-3300, 0, -3300, -3300, 0, 3300.0005, 3300.0005, 0, -3300, 3300.0005, 0, 3300.0005)
 
@@ -76,7 +78,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
 material_override = SubResource("StandardMaterial3D_6w48d")
 mesh = SubResource("PlaneMesh_n58pn")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="CityZone" unique_id=143640666]
+[node name="StaticBody3D" type="StaticBody3D" parent="CityZone" unique_id=143640666 groups=["floor"]]
+collision_layer = 3
+collision_mask = 3
+physics_material_override = SubResource("PhysicsMaterial_6w48d")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CityZone/StaticBody3D" unique_id=1177887517]
 shape = SubResource("ConvexPolygonShape3D_agfqh")
@@ -85,6 +90,8 @@ shape = SubResource("ConvexPolygonShape3D_agfqh")
 mesh = SubResource("PlaneMesh_6w48d")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="WorldZone" unique_id=1302701295]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="WorldZone/StaticBody3D" unique_id=1366630501]
 shape = SubResource("ConvexPolygonShape3D_6w48d")

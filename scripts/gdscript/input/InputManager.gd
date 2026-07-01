@@ -1,7 +1,7 @@
-# InputManager.gd
+# InputSystems.gd
 extends Node3D
 
-class_name InputManager
+class_name InputSystems
 
 ## === СИГНАЛЫ ===
 signal status_camera_toggled(status_is_active: bool)
@@ -13,7 +13,6 @@ signal fog_effect_toggled(is_paused: bool)
 
 ## --- Экспортируемые референсы ---
 @export_group("References")
-@export var player: NodePath
 @export var menu_pause: Control
 @export var hud: NodePath
 
@@ -23,7 +22,6 @@ signal fog_effect_toggled(is_paused: bool)
 ## --- Визуальные эффекты ---
 @onready var target_indicator: TargetIndicator = $TargetIndicator
 @onready var orbital_particles: OrbitalParticleEffect = $OrbitalParticleEffect
-@onready var terrain_scanner: TerrainScannerEffect = $TerrainScannerEffect
 @onready var label_actives = $"WidgetCursor/VBoxContainer/P-actives"
 
 @export_subgroup("Debug")
@@ -68,24 +66,10 @@ var current_ui_state: UIState = UIState.GAME
 ## ИНИЦИАЛИЗАЦИЯ
 ## ============================================
 func _ready():
-	## Получаем референс игрока
-	player_node = get_node(player)
-	
-	if player_node:
-		## Подключаем сигналы движения
-		player_node.movement_started.connect(_on_movement_started)
-		player_node.movement_stopped.connect(_on_movement_stopped)
-		
-		## Передаём игрока визуальным эффектам
-		if target_indicator:
-			target_indicator.set_player_reference(player_node)
-		if orbital_particles:
-			orbital_particles.set_player_reference(player_node)
-		if terrain_scanner:
-			terrain_scanner.set_player_reference(player_node)
-	else:
-		push_error("Player node not found!")
-	
+	## 🔥 Всё что связано с player_node теперь настраивается ТОЛЬКО
+	## в set_player_reference(), которую вызывает World.gd после спавна игрока.
+	## Здесь эту логику больше не трогаем.
+
 	## Получаем активную камеру
 	camera = get_viewport().get_camera_3d()
 	
@@ -109,6 +93,24 @@ func _ready():
 	if not target_indicator:
 		push_warning("⚠️ TargetIndicator не найден!")
 
+
+## Вызывается снаружи (из World.gd) сразу после спавна игрока
+func set_player_reference(p: CharacterBody3D) -> void:
+	player_node = p
+	if not player_node:
+		push_error("InputSystems.set_player_reference: передан null!")
+		return
+
+	player_node.movement_started.connect(_on_movement_started)
+	player_node.movement_stopped.connect(_on_movement_stopped)
+
+	if target_indicator:
+		target_indicator.set_player_reference(player_node)
+	if orbital_particles:
+		orbital_particles.set_player_reference(player_node)
+
+	print("✅ InputSystems: player_node назначен")
+
 ## ============================================
 ## ОСНОВНОЙ ЦИКЛ
 ## ============================================
@@ -116,11 +118,6 @@ func _physics_process(delta: float) -> void:
 	if not player_node:
 		return
 		
-	# Если в машине — отдельная ветка, ничего общего с пешим управлением
-	if current_ui_state == UIState.VEHICLE:
-		_handle_vehicle_controls(delta)
-		_handle_vehicle_pause()  # только пауза доступна
-		return  # ← выходим, остальное не выполняется
 	
 	## Проверяем возможность управления движением
 	var can_control_movement = current_ui_state == UIState.GAME
@@ -162,12 +159,7 @@ func _handle_interact_action() -> void:
 		## Если удержано 0.5 сек — выполняем интеракт
 		if interact_button_pressed_time >= INTERACT_HOLD_TIME:
 			
-			# Проверяем — может игрок стоит у машины?
-			var nearby_vehicle = _check_nearby_vehicle()
-			if nearby_vehicle:
-				_enter_vehicle(nearby_vehicle)
-				interact_button_held = false
-				return
+			
 			var interact_manager = player_node.get_node("InteractManager")
 			if interact_manager and interact_manager.has_method("try_interact"):
 				interact_manager.try_interact()
@@ -178,39 +170,12 @@ func _handle_interact_action() -> void:
 		interact_button_held = false
 		interact_button_pressed_time = 0.0
 
-func _check_nearby_vehicle() -> FlyingCar:
-	# Ищем FlyingCar в ближайших узлах через группу
-	var vehicles = get_tree().get_nodes_in_group("vehicle")
-	for v in vehicles:
-		if v is FlyingCar and not v.is_occupied:
-			if player_node.global_position.distance_to(v.global_position) < 3.5:
-				return v
-	return null
-
-func _enter_vehicle(vehicle: FlyingCar) -> void:
-	current_ui_state = UIState.VEHICLE
-	
-	# Получаем camera_controller через камеру
-	var cam = get_viewport().get_camera_3d()
-	vehicle.setup_references(self, cam)
-	vehicle.enter_vehicle(player_node)
-	
-	print("🚗 InputManager: вход в машину")
 
 ## Переключение сканера местности (S)
 func _handle_scanner_toggle() -> void:
 	## Работает только в режиме игры
 	if current_ui_state != UIState.GAME:
 		return
-	
-	if Input.is_action_just_pressed("toggle_scanner"):
-		if terrain_scanner:
-			if terrain_scanner.is_active:
-				terrain_scanner.deactivate()
-				print("🔍 Сканер: ВЫКЛ (через S)")
-			else:
-				terrain_scanner.activate()
-				print("🔍 Сканер: ВКЛ (через S)")
 
 ## Хоткей Inventory (I)
 func _handle_inventory_hotkey() -> void:
@@ -523,51 +488,6 @@ func _switch_to_tabs_state(new_state: UIState):
 	status_notifier = false
 	print("🔄 Хоткей: %s → %s" % [UIState.keys()[old_state], UIState.keys()[new_state]])
 
-
-func _handle_vehicle_controls(delta: float) -> void:
-	var active_vehicle = _get_active_vehicle()
-	if not active_vehicle:
-		return
-	
-	# Передаём ввод машине через метод
-	var input = {
-		"forward": float(Input.is_action_pressed("move_forward") or Input.is_action_pressed("ui_up")) \
-		 - float(Input.is_action_pressed("move_backward") or Input.is_action_pressed("ui_down")),
-		"strafe":  float(Input.is_action_pressed("move_right") or Input.is_action_pressed("ui_right")) \
-				 - float(Input.is_action_pressed("move_left") or Input.is_action_pressed("ui_left")),
-		"vertical": float(Input.is_action_pressed("jump")) \
-				  - float(Input.is_action_pressed("crouch")),
-		"turn": float(Input.is_action_pressed("lean_left")) \
-			  - float(Input.is_action_pressed("lean_right")),
-		"exit": Input.is_action_just_pressed("Interact"),
-		"engine_start": Input.is_action_just_pressed("move_forward") or \
-						Input.is_action_just_pressed("ui_up"),
-		"shutdown": Input.is_action_just_pressed("crouch")
-	}
-	
-	active_vehicle.receive_input(input, delta)
-
-func _handle_vehicle_pause() -> void:
-	# В машине доступна только пауза
-	if Input.is_action_just_released("pause"):
-		if menu_pause_active:
-			menu_pause_active = false
-			current_ui_state = UIState.VEHICLE  # возвращаемся в VEHICLE не в GAME
-			menu_pause_toggled.emit(false)
-			fog_effect_toggled.emit(false)
-		else:
-			menu_pause_active = true
-			menu_pause_toggled.emit(true)
-			fog_effect_toggled.emit(true)
-
-func _get_active_vehicle() -> FlyingCar:
-	var vehicles = get_tree().get_nodes_in_group("vehicle")
-	for v in vehicles:
-		if v is FlyingCar and v.is_occupied:
-			return v
-	return null
-
-# Вызывается из FlyingCar когда игрок вышел
-func on_exit_vehicle() -> void:
-	current_ui_state = UIState.GAME
-	print("🚗 InputManager: игрок вышел из машины → GAME")
+# InputSystems.gd
+func set_camera_reference(cam: Camera3D) -> void:
+	camera = cam

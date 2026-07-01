@@ -29,19 +29,46 @@ func _init_world() -> void:
 	var world_data := _load_world_data()
 	if world_data != null and world_data.city_zone != null:
 		_build_city_zone(world_data.city_zone)
-		
+
 	if world_data != null and world_data.spawn_point != Vector3.ZERO:
 		WorldSystems.spawn_point = world_data.spawn_point
-	
+
 	# Спавним игрока
-	var player_scene := load("res://scenes/_player/_player.tscn") as PackedScene
+	var player_scene := load("res://player/player.tscn") as PackedScene
+	var player: Node3D = null
 	if player_scene != null:
-		var player := player_scene.instantiate() as Node3D
+		player = player_scene.instantiate() as Node3D
 		add_child(player)
-		# global_position ставит сам Player._ready() из WorldSystems.spawn_point
-	
+
+		# 🔥 Спавним на 10м выше, чтобы не проваливаться сквозь ещё не прогруженный пол
+		player.global_position += Vector3(0, 10.0, 0)
+
+	# Спавним камеру
+	var camera_follow_scene := load("res://cameras/camera_follow.tscn") as PackedScene
+	var camera: Camera3D = null
+	if camera_follow_scene != null:
+		camera = camera_follow_scene.instantiate() as Camera3D
+		add_child(camera)
+
+	if player:
+		var input_systems := get_node_or_null("InputSystems")
+		if input_systems and input_systems.has_method("set_player_reference"):
+			input_systems.set_player_reference(player)
+
+		if camera and camera.has_method("set_target_reference"):
+			camera.set_target_reference(player)
+			camera.make_current()
+			
+		# World.gd, после camera.make_current()
+		if input_systems and input_systems.has_method("set_camera_reference"):
+			input_systems.set_camera_reference(camera)
+
+		register_player(player)
+
 	StreamingSystems.initialize(stream_container)
+
 	print("[World] ✅ Initialized")
+	
 
 
 func _load_world_data() -> WorldData:
@@ -57,9 +84,15 @@ func _load_world_data() -> WorldData:
 func _build_city_zone(cz: CityZoneData) -> void:
 	var root := StaticBody3D.new()
 	root.name = "CityZone"
-	add_child(root)                    # сначала в дерево
-	root.position = cz.position        # потом позиция (локальная = глобальная т.к. World в origin)
-	
+	add_child(root)
+	root.position = cz.position
+
+	# 🔥 Обязательно: слой земли + группа "floor",
+	# иначе клик-рейкаст в InputSystems его не увидит
+	root.collision_layer = 3          # слой 2 (GROUND_LAYER)
+	root.collision_mask  = 3
+	root.add_to_group("floor")
+
 	var mesh_inst := MeshInstance3D.new()
 	var box_mesh  := BoxMesh.new()
 	box_mesh.size  = cz.size

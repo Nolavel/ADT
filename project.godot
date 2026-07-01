@@ -20,8 +20,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-WorldSystems="*uid://4w3ef62sbngh"
 StreamingSystems="*uid://bw0ayj727r68s"
+WorldSystems="*uid://4w3ef62sbngh"
 
 [display]
 

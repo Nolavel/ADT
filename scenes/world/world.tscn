@@ -1,8 +1,11 @@
 [gd_scene format=3 uid="uid://bftcnbrfar8om"]
 
 [ext_resource type="Script" uid="uid://bqsochlr4tpch" path="res://scripts/gdscript/world/world.gd" id="1_dphjl"]
+[ext_resource type="PackedScene" uid="uid://ge4joff5iiay" path="res://scenes/input_scene/input_systems.tscn" id="2_sl2e5"]
 
 [node name="World" type="Node3D" unique_id=738196799 groups=["world_root"]]
 script = ExtResource("1_dphjl")
+
+[node name="InputSystems" parent="." unique_id=211974458 instance=ExtResource("2_sl2e5")]
 
 [node name="StreamContainer" type="Node3D" parent="." unique_id=854905517]

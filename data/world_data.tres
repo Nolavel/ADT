@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://bpmh71ufs4qyg"]
+[gd_resource type="Resource" script_class="WorldData" format=3]
 
-[ext_resource type="Script" uid="uid://vg368drj41e4" path="res://scripts/gdscript/resourses/CityZoneData.gd" id="1_e4cvp"]
-[ext_resource type="Script" uid="uid://b7tqqbk2k4e4i" path="res://scripts/gdscript/resourses/WorldData.gd" id="2_xy5s7"]
-[ext_resource type="Script" uid="uid://df5adq7w1iw73" path="res://scripts/gdscript/resourses/TowerData.gd" id="3_ke6ng"]
+[ext_resource type="Script" path="res://scenes/world/resources/CityZoneData.gd" id="1_e4cvp"]
+[ext_resource type="Script" path="res://scenes/world/resources/WorldData.gd" id="2_xy5s7"]
+[ext_resource type="Script" path="res://scenes/world/resources/TowerData.gd" id="3_ke6ng"]
 
 [sub_resource type="Resource" id="Resource_e4cvp"]
 script = ExtResource("1_e4cvp")
@@ -25,4 +25,4 @@ strata_ids = {
 script = ExtResource("2_xy5s7")
 towers = Array[ExtResource("3_ke6ng")]([SubResource("Resource_xy5s7")])
 city_zone = SubResource("Resource_e4cvp")
-spawn_point = Vector3(-611.2564, 10, -397.90057)
+spawn_point = Vector3(174.52026, 10, -266.1695)
