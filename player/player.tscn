@@ -32,7 +32,7 @@
 [ext_resource type="Texture2D" uid="uid://bvosok2fh0g2m" path="res://assets/textures/pins/pin_step_walk.png" id="32_fp3m1"]
 [ext_resource type="Script" uid="uid://7ft3gsmqmrmi" path="res://player/dynamic_cursor/dynamic_cursor_ui.gd" id="32_ftrmt"]
 [ext_resource type="Texture2D" uid="uid://d34gm7xpy2app" path="res://assets/textures/pins/pin_step_sprint.png" id="33_wmpjg"]
-[ext_resource type="PackedScene" uid="uid://5fn1xrmc4k84" path="res://player/player_components/nav_component.tscn" id="36_ge24q"]
+[ext_resource type="PackedScene" path="res://player/player_components/nav_component.tscn" id="36_ge24q"]
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://scripts/gdscript/player_components/InteractManager.gd" id="37_1gbpw"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]

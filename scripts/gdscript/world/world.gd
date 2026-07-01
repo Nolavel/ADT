@@ -1,17 +1,11 @@
 # =============================================================================
 # World.gd
-# Прикрепить к корневой ноде сцены world.tscn
 #
 # СТРУКТУРА ДЕРЕВА (world.tscn):
 #   World (Node3D)  ← этот скрипт
 #   ├── StreamContainer  (Node3D)  ← башни от StreamingSystems
-#   ├── PlayerSpawn      (Marker3D) ← опционально, для дебага
 #   └── [CityZone создаётся программно через WorldBuilder]
 #
-# ВАЖНО:
-#   CityZone больше не хардкодится в сцене — она создаётся WorldBuilder'ом
-#   из данных CityZoneData в WorldData.tres. Это гарантирует что геометрия
-#   world.tscn всегда совпадает с mapsource.tscn.
 # =============================================================================
 
 extends Node3D
@@ -20,7 +14,6 @@ extends Node3D
 @export var allow_exit_with_escape: bool = true
 
 func _ready() -> void:
-	# Ждём кадр — все @onready ссылки гарантированно готовы
 	await get_tree().process_frame
 	_init_world()
 
@@ -89,7 +82,7 @@ func _build_city_zone(cz: CityZoneData) -> void:
 
 	# 🔥 Обязательно: слой земли + группа "floor",
 	# иначе клик-рейкаст в InputSystems его не увидит
-	root.collision_layer = 3          # слой 2 (GROUND_LAYER)
+	root.collision_layer = 3          # слой 2 (floor)
 	root.collision_mask  = 3
 	root.add_to_group("floor")
 
