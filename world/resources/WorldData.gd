@@ -9,7 +9,7 @@ extends Resource
 class_name WorldData
 
 ## Все башни расставленные в MapSource
-@export var towers: Array[TowerData] = []
+@export var blocks: Array[BlockData] = []
 
 ## Параметры CityZone — фундамент города.
 ## Задаётся один раз в MapSource и воспроизводится в World через WorldBuilder.

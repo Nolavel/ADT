@@ -45,7 +45,7 @@ const SPAWN_MARKER_RADIUS: float = 50.0
 @onready var district_A9: 	Area3D = $Districts/A9
 
 ## Контейнер башен — TowerMarker-ноды расставляются сюда
-@onready var towers_container: Node3D = $Towers
+@onready var blocks_container: Node3D = $BLOCKS
 
 ## Spawner — нода с Spawner.gd, её позиция → WorldSystems.spawn_point
 @onready var spawner_node: Node3D = $Spawner
@@ -53,8 +53,8 @@ const SPAWN_MARKER_RADIUS: float = 50.0
 
 # ── Данные башен ─────────────────────────────────────────────────────────────
 
-## { tower_id: Dictionary } — рабочие метаданные текущей сессии
-var _tower_data: Dictionary = {}
+## { block_id: Dictionary } — рабочие метаданные текущей сессии
+var _block_data: Dictionary = {}
 
 ## Визуальный шар спавн-маркера (создаётся при нажатии кнопки)
 var _spawn_marker: MeshInstance3D = null
@@ -76,12 +76,12 @@ func _ready() -> void:
 	# и tower_height заполнен из AABB
 	await get_tree().process_frame
 
-	_register_scene_towers()
+	_register_scene_blocks()
 	export_data()
 
 	_build_hud()
 
-	print("[MapSource] ✅ Ready. Towers: %d" % _tower_data.size())
+	print("[MapSource] ✅ Ready. Towers: %d" % _block_data.size())
 
 
 func _process(_delta: float) -> void:
@@ -113,11 +113,11 @@ func snap_to_city_zone(node: Node3D, height: float) -> void:
 
 
 ## Зарегистрировать башню вручную (для создания через код).
-func register_tower(t_id: String, node: Node3D, height: float, district: String) -> void:
+func register_block(b_id: String, node: Node3D, height: float, district: String) -> void:
 	var strata := _get_strata_for_height(height)
 
 	var data := {
-		"id":        t_id,
+		"id":        b_id,
 		"position":  [node.global_position.x, node.global_position.y, node.global_position.z],
 		"height":    height,
 		"district":  district,
@@ -127,12 +127,12 @@ func register_tower(t_id: String, node: Node3D, height: float, district: String)
 
 	for stratum in strata:
 		var suffix := _strata_suffix(stratum)
-		data["strata_ids"][stratum] = "%s-%s" % [t_id, suffix]
+		data["strata_ids"][stratum] = "%s-%s" % [b_id, suffix]
 
-	_tower_data[t_id] = data
+	_block_data[b_id] = data
 
 	print("[MapSource] 🏙 Registered tower: %s  pos=%s  h=%dm  strata=%s" % [
-		t_id, node.global_position, int(height), strata])
+		b_id, node.global_position, int(height), strata])
 
 
 ## Экспортировать все данные в WorldData.tres
@@ -140,17 +140,17 @@ func export_data() -> void:
 	
 	var world := WorldData.new()
 
-	# ── Башни ────────────────────────────────────────────────────────────────
-	for dict in _tower_data.values():
-		var td := TowerData.new()
-		td.id         = dict["id"]
+	# ── Кварталы ────────────────────────────────────────────────────────────────
+	for dict in _block_data.values():
+		var bd := BlockData.new()
+		bd.id         = dict["id"]
 		var p         = dict["position"]
-		td.position   = Vector3(p[0], p[1], p[2])
-		td.height     = dict["height"]
-		td.district   = dict["district"]
-		td.scene_path = dict["scene_path"]
-		td.strata_ids = dict["strata_ids"]
-		world.towers.append(td)
+		bd.position   = Vector3(p[0], p[1], p[2])
+		bd.height     = dict["height"]
+		bd.district   = dict["district"]
+		bd.scene_path = dict["scene_path"]
+		bd.strata_ids = dict["strata_ids"]
+		world.blocks.append(bd)
 		
 
 	# ── CityZone ─────────────────────────────────────────────────────────────
@@ -173,33 +173,33 @@ func export_data() -> void:
 	if err != OK:
 		push_error("[MapSource] Failed to save WorldData: %d" % err)
 	else:
-		print("[MapSource] ✅ Exported %d towers + CityZone → %s" % [world.towers.size(), EXPORT_PATH])
+		print("[MapSource] ✅ Exported %d towers + CityZone → %s" % [world.blocks.size(), EXPORT_PATH])
 
 
-func get_tower_data(t_id: String) -> Dictionary:
-	return _tower_data.get(t_id, {})
+func get_block_data(b_id: String) -> Dictionary:
+	return _block_data.get(b_id, {})
 
 func get_all_data() -> Dictionary:
-	return _tower_data
+	return _block_data
 
-func update_tower_position(t_id: String, new_pos: Vector3) -> void:
-	if not _tower_data.has(t_id):
+func update_block_position(b_id: String, new_pos: Vector3) -> void:
+	if not _block_data.has(b_id):
 		return
-	_tower_data[t_id]["position"] = [new_pos.x, new_pos.y, new_pos.z]
+	_block_data[b_id]["position"] = [new_pos.x, new_pos.y, new_pos.z]
 
 
 # ── Внутренняя логика — регистрация ──────────────────────────────────────────
 
-func _register_scene_towers() -> void:
-	_tower_data.clear()
+func _register_scene_blocks() -> void:
+	_block_data.clear()
 
-	for child in towers_container.get_children():
-		if child is TowerMarker:
-			var marker := child as TowerMarker
+	for child in blocks_container.get_children():
+		if child is BlockBase:
+			var marker := child as BlockBase
 			# scene_path берём из маркера напрямую — редактор заполняет его через @export
-			register_tower(marker.id, marker, marker.tower_height, marker.district)
+			register_block(marker.id, marker, marker.block_height, marker.district)
 			# Записываем scene_path из маркера в словарь
-			_tower_data[marker.id]["scene_path"] = marker.scene_path
+			_block_data[marker.id]["scene_path"] = marker.scene_path
 
 
 # ── Спавн-маркер ─────────────────────────────────────────────────────────────

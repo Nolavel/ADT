@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://btyn3081k3ola"]
 
-[ext_resource type="Script" uid="uid://cpv3hwfj3u35d" path="res://core/map_source/sc_001.gd" id="1_lkqlo"]
+[ext_resource type="Script" uid="uid://cpv3hwfj3u35d" path="res://core/map_source/id-001-blockhaze.gd" id="1_lkqlo"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_6p1b7"]
 size = Vector3(10, 2550, 10)
@@ -29,8 +29,12 @@ data = PackedVector3Array(-125, 275, 75, 125, 275, 75, -125, -275, 75, 125, 275,
 [sub_resource type="BoxShape3D" id="BoxShape3D_5h11f"]
 size = Vector3(200, 1, 1)
 
-[node name="BLOCK_001" type="Node3D" unique_id=1531042291]
+[node name="Blockhaze_placeholder" type="Node3D" unique_id=1531042291]
 script = ExtResource("1_lkqlo")
+id = "001"
+block_name = "Blockhaze"
+district = "A1"
+scene_path = "res://world/placeholders/towers_placeholder/id001_blockhaze_placeholder.tscn"
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1421042640]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1275, 0)

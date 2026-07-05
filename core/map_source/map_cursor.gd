@@ -65,7 +65,7 @@ var _label_info: Label
 
 var _hit_point:    Vector3     = Vector3.ZERO
 var _has_hit:      bool        = false
-var _hovered_tower: TowerMarker = null   # был SkyscraperMarker
+var _hovered_block: BlockBase = null   # был SkyscraperMarker
 var _hovered_id:   String      = ""     # был _hovered_sc (sc_id)
 var _tower_strata: String      = ""
 
@@ -106,7 +106,7 @@ func _cast_ray() -> void:
 		_has_hit      = false
 		_hit_point    = Vector3.ZERO
 		_hovered_id   = ""
-		_hovered_tower = null
+		_hovered_block = null
 		_tower_strata  = ""
 		return
 
@@ -114,7 +114,7 @@ func _cast_ray() -> void:
 	_hit_point = result["position"]
 
 	_hovered_id    = ""
-	_hovered_tower = null
+	_hovered_block = null
 	_tower_strata  = ""
 
 	var collider = result.get("collider")
@@ -122,10 +122,10 @@ func _cast_ray() -> void:
 	if is_instance_valid(collider):
 		# Поднимаемся по иерархии — raycast бьёт в StaticBody/CollisionShape,
 		# а TowerMarker может быть на 1-2 уровня выше
-		_hovered_tower = _find_tower_in_ancestors(collider)
+		_hovered_block = _find_tower_in_ancestors(collider)
 
-		if _hovered_tower != null:
-			_hovered_id = _hovered_tower.tower_name   # был skyscraper_name
+		if _hovered_block != null:
+			_hovered_id = _hovered_block.block_name   # был skyscraper_name
 
 		# Опциональный мета-тег на коллайдере для имени страты башни
 		if collider.has_meta("strata_name"):
@@ -133,10 +133,10 @@ func _cast_ray() -> void:
 
 
 ## Поднимаемся по иерархии нод пока не найдём TowerMarker или не достигнем корня.
-func _find_tower_in_ancestors(node: Node) -> TowerMarker:
+func _find_tower_in_ancestors(node: Node) -> BlockBase:
 	var current := node
 	while current != null:
-		if current is TowerMarker:
+		if current is BlockBase:
 			return current
 		current = current.get_parent()
 	return null
@@ -175,11 +175,11 @@ func _update_hud() -> void:
 	lines.append("Страта:  %s" % strata_name)
 	lines.append("Район:   %s" % district_name)
 
-	if _hovered_tower != null:
-		lines.append("Башня:   %s" % _hovered_tower.tower_name)
-		lines.append("ID:      %s" % _hovered_tower.id)
-		lines.append("Высота башни: %.0f м" % _hovered_tower.tower_height)
-		var p := _hovered_tower.global_transform.origin
+	if _hovered_block != null:
+		lines.append("Башня:   %s" % _hovered_block.block_name)
+		lines.append("ID:      %s" % _hovered_block.id)
+		lines.append("Высота башни: %.0f м" % _hovered_block.block_height)
+		var p := _hovered_block.global_transform.origin
 		lines.append("Pos X: %.0f  Y: %.0f  Z: %.0f" % [p.x, p.y, p.z])
 	else:
 		lines.append("Башня:   —")

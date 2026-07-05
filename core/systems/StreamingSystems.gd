@@ -18,9 +18,9 @@ var _stream_container:     Node3D     = null
 var _player:               Node3D     = null
 var _initialized:          bool       = false
 
-signal tower_loaded(t_id: String)
-signal tower_unloaded(t_id: String)
-signal initialized(tower_count: int)
+signal block_loaded(b_id: String)
+signal block_unloaded(b_id: String)
+signal initialized(block_count: int)
 
 
 func _ready() -> void:
@@ -51,12 +51,12 @@ func initialize(container: Node3D, player: Node3D = null) -> void:
 		return
 
 	_initialized = true
-	emit_signal("initialized", _world_data.towers.size())
-	print("[StreamingSystems] Loaded %d towers" % _world_data.towers.size())
+	emit_signal("initialized", _world_data.blocks.size())
+	print("[StreamingSystems] Loaded %d towers" % _world_data.blocks.size())
 
 	# DEBUG: грузим все башни сразу без проверки радиуса
-	for td: TowerData in _world_data.towers:
-		_load_tower(td)
+	for bd: BlockData in _world_data.blocks:
+		_load_block(bd)
 
 
 func force_update() -> void:
@@ -85,11 +85,11 @@ func _load_world_data(path: String) -> bool:
 		push_error("[StreamingSystems] WorldData cast failed")
 		return false
 
-	print("[StreamingSystems] Towers in data: %d" % _world_data.towers.size())
+	print("[StreamingSystems] Towers in data: %d" % _world_data.blocks.size())
 
-	for td: TowerData in _world_data.towers:
-		print("  Tower %s | pos=%s | h=%.0f | district=%s | scene=%s" % [
-			td.id, td.position, td.height, td.district, td.scene_path
+	for bd: BlockData in _world_data.blocks:
+		print("  Block %s | pos=%s | h=%.0f | district=%s | scene=%s" % [
+			bd.id, bd.position, bd.height, bd.district, bd.scene_path
 		])
 
 	return true
@@ -97,83 +97,83 @@ func _load_world_data(path: String) -> bool:
 
 func _update_stream(player_pos: Vector3) -> void:
 	# ---------- Загрузка ----------
-	for td: TowerData in _world_data.towers:
+	for bd: BlockData in _world_data.towers:
 		var dist_xz := Vector2(player_pos.x, player_pos.z).distance_to(
-			Vector2(td.position.x, td.position.z))
-		var dist_y: float = abs(player_pos.y - td.position.y)
+			Vector2(bd.position.x, bd.position.z))
+		var dist_y: float = abs(player_pos.y - bd.position.y)
 
 		if dist_xz <= STREAM_RADIUS \
 		and dist_y <= STREAM_RADIUS_VERTICAL \
-		and not _loaded_ids.has(td.id):
-			_load_tower(td)
+		and not _loaded_ids.has(bd.id):
+			_load_block(bd)
 
 	# ---------- Выгрузка ----------
 	var to_unload: Array[String] = []
 
-	for t_id in _loaded_ids.keys():
-		var td: TowerData = _find_tower_data(t_id)
+	for b_id in _loaded_ids.keys():
+		var bd: BlockData = _find_block_data(b_id)
 
-		if td == null:
-			to_unload.append(t_id)
+		if bd == null:
+			to_unload.append(b_id)
 			continue
 
 		var dist_xz := Vector2(player_pos.x, player_pos.z).distance_to(
-			Vector2(td.position.x, td.position.z))
-		var dist_y: float = abs(player_pos.y - td.position.y)
+			Vector2(bd.position.x, bd.position.z))
+		var dist_y: float = abs(player_pos.y - bd.position.y)
 
 		if dist_xz > UNLOAD_RADIUS or dist_y > STREAM_RADIUS_VERTICAL * 1.2:
-			to_unload.append(t_id)
+			to_unload.append(b_id)
 
-	for t_id in to_unload:
-		_unload_tower(t_id)
+	for b_id in to_unload:
+		_unload_block(b_id)
 
 
-func _find_tower_data(t_id: String) -> TowerData:
-	for td: TowerData in _world_data.towers:
-		if td.id == t_id:
-			return td
+func _find_block_data(b_id: String) -> BlockData:
+	for bd: BlockData in _world_data.blocks:
+		if bd.id == b_id:
+			return bd
 	return null
 
 
-func _load_tower(td: TowerData) -> void:
-	if _loaded_ids.has(td.id):
+func _load_block(bd: BlockData) -> void:
+	if _loaded_ids.has(bd.id):
 		return
 
-	if td.scene_path.is_empty():
-		push_warning("[StreamingSystems] Empty scene_path for tower: " + td.id)
+	if bd.scene_path.is_empty():
+		push_warning("[StreamingSystems] Empty scene_path for tower: " + bd.id)
 		return
 
-	if not ResourceLoader.exists(td.scene_path):
-		push_warning("[StreamingSystems] Scene not found: " + td.scene_path)
+	if not ResourceLoader.exists(bd.scene_path):
+		push_warning("[StreamingSystems] Scene not found: " + bd.scene_path)
 		return
 
-	var packed := load(td.scene_path) as PackedScene
+	var packed := load(bd.scene_path) as PackedScene
 	if packed == null:
-		push_warning("[StreamingSystems] Cannot load PackedScene: " + td.scene_path)
+		push_warning("[StreamingSystems] Cannot load PackedScene: " + bd.scene_path)
 		return
 
 	var instance := packed.instantiate() as Node3D
-	instance.name            = td.id
+	instance.name            = bd.id
 	_stream_container.add_child(instance)
-	instance.global_position = td.position
+	instance.global_position = bd.position
 
 
-	_loaded_ids[td.id] = instance
+	_loaded_ids[bd.id] = instance
 
-	print("[StreamingSystems] Spawned: %s at %s" % [td.id, td.position])
-	emit_signal("tower_loaded", td.id)
+	print("[StreamingSystems] Spawned: %s at %s" % [bd.id, bd.position])
+	emit_signal("block_loaded", bd.id)
 
 
-func _unload_tower(t_id: String) -> void:
-	if not _loaded_ids.has(t_id):
+func _unload_block(b_id: String) -> void:
+	if not _loaded_ids.has(b_id):
 		return
-	var node: Node3D = _loaded_ids[t_id]
+	var node: Node3D = _loaded_ids[b_id]
 	if is_instance_valid(node):
 		node.queue_free()
-	_loaded_ids.erase(t_id)
-	emit_signal("tower_unloaded", t_id)
+	_loaded_ids.erase(b_id)
+	emit_signal("block_unloaded", b_id)
 
 
 func _unload_all() -> void:
-	for t_id in _loaded_ids.keys():
-		_unload_tower(t_id)
+	for b_id in _loaded_ids.keys():
+		_unload_block(b_id)

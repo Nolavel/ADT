@@ -1,10 +1,10 @@
 # =============================================================================
-# TowerData.gd  (был SkyscraperData.gd)
+# BlockData.gd 
 # Resource описывающий одну башню — сохраняется внутри WorldData.tres
 # =============================================================================
  
 extends Resource
-class_name TowerData
+class_name BlockData
  
 @export var id:        String
 @export var position:  Vector3

@@ -1,28 +1,28 @@
-[gd_resource type="Resource" script_class="WorldData" format=3]
+[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://dy5x1c01j6hxx"]
 
-[ext_resource type="Script" path="res://world/resources/CityZoneData.gd" id="1_e4cvp"]
-[ext_resource type="Script" path="res://world/resources/WorldData.gd" id="2_xy5s7"]
-[ext_resource type="Script" path="res://world/resources/TowerData.gd" id="3_ke6ng"]
+[ext_resource type="Script" uid="uid://df5adq7w1iw73" path="res://world/resources/BlockData.gd" id="1_e4cvp"]
+[ext_resource type="Script" uid="uid://vg368drj41e4" path="res://world/resources/CityZoneData.gd" id="2_xy5s7"]
+[ext_resource type="Script" uid="uid://b7tqqbk2k4e4i" path="res://world/resources/WorldData.gd" id="3_ke6ng"]
 
-[sub_resource type="Resource" id="Resource_ffflj"]
+[sub_resource type="Resource" id="Resource_e4cvp"]
 script = ExtResource("1_e4cvp")
-size = Vector3(6600, 10, 6600)
-
-[sub_resource type="Resource" id="Resource_m1w6v"]
-script = ExtResource("3_ke6ng")
-id = "T-001"
+id = "Block-001"
 position = Vector3(298.47534, 0, 0)
 height = 2550.0
 district = "A1"
-scene_path = "res://world/placeholders/towers_placeholder/T001.tscn"
+scene_path = "res://world/placeholders/towers_placeholder/id001_blockhaze_placeholder.tscn"
 strata_ids = {
-"doggerland": "T-001-DG",
-"glare": "T-001-GL",
-"manifold": "T-001-MF"
+"doggerland": "Block-001-DG",
+"glare": "Block-001-GL",
+"manifold": "Block-001-MF"
 }
 
-[resource]
+[sub_resource type="Resource" id="Resource_xy5s7"]
 script = ExtResource("2_xy5s7")
-towers = Array[ExtResource("3_ke6ng")]([SubResource("Resource_m1w6v")])
-city_zone = SubResource("Resource_ffflj")
-spawn_point = Vector3(0, 25, 0)
+size = Vector3(6600, 10, 6600)
+
+[resource]
+script = ExtResource("3_ke6ng")
+blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_e4cvp")])
+city_zone = SubResource("Resource_xy5s7")
+spawn_point = Vector3(57.54924, 10, 118.718994)
