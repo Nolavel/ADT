@@ -1,20 +1,20 @@
 [gd_resource type="Resource" script_class="WorldData" format=3]
 
-[ext_resource type="Script" path="res://scenes/world/resources/CityZoneData.gd" id="1_e4cvp"]
-[ext_resource type="Script" path="res://scenes/world/resources/WorldData.gd" id="2_xy5s7"]
-[ext_resource type="Script" path="res://scenes/world/resources/TowerData.gd" id="3_ke6ng"]
+[ext_resource type="Script" path="res://world/resources/CityZoneData.gd" id="1_e4cvp"]
+[ext_resource type="Script" path="res://world/resources/WorldData.gd" id="2_xy5s7"]
+[ext_resource type="Script" path="res://world/resources/TowerData.gd" id="3_ke6ng"]
 
-[sub_resource type="Resource" id="Resource_e4cvp"]
+[sub_resource type="Resource" id="Resource_ffflj"]
 script = ExtResource("1_e4cvp")
 size = Vector3(6600, 10, 6600)
 
-[sub_resource type="Resource" id="Resource_xy5s7"]
+[sub_resource type="Resource" id="Resource_m1w6v"]
 script = ExtResource("3_ke6ng")
 id = "T-001"
-position = Vector3(200, 0, 0)
-height = 1320.0
+position = Vector3(298.47534, 0, 0)
+height = 2550.0
 district = "A1"
-scene_path = "res://scenes/towers/T001.tscn"
+scene_path = "res://world/placeholders/towers_placeholder/T001.tscn"
 strata_ids = {
 "doggerland": "T-001-DG",
 "glare": "T-001-GL",
@@ -23,6 +23,6 @@ strata_ids = {
 
 [resource]
 script = ExtResource("2_xy5s7")
-towers = Array[ExtResource("3_ke6ng")]([SubResource("Resource_xy5s7")])
-city_zone = SubResource("Resource_e4cvp")
-spawn_point = Vector3(174.52026, 10, -266.1695)
+towers = Array[ExtResource("3_ke6ng")]([SubResource("Resource_m1w6v")])
+city_zone = SubResource("Resource_ffflj")
+spawn_point = Vector3(0, 25, 0)

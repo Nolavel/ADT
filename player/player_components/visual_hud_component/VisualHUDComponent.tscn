@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://ge4joff5iiay"]
+
+[ext_resource type="Script" uid="uid://cxlb81renqd77" path="res://player/player_components/visual_hud_component/VisualHUDComponent.gd" id="1_dsxkh"]
+[ext_resource type="Script" uid="uid://dbvj0c3rblfat" path="res://player/player_components/visual_hud_component/target_indicator/TargetIndicator.gd" id="2_dsxkh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wxh3k"]
+transparency = 1
+albedo_color = Color(0.41568628, 1, 1, 0.78431374)
+emission = Color(0.41568628, 1, 1, 1)
+emission_operator = 1
+
+[sub_resource type="SphereMesh" id="SphereMesh_wxh3k"]
+material = SubResource("StandardMaterial3D_wxh3k")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ow0l6"]
+
+[node name="VisualHUDComponent" type="Node3D" unique_id=211974458]
+script = ExtResource("1_dsxkh")
+
+[node name="WidgetCursor" type="Control" parent="." unique_id=1267742248]
+modulate = Color(1.0184411, 1.0184411, 0.51967657, 1)
+layout_mode = 3
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 210.0
+offset_bottom = 110.0
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="WidgetCursor" unique_id=493635966]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="WidgetCursor/VBoxContainer" unique_id=181675144]
+layout_mode = 2
+text = "Player Active`s:"
+
+[node name="P-actives" type="Label" parent="WidgetCursor/VBoxContainer" unique_id=1166656533]
+layout_mode = 2
+text = "000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MeshTrigger" type="MeshInstance3D" parent="." unique_id=568711418]
+visible = false
+mesh = SubResource("SphereMesh_wxh3k")
+
+[node name="TargetIndicator" type="Node3D" parent="." unique_id=681512925]
+script = ExtResource("2_dsxkh")
+
+[node name="GroundDecal" type="MeshInstance3D" parent="TargetIndicator" unique_id=2105001289]
+mesh = SubResource("PlaneMesh_ow0l6")
