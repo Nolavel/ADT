@@ -102,7 +102,8 @@ var arcs_tween: Tween
 
 func _ready() -> void:
 	current_cursor_color = cursor_color
-	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+	PlayerState.mode_changed.connect(_on_player_state_mode_changed)
+	_apply_cursor_for_mode(PlayerState.mode)
 
 	if player:
 		last_player_pos = player.global_transform.origin
@@ -123,6 +124,9 @@ func _ready() -> void:
 		push_error("❌ Player не найден!")
 			
 	last_mouse_pos = get_viewport().get_mouse_position()
+	
+func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
+	_apply_cursor_for_mode(new_mode)
 
 func _process(delta: float) -> void:
 	if not player:
@@ -616,6 +620,17 @@ func _on_stamina_changed(current_stamina: float, max_stamina: float) -> void:
 
 func _on_stamina_depleted() -> void:
 	print("💥 Курсор: Стамина истощена!")
+	
+## Кастомный курсор (нарисованный вручную) актуален только в ON_FOOT.
+## В остальных режимах (MENU, VEHICLE_HOVER, TUBE_TRANSIT) прячем его
+## и возвращаем системный курсор — иначе в меню не видно, куда кликать.
+func _apply_cursor_for_mode(mode) -> void:
+	if mode == PlayerState.Mode.ON_FOOT:
+		Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+		visible = true
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		visible = false
 
 func _on_stamina_recovered() -> void:
 	print("✨ Курсор: Стамина восстановлена!")

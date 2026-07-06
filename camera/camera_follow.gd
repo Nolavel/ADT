@@ -243,7 +243,6 @@ func _ready():
 		input_manager_node = get_node(input_manager)
 		if input_manager_node:
 			input_manager_node.status_camera_toggled.connect(_on_status_camera_toggled)
-			input_manager_node.menu_pause_toggled.connect(_on_menu_pause_toggled)
 			input_manager_node.inventory_toggled.connect(_on_inventory_camera_toggled)  # 🔥 НОВОЕ
 			input_manager_node.crafting_toggled.connect(_on_crafting_camera_toggled)    # 🔥 НОВОЕ
 			input_manager_node.map_toggled.connect(_on_map_camera_toggled)
@@ -280,7 +279,7 @@ func _ready():
 			area.stop_shake_cam_process.connect(_on_stop_shake_cam_process)
 			print("✅ Камера подключена к Area3D для ShakeCam")
 	
-		
+	PlayerState.mode_changed.connect(_on_player_state_mode_changed)	
 	make_current()
 	_create_xray_shader()
 
@@ -487,21 +486,19 @@ func _on_status_camera_toggled(active: bool):
 	else:
 		_return_to_game()
 
-func _on_menu_pause_toggled(active: bool):
-	if active:
+func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
+	if new_mode == PlayerState.Mode.MENU:
 		_transition_to_state(
 			CameraState.MENU_PAUSE,
 			menu_pause_offset,
 			menu_pause_pitch_deg,
 			menu_pause_transition_duration
 		)
-		#await get_tree().create_timer(0.6).timeout
-
 		if player_animation_player:
 			player_animation_player.play("new3/legs_idle_2")
-		
-	else:
-		player_animation_player.play("new4/idle")
+	elif current_state == CameraState.MENU_PAUSE:
+		if player_animation_player:
+			player_animation_player.play("new4/idle")
 		_return_to_game()
 
 func _on_pause_menu_continue():
