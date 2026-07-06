@@ -1,8 +1,7 @@
 extends Node3D
-class_name VisualHUDComponent
+class_name HUDComponent
 
 @onready var target_indicator: TargetIndicator = $TargetIndicator
-@export var error_sound: AudioStreamPlayer
 
 func _ready() -> void:
 	InputSystems.move_target_requested.connect(_on_move_target_requested)
@@ -46,8 +45,6 @@ func _on_move_target_invalid(pos: Vector3) -> void:
 		return
 	if target_indicator and pos != Vector3.ZERO:
 		target_indicator.show_invalid_click(pos)
-	if error_sound:
-		error_sound.play()
 
 func _on_move_target_cleared() -> void:
 	if target_indicator:

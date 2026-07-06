@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ge4joff5iiay"]
 
-[ext_resource type="Script" uid="uid://cxlb81renqd77" path="res://player/player_components/visual_hud_component/VisualHUDComponent.gd" id="1_dsxkh"]
-[ext_resource type="Script" uid="uid://dbvj0c3rblfat" path="res://player/player_components/visual_hud_component/target_indicator/TargetIndicator.gd" id="2_dsxkh"]
+[ext_resource type="Script" uid="uid://cxlb81renqd77" path="res://player/player_components/hud_component/HUDComponent.gd" id="1_5hyna"]
+[ext_resource type="Script" uid="uid://dbvj0c3rblfat" path="res://player/player_components/hud_component/target_indicator/TargetIndicator.gd" id="2_rlc05"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wxh3k"]
 transparency = 1
@@ -14,8 +14,8 @@ material = SubResource("StandardMaterial3D_wxh3k")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ow0l6"]
 
-[node name="VisualHUDComponent" type="Node3D" unique_id=211974458]
-script = ExtResource("1_dsxkh")
+[node name="HUDComponent" type="Node3D" unique_id=211974458]
+script = ExtResource("1_5hyna")
 
 [node name="WidgetCursor" type="Control" parent="." unique_id=1267742248]
 modulate = Color(1.0184411, 1.0184411, 0.51967657, 1)
@@ -49,7 +49,7 @@ visible = false
 mesh = SubResource("SphereMesh_wxh3k")
 
 [node name="TargetIndicator" type="Node3D" parent="." unique_id=681512925]
-script = ExtResource("2_dsxkh")
+script = ExtResource("2_rlc05")
 
 [node name="GroundDecal" type="MeshInstance3D" parent="TargetIndicator" unique_id=2105001289]
 mesh = SubResource("PlaneMesh_ow0l6")

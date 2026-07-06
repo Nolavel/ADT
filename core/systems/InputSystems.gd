@@ -5,6 +5,11 @@ extends Node
 enum ControlMode { PLAYER, FLYCAR, TUBE }
 var current_control_mode: ControlMode = ControlMode.PLAYER
 
+## --- Игровое паузное меню ---
+const IN_GAME_MENU_SCENE: PackedScene = preload("res://ui/ingame_menu/in_game_menu.tscn")
+var _menu_canvas_layer: CanvasLayer
+var _menu_instance: Control
+
 ## === СИГНАЛЫ (логика → визуал) ===
 signal status_camera_toggled(status_is_active: bool)
 signal menu_pause_toggled(mp_is_active: bool)
@@ -51,6 +56,38 @@ var current_ui_state: UIState = UIState.GAME
 var player_node: CharacterBody3D
 var camera: Camera3D
 var hud_node: CanvasLayer
+
+## ============================================
+## ИНИЦИАЛИЗАЦИЯ / ИГРОВОЕ МЕНЮ
+## ============================================
+func _ready() -> void:
+	# ALWAYS — иначе после PlayerState.open_menu() (get_tree().paused = true)
+	# этот autoload перестанет получать _unhandled_input и Escape не закроет меню.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+	_menu_canvas_layer = CanvasLayer.new()
+	_menu_canvas_layer.layer = 50
+	_menu_canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().root.call_deferred("add_child", _menu_canvas_layer)
+
+	_menu_instance = IN_GAME_MENU_SCENE.instantiate()
+	_menu_instance.process_mode = Node.PROCESS_MODE_ALWAYS
+	_menu_canvas_layer.call_deferred("add_child", _menu_instance)
+
+
+## Escape ("pause" action) ловим отдельно от физики —
+## работает независимо от текущей паузы и режима.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause"):
+		_toggle_menu()
+		get_viewport().set_input_as_handled()
+
+
+func _toggle_menu() -> void:
+	if PlayerState.mode == PlayerState.Mode.MENU:
+		PlayerState.close_menu()
+	else:
+		PlayerState.open_menu()
 
 func register_player(p: CharacterBody3D) -> void:
 	if player_node and is_instance_valid(player_node):
@@ -113,7 +150,6 @@ func _physics_process(delta: float) -> void:
 
 	_update_system_press_time(delta)
 	_handle_camera_status()
-	_handle_menu_pause()
 	_handle_inventory_hotkey()
 	_handle_crafting_hotkey()
 	_handle_map_hotkey()
@@ -159,30 +195,6 @@ func _handle_map_hotkey() -> void:
 			print("⚠️ Нельзя открыть Map - активна Menu Pause")
 			return
 		_switch_to_tabs_state(UIState.MAP)
-
-func _handle_menu_pause() -> void:
-	if Input.is_action_just_released("pause"):
-		if menu_pause_active:
-			menu_pause_active = false
-			current_ui_state = UIState.GAME
-			menu_pause_toggled.emit(false)
-			fog_effect_toggled.emit(false)
-			print("🎮 Menu Pause: CLOSED")
-			return
-
-		if current_ui_state != UIState.GAME:
-			_return_to_game_from_tabs()
-			return
-
-		menu_pause_active = true
-		current_ui_state = UIState.MENU_PAUSE
-		menu_pause_toggled.emit(true)
-		fog_effect_toggled.emit(true)
-
-		if hud_node and hud_node.has_method("force_close_tabs"):
-			hud_node.force_close_tabs()
-
-		print("🎮 Menu Pause: OPENED")
 
 func _return_to_game_from_tabs() -> void:
 	var old_state = current_ui_state

@@ -1,4 +1,4 @@
-* text=auto eol=lf
+*.res binary
 
 *.gd text eol=lf
 *.tscn text eol=lf

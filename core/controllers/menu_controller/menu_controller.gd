@@ -1,12 +1,13 @@
 # =============================================================================
 # menu_controller.gd
 # Скрипт корневой ноды сцены игрового паузного меню (НЕ главное меню).
-# Полностью самодостаточен: сам ловит Escape, сам открывает/закрывает
-# PlayerState.MENU. Не зависит от InputSystems.
+# Инстанцируется и показывается/скрывается извне (InputSystems).
+# Сам input НЕ ловит — только реагирует на PlayerState.mode_changed
+# и обрабатывает нажатия своих кнопок.
 #
-# process_mode ОБЯЗАТЕЛЬНО выставить в редакторе на ALWAYS —
-# иначе после get_tree().paused = true нода перестанет получать инпут
-# и Escape не сможет закрыть собственное меню.
+# process_mode ОБЯЗАТЕЛЬНО ALWAYS (выставляется кодом в InputSystems
+# при инстанцировании) — иначе после get_tree().paused = true
+# кнопки перестанут получать input и Continue/Quit не нажмутся.
 # =============================================================================
 extends Control
 
@@ -26,25 +27,10 @@ func _ready() -> void:
 		quit_button.pressed.connect(_on_quit_pressed)
 
 
-## Escape ловим здесь напрямую, не через InputSystems.
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		_toggle_menu()
-		get_viewport().set_input_as_handled()
-
-
-func _toggle_menu() -> void:
-	if PlayerState.mode == PlayerState.Mode.MENU:
-		PlayerState.close_menu()
-	else:
-		PlayerState.open_menu()
-
-
 func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
 	if new_mode == PlayerState.Mode.MENU:
 		_fade_in()
 	elif visible:
-		# Если мы были видимы и ушли из MENU в любой другой режим — прячемся
 		_fade_out()
 
 
