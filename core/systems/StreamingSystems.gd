@@ -97,7 +97,7 @@ func _load_world_data(path: String) -> bool:
 
 func _update_stream(player_pos: Vector3) -> void:
 	# ---------- Загрузка ----------
-	for bd: BlockData in _world_data.towers:
+	for bd: BlockData in _world_data.blocks:
 		var dist_xz := Vector2(player_pos.x, player_pos.z).distance_to(
 			Vector2(bd.position.x, bd.position.z))
 		var dist_y: float = abs(player_pos.y - bd.position.y)

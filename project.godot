@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 StreamingSystems="*uid://bw0ayj727r68s"
 WorldSystems="*uid://4w3ef62sbngh"
 InputSystems="*uid://bi5smfl6wu421"
+PlayerState="*uid://bmlac6urnhdjm"
 
 [display]
 
