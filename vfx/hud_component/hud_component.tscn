@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ge4joff5iiay"]
 
-[ext_resource type="Script" uid="uid://cxlb81renqd77" path="res://player/player_components/hud_component/HUDComponent.gd" id="1_5hyna"]
-[ext_resource type="Script" uid="uid://dbvj0c3rblfat" path="res://player/player_components/hud_component/target_indicator/TargetIndicator.gd" id="2_rlc05"]
+[ext_resource type="Script" uid="uid://cxlb81renqd77" path="res://vfx/hud_component/HUDComponent.gd" id="1_5hyna"]
+[ext_resource type="Script" uid="uid://dbvj0c3rblfat" path="res://vfx/hud_component/target_indicator/TargetIndicator.gd" id="2_rlc05"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wxh3k"]
 transparency = 1

@@ -50,7 +50,13 @@ func _init_world() -> void:
 			camera.make_current()
 			InputSystems.register_camera(camera)
 
-		#register_player(player)
+	# Спавним HUD-компонент (индикатор клика/цели) — отдельно от игрока,
+	# в StreamContainer. Сам решает свою видимость через PlayerState
+	# (виден только ON_FOOT + ISOMETRIC/TOPDOWN).
+	var hud_scene := load("res://vfx/hud_component/hud_component.tscn") as PackedScene
+	if hud_scene != null:
+		var hud := hud_scene.instantiate()
+		stream_container.add_child(hud)
 
 	StreamingSystems.initialize(stream_container)
 
