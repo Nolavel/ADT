@@ -19,6 +19,15 @@ func _ready() -> void:
 
 
 func _init_world() -> void:
+	# ClickToMoveSystem и MenuSystem — обычные ноды, не автозагрузка.
+	# Владелец жизненного цикла — world.gd, ссылки на них раздаются явно
+	# тем, кому нужны (HUDComponent), без singleton-доступа по имени класса.
+	var click_to_move := ClickToMoveSystem.new()
+	add_child(click_to_move)
+
+	var menu_system := MenuSystem.new()
+	add_child(menu_system)
+
 	var world_data := _load_world_data()
 	if world_data != null and world_data.city_zone != null:
 		_build_city_zone(world_data.city_zone)
@@ -44,19 +53,21 @@ func _init_world() -> void:
 		add_child(camera)
 
 	if player:
-		ClickToMoveSystem.register_player(player)
+		click_to_move.register_player(player)
 		if camera:
 			camera.set_target_reference(player)
 			camera.make_current()
-			ClickToMoveSystem.register_camera(camera)
+			click_to_move.register_camera(camera)
 
 	# Спавним HUD-компонент (индикатор клика/цели) — отдельно от игрока,
 	# в StreamContainer. Сам решает свою видимость через PlayerState
-	# (виден только ON_FOOT + ISOMETRIC/TOPDOWN).
+	# (виден только ON_FOOT + ISOMETRIC/TOPDOWN). Ссылку на ClickToMoveSystem
+	# передаём явно через setup() сразу после инстанцирования.
 	var hud_scene := load("res://vfx/hud_component/hud_component.tscn") as PackedScene
 	if hud_scene != null:
 		var hud := hud_scene.instantiate()
 		stream_container.add_child(hud)
+		hud.setup(click_to_move)
 
 	StreamingSystems.initialize(stream_container)
 

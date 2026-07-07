@@ -3,27 +3,36 @@ class_name HUDComponent
 
 @onready var target_indicator: TargetIndicator = $TargetIndicator
 
-func _ready() -> void:
-	ClickToMoveSystem.move_target_requested.connect(_on_move_target_requested)
-	ClickToMoveSystem.move_target_invalid.connect(_on_move_target_invalid)
-	ClickToMoveSystem.move_target_cleared.connect(_on_move_target_cleared)
-	ClickToMoveSystem.player_registered.connect(_on_player_registered)
-	ClickToMoveSystem.player_unregistered.connect(_on_player_unregistered)
+var _click_to_move: ClickToMoveSystem
 
+## Вызывается world.gd сразу после инстанцирования HUD, с явной ссылкой
+## на уже созданный ClickToMoveSystem. Никакого singleton-доступа по имени
+## класса и никакого поиска по группам — только явная передача.
+func setup(click_to_move: ClickToMoveSystem) -> void:
+	_click_to_move = click_to_move
+
+	_click_to_move.move_target_requested.connect(_on_move_target_requested)
+	_click_to_move.move_target_invalid.connect(_on_move_target_invalid)
+	_click_to_move.move_target_cleared.connect(_on_move_target_cleared)
+	_click_to_move.player_registered.connect(_on_player_registered)
+	_click_to_move.player_unregistered.connect(_on_player_unregistered)
+
+func _ready() -> void:
 	PlayerState.mode_changed.connect(_on_player_state_changed)
 	PlayerState.view_mode_changed.connect(_on_player_state_changed)
 
 func _exit_tree() -> void:
-	if ClickToMoveSystem.move_target_requested.is_connected(_on_move_target_requested):
-		ClickToMoveSystem.move_target_requested.disconnect(_on_move_target_requested)
-	if ClickToMoveSystem.move_target_invalid.is_connected(_on_move_target_invalid):
-		ClickToMoveSystem.move_target_invalid.disconnect(_on_move_target_invalid)
-	if ClickToMoveSystem.move_target_cleared.is_connected(_on_move_target_cleared):
-		ClickToMoveSystem.move_target_cleared.disconnect(_on_move_target_cleared)
-	if ClickToMoveSystem.player_registered.is_connected(_on_player_registered):
-		ClickToMoveSystem.player_registered.disconnect(_on_player_registered)
-	if ClickToMoveSystem.player_unregistered.is_connected(_on_player_unregistered):
-		ClickToMoveSystem.player_unregistered.disconnect(_on_player_unregistered)
+	if _click_to_move:
+		if _click_to_move.move_target_requested.is_connected(_on_move_target_requested):
+			_click_to_move.move_target_requested.disconnect(_on_move_target_requested)
+		if _click_to_move.move_target_invalid.is_connected(_on_move_target_invalid):
+			_click_to_move.move_target_invalid.disconnect(_on_move_target_invalid)
+		if _click_to_move.move_target_cleared.is_connected(_on_move_target_cleared):
+			_click_to_move.move_target_cleared.disconnect(_on_move_target_cleared)
+		if _click_to_move.player_registered.is_connected(_on_player_registered):
+			_click_to_move.player_registered.disconnect(_on_player_registered)
+		if _click_to_move.player_unregistered.is_connected(_on_player_unregistered):
+			_click_to_move.player_unregistered.disconnect(_on_player_unregistered)
 	if PlayerState.mode_changed.is_connected(_on_player_state_changed):
 		PlayerState.mode_changed.disconnect(_on_player_state_changed)
 	if PlayerState.view_mode_changed.is_connected(_on_player_state_changed):

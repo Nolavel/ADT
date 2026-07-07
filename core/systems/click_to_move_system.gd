@@ -1,16 +1,23 @@
 # =============================================================================
-# click_to_move_system.gd — autoload.
+# click_to_move_system.gd — обычная нода, НЕ автозагрузка.
 #
-# Вся логика "клик по земле → игрок туда идёт" перенесена сюда из
-# InputSystems: рейкаст, решение "валидная ли точка", вызов
-# player_node.move_to_position(...). InputSystems теперь не знает
-# ничего из этого — только эмитит сырые primary/secondary click сигналы.
+# Владелец: world.gd — создаёт через .new() и держит как дочернюю ноду
+# (тот же паттерн, что уже используется для камерных компонентов в
+# camera_follow.gd). Всем, кому нужны сигналы/данные отсюда (HUDComponent),
+# ссылка передаётся явно через setup()/публичный метод — никакого поиска
+# по группам и никакого singleton-доступа по имени класса.
+#
+# Вся логика "клик по земле → игрок туда идёт": рейкаст, решение "валидная
+# ли точка", вызов player_node.move_to_position(...). InputSystems (который
+# остаётся автозагрузкой) ничего из этого не знает — только эмитит сырые
+# primary/secondary click сигналы.
 #
 # Активен ТОЛЬКО когда PlayerState.mode == ON_FOOT и
 # view_mode in [ISOMETRIC, TOPDOWN] — сам себя гейтит через
 # PlayerState.mode_changed / view_mode_changed, никто снаружи это не решает.
 # =============================================================================
 extends Node
+class_name ClickToMoveSystem
 
 const GROUND_LAYER = 2
 const RUN_TRIGGER_TIME: float = 0.5
