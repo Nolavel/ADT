@@ -25,7 +25,7 @@ WorldSystems="*uid://4w3ef62sbngh"
 InputSystems="*uid://bi5smfl6wu421"
 PlayerState="*uid://bmlac6urnhdjm"
 ClickToMoveSystem="*uid://bgk44wyx7dwtt"
-MenuController="*uid://b6mfhcygfx02b"
+MenuSystem="*uid://donapismjvvtx"
 
 [display]
 
