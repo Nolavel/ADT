@@ -13,6 +13,12 @@
 extends Node
 class_name OnFootCameraComponent
 
+## Единственный сигнал наружу про зум — HUD-виджеты (линейка) подписываются
+## сюда вместо того, чтобы сами читать Input. _handle_zoom_input() —
+## единственное законное место в проекте, где физически читается
+## zoom_in/zoom_out.
+signal zoom_input_received()
+
 @export var rotation_speed: float = 8.0
 
 @export_group("Orbit")
@@ -461,8 +467,10 @@ func _rotate_camera_right():
 
 func _handle_zoom_input():
 	if Input.is_action_just_released("zoom_in"):
+		zoom_input_received.emit()
 		_start_zoom(-ZOOM_STEP)
 	elif Input.is_action_just_released("zoom_out"):
+		zoom_input_received.emit()
 		_start_zoom(ZOOM_STEP)
 
 
