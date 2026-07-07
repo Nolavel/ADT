@@ -24,6 +24,10 @@ const FONT_SIZE: int = 20
 const FADE_TIME: float = 0.25
 const EDGE_EPSILON: float = 0.05
 
+const SHOW_FADE_TIME: float = 0.2
+const HIDE_FADE_TIME: float = 0.4
+const HIDE_DELAY: float = 1.2   # сколько секунд ждать без нового скролла перед тем, как спрятать
+
 var _on_foot: OnFootCameraComponent
 
 var _v_top_alpha: float = 0.0
@@ -31,23 +35,52 @@ var _v_bottom_alpha: float = 0.0
 var _was_at_top_edge: bool = false
 var _was_at_bottom_edge: bool = false
 
+var _hide_timer: float = 0.0
+var _visible_tween: Tween
+
 
 ## Вызывается world.gd сразу после инстанцирования — явная передача
 ## ссылки, никакого singleton-доступа по имени класса.
 func setup(on_foot_component: OnFootCameraComponent) -> void:
 	_on_foot = on_foot_component
+	if not _on_foot:
+		push_error("[ZoomRulerHUD] setup() получил null OnFootCameraComponent — линейка не будет рисоваться")
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modulate.a = 0.0  # скрыта по умолчанию, появляется по скроллу
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not _on_foot:
 		return
+
+	if Input.is_action_just_pressed("zoom_in") or Input.is_action_just_pressed("zoom_out"):
+		_show_ruler()
+		_hide_timer = HIDE_DELAY
+	elif _hide_timer > 0.0:
+		_hide_timer -= delta
+		if _hide_timer <= 0.0:
+			_hide_ruler()
+
 	_update_edge_fades()
 	queue_redraw()
+
+
+func _show_ruler() -> void:
+	if _visible_tween:
+		_visible_tween.kill()
+	_visible_tween = create_tween()
+	_visible_tween.tween_property(self, "modulate:a", 1.0, SHOW_FADE_TIME)
+
+
+func _hide_ruler() -> void:
+	if _visible_tween:
+		_visible_tween.kill()
+	_visible_tween = create_tween()
+	_visible_tween.tween_property(self, "modulate:a", 0.0, HIDE_FADE_TIME)
 
 
 ## "Верхний" край шкалы = ближний предел зума (приблизили до упора).

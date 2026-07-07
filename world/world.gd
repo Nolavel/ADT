@@ -65,16 +65,13 @@ func _init_world() -> void:
 			click_to_move.register_camera(camera)
 			tps_movement.register_camera(camera)
 
-	# Линейка зума (экранный виджет) — своя CanvasLayer, т.к. это screen-space
-	# UI, а не world-space объект как HUDComponent/target_indicator.
+	# Линейка зума (экранный виджет) — отдельная система, грузит свою
+	# .tscn сцену (см. zoom_ruler_system.gd), тот же паттерн, что MenuSystem
+	# использует для in_game_menu.tscn. НЕ через InputSystems.
 	if camera:
-		var zoom_ruler_layer := CanvasLayer.new()
-		zoom_ruler_layer.layer = 30
-		add_child(zoom_ruler_layer)
-
-		var zoom_ruler := ZoomRulerHUD.new()
-		zoom_ruler_layer.add_child(zoom_ruler)
-		zoom_ruler.setup(camera.get_on_foot_component())
+		var zoom_ruler_system := ZoomRulerSystem.new()
+		add_child(zoom_ruler_system)
+		zoom_ruler_system.register_camera_component(camera.get_on_foot_component())
 
 	# Спавним HUD-компонент (индикатор клика/цели) — отдельно от игрока,
 	# в StreamContainer. Сам решает свою видимость через PlayerState
