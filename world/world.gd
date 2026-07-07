@@ -19,11 +19,15 @@ func _ready() -> void:
 
 
 func _init_world() -> void:
-	# ClickToMoveSystem и MenuSystem — обычные ноды, не автозагрузка.
-	# Владелец жизненного цикла — world.gd, ссылки на них раздаются явно
-	# тем, кому нужны (HUDComponent), без singleton-доступа по имени класса.
+	# ClickToMoveSystem / MenuSystem / TPSMovementSystem — обычные ноды,
+	# НЕ автозагрузка. Владелец жизненного цикла — world.gd, ссылки на них
+	# раздаются явно тем, кому нужны (HUDComponent), без singleton-доступа
+	# по имени класса.
 	var click_to_move := ClickToMoveSystem.new()
 	add_child(click_to_move)
+
+	var tps_movement := TPSMovementSystem.new()
+	add_child(tps_movement)
 
 	var menu_system := MenuSystem.new()
 	add_child(menu_system)
@@ -54,10 +58,23 @@ func _init_world() -> void:
 
 	if player:
 		click_to_move.register_player(player)
+		tps_movement.register_player(player)
 		if camera:
 			camera.set_target_reference(player)
 			camera.make_current()
 			click_to_move.register_camera(camera)
+			tps_movement.register_camera(camera)
+
+	# Линейка зума (экранный виджет) — своя CanvasLayer, т.к. это screen-space
+	# UI, а не world-space объект как HUDComponent/target_indicator.
+	if camera:
+		var zoom_ruler_layer := CanvasLayer.new()
+		zoom_ruler_layer.layer = 30
+		add_child(zoom_ruler_layer)
+
+		var zoom_ruler := ZoomRulerHUD.new()
+		zoom_ruler_layer.add_child(zoom_ruler)
+		zoom_ruler.setup(camera.get_on_foot_component())
 
 	# Спавним HUD-компонент (индикатор клика/цели) — отдельно от игрока,
 	# в StreamContainer. Сам решает свою видимость через PlayerState
@@ -72,7 +89,7 @@ func _init_world() -> void:
 	StreamingSystems.initialize(stream_container)
 
 	print("[World] ✅ Initialized")
-	
+
 
 
 func _load_world_data() -> WorldData:

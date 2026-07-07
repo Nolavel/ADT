@@ -41,6 +41,11 @@ var _active_component: Node
 
 var _shake: CameraShakeComponent
 
+## Публичный геттер — нужен HUD-виджету линейки зума, чтобы читать
+## current_zoom_distance/target_zoom_distance и диапазон текущего view_mode.
+func get_on_foot_component() -> OnFootCameraComponent:
+	return _on_foot
+
 # === MENU / переход между состояниями (только GAME <-> MENU_PAUSE) ===
 enum CameraState { GAME, MENU_PAUSE }
 var current_state: CameraState = CameraState.GAME

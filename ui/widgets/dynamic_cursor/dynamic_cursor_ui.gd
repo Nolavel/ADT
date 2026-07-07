@@ -54,7 +54,7 @@ var bracket_offset_current: float = 12.0
 
 # === ССЫЛКИ ===
 @onready var player: CharacterBody3D = $".."
-@onready var stamina_manager: StaminaManager = $"../StaminaManager"
+@onready var stamina_manager: StaminaComponent = $"../StaminaComponent"
 
 # === СОСТОЯНИЕ КУРСОРА ===
 var current_cursor_color: Color

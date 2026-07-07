@@ -1,5 +1,5 @@
 extends Node3D
-class_name StaminaManager
+class_name StaminaComponent
 
 # === СИГНАЛЫ ===
 signal stamina_changed(current_stamina: float, max_stamina: float)
