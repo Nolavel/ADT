@@ -18,10 +18,6 @@ class_name InteractComponent
 ## Этот шейпкаст служит для обнаружения интерактивных обьектов в фокусе
 ## перед игроком по группе "Interactable" и по слою "Interactable"
 
-@export var input_manager: InputSystems
-## добывить через ссылку в главной сцене // там прописано взаимодействие с обьектом
-## пока сделаем прототип по клавише R (Interact)
-
 @onready var pickup_slot: Node3D = $"../PickupSlot"
 ## прототип-набросок куда цепляется предмет (потом можно сделать - аттачить к Bone руки)
 
@@ -47,6 +43,15 @@ func _ready() -> void:
 		debug_label.text = "🔍 Поиск объектов..."
 	else:
 		print("❌ ОШИБКА: debug_label не найден!")
+
+	## Компонент сам решает, актуален ли он сейчас (только ON_FOOT) —
+	## InputSystems лишь сообщает о нажатии, ни о чём не спрашивая.
+	InputSystems.interact_pressed.connect(_on_interact_pressed)
+
+func _on_interact_pressed() -> void:
+	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
+		return
+	try_interact()
 	
 func _physics_process(_delta: float) -> void:
 	detect_interactable()

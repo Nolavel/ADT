@@ -1,68 +1,40 @@
 # =============================================================================
-# menu_controller.gd
-# Скрипт корневой ноды сцены игрового паузного меню (НЕ главное меню).
-# Инстанцируется и показывается/скрывается извне (InputSystems).
-# Сам input НЕ ловит — только реагирует на PlayerState.mode_changed
-# и обрабатывает нажатия своих кнопок.
+# menu_system.gd — autoload.
 #
-# process_mode ОБЯЗАТЕЛЬНО ALWAYS (выставляется кодом в InputSystems
-# при инстанцировании) — иначе после get_tree().paused = true
-# кнопки перестанут получать input и Continue/Quit не нажмутся.
+# Владеет жизненным циклом сцены игрового паузного меню и решает,
+# когда её открыть/закрыть. Единственный источник команды на toggle —
+# сигнал InputSystems.pause_pressed (InputSystems сам ничего не решает,
+# только сообщает "кнопка pause нажата").
+#
+# Сама сцена меню (in_game_menu.tscn / menu_controller.gd) реагирует
+# на PlayerState.mode_changed напрямую и показывает/прячет себя — здесь
+# её не дублируем, только инстанцируем один раз и переключаем PlayerState.
 # =============================================================================
-extends Control
+extends Node
 
-@onready var continue_button: Button = $btn_continue
-@onready var quit_button: Button = $btn_out
+const IN_GAME_MENU_SCENE: PackedScene = preload("res://ui/ingame_menu/in_game_menu.tscn")
+
+var _menu_canvas_layer: CanvasLayer
+var _menu_instance: Control
 
 
 func _ready() -> void:
-	visible = false
-	modulate.a = 0.0
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	PlayerState.mode_changed.connect(_on_player_state_mode_changed)
+	_menu_canvas_layer = CanvasLayer.new()
+	_menu_canvas_layer.layer = 50
+	_menu_canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	get_tree().root.call_deferred("add_child", _menu_canvas_layer)
 
-	if continue_button:
-		continue_button.pressed.connect(_on_continue_pressed)
-	if quit_button:
-		quit_button.pressed.connect(_on_quit_pressed)
+	_menu_instance = IN_GAME_MENU_SCENE.instantiate()
+	_menu_instance.process_mode = Node.PROCESS_MODE_ALWAYS
+	_menu_canvas_layer.call_deferred("add_child", _menu_instance)
 
-
-func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
-	if new_mode == PlayerState.Mode.MENU:
-		_fade_in()
-	elif visible:
-		_fade_out()
+	InputSystems.pause_pressed.connect(_on_pause_pressed)
 
 
-func _on_continue_pressed() -> void:
-	PlayerState.close_menu()
-
-
-func _on_quit_pressed() -> void:
-	if continue_button:
-		continue_button.disabled = true
-	if quit_button:
-		quit_button.disabled = true
-		quit_button.text = "Выход..."
-
-	await _fade_out()
-	await get_tree().create_timer(1.0, true).timeout  # true = игнорировать паузу
-	get_tree().quit()
-
-
-func _fade_in() -> void:
-	visible = true
-	modulate.a = 0.0
-	var tween := create_tween()
-	tween.set_ease(Tween.EASE_OUT)
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self, "modulate:a", 1.0, 0.3)
-
-
-func _fade_out() -> void:
-	var tween := create_tween()
-	tween.set_ease(Tween.EASE_IN)
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self, "modulate:a", 0.0, 0.3)
-	await tween.finished
-	visible = false
+func _on_pause_pressed() -> void:
+	if PlayerState.mode == PlayerState.Mode.MENU:
+		PlayerState.close_menu()
+	else:
+		PlayerState.open_menu()

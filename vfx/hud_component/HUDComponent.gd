@@ -4,26 +4,26 @@ class_name HUDComponent
 @onready var target_indicator: TargetIndicator = $TargetIndicator
 
 func _ready() -> void:
-	InputSystems.move_target_requested.connect(_on_move_target_requested)
-	InputSystems.move_target_invalid.connect(_on_move_target_invalid)
-	InputSystems.move_target_cleared.connect(_on_move_target_cleared)
-	InputSystems.player_registered.connect(_on_player_registered)
-	InputSystems.player_unregistered.connect(_on_player_unregistered)
+	ClickToMoveSystem.move_target_requested.connect(_on_move_target_requested)
+	ClickToMoveSystem.move_target_invalid.connect(_on_move_target_invalid)
+	ClickToMoveSystem.move_target_cleared.connect(_on_move_target_cleared)
+	ClickToMoveSystem.player_registered.connect(_on_player_registered)
+	ClickToMoveSystem.player_unregistered.connect(_on_player_unregistered)
 
 	PlayerState.mode_changed.connect(_on_player_state_changed)
 	PlayerState.view_mode_changed.connect(_on_player_state_changed)
 
 func _exit_tree() -> void:
-	if InputSystems.move_target_requested.is_connected(_on_move_target_requested):
-		InputSystems.move_target_requested.disconnect(_on_move_target_requested)
-	if InputSystems.move_target_invalid.is_connected(_on_move_target_invalid):
-		InputSystems.move_target_invalid.disconnect(_on_move_target_invalid)
-	if InputSystems.move_target_cleared.is_connected(_on_move_target_cleared):
-		InputSystems.move_target_cleared.disconnect(_on_move_target_cleared)
-	if InputSystems.player_registered.is_connected(_on_player_registered):
-		InputSystems.player_registered.disconnect(_on_player_registered)
-	if InputSystems.player_unregistered.is_connected(_on_player_unregistered):
-		InputSystems.player_unregistered.disconnect(_on_player_unregistered)
+	if ClickToMoveSystem.move_target_requested.is_connected(_on_move_target_requested):
+		ClickToMoveSystem.move_target_requested.disconnect(_on_move_target_requested)
+	if ClickToMoveSystem.move_target_invalid.is_connected(_on_move_target_invalid):
+		ClickToMoveSystem.move_target_invalid.disconnect(_on_move_target_invalid)
+	if ClickToMoveSystem.move_target_cleared.is_connected(_on_move_target_cleared):
+		ClickToMoveSystem.move_target_cleared.disconnect(_on_move_target_cleared)
+	if ClickToMoveSystem.player_registered.is_connected(_on_player_registered):
+		ClickToMoveSystem.player_registered.disconnect(_on_player_registered)
+	if ClickToMoveSystem.player_unregistered.is_connected(_on_player_unregistered):
+		ClickToMoveSystem.player_unregistered.disconnect(_on_player_unregistered)
 	if PlayerState.mode_changed.is_connected(_on_player_state_changed):
 		PlayerState.mode_changed.disconnect(_on_player_state_changed)
 	if PlayerState.view_mode_changed.is_connected(_on_player_state_changed):

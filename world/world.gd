@@ -44,11 +44,11 @@ func _init_world() -> void:
 		add_child(camera)
 
 	if player:
-		InputSystems.register_player(player)
+		ClickToMoveSystem.register_player(player)
 		if camera:
 			camera.set_target_reference(player)
 			camera.make_current()
-			InputSystems.register_camera(camera)
+			ClickToMoveSystem.register_camera(camera)
 
 	# Спавним HUD-компонент (индикатор клика/цели) — отдельно от игрока,
 	# в StreamContainer. Сам решает свою видимость через PlayerState

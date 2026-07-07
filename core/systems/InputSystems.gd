@@ -1,362 +1,140 @@
-# InputSystems.gd — autoload, extends Node (НЕ Node3D — визуала тут нет)
+# =============================================================================
+# InputSystems.gd — autoload, extends Node.
+#
+# Единственная ответственность: превращать физический Input Godot в сигналы.
+# НИКАКОЙ игровой логики здесь быть не должно:
+#   - не решает, что означает нажатие (это дело подписчика);
+#   - не хранит режим игрока (источник истины — PlayerState.mode/view_mode);
+#   - не делает рейкасты, не двигает игрока, не открывает UI.
+#
+# Кто на что подписывается и когда — решает сам подписчик, реагируя на
+# PlayerState.mode_changed / view_mode_changed. InputSystems эмитит сигналы
+# безусловно, всегда.
+# =============================================================================
 extends Node
 
-## === РЕЖИМ УПРАВЛЕНИЯ ===
-enum ControlMode { PLAYER, FLYCAR, TUBE }
-var current_control_mode: ControlMode = ControlMode.PLAYER
+## --- Клик мышью (сырые события, без интерпретации "что это значит") ---
+signal primary_click_pressed(screen_pos: Vector2)
+signal primary_click_released(screen_pos: Vector2)
 
-## --- Игровое паузное меню ---
-const IN_GAME_MENU_SCENE: PackedScene = preload("res://ui/ingame_menu/in_game_menu.tscn")
-var _menu_canvas_layer: CanvasLayer
-var _menu_instance: Control
+signal secondary_click_pressed(screen_pos: Vector2)
+signal secondary_click_held(screen_pos: Vector2, duration: float)
+signal secondary_click_released(screen_pos: Vector2)
 
-## === СИГНАЛЫ (логика → визуал) ===
-signal status_camera_toggled(status_is_active: bool)
-signal menu_pause_toggled(mp_is_active: bool)
-signal inventory_toggled(inventory_is_active: bool)
-signal crafting_toggled(crafting_is_active: bool)
-signal map_toggled(map_is_active: bool)
-signal fog_effect_toggled(is_paused: bool)
+## --- Interact ---
+## Прототип-эксперимент с hold-таймером на Interact убран (был не тем,
+## что нужно по факту — держать R ~1 сек как отдельный action).
+## Пока просто пробрасываем just_pressed. Hold-механику вернём отдельной
+## задачей, когда будет ясна финальная задумка.
+signal interact_pressed()
 
-signal move_target_requested(world_position: Vector3, is_running: bool)
-signal move_target_invalid(world_position: Vector3)
-signal move_target_cleared()
-signal control_mode_changed(new_mode: ControlMode)
+## --- Хоткеи UI (пока без потребителей — просто транслируются) ---
+signal pause_pressed()
+signal status_pressed()
+signal inventory_pressed()
+signal crafting_pressed()
+signal map_pressed()
 
-signal player_registered(p: CharacterBody3D)
-signal player_unregistered()
+## Тап/холд по "toggle_tabs" — тайминг нажатия это свойство физического
+## ввода, поэтому таймер живёт здесь, а не в потребителе.
+signal tabs_key_tapped()
+signal tabs_key_held()
 
-const GROUND_LAYER = 2
-
-## --- Состояние ввода ---
-var interact_button_pressed_time: float = 0.0
-var interact_button_held: bool = false
-const INTERACT_HOLD_TIME: float = 0.5
-
-var right_click_duration: float = 0.0
-var is_running: bool = false
+const TABS_HOLD_TIME: float = 0.5
 const RUN_TRIGGER_TIME: float = 0.5
 
-var status_pressed_time: float = 0.0
-var status_pressing: bool = false
-var status_notifier: bool = false
+var _tabs_pressed_time: float = 0.0
+var _tabs_pressing: bool = false
 
-var status_camera_active: bool = false
-var menu_pause_active: bool = false
-var inventory_active: bool = false
-var crafting_active: bool = false
-var map_active: bool = false
+var _secondary_click_duration: float = 0.0
+var _secondary_click_active: bool = false
 
-enum UIState { GAME, STATUS, INVENTORY, CRAFTING, MENU_PAUSE, MAP, VEHICLE }
-var current_ui_state: UIState = UIState.GAME
 
-## ============================================
-## РЕФЕРЕНСЫ
-## ============================================
-var player_node: CharacterBody3D
-var camera: Camera3D
-var hud_node: CanvasLayer
-
-## ============================================
-## ИНИЦИАЛИЗАЦИЯ / ИГРОВОЕ МЕНЮ
-## ============================================
 func _ready() -> void:
 	# ALWAYS — иначе после PlayerState.open_menu() (get_tree().paused = true)
-	# этот autoload перестанет получать _unhandled_input и Escape не закроет меню.
+	# этот autoload перестанет получать _unhandled_input и Escape не сработает.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	_menu_canvas_layer = CanvasLayer.new()
-	_menu_canvas_layer.layer = 50
-	_menu_canvas_layer.process_mode = Node.PROCESS_MODE_ALWAYS
-	get_tree().root.call_deferred("add_child", _menu_canvas_layer)
 
-	_menu_instance = IN_GAME_MENU_SCENE.instantiate()
-	_menu_instance.process_mode = Node.PROCESS_MODE_ALWAYS
-	_menu_canvas_layer.call_deferred("add_child", _menu_instance)
-
-
-## Escape ("pause" action) ловим отдельно от физики —
-## работает независимо от текущей паузы и режима.
+## Escape ("pause") ловим отдельно от физики — работает независимо от
+## текущей паузы и режима. Само решение что делать по этому сигналу —
+## у MenuSystem, InputSystems лишь оповещает.
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
-		_toggle_menu()
+		pause_pressed.emit()
 		get_viewport().set_input_as_handled()
 
 
-func _toggle_menu() -> void:
-	if PlayerState.mode == PlayerState.Mode.MENU:
-		PlayerState.close_menu()
-	else:
-		PlayerState.open_menu()
-
-func register_player(p: CharacterBody3D) -> void:
-	if player_node and is_instance_valid(player_node):
-		_disconnect_player(player_node)
-	player_node = p
-	if not player_node:
-		push_error("InputSystems.register_player: передан null!")
-		return
-	player_node.movement_started.connect(_on_movement_started)
-	player_node.movement_stopped.connect(_on_movement_stopped)
-	player_registered.emit(player_node)
-	print("✅ InputSystems: player_node назначен")
-
-func unregister_player() -> void:
-	if player_node and is_instance_valid(player_node):
-		_disconnect_player(player_node)
-	player_node = null
-	player_unregistered.emit()
-
-func _disconnect_player(p: CharacterBody3D) -> void:
-	if p.movement_started.is_connected(_on_movement_started):
-		p.movement_started.disconnect(_on_movement_started)
-	if p.movement_stopped.is_connected(_on_movement_stopped):
-		p.movement_stopped.disconnect(_on_movement_stopped)
-
-func register_camera(cam: Camera3D) -> void:
-	camera = cam
-
-func unregister_camera() -> void:
-	camera = null
-
-func register_hud(hud: CanvasLayer) -> void:
-	hud_node = hud
-
-func unregister_hud() -> void:
-	hud_node = null
-
-func set_control_mode(mode: ControlMode) -> void:
-	if current_control_mode == mode:
-		return
-	current_control_mode = mode
-	control_mode_changed.emit(mode)
-
-## ============================================
-## ОСНОВНОЙ ЦИКЛ
-## ============================================
 func _physics_process(delta: float) -> void:
-	if not player_node or not is_instance_valid(player_node):
-		return
+	_handle_interact()
+	_handle_primary_click()
+	_handle_secondary_click(delta)
+	_handle_tabs_key(delta)
+	_handle_ui_hotkeys()
 
-	var can_control_movement = current_ui_state == UIState.GAME \
-		and current_control_mode == ControlMode.PLAYER
-
-	if can_control_movement:
-		_handle_interact_action()
-
-	if can_control_movement and player_node.is_movement_enabled():
-		_handle_right_click(delta)
-		_handle_left_click()
-
-	_update_system_press_time(delta)
-	_handle_camera_status()
-	_handle_inventory_hotkey()
-	_handle_crafting_hotkey()
-	_handle_map_hotkey()
 
 ## ============================================
-## ХОТКЕИ
+## INTERACT
 ## ============================================
-func _handle_interact_action() -> void:
+func _handle_interact() -> void:
 	if Input.is_action_just_pressed("Interact"):
-		interact_button_pressed_time = 0.0
-		interact_button_held = true
+		interact_pressed.emit()
 
-	elif Input.is_action_pressed("Interact") and interact_button_held:
-		interact_button_pressed_time += get_process_delta_time()
-
-		if interact_button_pressed_time >= INTERACT_HOLD_TIME:
-			var interact_manager = player_node.get_node("InteractManager")
-			if interact_manager and interact_manager.has_method("try_interact"):
-				interact_manager.try_interact()
-				interact_button_held = false
-
-	elif Input.is_action_just_released("Mouse_Left_Button") and interact_button_held:
-		interact_button_held = false
-		interact_button_pressed_time = 0.0
-
-func _handle_inventory_hotkey() -> void:
-	if Input.is_action_just_pressed("Inventory"):
-		if menu_pause_active:
-			print("⚠️ Нельзя открыть Inventory - активна Menu Pause")
-			return
-		_switch_to_tabs_state(UIState.INVENTORY)
-
-func _handle_crafting_hotkey() -> void:
-	if Input.is_action_just_pressed("Crafting"):
-		if menu_pause_active:
-			print("⚠️ Нельзя открыть Crafting - активна Menu Pause")
-			return
-		_switch_to_tabs_state(UIState.CRAFTING)
-
-func _handle_map_hotkey() -> void:
-	if Input.is_action_just_pressed("Map"):
-		if menu_pause_active:
-			print("⚠️ Нельзя открыть Map - активна Menu Pause")
-			return
-		_switch_to_tabs_state(UIState.MAP)
-
-func _return_to_game_from_tabs() -> void:
-	var old_state = current_ui_state
-	current_ui_state = UIState.GAME
-
-	if status_camera_active:
-		status_camera_active = false
-		status_camera_toggled.emit(false)
-	if inventory_active:
-		inventory_active = false
-		inventory_toggled.emit(false)
-	if crafting_active:
-		crafting_active = false
-		crafting_toggled.emit(false)
-	if map_active:
-		map_active = false
-		map_toggled.emit(false)
-
-	if player_node and player_node.has_method("set_movement_enabled"):
-		player_node.set_movement_enabled(true)
-
-	fog_effect_toggled.emit(false)
-
-	print("⏎ ESC: %s → GAME" % UIState.keys()[old_state])
-
-func close_pause_menu() -> void:
-	if menu_pause_active:
-		menu_pause_active = false
-		menu_pause_toggled.emit(false)
-		fog_effect_toggled.emit(false)
-
-		if player_node and player_node.has_method("set_movement_enabled"):
-			player_node.set_movement_enabled(true)
-
-		print("🎮 Menu Pause закрыто через Continue | Движение восстановлено")
 
 ## ============================================
-## STATUS CAMERA
+## КЛИКИ МЫШЬЮ
 ## ============================================
-func _update_system_press_time(delta: float) -> void:
-	if status_pressing:
-		status_pressed_time += delta
-		if Input.is_action_just_released("toggle_tabs"):
-			if status_pressed_time < 0.5:
-				_toggle_status_notifier()
-			else:
-				_toggle_status_camera()
-			status_pressing = false
+func _handle_primary_click() -> void:
+	if Input.is_action_just_pressed("Mouse_Left_Button"):
+		primary_click_pressed.emit(get_viewport().get_mouse_position())
+	if Input.is_action_just_released("Mouse_Left_Button"):
+		primary_click_released.emit(get_viewport().get_mouse_position())
 
-func _handle_camera_status() -> void:
-	if Input.is_action_just_pressed("toggle_tabs"):
-		status_pressed_time = 0.0
-		status_pressing = true
-	if Input.is_action_just_pressed("Status"):
-		_toggle_status_camera()
 
-func _toggle_status_notifier() -> void:
-	status_notifier = !status_notifier
-	print("Status Notifier: %s" % ("ON" if status_notifier else "OFF"))
-
-func _toggle_status_camera() -> void:
-	if menu_pause_active:
-		print("⚠️ Нельзя открыть STATUS - активна Menu Pause")
-		return
-	_switch_to_tabs_state(UIState.STATUS)
-
-## ============================================
-## РЕЙКАСТ / КЛИКИ
-## ============================================
-func _handle_right_click(delta: float) -> void:
+func _handle_secondary_click(delta: float) -> void:
 	if Input.is_action_just_pressed("Mouse_Right_Button"):
-		right_click_duration = 0.0
-		is_running = false
-		_set_target_from_raycast()
-		player_node.set_movement_speed(player_node.walk_speed)
+		_secondary_click_duration = 0.0
+		_secondary_click_active = true
+		secondary_click_pressed.emit(get_viewport().get_mouse_position())
 
-	if Input.is_action_pressed("Mouse_Right_Button"):
-		right_click_duration += delta
-		_set_target_from_raycast()
-
-		if right_click_duration > RUN_TRIGGER_TIME and not is_running:
-			is_running = true
-			player_node.set_movement_speed(player_node.run_speed)
+	if Input.is_action_pressed("Mouse_Right_Button") and _secondary_click_active:
+		_secondary_click_duration += delta
+		secondary_click_held.emit(get_viewport().get_mouse_position(), _secondary_click_duration)
 
 	if Input.is_action_just_released("Mouse_Right_Button"):
-		right_click_duration = 0.0
-		is_running = false
+		_secondary_click_active = false
+		_secondary_click_duration = 0.0
+		secondary_click_released.emit(get_viewport().get_mouse_position())
 
-func _handle_left_click() -> void:
-	if Input.is_action_just_pressed("Mouse_Left_Button"):
-		player_node.stop_moving(true)
-		right_click_duration = 0.0
-		is_running = false
-		move_target_cleared.emit()
-
-func _set_target_from_raycast() -> void:
-	if not camera:
-		return
-
-	var mouse_pos = camera.get_viewport().get_mouse_position()
-	var ray_origin = camera.project_ray_origin(mouse_pos)
-	var ray_direction = camera.project_ray_normal(mouse_pos)
-	var ray_end = ray_origin + ray_direction * 1000.0
-
-	var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
-	query.collision_mask = 1 << (GROUND_LAYER - 1)
-
-	var result = camera.get_world_3d().direct_space_state.intersect_ray(query)
-
-	if result:
-		var collider = result.collider
-		if collider.is_in_group("floor"):
-			player_node.move_to_position(result.position)
-			move_target_requested.emit(result.position, is_running)
-		else:
-			_handle_invalid_click(result.position, collider, "не в группе 'floor'")
-	else:
-		_handle_invalid_click(Vector3.ZERO, null, "не является ground")
-
-func _handle_invalid_click(pos: Vector3, collider, reason: String) -> void:
-	if player_node and player_node.has_method("stop_moving"):
-		player_node.stop_moving(true)
-	move_target_invalid.emit(pos)
-	if collider:
-		print("⛔ Клик по объекту '%s' (%s)" % [collider.name, reason])
-	else:
-		print("⛔ Клик по объекту, который %s" % reason)
 
 ## ============================================
-## КОЛЛБЭКИ ДВИЖЕНИЯ ИГРОКА
+## TABS KEY (тап = notifier, холд = status-camera) — интерпретацию тапа/
+## холда потребитель делает сам, мы просто различаем их по таймингу.
 ## ============================================
-func _on_movement_started() -> void:
-	pass  # индикатор сам реагирует на move_target_requested
+func _handle_tabs_key(delta: float) -> void:
+	if Input.is_action_just_pressed("toggle_tabs"):
+		_tabs_pressed_time = 0.0
+		_tabs_pressing = true
 
-func _on_movement_stopped() -> void:
-	move_target_cleared.emit()
+	if _tabs_pressing:
+		_tabs_pressed_time += delta
+		if Input.is_action_just_released("toggle_tabs"):
+			if _tabs_pressed_time < TABS_HOLD_TIME:
+				tabs_key_tapped.emit()
+			else:
+				tabs_key_held.emit()
+			_tabs_pressing = false
+
 
 ## ============================================
-## UI STATE SWITCH
+## ПРОЧИЕ UI-ХОТКЕИ
 ## ============================================
-func _switch_to_tabs_state(new_state: UIState) -> void:
-	var old_state = current_ui_state
-	current_ui_state = new_state
-
-	status_camera_active = false
-	inventory_active = false
-	crafting_active = false
-	map_active = false
-
-	match new_state:
-		UIState.STATUS:
-			status_camera_active = true
-			status_camera_toggled.emit(true)
-		UIState.INVENTORY:
-			inventory_active = true
-			inventory_toggled.emit(true)
-		UIState.CRAFTING:
-			crafting_active = true
-			crafting_toggled.emit(true)
-		UIState.MAP:
-			map_active = true
-			map_toggled.emit(true)
-
-	status_notifier = false
-	print("🔄 Хоткей: %s → %s" % [UIState.keys()[old_state], UIState.keys()[new_state]])
+func _handle_ui_hotkeys() -> void:
+	if Input.is_action_just_pressed("Status"):
+		status_pressed.emit()
+	if Input.is_action_just_pressed("Inventory"):
+		inventory_pressed.emit()
+	if Input.is_action_just_pressed("Crafting"):
+		crafting_pressed.emit()
+	if Input.is_action_just_pressed("Map"):
+		map_pressed.emit()
