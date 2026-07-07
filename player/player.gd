@@ -16,7 +16,7 @@ extends CharacterBody3D
 
 ## --- Components ---
 @onready var navigation_component: NavigationComponent = $NavComponent
-@onready var stamina_component: StaminaComponent = $StaminaComponent
+@onready var stamina_manager: StaminaComponent = $StaminaComponent
 @onready var animation_player: AnimationPlayer = $player_base_mesh/AnimationPlayer
 
 ## --- Movement State ---
@@ -53,8 +53,8 @@ func _ready():
 	else:
 		push_warning("NavigationComponent not found - direct movement only")
 	
-	if stamina_component == null:
-		push_warning("StaminaComponent not found - stamina system will not work")
+	if stamina_manager == null:
+		push_warning("StaminaManager not found - stamina system will not work")
 
 ## --- Public API ---
 func move_to_position(pos: Vector3) -> void:
@@ -124,8 +124,8 @@ func set_movement_enabled(enabled: bool):
 		if navigation_component:
 			navigation_component.clear_path()
 		
-		if stamina_component:
-			stamina_component.stop_consuming_stamina()
+		if stamina_manager:
+			stamina_manager.stop_consuming_stamina()
 		
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
@@ -188,34 +188,34 @@ func _update_sprint_blend(delta: float) -> void:
 
 ## --- Stamina Consumption (расход стамины при беге) ---
 func _handle_stamina_consumption() -> void:
-	if not stamina_component:
+	if not stamina_manager:
 		return
 	
-	var can_run = stamina_component.is_sprint_allowed()
+	var can_run = stamina_manager.is_sprint_allowed()
 	
 	if is_running_mode and is_moving():
 		if can_run:
-			if not stamina_component.is_consuming_stamina:
-				stamina_component.start_consuming_stamina()
+			if not stamina_manager.is_consuming_stamina:
+				stamina_manager.start_consuming_stamina()
 		else:
 			## Стамина кончилась - принудительно переходим на ходьбу
-			if stamina_component.is_consuming_stamina:
-				stamina_component.stop_consuming_stamina()
+			if stamina_manager.is_consuming_stamina:
+				stamina_manager.stop_consuming_stamina()
 			
 			## Снижаем РЕАЛЬНУЮ скорость, но НЕ сбрасываем wants_to_run
 			target_speed = walk_speed
 			is_running_mode = false
 			print("⚠️ Стамина истощена - переход на ходьбу")
 	else:
-		if stamina_component.is_consuming_stamina:
-			stamina_component.stop_consuming_stamina()
+		if stamina_manager.is_consuming_stamina:
+			stamina_manager.stop_consuming_stamina()
 
 ## --- Jump Logic ---
 func _handle_jump() -> void:
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		if stamina_component and stamina_component.try_jump():
+	if InputSystems.is_jump_just_pressed() and is_on_floor():
+		if stamina_manager and stamina_manager.try_jump():
 			velocity.y = jump_force
-		elif not stamina_component:
+		elif not stamina_manager:
 			velocity.y = jump_force
 
 ## --- Gravity ---
@@ -240,7 +240,7 @@ func _update_direct_move_target_speed() -> void:
 		wants_to_run = false
 		return
 
-	var can_run := stamina_component == null or stamina_component.is_sprint_allowed()
+	var can_run := stamina_manager == null or stamina_manager.is_sprint_allowed()
 	var running := _direct_move_want_run and can_run
 
 	wants_to_run = _direct_move_want_run

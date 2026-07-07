@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://cvuw2ef72te81"]
+[gd_scene format=3 uid="uid://cvuw2ef72te81"]
 
-[ext_resource type="Script" path="res://tools/InputDebugger/input_debugger.gd" id="1_venrx"]
+[ext_resource type="Script" uid="uid://dvhjb4bajtdha" path="res://tools/input_debugger/input_debugger.gd" id="1_venrx"]
 
 [node name="InputDebugger" type="Control" node_paths=PackedStringArray("display_label")]
 layout_mode = 3

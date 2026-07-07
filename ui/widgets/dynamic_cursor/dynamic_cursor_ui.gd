@@ -54,7 +54,7 @@ var bracket_offset_current: float = 12.0
 
 # === ССЫЛКИ ===
 @onready var player: CharacterBody3D = $".."
-@onready var stamina_manager: StaminaComponent = $"../StaminaComponent"
+@onready var stamina_component: StaminaComponent = $"../StaminaComponent"
 
 # === СОСТОЯНИЕ КУРСОРА ===
 var current_cursor_color: Color
@@ -108,17 +108,15 @@ func _ready() -> void:
 	if player:
 		last_player_pos = player.global_transform.origin
 		
-		if stamina_manager == null:
-			stamina_manager = player.get_node_or_null("StaminaManager")
-			if stamina_manager == null:
-				push_warning("⚠️ StaminaManager не найден!")
+		if stamina_component == null:
+			push_warning("⚠️ StaminaManager не найден!")
 		
 		# Подключаемся к сигналам стамины
-		if stamina_manager:
-			stamina_manager.stamina_changed.connect(_on_stamina_changed)
-			stamina_manager.stamina_depleted.connect(_on_stamina_depleted)
-			stamina_manager.stamina_recovered.connect(_on_stamina_recovered)
-			stamina_manager.jump_performed.connect(_on_jump_performed)
+		if stamina_component:
+			stamina_component.stamina_changed.connect(_on_stamina_changed)
+			stamina_component.stamina_depleted.connect(_on_stamina_depleted)
+			stamina_component.stamina_recovered.connect(_on_stamina_recovered)
+			stamina_component.jump_performed.connect(_on_jump_performed)
 			print("✅ Курсор: Подключен к StaminaManager")
 	else:
 		push_error("❌ Player не найден!")
@@ -173,15 +171,15 @@ func _update_movement_state(delta: float, player_stationary: bool) -> void:
 	
 	# 🔥 ИСПРАВЛЕНА ЛОГИКА: Используем новый метод is_wanting_to_run()
 	var wants_sprint = player.is_wanting_to_run() and is_player_moving
-	var can_sprint = stamina_manager and stamina_manager.is_sprint_allowed()
+	var can_sprint = stamina_component and stamina_component.is_sprint_allowed()
 	wants_to_sprint = wants_sprint and not can_sprint
 	
 	# Получаем прогресс спринта
 	sprint_progress = player.get_sprint_blend()
 	
-	# Обновляем стамину из StaminaManager
-	if stamina_manager:
-		current_stamina_ratio = stamina_manager.get_stamina_ratio()
+	# Обновляем стамину из StaminaComponent
+	if stamina_component:
+		current_stamina_ratio = stamina_component.get_stamina_ratio()
 	
 	sprint_progress = clamp(sprint_progress, 0.0, 1.0)
 	
@@ -214,7 +212,7 @@ func _update_movement_state(delta: float, player_stationary: bool) -> void:
 	
 	# Отслеживание зарядки прыжка
 	var player_on_floor = player.is_on_floor()
-	var jump_charging = Input.is_action_pressed("jump") and player_on_floor
+	var jump_charging = InputSystems.is_jump_held() and player_on_floor
 
 	if jump_charging and not jump_is_charging:
 		jump_is_charging = true
@@ -306,10 +304,10 @@ func _animate_indicator_fade(type: String, target_alpha: float) -> void:
 
 # 🔥 Обновление состояния восстановления
 func _update_recovery_state(delta: float) -> void:
-	if not stamina_manager:
+	if not stamina_component:
 		return
 	
-	is_stamina_recovering = stamina_manager.is_recovering()
+	is_stamina_recovering = stamina_component.is_recovering()
 	
 	if is_stamina_recovering:
 		recovery_pulse_time += delta * recovery_pulse_speed

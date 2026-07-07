@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://5fn1xrmc4k84"]
 
-[ext_resource type="Script" uid="uid://ckvtfkxoa2uy1" path="res://player/player_components/nav_component/NavigationComponent.gd" id="1_fbi3j"]
+[ext_resource type="Script" uid="uid://ckvtfkxoa2uy1" path="res://player/player_components/nav_component/navigation_component.gd" id="1_fbi3j"]
 
 [node name="NavComponent" type="Node3D"]
 script = ExtResource("1_fbi3j")

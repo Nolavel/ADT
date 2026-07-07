@@ -324,7 +324,7 @@ func _update_camera_position(delta):
 func _handle_follow_toggle():
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
 		return  # в TPS слежение не переключаемо — оно всегда включено по своей природе
-	if Input.is_action_just_pressed("toggle_follow"):
+	if InputSystems.is_toggle_follow_just_pressed():
 		follow_player_rotation = !follow_player_rotation
 		if follow_player_rotation:
 			last_player_rotation = target.rotation.y
@@ -334,7 +334,7 @@ func _handle_follow_toggle():
 ## V больше не переключает виды безусловно — только когда зум упёрся
 ## в край, соответствующий следующему звену цепочки TPS ↔ ISOMETRIC ↔ TOPDOWN.
 func _handle_view_toggle():
-	if not Input.is_action_just_pressed("toggle_view"):
+	if not InputSystems.is_toggle_view_just_pressed():
 		return
 	if zoom_animating or view_mode_animating:
 		return  # не начинаем переход, пока не устоялась текущая анимация
@@ -429,9 +429,9 @@ func _handle_rotation_input():
 		return
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
 		return  # орбита не применима — камера жёстко позади игрока
-	if Input.is_action_just_pressed("lean_left"):
+	if InputSystems.is_lean_left_just_pressed():
 		_rotate_camera_left()
-	elif Input.is_action_just_pressed("lean_right"):
+	elif InputSystems.is_lean_right_just_pressed():
 		_rotate_camera_right()
 
 
@@ -466,10 +466,10 @@ func _rotate_camera_right():
 
 
 func _handle_zoom_input():
-	if Input.is_action_just_released("zoom_in"):
+	if InputSystems.is_zoom_in_just_released():
 		zoom_input_received.emit()
 		_start_zoom(-ZOOM_STEP)
-	elif Input.is_action_just_released("zoom_out"):
+	elif InputSystems.is_zoom_out_just_released():
 		zoom_input_received.emit()
 		_start_zoom(ZOOM_STEP)
 

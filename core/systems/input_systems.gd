@@ -138,3 +138,48 @@ func _handle_ui_hotkeys() -> void:
 		crafting_pressed.emit()
 	if Input.is_action_just_pressed("Map"):
 		map_pressed.emit()
+
+
+## ============================================
+## QUERY-МЕТОДЫ — для мест, где сигнальная модель не подходит напрямую
+## (камера читает ввод в своём собственном update(delta), которым управляет
+## хост camera_follow.gd, а не физический кадр InputSystems; WASD/Shift —
+## per-frame held-состояние, а не дискретное событие). Раньше эти места
+## звали Input.* напрямую — теперь физически весь Input.* вызывается
+## только здесь, в InputSystems, а потребители зовут эти обёртки.
+## ============================================
+
+## --- Камера (on_foot_camera_component.gd) ---
+func is_toggle_follow_just_pressed() -> bool:
+	return Input.is_action_just_pressed("toggle_follow")
+
+func is_toggle_view_just_pressed() -> bool:
+	return Input.is_action_just_pressed("toggle_view")
+
+func is_lean_left_just_pressed() -> bool:
+	return Input.is_action_just_pressed("lean_left")
+
+func is_lean_right_just_pressed() -> bool:
+	return Input.is_action_just_pressed("lean_right")
+
+func is_zoom_in_just_released() -> bool:
+	return Input.is_action_just_released("zoom_in")
+
+func is_zoom_out_just_released() -> bool:
+	return Input.is_action_just_released("zoom_out")
+
+
+## --- Прыжок (player.gd + dynamic_cursor_ui.gd) ---
+func is_jump_just_pressed() -> bool:
+	return Input.is_action_just_pressed("jump")
+
+func is_jump_held() -> bool:
+	return Input.is_action_pressed("jump")
+
+
+## --- Движение TPS (tps_movement_system.gd) ---
+func get_move_axis() -> Vector2:
+	return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+
+func is_sprint_held() -> bool:
+	return Input.is_action_pressed("sprint")

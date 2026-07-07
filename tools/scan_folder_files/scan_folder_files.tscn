@@ -1,7 +1,7 @@
-[gd_scene load_steps=15 format=3 uid="uid://cnhshfsm2gpjs"]
+[gd_scene format=3 uid="uid://cnhshfsm2gpjs"]
 
-[ext_resource type="Script" uid="uid://h110anmbrux7" path="res://tools/ScanFolderFiles/ProjectStatsUI.gd" id="1_cnwk7"]
-[ext_resource type="Script" uid="uid://hse0ajxh67to" path="res://tools/ScanFolderFiles/ProjectScanner.gd" id="2_r84w1"]
+[ext_resource type="Script" uid="uid://h110anmbrux7" path="res://tools/scan_folder_files/project_stats_ui.gd" id="1_cnwk7"]
+[ext_resource type="Script" uid="uid://hse0ajxh67to" path="res://tools/scan_folder_files/project_scanner.gd" id="2_r84w1"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t6i4e"]
 bg_color = Color(0.6, 0.6, 0.0862745, 0.423529)

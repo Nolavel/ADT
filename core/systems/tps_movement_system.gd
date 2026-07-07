@@ -8,9 +8,11 @@
 # view_mode == TPS — сам себя гейтит через PlayerState.mode_changed /
 # view_mode_changed, ровно тот же принцип, что у ClickToMoveSystem.
 #
-# WASD/Shift — непрерывный held-инпут, поэтому читаем Input.get_vector()
-# каждый _physics_process напрямую (сигнальная модель InputSystems сюда
-# не подходит — она для дискретных нажатий, не для аналоговых осей).
+# WASD/Shift — непрерывный held-инпут, поэтому сигнальная модель не
+# подходит (она для дискретных нажатий, не для аналоговых осей). Физически
+# Input.get_vector()/is_action_pressed() теперь вызываются только внутри
+# InputSystems (get_move_axis()/is_sprint_held()) — этот компонент лишь
+# зовёт готовые query-методы, сам Input напрямую не читает.
 #
 # Направление считается camera-relative (сплющенное по Y) — GTA-стиль:
 # A/D чистый стрейф, разворот персонажа лицом по движению делает сам
@@ -67,8 +69,8 @@ func _physics_process(_delta: float) -> void:
 	if not _is_active or not player_node or not camera:
 		return
 
-	var input_vec := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
-	var want_run := Input.is_action_pressed("sprint")
+	var input_vec := InputSystems.get_move_axis()
+	var want_run := InputSystems.is_sprint_held()
 
 	if input_vec.length() < 0.01:
 		player_node.set_direct_move_input(Vector3.ZERO, want_run)

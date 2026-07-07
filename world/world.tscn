@@ -1,9 +1,19 @@
 [gd_scene format=3 uid="uid://bftcnbrfar8om"]
 
 [ext_resource type="Script" uid="uid://bqsochlr4tpch" path="res://world/world.gd" id="1_tcf2h"]
+[ext_resource type="PackedScene" uid="uid://duxn5rqcau5dw" path="res://tools/stats_display/stats_sisplay.tscn" id="2_h5o24"]
+[ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/input_debugger/input_debugger.tscn" id="3_mmdvd"]
+[ext_resource type="PackedScene" uid="uid://cnhshfsm2gpjs" path="res://tools/scan_folder_files/scan_folder_files.tscn" id="4_fn3g3"]
 
 [node name="World" type="Node3D" unique_id=2119433318 groups=["world_root"]]
 script = ExtResource("1_tcf2h")
 allow_exit_with_escape = false
 
 [node name="StreamContainer" type="Node3D" parent="." unique_id=181686301]
+
+[node name="StatsDisplay" parent="." unique_id=1462911267 instance=ExtResource("2_h5o24")]
+
+[node name="InputDebugger" parent="." unique_id=1981762331 instance=ExtResource("3_mmdvd")]
+
+[node name="ProjectStats_AND_ExitTrigger" parent="." unique_id=1192114593 instance=ExtResource("4_fn3g3")]
+exit_scene = false
