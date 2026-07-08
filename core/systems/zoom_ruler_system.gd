@@ -16,6 +16,15 @@ var _layer_instance: CanvasLayer
 var _hud_instance: ZoomRulerHUD
 
 
+## Единая точка входа для world.gd (см. WORLD_SYSTEM_SCRIPTS). Если камеры
+## ещё нет (например порядок систем в списке когда-нибудь изменится) —
+## просто ничего не делает, register_camera_component можно будет позвать
+## позже вручную, как и раньше.
+func on_world_ready(context: WorldContext) -> void:
+	if context.camera:
+		register_camera_component(context.camera.get_on_foot_component())
+
+
 func register_camera_component(on_foot_component: OnFootCameraComponent) -> void:
 	if not _layer_instance:
 		_spawn(on_foot_component)

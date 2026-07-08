@@ -16,6 +16,10 @@
 # Сама сцена меню (in_game_menu.tscn / menu_controller.gd) реагирует
 # на PlayerState.mode_changed напрямую и показывает/прячет себя — здесь
 # её не дублируем, только инстанцируем один раз и переключаем PlayerState.
+#
+# Участвует в декларативном списке WORLD_SYSTEM_SCRIPTS в world.gd, но
+# on_world_ready(context) не реализует — этой системе не нужны ссылки
+# на player/camera/stream_container, всё нужное уже есть в _ready().
 # =============================================================================
 extends Node
 class_name MenuSystem

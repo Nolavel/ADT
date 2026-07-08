@@ -35,6 +35,13 @@ func _ready() -> void:
 	_update_active_state()
 
 
+## Единая точка входа для world.gd (см. WORLD_SYSTEM_SCRIPTS) — вместо
+## ручных register_player()/register_camera() по месту.
+func on_world_ready(context: WorldContext) -> void:
+	register_player(context.player)
+	register_camera(context.camera)
+
+
 func register_player(p: CharacterBody3D) -> void:
 	player_node = p
 

@@ -51,6 +51,17 @@ func _ready() -> void:
 ## ============================================
 ## РЕГИСТРАЦИЯ ИГРОКА / КАМЕРЫ (вызывается из world.gd при спавне)
 ## ============================================
+
+## Единая точка входа, которую зовёт world.gd из декларативного списка
+## WORLD_SYSTEM_SCRIPTS — вместо ручных register_player()/register_camera()
+## по месту. Сами register_* методы остаются публичными (пригодятся, если
+## понадобится перерегистрация без полного on_world_ready, например при
+## будущей динамической смене игрока).
+func on_world_ready(context: WorldContext) -> void:
+	register_player(context.player)
+	register_camera(context.camera)
+
+
 func register_player(p: CharacterBody3D) -> void:
 	if player_node and is_instance_valid(player_node):
 		_disconnect_player(player_node)

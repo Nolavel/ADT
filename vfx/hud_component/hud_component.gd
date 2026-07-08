@@ -5,11 +5,15 @@ class_name HUDComponent
 
 var _click_to_move: ClickToMoveSystem
 
-## Вызывается world.gd сразу после инстанцирования HUD, с явной ссылкой
-## на уже созданный ClickToMoveSystem. Никакого singleton-доступа по имени
-## класса и никакого поиска по группам — только явная передача.
-func setup(click_to_move: ClickToMoveSystem) -> void:
-	_click_to_move = click_to_move
+## Единая точка входа — та же сигнатура, что и у Node-систем в
+## WORLD_SYSTEM_SCRIPTS, только здесь её вызывает цикл по
+## WORLD_3D_ENTITY_SCENES в world.gd. ClickToMoveSystem достаём из
+## context.get_system(), а не через singleton-доступ по имени класса.
+func on_world_ready(context: WorldContext) -> void:
+	_click_to_move = context.get_system(ClickToMoveSystem)
+	if not _click_to_move:
+		push_error("[HUDComponent] ClickToMoveSystem не найден в WorldContext.systems")
+		return
 
 	_click_to_move.move_target_requested.connect(_on_move_target_requested)
 	_click_to_move.move_target_invalid.connect(_on_move_target_invalid)
