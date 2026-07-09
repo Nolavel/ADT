@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EnvironmentLightingSettings" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/world/world_environment_systems/environment_lighting_settings.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+shadows_enabled = true
+shadow_max_distance = 150.0
+fog_enabled = true
+fog_sky_affect = 0.35

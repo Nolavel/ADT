@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bf8h6lbyl6c7"]
+
+[node name="BlockA1003" type="Node3D" unique_id=1455899980]
+
+[node name="Shared" type="Node3D" parent="." unique_id=2013303489]
+editor_description = "сквозной контент, живёт при любой страте"

@@ -1,8 +1,11 @@
 extends Control
 
+@export var print_log: bool = true
+
 var stats_label: RichTextLabel
 var stats_timer: Timer
 var play_session_start_time: float = 0.0
+var console_text: String = ""
 
 func _ready():
 
@@ -79,15 +82,17 @@ func _on_stats_timer_timeout():
 	stats_label.bbcode_text = stats_text
 
 	# Вывод в консоль. Здесь мы используем обычный текст, без BBCode
-	var _console_text = (
-		"FPS: %d\n" % fps +
-		"Frame: %.2f ms\n" % frame_ms +
-		"Proc: %.2f ms\n" % proc_ms +
-		"Physics: %.2f ms\n" % phys_ms +
-		"Draw: %d\n" % draw_calls +
-		"VRAM: %.1f MB\n" % vram +
-		"RAM: %.1f MB\n" % ram +
-		"Uptime: %s" % uptime_string
-	)
+	console_text = (
+	"FPS: %d\n" % fps +
+	"Frame: %.2f ms\n" % frame_ms +
+	"Proc: %.2f ms\n" % proc_ms +
+	"Physics: %.2f ms\n" % phys_ms +
+	"Draw: %d\n" % draw_calls +
+	"VRAM: %.1f MB\n" % vram +
+	"RAM: %.1f MB\n" % ram +
+	"Uptime: %s" % uptime_string
+)
+
+	if print_log:
+		print(console_text)
 	
-	#print(console_text)

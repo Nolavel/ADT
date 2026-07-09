@@ -52,21 +52,3 @@ func _on_scene_stats_completed(scene_count: int, project_size_bytes: int):
 	label_scenes.text = "🎬 Scenes in Project: %d" % scene_count
 	label_size.text = "📦 Project Size: %.2f MB" % (project_size_bytes / 1024.0 / 1024.0)
 	
-func _input(event):
-	if not exit_scene:
-		return  # 🚫 если выключено — игнорируем ESC
-		
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		start_exit()
-		
-func start_exit():
-	if not exit_scene:
-		return  # 🚫 защита на всякий случай
-	countdown_label.visible = true
-	countdown_label.text = "3.."
-	await get_tree().create_timer(1.0).timeout
-	countdown_label.text = "2.."
-	await get_tree().create_timer(1.0).timeout
-	countdown_label.text = "Exit"
-	await get_tree().create_timer(0.3).timeout
-	get_tree().quit()

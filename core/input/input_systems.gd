@@ -77,7 +77,7 @@ func _physics_process(delta: float) -> void:
 ## INTERACT
 ## ============================================
 func _handle_interact() -> void:
-	if Input.is_action_just_pressed("Interact"):
+	if Input.is_action_just_pressed("interact"):
 		interact_pressed.emit()
 
 
@@ -85,23 +85,23 @@ func _handle_interact() -> void:
 ## КЛИКИ МЫШЬЮ
 ## ============================================
 func _handle_primary_click() -> void:
-	if Input.is_action_just_pressed("Mouse_Left_Button"):
+	if Input.is_action_just_pressed("mouse_left_button"):
 		primary_click_pressed.emit(get_viewport().get_mouse_position())
-	if Input.is_action_just_released("Mouse_Left_Button"):
+	if Input.is_action_just_released("mouse_left_button"):
 		primary_click_released.emit(get_viewport().get_mouse_position())
 
 
 func _handle_secondary_click(delta: float) -> void:
-	if Input.is_action_just_pressed("Mouse_Right_Button"):
+	if Input.is_action_just_pressed("mouse_right_button"):
 		_secondary_click_duration = 0.0
 		_secondary_click_active = true
 		secondary_click_pressed.emit(get_viewport().get_mouse_position())
 
-	if Input.is_action_pressed("Mouse_Right_Button") and _secondary_click_active:
+	if Input.is_action_pressed("mouse_right_button") and _secondary_click_active:
 		_secondary_click_duration += delta
 		secondary_click_held.emit(get_viewport().get_mouse_position(), _secondary_click_duration)
 
-	if Input.is_action_just_released("Mouse_Right_Button"):
+	if Input.is_action_just_released("mouse_right_button"):
 		_secondary_click_active = false
 		_secondary_click_duration = 0.0
 		secondary_click_released.emit(get_viewport().get_mouse_position())
@@ -130,13 +130,11 @@ func _handle_tabs_key(delta: float) -> void:
 ## ПРОЧИЕ UI-ХОТКЕИ
 ## ============================================
 func _handle_ui_hotkeys() -> void:
-	if Input.is_action_just_pressed("Status"):
+	if Input.is_action_just_pressed("status"):
 		status_pressed.emit()
-	if Input.is_action_just_pressed("Inventory"):
+	if Input.is_action_just_pressed("inventory"):
 		inventory_pressed.emit()
-	if Input.is_action_just_pressed("Crafting"):
-		crafting_pressed.emit()
-	if Input.is_action_just_pressed("Map"):
+	if Input.is_action_just_pressed("map"):
 		map_pressed.emit()
 
 

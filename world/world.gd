@@ -55,6 +55,8 @@ extends Node3D
 
 ## 1) Node-системы — .new(), родитель = World (self).
 var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
+	GameClockSystem,             # ← время: единственный источник истины
+	EnvironmentLightingSystem,   # ← свет/небо/туман: подписчик часов
 	ClickToMoveSystem,
 	TPSMovementSystem,
 	MenuSystem,
@@ -73,7 +75,6 @@ var WORLD_UI_SCENES: Array[PackedScene] = []
 const UI_CANVAS_LAYER_INDEX: int = 40
 
 @onready var stream_container: Node3D = $StreamContainer
-@export var allow_exit_with_escape: bool = true
 
 var _systems: Array[Node] = []
 
@@ -193,10 +194,3 @@ func _build_city_zone(cz: CityZoneData) -> void:
 	root.add_child(cs)
 
 	print("[World] CityZone built: size=%s  pos=%s" % [cz.size, cz.position])
-	
-func _unhandled_input(event: InputEvent) -> void:
-	if not allow_exit_with_escape:
-		return
-
-	if event.is_action_pressed("ui_cancel"):
-		get_tree().quit()

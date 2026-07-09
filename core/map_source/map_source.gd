@@ -16,7 +16,7 @@ extends Node3D
 
 # ── Константы ────────────────────────────────────────────────────────────────
 
-const Y_CITY_ZONE_TOP: float = 10.0
+const Y_CITY_ZONE_TOP: float = 0.0
 const EXPORT_PATH:     String = "res://data/world_data.tres"
 
 ## Высота спавн-маркера над CityZone (чтобы шар не проваливался сквозь меш)
@@ -81,7 +81,7 @@ func _ready() -> void:
 
 	_build_hud()
 
-	print("[MapSource] ✅ Ready. Towers: %d" % _block_data.size())
+	print("[MapSource] ✅ Ready. Blocks: %d" % _block_data.size())
 
 
 func _process(_delta: float) -> void:

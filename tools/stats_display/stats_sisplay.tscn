@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://c2qmb7qxnlbwk" path="res://tools/stats_display/stats_display.gd" id="1_w5efj"]
 
-[node name="StatsDisplay" type="Control"]
+[node name="StatsDisplay" type="Control" unique_id=59461052]
 layout_mode = 3
 anchors_preset = 1
 anchor_left = 1.0

@@ -1,8 +1,8 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://dy5x1c01j6hxx"]
+[gd_resource type="Resource" script_class="WorldData" format=3]
 
-[ext_resource type="Script" uid="uid://df5adq7w1iw73" path="res://world/resources/BlockData.gd" id="1_e4cvp"]
-[ext_resource type="Script" uid="uid://vg368drj41e4" path="res://world/resources/CityZoneData.gd" id="2_xy5s7"]
-[ext_resource type="Script" uid="uid://b7tqqbk2k4e4i" path="res://world/resources/WorldData.gd" id="3_ke6ng"]
+[ext_resource type="Script" path="res://world/resources/block_data.gd" id="1_e4cvp"]
+[ext_resource type="Script" path="res://world/resources/city_zone_data.gd" id="2_xy5s7"]
+[ext_resource type="Script" path="res://world/resources/world_data.gd" id="3_ke6ng"]
 
 [sub_resource type="Resource" id="Resource_e4cvp"]
 script = ExtResource("1_e4cvp")
@@ -25,4 +25,4 @@ size = Vector3(6600, 10, 6600)
 script = ExtResource("3_ke6ng")
 blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_e4cvp")])
 city_zone = SubResource("Resource_xy5s7")
-spawn_point = Vector3(57.54924, 10, 118.718994)
+spawn_point = Vector3(-1418.5701, 0, 1834.3396)

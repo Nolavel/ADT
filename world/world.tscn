@@ -7,11 +7,11 @@
 
 [node name="World" type="Node3D" unique_id=2119433318 groups=["world_root"]]
 script = ExtResource("1_tcf2h")
-allow_exit_with_escape = false
 
 [node name="StreamContainer" type="Node3D" parent="." unique_id=181686301]
 
 [node name="StatsDisplay" parent="." unique_id=1462911267 instance=ExtResource("2_h5o24")]
+print_log = false
 
 [node name="InputDebugger" parent="." unique_id=1981762331 instance=ExtResource("3_mmdvd")]
 

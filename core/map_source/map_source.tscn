@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://yq6u1mda12pc" path="res://core/map_source/map_source.gd" id="1_upnkk"]
 [ext_resource type="Texture2D" uid="uid://cjltkwabuxkyc" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_05.png" id="2_ovdp1"]
 [ext_resource type="Texture2D" uid="uid://p80uqckupev6" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_07.png" id="3_moi5e"]
-[ext_resource type="PackedScene" uid="uid://btyn3081k3ola" path="res://world/placeholders/towers_placeholder/blockhaze_placeholder.tscn" id="4_ja3h1"]
+[ext_resource type="PackedScene" uid="uid://btyn3081k3ola" path="res://world/placeholders/blocks/blockhaze_placeholder.tscn" id="4_ja3h1"]
 [ext_resource type="Script" uid="uid://45ki68uq8hm8" path="res://core/map_source/spawner.gd" id="5_ikph1"]
 [ext_resource type="Script" uid="uid://dgdycarheixri" path="res://core/map_source/map_camera.gd" id="6_tg4so"]
 [ext_resource type="Script" uid="uid://bq552rdni7eh3" path="res://core/map_source/map_cursor.gd" id="7_xxtvx"]
@@ -101,7 +101,6 @@ shape = SubResource("BoxShape3D_agfqh")
 debug_color = Color(0, 18.892157, 13.504337, 0.41960785)
 
 [node name="CityZone" type="MeshInstance3D" parent="." unique_id=1797805020]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
 material_override = SubResource("StandardMaterial3D_6w48d")
 mesh = SubResource("PlaneMesh_n58pn")
 
@@ -176,6 +175,7 @@ metadata/side = "East"
 metadata/side = "Central"
 
 [node name="TriggerZoneOfDistricts" type="Node3D" parent="." unique_id=285112748]
+visible = false
 
 [node name="A1" type="Area3D" parent="TriggerZoneOfDistricts" unique_id=959833284 groups=["district"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1600, 0)
