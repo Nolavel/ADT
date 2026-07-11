@@ -29,7 +29,7 @@ data = PackedVector3Array(-125, 275, 75, 125, 275, 75, -125, -275, 75, 125, 275,
 [sub_resource type="BoxShape3D" id="BoxShape3D_5h11f"]
 size = Vector3(200, 1, 1)
 
-[node name="Blockhaze_placeholder" type="Node3D" unique_id=1531042291]
+[node name="Blockhaze_Marker" type="Node3D" unique_id=1531042291]
 script = ExtResource("1_ednwa")
 id = "001"
 block_name = "Blockhaze"

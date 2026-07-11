@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://borhadtfc0ngg"]
+
+[ext_resource type="Texture2D" uid="uid://bv1g86pswgwx1" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_01.png" id="1_jykqm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bx8n8"]
+albedo_texture = ExtResource("1_jykqm")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_pyyvy"]
+material = SubResource("StandardMaterial3D_bx8n8")
+size = Vector3(2200, 10, 2200)
+
+[node name="GtContentA" type="Node3D" unique_id=253913729]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1019800065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
+mesh = SubResource("BoxMesh_pyyvy")

@@ -1,9 +1,9 @@
-[gd_scene format=3 uid="uid://b55o35es02vo0"]
+[gd_scene format=3 uid="uid://c3lec1ped3van"]
 
-[ext_resource type="Texture2D" uid="uid://cbtblvtvqbmm" path="res://assets/textures/prototype_tex_kenney/PNG/Orange/texture_01.png" id="1_rl7be"]
+[ext_resource type="Texture2D" uid="uid://cbtblvtvqbmm" path="res://assets/textures/prototype_tex_kenney/PNG/Orange/texture_01.png" id="1_u0nvj"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_156ma"]
-albedo_texture = ExtResource("1_rl7be")
+albedo_texture = ExtResource("1_u0nvj")
 uv1_triplanar = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_bh5xh"]
