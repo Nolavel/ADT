@@ -1,16 +1,27 @@
 # =============================================================================
-# BlockData.gd 
-# Resource описывающий одну башню — сохраняется внутри WorldData.tres
+# BlockData.gd
+# Resource — описывает один квартал (block). Хранится внутри WorldData.tres.
+#
+# Два пути к сценам — это два кольца стриминга:
+#   silhouette_scene_path — Ring 0: лёгкий силуэт (меш + коллизия габарита),
+#                           загружается при старте мира и живёт постоянно.
+#   content_scene_path    — Ring 1: полный контент (Shared + слои страт через
+#                           InstancePlaceholder), грузится/выгружается
+#                           конвейером StreamingSystems по радиусу от игрока.
 # =============================================================================
- 
+
 extends Resource
 class_name BlockData
- 
-@export var id:        String
-@export var position:  Vector3
-@export var height:    float
-@export var district:  String
-@export var scene_path: String
-@export var strata_ids: Dictionary  # { "doggerland": "T-001-DG", ... }
- 
- 
+
+@export var id:       String
+@export var position: Vector3
+@export var height:   float
+@export var district: String
+
+@export_group("Streaming Scenes")
+@export_file("*.tscn") var silhouette_scene_path: String
+@export_file("*.tscn") var content_scene_path:    String
+
+## Идентификаторы страт-версий квартала: { "doggerland": "...", ... }
+## Пока не используется стримингом — задел под нарративные системы.
+@export var strata_ids: Dictionary

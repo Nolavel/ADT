@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://lbshnvtuehq5"]
+
+[ext_resource type="Texture2D" uid="uid://bsw2ip0l7l3go" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_01.png" id="1_a7q1i"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_im7va"]
+albedo_texture = ExtResource("1_a7q1i")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_a7q1i"]
+material = SubResource("StandardMaterial3D_im7va")
+size = Vector3(600, 2600, 600)
+
+[node name="LockA1003Silhouette" type="Node3D" unique_id=911792183]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1464400062]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1300, 0)
+mesh = SubResource("BoxMesh_a7q1i")

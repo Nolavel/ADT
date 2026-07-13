@@ -18,10 +18,8 @@ editor_description = "сквозной контент, живёт при люб�
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1655663534]
 mesh = SubResource("BoxMesh_5h11f")
 
-[node name="LayerDoggerland" parent="." unique_id=1885022294 instance_placeholder="res://world/content/blocks/block_a1_003/layer_doggerland.tscn"]
+[node name="LayerManifold" parent="." unique_id=640181086 instance_placeholder="res://world/content/blocks/block_a1_001/layer_manifold.tscn"]
 
-[node name="LayerManifold" parent="." unique_id=640181086 instance_placeholder="res://world/content/blocks/block_a1_003/layer_manifold.tscn"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1000, 0)
+[node name="LayerGlare" parent="." unique_id=1361175678 instance_placeholder="res://world/content/blocks/block_a1_001/layer_glare.tscn"]
 
-[node name="LayerGlare" parent="." unique_id=1361175678 instance_placeholder="res://world/content/blocks/block_a1_003/layer_glare.tscn"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2000, 0)
+[node name="LayerDoggerland" parent="." unique_id=1885022294 instance_placeholder="res://world/content/blocks/block_a1_001/layer_doggerland.tscn"]
