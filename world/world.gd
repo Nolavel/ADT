@@ -3,8 +3,8 @@
 #
 # СТРУКТУРА ДЕРЕВА (world.tscn):
 #   World (Node3D)  ← этот скрипт
-#   ├── StreamContainer  (Node3D)  ← башни от StreamingSystems
-#   └── [CityZone создаётся программно через WorldBuilder]
+#   └── StreamContainer  (Node3D)  ← весь стримимый контент от StreamingSystems
+#                                    (силуэты и контент плит земли и кварталов)
 #
 # =============================================================================
 #
@@ -26,8 +26,7 @@
 #
 #   3) WORLD_UI_SCENES — screen-space UI сцены (.tscn с Control в корне),
 #      создаются через load()+instantiate(), родитель — отдельный общий
-#      CanvasLayer (не stream_container, не World). Пока пусто — сюда
-#      позже лягут инвентарь-с-иконками, статус-камера, крафтинг и т.д.
+#      CanvasLayer (не stream_container, не World).
 #
 # Все три категории поддерживают один и тот же необязательный интерфейс:
 # если у ноды/сцены есть метод on_world_ready(context: WorldContext),
@@ -41,14 +40,13 @@
 # в самом скрипте/сцене. _init_world() НЕ растёт с каждым новым элементом
 # — весь код ниже это фиксированные циклы.
 #
-# ВАЖНО — что все три категории НЕ делают: они не про КОНТЕНТ мира (башни,
-# City Zone, districts, подгрузка/выгрузка блоков по дистанции от игрока).
-# Контентом занимается StreamingSystems (autoload,
-# core/systems/streaming_systems.gd) — это отдельный, уже существующий и
-# полностью независимый от этого механизма пайплайн. Всё, что описано
+# ВАЖНО — что все три категории НЕ делают: они не про КОНТЕНТ мира (плиты
+# земли, кварталы, их силуэты и страт-слои). Контентом занимается
+# StreamingSystems (autoload, core/world/streaming_systems.gd) — конвейер
+# стриминга, полностью независимый от этого механизма. Всё, что описано
 # здесь — исключительно про жизненный цикл ИГРОВЫХ СИСТЕМ и связанных с
-# игроком сцен (инпут/движение/меню/HUD/будущий UI), а не про то, какие
-# башни сейчас заспавнены в StreamContainer.
+# игроком сцен (инпут/движение/меню/HUD/UI), а не про то, какие ячейки
+# сейчас заспавнены в StreamContainer.
 # =============================================================================
 
 extends Node3D
@@ -69,10 +67,14 @@ var WORLD_3D_ENTITY_SCENES: Array[PackedScene] = [
 ]
 
 ## 3) Screen-space UI сцены — instantiate(), родитель = общий CanvasLayer.
-## Пока пусто — заполнится инвентарём/статус-камерой/крафтингом позже.
 var WORLD_UI_SCENES: Array[PackedScene] = []
 
 const UI_CANVAS_LAYER_INDEX: int = 40
+
+## Подъём капсулы игрока над точкой спавна. Конвенция: spawn_point в данных —
+## это точка НА ПОЛУ (обычно y = 0); клиренс не даёт капсуле пересечься
+## с коллизией пола в первый тик физики.
+const SPAWN_CLEARANCE: float = 2.0
 
 @onready var stream_container: Node3D = $StreamContainer
 
@@ -91,12 +93,8 @@ func _init_world() -> void:
 		add_child(instance)
 		_systems.append(instance)
 
-	# --- Контент мира (WorldData/City Zone) — зона ответственности
-	# StreamingSystems/WorldBuilder, не системы выше. ---
+	# --- Точка спавна из данных мира (до создания игрока) ---
 	var world_data := _load_world_data()
-	if world_data != null and world_data.city_zone != null:
-		_build_city_zone(world_data.city_zone)
-
 	if world_data != null and world_data.spawn_point != Vector3.ZERO:
 		WorldSystems.spawn_point = world_data.spawn_point
 
@@ -106,9 +104,8 @@ func _init_world() -> void:
 	if player_scene != null:
 		player = player_scene.instantiate() as Node3D
 		add_child(player)
-
-		# 🔥 Спавним на 10м выше, чтобы не проваливаться сквозь ещё не прогруженный пол
-		player.global_position += Vector3(0, 10.0, 0)
+		player.global_position = WorldSystems.spawn_point \
+				+ Vector3(0.0, SPAWN_CLEARANCE, 0.0)
 
 	# --- Камера ---
 	var camera_follow_scene := load("res://camera/camera_follow.tscn") as PackedScene
@@ -151,46 +148,19 @@ func _init_world() -> void:
 			if instance.has_method("on_world_ready"):
 				instance.on_world_ready(context)
 
-	StreamingSystems.initialize(stream_container)
+	# --- Контент мира: конвейер стриминга ---
+	# Ring 0 (силуэты, включая коллизию пола) создаётся синхронно внутри
+	# initialize() — то есть ДО первого тика физики после спавна игрока.
+	StreamingSystems.initialize(stream_container, player)
 
 	print("[World] ✅ Initialized")
 
 
 func _load_world_data() -> WorldData:
+	# Ресурс также загружает StreamingSystems — второй load() бесплатен
+	# (кэш Godot). Здесь он нужен раньше: spawn_point — до создания игрока.
 	var path := WorldSystems.world_data_path
 	if not ResourceLoader.exists(path):
 		push_error("[World] WorldData not found: " + path)
 		return null
 	return load(path) as WorldData
-
-
-## Создаём CityZone программно из CityZoneData.
-## Результат идентичен тому что в mapsource.tscn — никакого ручного дублирования.
-func _build_city_zone(cz: CityZoneData) -> void:
-	var root := StaticBody3D.new()
-	root.name = "CityZone"
-	add_child(root)
-	root.position = cz.position
-
-	# 🔥 Обязательно: слой земли + группа "floor",
-	# иначе клик-рейкаст в InputSystems его не увидит
-	root.collision_layer = 3          # слой 2 (floor)
-	root.collision_mask  = 3
-	root.add_to_group("floor")
-
-	var mesh_inst := MeshInstance3D.new()
-	var box_mesh  := BoxMesh.new()
-	box_mesh.size  = cz.size
-	mesh_inst.mesh = box_mesh
-	var mat               := StandardMaterial3D.new()
-	mat.albedo_color       = cz.debug_color
-	mesh_inst.set_surface_override_material(0, mat)
-	root.add_child(mesh_inst)
-
-	var cs        := CollisionShape3D.new()
-	var box_shape := BoxShape3D.new()
-	box_shape.size = cz.size
-	cs.shape       = box_shape
-	root.add_child(cs)
-
-	print("[World] CityZone built: size=%s  pos=%s" % [cz.size, cz.position])
