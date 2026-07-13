@@ -1,8 +1,18 @@
 # =============================================================================
 # WorldSystems.gd — Autoload (singleton)
 #
-# Центральная шина состояния игры. Хранит всё что должно пережить смену сцен:
-# точку спавна, текущую страту/район, путь к данным мира.
+# Центральная шина состояния игры. Хранит всё, что должно пережить смену сцен:
+# точку спавна, текущую страту/район/тайл, путь к данным мира.
+#
+# Здесь же — единственный источник истины по геометрии мира:
+#   • Конвенция высоты: верх плит земли (пол города) = Y 0.
+#     Страты отсчитываются напрямую от pos.y.
+#   • Тайловая сетка земли: GROUND_GRID_SIZE плит по GROUND_TILE_SIZE метров.
+#     CITY_ZONE_SIZE выводится из них и не хранится вторым числом.
+#   • Координаты тайла everywhere = Vector2i(col, row):
+#     .x = col (индекс по мировой оси X), .y = row (индекс по мировой оси Z).
+#
+# Никакой физики (Area3D и т.п.) — только чистая математика по позиции.
 # =============================================================================
 
 extends Node
@@ -10,12 +20,23 @@ extends Node
 # ── Константы мира ────────────────────────────────────────────────────────────
 
 const WORLD_ZONE_SIZE    := Vector2(9600.0, 9600.0)
-const CITY_ZONE_SIZE     := Vector2(6600.0, 6600.0)
-const CITY_ZONE_Y        := 10.0
+
+## Сторона одной плиты земли (квадрат), метры.
+const GROUND_TILE_SIZE   := 2200.0
+
+## Размерность сетки плит: (кол-во колонок по X, кол-во строк по Z).
+const GROUND_GRID_SIZE   := Vector2i(3, 3)
+
+## Габарит городской зоны — производная от сетки, не хардкод.
+const CITY_ZONE_SIZE     := Vector2(
+		GROUND_TILE_SIZE * GROUND_GRID_SIZE.x,
+		GROUND_TILE_SIZE * GROUND_GRID_SIZE.y)
+
 const GAMEPLAY_HEIGHT    := 3200.0
 
+## Диапазоны страт по высоте от пола (Y 0): [нижняя граница, верхняя).
 const STRATA_DOGGERLAND  := Vector2(0.0,    1000.0)
-const STRATA_MANIFOLD    := Vector2(1000.0,  2000.0)
+const STRATA_MANIFOLD    := Vector2(1000.0, 2000.0)
 const STRATA_GLARE       := Vector2(2000.0, 3200.0)
 
 const DISTRICT_A1        := Vector2(0.0,    1600.0)
@@ -25,13 +46,17 @@ const DISTRICT_A3        := Vector2(6000.0, 8600.0)
 
 # ── Данные сессии ─────────────────────────────────────────────────────────────
 
-var spawn_point: Vector3 = Vector3(0.0, CITY_ZONE_Y + 2.0, 200.0)
+var spawn_point: Vector3 = Vector3(0.0, 2.0, 200.0)
 
 var world_data_path: String = "res://data/world_data.tres"
 
 var current_strata:   String = "Doggerland"
 var current_district: String = ""
-var current_tower_id: String = ""   # был current_sc_id
+var current_tower_id: String = ""
+
+## Тайл, в котором находится игрок: Vector2i(col, row).
+## (-1, -1) — позиция ещё не обновлялась либо игрок вне сетки.
+var current_tile: Vector2i = Vector2i(-1, -1)
 
 
 # ── Сигналы ───────────────────────────────────────────────────────────────────
@@ -39,13 +64,14 @@ var current_tower_id: String = ""   # был current_sc_id
 signal strata_changed(new_strata: String)
 signal district_changed(new_district: String)
 signal spawn_point_updated(point: Vector3)
+signal tile_changed(new_tile: Vector2i)
 
 
-# ── Методы ───────────────────────────────────────────────────────────────────
+# ── Состояние сессии ──────────────────────────────────────────────────────────
 
 func set_spawn_point(point: Vector3) -> void:
 	spawn_point = point
-	emit_signal("spawn_point_updated", point)
+	spawn_point_updated.emit(point)
 	print("[WorldSystems] Spawn point: ", point)
 
 
@@ -53,7 +79,7 @@ func set_current_strata(strata: String) -> void:
 	if strata == current_strata:
 		return
 	current_strata = strata
-	emit_signal("strata_changed", strata)
+	strata_changed.emit(strata)
 	print("[WorldSystems] Strata: ", strata)
 
 
@@ -61,22 +87,59 @@ func set_current_district(district: String) -> void:
 	if district == current_district:
 		return
 	current_district = district
-	emit_signal("district_changed", district)
+	district_changed.emit(district)
 	print("[WorldSystems] District: ", district)
 
 
 ## Вызывается StreamingSystems каждый кадр с позицией игрока.
-## Обновляет текущую страту.
+## Обновляет текущую страту и текущий тайл.
 func update_player_position(pos: Vector3) -> void:
-	var height_above_city := pos.y - CITY_ZONE_Y
-	var strata := get_strata_by_height(height_above_city)
-	set_current_strata(strata)
+	set_current_strata(get_strata_by_height(pos.y))
+
+	var coords := get_tile_coords(pos)
+	if coords != current_tile:
+		current_tile = coords
+		tile_changed.emit(coords)
 
 
-func get_strata_by_height(height_above_city: float) -> String:
-	if height_above_city < STRATA_MANIFOLD.x:
+# ── Математика страт ──────────────────────────────────────────────────────────
+
+## height — высота от пола мира (Y 0).
+func get_strata_by_height(height: float) -> String:
+	if height < STRATA_MANIFOLD.x:
 		return "Doggerland"
-	elif height_above_city < STRATA_GLARE.x:
+	elif height < STRATA_GLARE.x:
 		return "Manifold"
 	else:
 		return "Glare"
+
+
+# ── Математика тайловой сетки ─────────────────────────────────────────────────
+
+## Каноничный id плиты. Формат согласован с данными и дебаг-панелью.
+func get_tile_id(coords: Vector2i) -> String:
+	return "gt_r%d_c%d" % [coords.y, coords.x]
+
+
+## Мировая позиция плиты: центр её ВЕРХНЕЙ грани (пол = Y 0).
+## Совпадает с origin-конвенцией сцен тайлов («нода стоит на полу»).
+func get_tile_position(coords: Vector2i) -> Vector3:
+	var half := CITY_ZONE_SIZE * 0.5
+	return Vector3(
+			-half.x + (coords.x + 0.5) * GROUND_TILE_SIZE,
+			0.0,
+			-half.y + (coords.y + 0.5) * GROUND_TILE_SIZE)
+
+
+## Координаты тайла по мировой позиции. Может вернуть координаты ВНЕ сетки
+## (игрок за пределами города) — при необходимости проверяй is_tile_inside_grid().
+func get_tile_coords(pos: Vector3) -> Vector2i:
+	var half := CITY_ZONE_SIZE * 0.5
+	return Vector2i(
+			int(floor((pos.x + half.x) / GROUND_TILE_SIZE)),
+			int(floor((pos.z + half.y) / GROUND_TILE_SIZE)))
+
+
+func is_tile_inside_grid(coords: Vector2i) -> bool:
+	return coords.x >= 0 and coords.x < GROUND_GRID_SIZE.x \
+			and coords.y >= 0 and coords.y < GROUND_GRID_SIZE.y

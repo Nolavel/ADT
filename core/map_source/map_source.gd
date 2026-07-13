@@ -137,43 +137,33 @@ func register_block(b_id: String, node: Node3D, height: float, district: String)
 
 ## Экспортировать все данные в WorldData.tres
 func export_data() -> void:
-	
+
 	var world := WorldData.new()
 
-	# ── Кварталы ────────────────────────────────────────────────────────────────
+	# ── Кварталы ────────────────────────────────────────────────────────────
 	for dict in _block_data.values():
 		var bd := BlockData.new()
-		bd.id         = dict["id"]
-		var p         = dict["position"]
-		bd.position   = Vector3(p[0], p[1], p[2])
-		bd.height     = dict["height"]
-		bd.district   = dict["district"]
-		bd.scene_path = dict["scene_path"]
+		bd.id       = dict["id"]
+		var p       = dict["position"]
+		bd.position = Vector3(p[0], p[1], p[2])
+		bd.height   = dict["height"]
+		bd.district = dict["district"]
+		# TODO(markers): маркеры MapSource пока не знают о разделении
+		# силуэт/контент — экспортируют старый scene_path как контент.
+		# Обновление схемы маркеров — в бэклоге; для демо world_data.tres
+		# собирается вручную.
+		bd.content_scene_path    = dict["scene_path"]
+		bd.silhouette_scene_path = ""
 		bd.strata_ids = dict["strata_ids"]
 		world.blocks.append(bd)
-		
 
-	# ── CityZone ─────────────────────────────────────────────────────────────
-	# Читаем реальный размер из CollisionShape3D чтобы не хардкодить
-	var cz := CityZoneData.new()
-	var cs_node := _find_city_zone_collision_shape()
-	if cs_node != null and cs_node.shape is BoxShape3D:
-		var box := cs_node.shape as BoxShape3D
-		cz.size     = box.size
-		cz.position = cs_node.global_transform.origin
-	else:
-		# Fallback на константы из WorldSystems
-		cz.size     = Vector3(WorldSystems.CITY_ZONE_SIZE.x, 10.0, WorldSystems.CITY_ZONE_SIZE.y)
-		cz.position = Vector3(0.0, 5.0, 0.0)
-	world.city_zone = cz
-	
 	world.spawn_point = WorldSystems.spawn_point
-	
+
 	var err := ResourceSaver.save(world, EXPORT_PATH)
 	if err != OK:
 		push_error("[MapSource] Failed to save WorldData: %d" % err)
 	else:
-		print("[MapSource] ✅ Exported %d towers + CityZone → %s" % [world.blocks.size(), EXPORT_PATH])
+		print("[MapSource] ✅ Exported %d blocks → %s" % [world.blocks.size(), EXPORT_PATH])
 
 
 func get_block_data(b_id: String) -> Dictionary:
@@ -282,24 +272,6 @@ func _commit_spawn_point() -> void:
 	print("[MapSource] ✅ Spawn point set and exported: ", spawn)
 
 
-# ── CityZone ColiisionShape helper ───────────────────────────────────────────
-
-func _find_city_zone_collision_shape() -> CollisionShape3D:
-	# Ищем CollisionShape3D внутри CityZone ноды (любая вложенность)
-	var cz_node := get_node_or_null("CityZone")
-	if cz_node == null:
-		return null
-	return _find_collision_shape_recursive(cz_node)
-
-
-func _find_collision_shape_recursive(node: Node) -> CollisionShape3D:
-	if node is CollisionShape3D:
-		return node
-	for child in node.get_children():
-		var result := _find_collision_shape_recursive(child)
-		if result != null:
-			return result
-	return null
 
 
 # ── Страты ───────────────────────────────────────────────────────────────────
