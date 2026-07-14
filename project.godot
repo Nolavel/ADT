@@ -15,6 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Prok"
+run/main_scene="uid://bftcnbrfar8om"
 config/features=PackedStringArray("4.7", "C#", "Mobile")
 config/icon="res://icon.svg"
 
@@ -24,6 +25,7 @@ StreamingSystems="*uid://bw0ayj727r68s"
 WorldSystems="*uid://4w3ef62sbngh"
 InputSystems="*uid://bi5smfl6wu421"
 PlayerState="*uid://bmlac6urnhdjm"
+_mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [display]
 
@@ -37,6 +39,10 @@ window/stretch/aspect="expand"
 [dotnet]
 
 project/assembly_name="Prok"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg")
 
 [file_customization]
 
