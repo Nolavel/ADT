@@ -67,7 +67,9 @@ var WORLD_3D_ENTITY_SCENES: Array[PackedScene] = [
 ]
 
 ## 3) Screen-space UI сцены — instantiate(), родитель = общий CanvasLayer.
-var WORLD_UI_SCENES: Array[PackedScene] = []
+var WORLD_UI_SCENES: Array[PackedScene] = [
+	preload("res://ui/debug/stream_debug_panel.tscn"),
+]
 
 const UI_CANVAS_LAYER_INDEX: int = 40
 

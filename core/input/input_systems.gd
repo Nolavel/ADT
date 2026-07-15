@@ -34,6 +34,8 @@ signal status_pressed()
 signal inventory_pressed()
 signal crafting_pressed()
 signal map_pressed()
+## Тумблер дебаг-панели стриминга (action "toggle_stream_debug").
+signal stream_debug_toggled()
 
 ## Тап/холд по "toggle_tabs" — тайминг нажатия это свойство физического
 ## ввода, поэтому таймер живёт здесь, а не в потребителе.
@@ -136,6 +138,8 @@ func _handle_ui_hotkeys() -> void:
 		inventory_pressed.emit()
 	if Input.is_action_just_pressed("map"):
 		map_pressed.emit()
+	if Input.is_action_just_pressed("toggle_stream_debug"):
+		stream_debug_toggled.emit()
 
 
 ## ============================================

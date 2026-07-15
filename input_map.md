@@ -1,7 +1,7 @@
 # Vertical Trespass — InputMap / Карта управления
 
 > Актуально на: 2026-07-07
-> Engine: Godot 4.6+ / GDScript
+> Engine: Godot 4.7+ / GDScript
 > Источник истины по режимам: `PlayerState.mode` (`ON_FOOT`, `VEHICLE_HOVER`, `TUBE_TRANSIT`, `MENU`),
 > `PlayerState.view_mode` (`TPS`, `ISOMETRIC`, `TOPDOWN`)
 >
