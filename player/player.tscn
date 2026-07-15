@@ -1458,6 +1458,8 @@ sprint_indicator_texture = ExtResource("33_wmpjg")
 
 [node name="StaminaComponent" type="Node3D" parent="." unique_id=768721075]
 script = ExtResource("31_dssci")
+stamina_deplete_rate = 2.5
+jump_stamina_cost = 2.5
 
 [node name="InteractManager" type="Node3D" parent="." unique_id=443434870]
 script = ExtResource("37_1gbpw")

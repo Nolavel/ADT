@@ -39,6 +39,15 @@ var wants_to_run: bool = false  # 🔥 НОВЫЙ: игрок хочет беж�
 var sprint_blend: float = 0.0
 var sprint_blend_speed: float = 4.0
 
+## --- Animation Tree (программно собранный blend, без ручного .tres) ---
+## Blend space по скорости даёт плавный переход шаг<->бег вместо
+## резкого переключателя play(), синхронизирован с реальной speed,
+## которая и так уже плавно едет через _update_speed()/accel_time.
+var _anim_tree: AnimationTree
+var _moving_blend_amount: float = 0.0  # 0 = idle, 1 = локомоция
+const MOVE_BLEND_SPEED: float = 6.0
+const IDLE_ENTER_SPEED: float = 0.15  # ниже этого — считаем, что стоим
+
 ## --- Signals ---
 signal movement_started
 signal movement_stopped
@@ -46,7 +55,7 @@ signal state_changed(new_state: MovementState)
 
 ## --- Initialization ---
 func _ready():
-	player_animation_player.play("new4/idle")
+	_setup_animation_tree()
 	if navigation_component:
 		navigation_component.path_updated.connect(_on_path_updated)
 		navigation_component.destination_reached.connect(_on_destination_reached)
@@ -55,6 +64,42 @@ func _ready():
 	
 	if stamina_manager == null:
 		push_warning("StaminaManager not found - stamina system will not work")
+
+## --- Animation Tree Setup ---
+## Собирается полностью кодом: Blend2(idle <-> locomotion), где
+## locomotion — BlendSpace1D(walk@0 .. run@1). Не требует ручного
+## .tres/редакторной настройки, легко пересобрать при смене клипов.
+func _setup_animation_tree() -> void:
+	var idle_node := AnimationNodeAnimation.new()
+	idle_node.animation = "new4/idle"
+
+	var walk_node := AnimationNodeAnimation.new()
+	walk_node.animation = "new4/root-sneak-walk"
+
+	var run_node := AnimationNodeAnimation.new()
+	run_node.animation = "new4/root-sneak-run-s"
+
+	var locomotion := AnimationNodeBlendSpace1D.new()
+	locomotion.min_space = 0.0
+	locomotion.max_space = 1.0
+	locomotion.add_blend_point(walk_node, 0.0)
+	locomotion.add_blend_point(run_node, 1.0)
+
+	var moving_blend := AnimationNodeBlend2.new()
+
+	var tree_root := AnimationNodeBlendTree.new()
+	tree_root.add_node("idle", idle_node)
+	tree_root.add_node("locomotion", locomotion)
+	tree_root.add_node("moving_blend", moving_blend)
+	tree_root.connect_node("moving_blend", 0, "idle")
+	tree_root.connect_node("moving_blend", 1, "locomotion")
+	tree_root.connect_node("output", 0, "moving_blend")
+
+	_anim_tree = AnimationTree.new()
+	_anim_tree.tree_root = tree_root
+	_anim_tree.anim_player = player_animation_player.get_path()
+	add_child(_anim_tree)
+	_anim_tree.active = true
 
 ## --- Public API ---
 func move_to_position(pos: Vector3) -> void:
@@ -98,12 +143,10 @@ func stop_moving(smooth: bool = true) -> void:
 	if smooth:
 		target_speed = 0.0
 		_change_state(MovementState.DECELERATING)
-		player_animation_player.play("new4/walk")
 	else:
 		target_speed = 0.0
 		speed = 0.0
 		_change_state(MovementState.IDLE)
-		player_animation_player.play("new4/idle")
 	
 	emit_signal("movement_stopped")
 
@@ -129,7 +172,6 @@ func set_movement_enabled(enabled: bool):
 		
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
-			player_animation_player.play("new4/idle")
 		
 		print("🔒 Player: Движение ЗАБЛОКИРОВАНО")
 	else:
@@ -172,6 +214,7 @@ func _physics_process(delta: float) -> void:
 		_update_direct_move_target_speed()
 
 	_update_speed(delta)
+	_update_animation_blend(delta)
 
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
 		_apply_direct_movement(delta)
@@ -185,6 +228,24 @@ func _physics_process(delta: float) -> void:
 func _update_sprint_blend(delta: float) -> void:
 	var target_blend = 1.0 if is_running_mode else 0.0
 	sprint_blend = lerp(sprint_blend, target_blend, sprint_blend_speed * delta)
+
+## --- Animation Blend (шаг<->бег, idle<->движение) ---
+## Позиция в BlendSpace1D берётся из РЕАЛЬНОЙ speed (уже сглаженной
+## через move_toward/accel_time в _update_speed), а не из is_running_mode —
+## так анимация физически не может обогнать саму скорость персонажа,
+## и истощение стамины визуально "садится" плавно, без рывка клипа.
+func _update_animation_blend(delta: float) -> void:
+	if not _anim_tree:
+		return
+
+	var locomotion_pos: float = 0.0
+	if run_speed > walk_speed:
+		locomotion_pos = clamp((speed - walk_speed) / (run_speed - walk_speed), 0.0, 1.0)
+	_anim_tree.set("parameters/locomotion/blend_position", locomotion_pos)
+
+	var target_moving: float = 1.0 if speed > IDLE_ENTER_SPEED else 0.0
+	_moving_blend_amount = move_toward(_moving_blend_amount, target_moving, delta * MOVE_BLEND_SPEED)
+	_anim_tree.set("parameters/moving_blend/blend_amount", _moving_blend_amount)
 
 ## --- Stamina Consumption (расход стамины при беге) ---
 func _handle_stamina_consumption() -> void:
@@ -262,13 +323,10 @@ func _apply_direct_movement(delta: float) -> void:
 
 		if current_state == MovementState.IDLE or current_state == MovementState.DECELERATING:
 			_change_state(MovementState.RUNNING if is_running_mode else MovementState.WALKING)
-			player_animation_player.play("new4/root-sneak-run-s" if is_running_mode else "new4/root-sneak-walk")
 		elif is_running_mode and current_state != MovementState.RUNNING:
 			_change_state(MovementState.RUNNING)
-			player_animation_player.play("new4/root-sneak-run-s")
 		elif not is_running_mode and current_state != MovementState.WALKING:
 			_change_state(MovementState.WALKING)
-			player_animation_player.play("new4/root-sneak-walk")
 	else:
 		# Инпута нет — тормозим тем же decel, что и клик-муф, чтобы ощущение
 		# было единообразным между режимами.
@@ -283,7 +341,6 @@ func _apply_direct_movement(delta: float) -> void:
 			velocity.z = 0.0
 			if current_state != MovementState.IDLE:
 				_change_state(MovementState.IDLE)
-				player_animation_player.play("new4/idle")
 
 
 ## --- Navigation Movement ---
@@ -333,7 +390,6 @@ func _apply_deceleration(delta: float) -> void:
 		speed = 0.0
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
-			player_animation_player.play("new4/idle")
 
 ## --- State Management ---
 func _update_state() -> void:
@@ -343,13 +399,10 @@ func _update_state() -> void:
 		new_state = MovementState.DECELERATING if speed > 0.1 else MovementState.IDLE
 	elif is_running_mode:
 		new_state = MovementState.RUNNING
-		player_animation_player.play("new4/root-sneak-run-s")
 	elif target_speed > walk_speed + 0.1:
 		new_state = MovementState.RUNNING
-		player_animation_player.play("new4/root-sneak-run-s")
 	else:
 		new_state = MovementState.WALKING
-		player_animation_player.play("new4/root-sneak-walk")
 	
 	if new_state != current_state:
 		_change_state(new_state)

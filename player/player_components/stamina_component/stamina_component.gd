@@ -17,6 +17,10 @@ signal jump_performed()
 @export var min_stamina_for_action: float = 1.0  # минимум стамины для выполнения действия
 @export var jump_stamina_cost: float = 5.0  # 10% от максимальной стамины
 
+@export_group("Усталость (плавное снижение скорости бега)")
+@export var fatigue_start_ratio: float = 0.4  # выше этого % стамины — бег на полной скорости
+@export var fatigue_curve_power: float = 1.6  # >1 = скорость падает резче ближе к нулю, <1 = плавнее
+
 # === DEBUG ===
 @export_group("Debug")
 @export var debug_show_stamina: bool = false
@@ -173,6 +177,17 @@ func consume_stamina(amount: float) -> bool:
 		return true
 	
 	return false
+	
+## 1.0 = полный запас на бег, 0.0 = стамина кончилась (эффективно только ходьба).
+## Снижается плавно после fatigue_start_ratio — не рывком в момент истощения.
+func get_run_capacity() -> float:
+	var ratio: float = get_stamina_ratio()
+	if ratio >= fatigue_start_ratio:
+		return 1.0
+	if fatigue_start_ratio <= 0.0:
+		return 0.0 if ratio <= 0.0 else 1.0
+	var t: float = clamp(ratio / fatigue_start_ratio, 0.0, 1.0)
+	return pow(t, fatigue_curve_power)
 
 ## Установить параметры стамины во время выполнения
 func set_stamina_parameters(
