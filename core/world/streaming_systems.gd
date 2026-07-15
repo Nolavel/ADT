@@ -13,22 +13,28 @@
 #     выгружаются по XZ-радиусу от игрока.
 #
 # ЖИЗНЕННЫЙ ЦИКЛ ЯЧЕЙКИ:
-#   UNLOADED ─(вошла в STREAM_RADIUS)→ QUEUED
+#   UNLOADED ─(вошла в зону загрузки своей метрики)→ QUEUED
 #   QUEUED   ─(взята конвейером, load_threaded_request)→ LOADING
 #   LOADING  ─(THREAD_LOAD_LOADED)→ READY
 #   READY    ─(кадровый бюджет инстансов)→ ACTIVE
-#   ACTIVE   ─(вышла за UNLOAD_RADIUS)→ UNLOADED (queue_free контента)
-#   Откат: QUEUED/READY при выходе за UNLOAD_RADIUS возвращаются в UNLOADED
+#   ACTIVE   ─(вышла за зону выгрузки)→ UNLOADED (queue_free контента)
+#   Откат: QUEUED/READY при выходе за зону выгрузки возвращаются в UNLOADED
 #   без инстанцирования (кэш threaded-загрузки остаётся тёплым).
 #
 # ПРАВИЛА:
-#   • Дистанции — ТОЛЬКО в XZ. Кварталы — сквозные колонны на всю
-#     GAMEPLAY_HEIGHT, вертикальный фильтр для них бессмыслен; вертикальную
-#     детализацию даёт механизм страт-слоёв.
+#   • Две метрики дистанции — по типу ячейки:
+#       GROUND_TILE — КОЛЬЦЕВАЯ по координатам сетки: плита загружена, если
+#         расстояние Чебышёва до плиты игрока ≤ TILE_LOAD_RING; выгружается
+#         при ≥ TILE_UNLOAD_RING. Гистерезис встроен в метрику (целая плита
+#         зазора). Радиусная метрика тайлам не подходит: при радиусе меньше
+#         полуплиты (1100) контент выгружается под ногами игрока.
+#       BLOCK — радиусная в XZ (BLOCK_STREAM_RADIUS / BLOCK_UNLOAD_RADIUS).
+#         Кварталы — сквозные колонны на всю GAMEPLAY_HEIGHT, вертикальный
+#         фильтр для них бессмыслен; вертикальную детализацию дают страт-слои.
 #   • Пока контент ячейки ACTIVE — корень её силуэта скрыт (visible=false).
 #     Видимость в Godot НЕ отключает физику: коллизия силуэта живёт всегда.
-#   • Скан радиусов — не чаще, чем раз в STREAM_CHECK_DISTANCE пройденного
-#     пути; прокачка загрузок/инстансов (_pump) — каждый кадр.
+#   • Скан — не чаще, чем раз в STREAM_CHECK_DISTANCE пройденного пути;
+#     прокачка загрузок/инстансов (_pump) — каждый кадр.
 #
 # СТРАТ-СЛОИ (только кварталы):
 #   Контент-сцена квартала обязана содержать ноды InstancePlaceholder с
@@ -51,8 +57,18 @@ extends Node
 ## Отладочный режим; для демо стриминга ДОЛЖЕН быть false.
 const DEBUG_LOAD_ALL := false
 
-const STREAM_RADIUS         := 1000.0
-const UNLOAD_RADIUS         := 1200.0   # > STREAM_RADIUS: гистерезис границы
+## Консольная трассировка переходов ячеек и слоёв — для сверки прогонов
+## демо. Шумно; выключить после стабилизации стриминга.
+const DEBUG_LOG_TRANSITIONS := true
+
+## GROUND_TILE: кольцевая метрика по координатам сетки (Чебышёв).
+const TILE_LOAD_RING   := 1   # текущая плита + соседи
+const TILE_UNLOAD_RING := 2   # гистерезис — целая плита зазора
+
+## BLOCK: радиусная метрика в XZ, метры.
+const BLOCK_STREAM_RADIUS := 1000.0
+const BLOCK_UNLOAD_RADIUS := 1200.0   # > STREAM: гистерезис границы
+
 const STREAM_CHECK_DISTANCE := 50.0
 
 ## Максимум одновременных фоновых load_threaded_request.
@@ -74,6 +90,7 @@ class StreamCell:
 	var id:              String
 	var type:            CellType
 	var position:        Vector3      # мировая позиция (низ/пол ячейки)
+	var coords:          Vector2i     # координаты сетки — только GROUND_TILE
 	var content_path:    String
 	var state:           CellState = CellState.UNLOADED
 	var failed:          bool = false # битый путь/ресурс — исключена навсегда
@@ -117,6 +134,20 @@ signal layer_changed(block_id: String, strata: String, loaded: bool)
 
 func _ready() -> void:
 	print("[StreamingSystems] 🌐 Ready, waiting for initialization...")
+	if DEBUG_LOG_TRANSITIONS:
+		cell_state_changed.connect(_log_cell_transition)
+		layer_changed.connect(_log_layer_event)
+
+
+func _log_cell_transition(cell_id: String, _cell_type: CellType,
+		old_state: CellState, new_state: CellState) -> void:
+	print("[Stream %8.2f] %-14s %s -> %s" % [Time.get_ticks_msec() * 0.001,
+			cell_id, CellState.keys()[old_state], CellState.keys()[new_state]])
+
+
+func _log_layer_event(block_id: String, strata: String, loaded: bool) -> void:
+	print("[Stream %8.2f] %-14s layer %s %s" % [Time.get_ticks_msec() * 0.001,
+			block_id, strata, "loaded" if loaded else "freed"])
 
 
 func initialize(container: Node3D, player: Node3D) -> void:
@@ -229,6 +260,7 @@ func _build_cells() -> void:
 		cell.id           = WorldSystems.get_tile_id(coords)
 		cell.type         = CellType.GROUND_TILE
 		cell.position     = WorldSystems.get_tile_position(coords)
+		cell.coords       = coords
 		cell.content_path = td.content_scene_path
 		_register_cell(cell)
 
@@ -287,29 +319,52 @@ func _load_block_silhouette(block_id: String) -> PackedScene:
 	return null
 
 
-# ── Скан радиусов ─────────────────────────────────────────────────────────────
+# ── Скан (по метрике типа ячейки) ─────────────────────────────────────────────
 
 func _scan(player_pos: Vector3) -> void:
 	for cell: StreamCell in _cells.values():
 		if cell.failed:
 			continue
-		var dist := _dist_xz(player_pos, cell.position)
-		match cell.state:
-			CellState.UNLOADED:
-				if dist <= STREAM_RADIUS:
-					_queue.append(cell)
-					_set_state(cell, CellState.QUEUED)
-			CellState.QUEUED:
-				if dist > UNLOAD_RADIUS:
+		if _is_in_load_range(cell, player_pos):
+			if cell.state == CellState.UNLOADED:
+				_queue.append(cell)
+				_set_state(cell, CellState.QUEUED)
+		elif _is_out_of_range(cell, player_pos):
+			match cell.state:
+				CellState.QUEUED:
 					_queue.erase(cell)
 					_set_state(cell, CellState.UNLOADED)
-			CellState.ACTIVE:
-				if dist > UNLOAD_RADIUS:
+				CellState.ACTIVE:
 					_unload_content(cell)
 
 	# Ближайшее — в голову очереди.
 	_queue.sort_custom(func(a: StreamCell, b: StreamCell) -> bool:
 		return _dist_xz(player_pos, a.position) < _dist_xz(player_pos, b.position))
+
+
+func _is_in_load_range(cell: StreamCell, player_pos: Vector3) -> bool:
+	match cell.type:
+		CellType.GROUND_TILE:
+			return _tile_ring(cell, player_pos) <= TILE_LOAD_RING
+		_:
+			return _dist_xz(player_pos, cell.position) <= BLOCK_STREAM_RADIUS
+
+
+## Между load- и unload-порогом — зона гистерезиса: уже загруженное живёт,
+## ещё не загруженное не стартует.
+func _is_out_of_range(cell: StreamCell, player_pos: Vector3) -> bool:
+	match cell.type:
+		CellType.GROUND_TILE:
+			return _tile_ring(cell, player_pos) >= TILE_UNLOAD_RING
+		_:
+			return _dist_xz(player_pos, cell.position) > BLOCK_UNLOAD_RADIUS
+
+
+## Расстояние Чебышёва (в плитах) от плиты игрока до плиты ячейки.
+func _tile_ring(cell: StreamCell, player_pos: Vector3) -> int:
+	var player_tile := WorldSystems.get_tile_coords(player_pos)
+	return maxi(absi(player_tile.x - cell.coords.x),
+			absi(player_tile.y - cell.coords.y))
 
 
 # ── Прокачка конвейера (каждый кадр) ─────────────────────────────────────────
@@ -354,7 +409,7 @@ func _pump(player_pos: Vector3) -> void:
 								+ cell.content_path)
 						_set_state(cell, CellState.UNLOADED)
 			CellState.READY:
-				if _dist_xz(player_pos, cell.position) > UNLOAD_RADIUS:
+				if _is_out_of_range(cell, player_pos):
 					# Игрок уже ушёл — не инстанцируем (кэш остался тёплым).
 					_set_state(cell, CellState.UNLOADED)
 				elif budget > 0:

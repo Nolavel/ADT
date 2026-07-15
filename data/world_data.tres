@@ -1,28 +1,96 @@
-[gd_resource type="Resource" script_class="WorldData" format=3]
+[gd_resource type="Resource" script_class="WorldData" load_steps=16 format=3]
 
-[ext_resource type="Script" path="res://world/resources/block_data.gd" id="1_e4cvp"]
-[ext_resource type="Script" path="res://world/resources/city_zone_data.gd" id="2_xy5s7"]
-[ext_resource type="Script" path="res://world/resources/world_data.gd" id="3_ke6ng"]
+[ext_resource type="Script" path="res://world/resources/world_data.gd" id="1_wd"]
+[ext_resource type="Script" path="res://world/resources/block_data.gd" id="2_bd"]
+[ext_resource type="Script" path="res://world/resources/ground_tile_data.gd" id="3_gt"]
 
-[sub_resource type="Resource" id="Resource_e4cvp"]
-script = ExtResource("1_e4cvp")
-id = "Block-001"
-position = Vector3(298.47534, 0, 0)
-height = 2550.0
+[sub_resource type="Resource" id="Resource_gt_r0_c0"]
+script = ExtResource("3_gt")
+row = 0
+col = 0
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r0_c1"]
+script = ExtResource("3_gt")
+row = 0
+col = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r0_c2"]
+script = ExtResource("3_gt")
+row = 0
+col = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r1_c0"]
+script = ExtResource("3_gt")
+row = 1
+col = 0
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r1_c1"]
+script = ExtResource("3_gt")
+row = 1
+col = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r1_c2"]
+script = ExtResource("3_gt")
+row = 1
+col = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r2_c0"]
+script = ExtResource("3_gt")
+row = 2
+col = 0
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r2_c1"]
+script = ExtResource("3_gt")
+row = 2
+col = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_gt_r2_c2"]
+script = ExtResource("3_gt")
+row = 2
+col = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_block_a1_003"]
+script = ExtResource("2_bd")
+id = "block_a1_003"
+position = Vector3(150, 0, 500)
+height = 3200.0
 district = "A1"
-scene_path = "res://world/placeholders/towers_placeholder/id001_blockhaze_placeholder.tscn"
-strata_ids = {
-"doggerland": "Block-001-DG",
-"glare": "Block-001-GL",
-"manifold": "Block-001-MF"
-}
+silhouette_scene_path = "res://world/silhouettes/blocks/block_a1_003_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/block_a1_003/block_a1_003.tscn"
+strata_ids = {}
 
-[sub_resource type="Resource" id="Resource_xy5s7"]
-script = ExtResource("2_xy5s7")
-size = Vector3(6600, 10, 6600)
+[sub_resource type="Resource" id="Resource_block_a1_001"]
+script = ExtResource("2_bd")
+id = "block_a1_001"
+position = Vector3(0, 0, 1700)
+height = 3200.0
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/block_a1_001_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/block_a1_001/block_a1_001.tscn"
+strata_ids = {}
+
+[sub_resource type="Resource" id="Resource_block_a1_004"]
+script = ExtResource("2_bd")
+id = "block_a1_004"
+position = Vector3(-2200, 0, -1600)
+height = 3200.0
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/block_a1_004_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/block_a1_004/block_a1_004.tscn"
+strata_ids = {}
 
 [resource]
-script = ExtResource("3_ke6ng")
-blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_e4cvp")])
-city_zone = SubResource("Resource_xy5s7")
-spawn_point = Vector3(-1418.5701, 0, 1834.3396)
+script = ExtResource("1_wd")
+blocks = Array[ExtResource("2_bd")]([SubResource("Resource_block_a1_003"), SubResource("Resource_block_a1_001"), SubResource("Resource_block_a1_004")])
+ground_tiles = Array[ExtResource("3_gt")]([SubResource("Resource_gt_r0_c0"), SubResource("Resource_gt_r0_c1"), SubResource("Resource_gt_r0_c2"), SubResource("Resource_gt_r1_c0"), SubResource("Resource_gt_r1_c1"), SubResource("Resource_gt_r1_c2"), SubResource("Resource_gt_r2_c0"), SubResource("Resource_gt_r2_c1"), SubResource("Resource_gt_r2_c2")])
+ground_tile_silhouette_path = "res://world/silhouettes/ground_tiles/gt_silhouette.tscn"
+spawn_point = Vector3(0, 0, 200)
