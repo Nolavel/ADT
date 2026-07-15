@@ -3,7 +3,7 @@
 # Компонент камеры для PlayerState.Mode.ON_FOOT.
 #
 # Логика перенесена из старого монолитного camera_follow.gd БЕЗ ИЗМЕНЕНИЙ
-# (orbital Q/E, top-down V, follow P, zoom колесом) — по договорённости
+# (orbital Q/E, TPS↔ISOMETRIC переключение V, follow P, zoom колесом) — по
 # ничего здесь пока не чистим и не переделываем, только переносим.
 #
 # Компонент не Camera3D сам по себе — он получает ссылку на реальную
@@ -26,9 +26,7 @@ signal zoom_input_received()
 @export var orbit_height: float = 15.0
 @export var camera_angle: float = -35.0
 
-@export_group("Top-Down View")
-@export var top_down_height: float = 15.0
-@export var top_down_angle: float = -85.0
+@export_group("View Transition")
 @export var view_transition_speed: float = 4.0
 
 @export_group("TPS View")
@@ -64,8 +62,6 @@ var target_angle: float = 0.0
 var current_angle: float = 0.0
 var player_rotation_timer: float = 0.0
 var last_player_rotation: float = 0.0
-var topdown_target_yaw: float = 0.0
-var topdown_current_yaw: float = 0.0
 
 ## Единственный источник истины о текущем виде — PlayerState.view_mode.
 ## Никакого параллельного bool/enum здесь больше не хранится.
@@ -78,7 +74,9 @@ var camera_target_yaw: float
 var camera_current_yaw: float
 
 # === ZOOM SYSTEM ===
-# Единый "слайдер" через цепочку TPS ↔ ISOMETRIC ↔ TOPDOWN.
+# Единый "слайдер" через цепочку TPS ↔ ISOMETRIC.
+# TOPDOWN убран (см. заметку в идейнике Miro) — на ON_FOOT остаются
+# только TPS и ISOMETRIC.
 # Внутри каждого режима — свой диапазон дистанции; переход между режимами
 # происходит через V только когда зум упёрся в соответствующий край.
 var current_zoom_distance: float = 0.0
@@ -88,9 +86,7 @@ var zoom_anim_time: float = 0.0
 var zoom_start_distance: float = 0.0
 
 const ISOMETRIC_ZOOM_MIN: float = 10.0   # ближний край (приблизили до упора) → V → TPS
-const ISOMETRIC_ZOOM_MAX: float = 17.5   # дальний край (отдалили до упора) → V → TOPDOWN
-const TOPDOWN_ZOOM_MIN: float = 7.5      # ближний край → V → назад в ISOMETRIC
-const TOPDOWN_ZOOM_MAX: float = 15.0     # дальше некуда, тупик (продолжение отдаления)
+const ISOMETRIC_ZOOM_MAX: float = 17.5   # дальний край — просто предел зума, без перехода
 const TPS_ZOOM_MIN: float = 3.0          # дальше некуда, тупик (продолжение приближения)
 const TPS_ZOOM_MAX: float = 6.0          # дальний край → V → назад в ISOMETRIC
 const ZOOM_STEP: float = 2.5
@@ -121,8 +117,6 @@ var follow_target_angle: float = 0.0
 func setup() -> void:
 	current_angle = POSITION_ANGLES[current_position]
 	target_angle = current_angle
-	topdown_target_yaw = POSITION_ANGLES[current_position]
-	topdown_current_yaw = topdown_target_yaw
 	camera_target_pitch = camera_angle
 	camera_current_pitch = camera_angle
 	camera_target_yaw = current_angle
@@ -157,9 +151,7 @@ func update(delta: float) -> void:
 		_handle_tps_follow(delta)
 	else:
 		_handle_follow_toggle()
-		if follow_player_rotation and view == PlayerState.ViewMode.TOPDOWN:
-			_handle_topdown_follow_rotation(delta)
-		elif follow_player_rotation and view == PlayerState.ViewMode.ISOMETRIC:
+		if follow_player_rotation:
 			_handle_follow_rotation(delta)
 		else:
 			_handle_rotation_input()
@@ -171,7 +163,6 @@ func update(delta: float) -> void:
 
 	if not orbit_rotation_animating and not follow_rotation_animating:
 		current_angle = lerp_angle(current_angle, target_angle, delta * rotation_speed)
-	topdown_current_yaw = lerp_angle(topdown_current_yaw, topdown_target_yaw, delta * rotation_speed)
 
 	_update_camera_position(delta)
 	_update_labels()
@@ -287,11 +278,6 @@ func _update_follow_rotation_animation(delta: float):
 
 func _update_camera_position(delta):
 	match PlayerState.view_mode:
-		PlayerState.ViewMode.TOPDOWN:
-			camera_target_pos = target.global_position + Vector3(0, current_zoom_distance, 0)
-			camera_target_pitch = top_down_angle
-			camera_target_yaw = topdown_current_yaw
-
 		PlayerState.ViewMode.TPS:
 			var yaw_rad = camera_target_yaw
 			var pitch_rad = deg_to_rad(tps_angle)
@@ -331,8 +317,8 @@ func _handle_follow_toggle():
 			player_rotation_timer = 0.0
 
 
-## V больше не переключает виды безусловно — только когда зум упёрся
-## в край, соответствующий следующему звену цепочки TPS ↔ ISOMETRIC ↔ TOPDOWN.
+## V переключает между двумя оставшимися видами — только когда зум упёрся
+## в соответствующий край диапазона (тот же принцип, что был в цепочке).
 func _handle_view_toggle():
 	if not InputSystems.is_toggle_view_just_pressed():
 		return
@@ -343,11 +329,6 @@ func _handle_view_toggle():
 		PlayerState.ViewMode.ISOMETRIC:
 			if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
 				_transition_to_view(PlayerState.ViewMode.TPS)
-			elif is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MAX):
-				_transition_to_view(PlayerState.ViewMode.TOPDOWN)
-		PlayerState.ViewMode.TOPDOWN:
-			if is_equal_approx_eps(target_zoom_distance, TOPDOWN_ZOOM_MIN):
-				_transition_to_view(PlayerState.ViewMode.ISOMETRIC)
 		PlayerState.ViewMode.TPS:
 			if is_equal_approx_eps(target_zoom_distance, TPS_ZOOM_MAX):
 				_transition_to_view(PlayerState.ViewMode.ISOMETRIC)
@@ -361,30 +342,19 @@ func is_equal_approx_eps(a: float, b: float) -> bool:
 ## на краю диапазона (см. _handle_view_toggle), поэтому ratio-mapping не
 ## нужен — просто входим в новый вид на его граничном значении зума.
 func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
-	var old_view := PlayerState.view_mode
-
 	view_start_distance = current_zoom_distance
 	view_start_pitch = camera_current_pitch
 
 	match new_view:
-		PlayerState.ViewMode.TOPDOWN:
-			view_target_distance = TOPDOWN_ZOOM_MIN
-			view_target_pitch = top_down_angle
-			topdown_target_yaw = current_angle
-			topdown_current_yaw = current_angle
-
 		PlayerState.ViewMode.TPS:
 			view_target_distance = TPS_ZOOM_MAX
 			view_target_pitch = tps_angle
 
 		PlayerState.ViewMode.ISOMETRIC:
-			if old_view == PlayerState.ViewMode.TOPDOWN:
-				view_target_distance = ISOMETRIC_ZOOM_MAX
-				target_angle = topdown_current_yaw
-			else:  # из TPS — входим на ближнем крае ISO, лицом куда смотрел игрок
-				view_target_distance = ISOMETRIC_ZOOM_MIN
-				target_angle = target.rotation.y + PI
-				current_angle = target_angle
+			# из TPS — входим на ближнем крае ISO, лицом куда смотрел игрок
+			view_target_distance = ISOMETRIC_ZOOM_MIN
+			target_angle = target.rotation.y + PI
+			current_angle = target_angle
 			view_target_pitch = camera_angle
 
 	target_zoom_distance = view_target_distance
@@ -407,19 +377,6 @@ func _handle_follow_rotation(delta):
 				follow_rotation_animating = true
 				target_angle = desired_angle
 		last_player_rotation = player_y_rotation
-	else:
-		player_rotation_timer = 0.0
-
-
-func _handle_topdown_follow_rotation(delta):
-	var player_y_rotation = target.rotation.y + PI
-
-	if abs(player_y_rotation - last_player_rotation - PI) > 0.01:
-		player_rotation_timer += delta
-		if player_rotation_timer >= follow_rotation_delay:
-			if not follow_rotation_animating:
-				topdown_target_yaw = player_y_rotation
-		last_player_rotation = target.rotation.y
 	else:
 		player_rotation_timer = 0.0
 
@@ -447,7 +404,6 @@ func _rotate_camera_left():
 	orbit_rotation_animating = true
 
 	target_angle = orbit_target_angle
-	topdown_target_yaw = orbit_target_angle
 
 
 func _rotate_camera_right():
@@ -462,7 +418,6 @@ func _rotate_camera_right():
 	orbit_rotation_animating = true
 
 	target_angle = orbit_target_angle
-	topdown_target_yaw = orbit_target_angle
 
 
 func _handle_zoom_input():
@@ -479,9 +434,6 @@ func _start_zoom(amount: float):
 	var max_zoom: float
 
 	match PlayerState.view_mode:
-		PlayerState.ViewMode.TOPDOWN:
-			min_zoom = TOPDOWN_ZOOM_MIN
-			max_zoom = TOPDOWN_ZOOM_MAX
 		PlayerState.ViewMode.TPS:
 			min_zoom = TPS_ZOOM_MIN
 			max_zoom = TPS_ZOOM_MAX
@@ -514,8 +466,6 @@ func _update_labels():
 
 func get_current_mode() -> String:
 	match PlayerState.view_mode:
-		PlayerState.ViewMode.TOPDOWN:
-			return "Top-Down"
 		PlayerState.ViewMode.TPS:
 			return "TPS"
 		_:
@@ -537,8 +487,6 @@ func get_current_direction_name() -> String:
 ## дистанции актуален для текущего view_mode.
 func get_current_zoom_range() -> Vector2:
 	match PlayerState.view_mode:
-		PlayerState.ViewMode.TOPDOWN:
-			return Vector2(TOPDOWN_ZOOM_MIN, TOPDOWN_ZOOM_MAX)
 		PlayerState.ViewMode.TPS:
 			return Vector2(TPS_ZOOM_MIN, TPS_ZOOM_MAX)
 		_:

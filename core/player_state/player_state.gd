@@ -5,7 +5,7 @@
 extends Node
 
 enum Mode { ON_FOOT, VEHICLE_HOVER, TUBE_TRANSIT, MENU }
-enum ViewMode { TPS, ISOMETRIC, TOPDOWN }
+enum ViewMode { TPS, ISOMETRIC }
 
 var mode: Mode = Mode.ON_FOOT
 var view_mode: ViewMode = ViewMode.ISOMETRIC

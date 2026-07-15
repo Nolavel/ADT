@@ -13,7 +13,7 @@
 # primary/secondary click сигналы.
 #
 # Активен ТОЛЬКО когда PlayerState.mode == ON_FOOT и
-# view_mode in [ISOMETRIC, TOPDOWN] — сам себя гейтит через
+# view_mode == ISOMETRIC — сам себя гейтит через
 # PlayerState.mode_changed / view_mode_changed, никто снаружи это не решает.
 # =============================================================================
 extends Node
@@ -102,7 +102,7 @@ func _on_player_state_changed(_old, _new) -> void:
 
 func _update_active_state() -> void:
 	_is_active = PlayerState.mode == PlayerState.Mode.ON_FOOT \
-		and PlayerState.view_mode in [PlayerState.ViewMode.ISOMETRIC, PlayerState.ViewMode.TOPDOWN]
+		and PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC
 
 	if not _is_active:
 		_is_running = false

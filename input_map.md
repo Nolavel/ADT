@@ -40,8 +40,7 @@ Work regardless of current `PlayerState.mode`.
 | `toggle_tabs` | Tab (тап / hold) | Тап — уведомление; холд — статус-камера | Tap — notifier; hold — status camera |
 | `Status` | X | UI-хоткей (потребитель ещё не реализован) | UI hotkey (consumer not implemented yet) |
 | `Inventory` | I | UI-хоткей (потребитель ещё не реализован) | UI hotkey (consumer not implemented yet) |
-| `Crafting` | G | UI-хоткей (потребитель ещё не реализован) | UI hotkey (consumer not implemented yet) |
-| `Map` | M | UI-хоткей (потребитель ещё не реализован) | UI hotkey (consumer not implemented yet) |
+
 
 **Примечание / Note:** click-to-move и орбиталка/зум/toggle_view — активны ТОЛЬКО в
 `PlayerState.mode == ON_FOOT` и `view_mode in [ISOMETRIC, TOPDOWN]`.
@@ -53,11 +52,11 @@ Click-to-move and orbital/zoom/toggle_view are active ONLY when
 ## 3. ON_FOOT + TPS (отложено, не реализовано / deferred, not implemented)
 
 WASD-движение вместо click-to-move. Переключение вида (`toggle_view`) сейчас
-работает только между ISOMETRIC/TOPDOWN — включение TPS как отдельного
+работает только между ISOMETRIC — включение TPS как отдельного
 view_mode будет отдельной задачей.
 
 WASD movement instead of click-to-move. `toggle_view` currently only toggles
-between ISOMETRIC/TOPDOWN — wiring TPS in as a selectable view_mode is a
+between ISOMETRIC/TPS — wiring TPS in as a selectable view_mode is a
 separate future task.
 
 | Action (Godot) | Клавиша / Key | RU описание | EN description |

@@ -43,13 +43,13 @@ func _exit_tree() -> void:
 		PlayerState.view_mode_changed.disconnect(_on_player_state_changed)
 
 ## 🔑 Индикатор клика по земле имеет смысл ТОЛЬКО пешком (ON_FOOT)
-## и только в ISOMETRIC/TOPDOWN — там навигация идёт кликом по земле.
+## и только в ISOMETRIC — там навигация идёт кликом по земле.
 ## В TPS движение прямое (WASD), клик-инди не нужен; в VEHICLE_HOVER/
 ## TUBE_TRANSIT/MENU управление другое — виджет тоже не нужен.
 func _is_active_mode() -> bool:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return false
-	return PlayerState.view_mode in [PlayerState.ViewMode.ISOMETRIC, PlayerState.ViewMode.TOPDOWN]
+	return PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC
 
 ## Единый обработчик — сигнатуры mode_changed(old, new) и
 ## view_mode_changed(old, new) совпадают, поэтому можно использовать один.
