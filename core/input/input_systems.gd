@@ -188,3 +188,6 @@ func is_sprint_held() -> bool:
 	
 func is_lock_on_just_pressed() -> bool:
 	return Input.is_action_just_pressed("lock_on")
+	
+func is_switch_shoulder_just_pressed() -> bool:
+	return Input.is_action_just_pressed("switch_shoulder")

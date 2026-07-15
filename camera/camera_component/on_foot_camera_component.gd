@@ -114,6 +114,7 @@ var follow_target_angle: float = 0.0
 
 
 var _tps_combat := TpsCombatCameraState.new()
+var _shoulder := TpsShoulderCameraState.new()
 
 ## Вызывается хостом один раз перед первым использованием (camera/target уже назначены).
 func setup() -> void:
@@ -151,6 +152,7 @@ func update(delta: float) -> void:
 		# В TPS камера всегда позади игрока — orbit (Q/E) и toggle_follow (P)
 		# здесь не действуют, это не их зона ответственности.
 		_handle_tps_follow(delta)
+		_handle_shoulder_toggle()
 	else:
 		_handle_follow_toggle()
 		if follow_player_rotation:
@@ -167,6 +169,7 @@ func update(delta: float) -> void:
 		current_angle = lerp_angle(current_angle, target_angle, delta * rotation_speed)
 
 	_update_camera_position(delta)
+	
 	_update_labels()
 
 
@@ -296,7 +299,16 @@ func _update_camera_position(delta):
 			var horizontal_direction = Vector3(sin(yaw_rad), 0, cos(yaw_rad))
 			var horizontal_distance = current_zoom_distance * cos(pitch_rad)
 			var vertical_distance = -current_zoom_distance * sin(pitch_rad)
-			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0)
+			var right := Vector3(
+				cos(yaw_rad),
+				0.0,
+				-sin(yaw_rad)
+			)
+
+			var shoulder := right * _shoulder.update(delta)
+
+			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
+
 			camera_target_pos = target.global_position + offset
 			camera_target_pitch = tps_angle
 
@@ -374,7 +386,11 @@ func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 	view_mode_animating = true
 	PlayerState.set_view_mode(new_view)
 
+func _handle_shoulder_toggle() -> void:
 
+	if InputSystems.is_switch_shoulder_just_pressed():
+		_shoulder.toggle()
+		
 func _handle_follow_rotation(delta):
 	var player_y_rotation = target.rotation.y
 	var desired_angle = player_y_rotation + PI
@@ -439,6 +455,8 @@ func _handle_zoom_input():
 	elif InputSystems.is_zoom_out_just_released():
 		zoom_input_received.emit()
 		_start_zoom(ZOOM_STEP)
+		
+
 
 
 func _start_zoom(amount: float):
