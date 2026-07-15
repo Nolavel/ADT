@@ -1461,10 +1461,10 @@ script = ExtResource("31_dssci")
 stamina_deplete_rate = 2.5
 jump_stamina_cost = 2.5
 
-[node name="InteractManager" type="Node3D" parent="." unique_id=443434870]
+[node name="InteractComponent" type="Node3D" parent="." unique_id=443434870]
 script = ExtResource("37_1gbpw")
 
-[node name="PlayerFocusCast" type="ShapeCast3D" parent="InteractManager" unique_id=1911257774]
+[node name="PlayerFocusCast" type="ShapeCast3D" parent="InteractComponent" unique_id=1911257774]
 editor_description = "Этот шейпкаст служит для обнаружения интерактивных обьектов в фокусе перед игроком по группе \"Interactable\" и по слою \"Interactable\"
 "
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.21520996, 2.1754112)
@@ -1474,7 +1474,7 @@ collision_mask = 512
 collide_with_areas = true
 debug_shape_custom_color = Color(12.606373, 18.892157, 0, 1)
 
-[node name="Label" type="Label" parent="InteractManager" unique_id=213288551]
+[node name="Label" type="Label" parent="InteractComponent" unique_id=213288551]
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5

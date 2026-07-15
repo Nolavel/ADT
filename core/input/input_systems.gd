@@ -185,3 +185,6 @@ func get_move_axis() -> Vector2:
 
 func is_sprint_held() -> bool:
 	return Input.is_action_pressed("sprint")
+	
+func is_lock_on_just_pressed() -> bool:
+	return Input.is_action_just_pressed("lock_on")

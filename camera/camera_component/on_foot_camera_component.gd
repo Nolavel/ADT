@@ -113,6 +113,8 @@ var follow_start_angle: float = 0.0
 var follow_target_angle: float = 0.0
 
 
+var _tps_combat := TpsCombatCameraState.new()
+
 ## Вызывается хостом один раз перед первым использованием (camera/target уже назначены).
 func setup() -> void:
 	current_angle = POSITION_ANGLES[current_position]
@@ -168,8 +170,18 @@ func update(delta: float) -> void:
 	_update_labels()
 
 
-func _handle_tps_follow(_delta: float) -> void:
-	camera_target_yaw = target.rotation.y + PI
+func _handle_tps_follow(delta: float) -> void:
+	if InputSystems.is_lock_on_just_pressed():  # TODO: добавить в InputSystems
+		_tps_combat.try_toggle_lock(target)
+
+	var result := _tps_combat.update(delta, target, camera_target_yaw)
+	camera_target_yaw = result.yaw
+
+	if result.distance_override > 0.0 and not zoom_animating:
+		target_zoom_distance = result.distance_override
+		current_zoom_distance = lerp(current_zoom_distance, result.distance_override, delta * 6.0)
+
+	tps_angle = -10.0 + result.pitch_offset_deg  # базовый угол + sway
 
 
 func _update_zoom_animation(delta: float):
