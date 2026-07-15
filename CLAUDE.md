@@ -74,16 +74,16 @@ Vehicle/transit controllers split into `base/` (shared behavior: `hover_vehicle_
 
 # Project Rules (Vertical Trespass)
 
-## Hard constraints — do not suggest changing these
-- Renderer: **Forward Mobile** — deliberate, indefinite choice. Dev/target hardware is Intel HD 620, target ~55 FPS. Never propose switching to Forward+ or features that require it (e.g. volumetric fog).
+## Hard constraints â€” do not suggest changing these
+- Renderer: **Forward Mobile** â€” deliberate, indefinite choice. Dev/target hardware is Intel HD 620, target ~55 FPS. Never propose switching to Forward+ or features that require it (e.g. volumetric fog).
 - **GDScript for all gameplay code.** The single existing C# file (`tools/scan_folder_files/project_scanner.cs`) is an editor utility; do not introduce new C#.
-- Shadow atlas is tuned to 1024 in Project Settings for the FPS target — don't raise it.
+- Shadow atlas is tuned to 1024 in Project Settings for the FPS target â€” don't raise it.
 
 ## Architecture rules
 - **No new autoloads.** Scene-scoped systems are plain Node instances owned by `world.gd` via the `WORLD_SYSTEM_SCRIPTS` declarative list; they are instantiated with `.new()` and initialized through `on_world_ready(context: WorldContext)`.
 - Prefer **explicit reference passing** over group lookups or singleton access by class name.
 - `PlayerState` (existing autoload) is the single source of truth for `Mode` and `ViewMode`. Do not create parallel state enums.
-- **Only `InputSystems.gd` reads `Input` directly.** Exceptions: `map_source/` and `map_camera/` — these are intentional level-design tools using raw `KEY_*` input; do not refactor them.
+- **Only `InputSystems.gd` reads `Input` directly.** Exceptions: `map_source/` and `map_camera/` â€” these are intentional level-design tools using raw `KEY_*` input; do not refactor them.
 - Streaming: `_packed_cache` is non-optional (`load_threaded_get()` consumes the task; shared-path cells would false-fail without it). Do not change streaming budgets/radii (`STREAM_RADIUS`, `MAX_CONCURRENT_LOADS`, `INSTANTIATION_BUDGET_PER_FRAME`, etc.) without explicit discussion first.
 - Strata layers load via `InstancePlaceholder` contract nodes named `"Layer" + strata`, `replace = false`, sharing the per-frame instantiation budget with cells.
 
@@ -93,9 +93,9 @@ Vehicle/transit controllers split into `base/` (shared behavior: `hover_vehicle_
 
 ## Language policy
 - **New code and comments: English**, readable for future collaborators, following Godot community standards.
-- **Existing Russian comments/strings: leave as-is** — they will be migrated during planned refactoring passes, not opportunistically. When editing a file that is already in Russian, do not translate untouched parts; new additions within it are still written in English.
+- **Existing Russian comments/strings: leave as-is** â€” they will be migrated during planned refactoring passes, not opportunistically. When editing a file that is already in Russian, do not translate untouched parts; new additions within it are still written in English.
 
 ## Workflow rules
 - Propose architectural concerns and design **before** writing code for significant systems.
 - Ask clarifying questions when the picture is incomplete; do not brute-force solutions or guess.
-- `addons/godot_ai/` and its `project.godot` entries are committed intentionally (local AI tooling, MIT) — do not suggest removing them.
+- `addons/godot_ai/` and its `project.godot` entries are committed intentionally (local AI tooling, MIT) â€” do not suggest removing them.
