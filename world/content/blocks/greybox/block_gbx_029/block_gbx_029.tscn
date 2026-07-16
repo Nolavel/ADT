@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://xshdii788jvq"]
+
+[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_h2k0k"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
+albedo_texture = ExtResource("1_h2k0k")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_gxb7i"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(57.66436, 2350.793, 63.69836)
+
+[node name="BlockGbx029" type="Node3D" unique_id=1102205713]
+metadata/gbx_size = Vector3(384.42908, 2350.793, 424.65573)
+metadata/gbx_strata_top = "Glare"
+metadata/gbx_kind = "content"
+
+[node name="Shared" type="Node3D" parent="." unique_id=1932132537]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1810691973]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1175.3965, 0)
+mesh = SubResource("BoxMesh_gxb7i")
+
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=1355821261 instance_placeholder="res://world/content/blocks/greybox/block_gbx_029/layer_doggerland.tscn"]
+
+[node name="LayerManifold" type="Node3D" parent="." unique_id=478190591 instance_placeholder="res://world/content/blocks/greybox/block_gbx_029/layer_manifold.tscn"]
+
+[node name="LayerGlare" type="Node3D" parent="." unique_id=808735269 instance_placeholder="res://world/content/blocks/greybox/block_gbx_029/layer_glare.tscn"]

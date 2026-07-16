@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bmjbitmtqeaip"]
+
+[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_dv7v0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
+albedo_texture = ExtResource("1_dv7v0")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_l5u80"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(143.1463, 128.72614, 243.44142)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0cu0g"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(201.36853, 195.49652, 193.07785)
+
+[node name="LayerDoggerland" type="Node3D" unique_id=881499158]
+
+[node name="Shape1" type="MeshInstance3D" parent="." unique_id=1453840648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -46.845627, 271.3662, -21.91893)
+mesh = SubResource("BoxMesh_l5u80")
+
+[node name="Shape2" type="MeshInstance3D" parent="." unique_id=1553100579]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.299316, 218.99626, -55.41462)
+mesh = SubResource("BoxMesh_0cu0g")

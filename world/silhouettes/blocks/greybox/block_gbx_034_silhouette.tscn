@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://ciwg805dxt82w"]
+
+[ext_resource type="Texture2D" uid="uid://bsw2ip0l7l3go" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_01.png" id="1_5ach5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_36sre"]
+albedo_texture = ExtResource("1_5ach5")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_ootcm"]
+material = SubResource("StandardMaterial3D_36sre")
+size = Vector3(434.1249, 2520.9744, 237.9901)
+
+[node name="BlockGbx034Silhouette" type="Node3D" unique_id=387389410]
+metadata/gbx_size = Vector3(434.1249, 2520.9744, 237.9901)
+metadata/gbx_strata_top = "Glare"
+metadata/gbx_kind = "silhouette"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=616527431]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1260.4872, 0)
+mesh = SubResource("BoxMesh_ootcm")

@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://bralcd4dtfw0i"]
+
+[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_4wcic"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
+albedo_texture = ExtResource("1_4wcic")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_3m8vr"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(316.4608, 164.0041, 226.43343)
+
+[sub_resource type="BoxMesh" id="BoxMesh_7ic2l"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(423.70746, 104.69063, 165.385)
+
+[sub_resource type="BoxMesh" id="BoxMesh_v25du"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(344.99744, 152.50124, 239.27185)
+
+[node name="LayerGlare" type="Node3D" unique_id=1725218363]
+
+[node name="Shape1" type="MeshInstance3D" parent="." unique_id=1824152708]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.008842, 2265.634, 54.433052)
+mesh = SubResource("BoxMesh_3m8vr")
+
+[node name="Shape2" type="MeshInstance3D" parent="." unique_id=1236881019]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -101.721275, 2156.6914, 93.368416)
+mesh = SubResource("BoxMesh_7ic2l")
+
+[node name="Shape3" type="MeshInstance3D" parent="." unique_id=595320419]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 109.147575, 2143.6086, -53.764187)
+mesh = SubResource("BoxMesh_v25du")

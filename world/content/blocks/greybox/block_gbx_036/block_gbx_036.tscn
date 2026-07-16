@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://bwv5gb63rqaj7"]
+
+[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_mwplq"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
+albedo_texture = ExtResource("1_mwplq")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_71qpd"]
+material = SubResource("StandardMaterial3D_jjcxl")
+size = Vector3(46.527668, 898.4881, 84.94954)
+
+[node name="BlockGbx036" type="Node3D" unique_id=1022348381]
+metadata/gbx_size = Vector3(310.18445, 898.4881, 566.33026)
+metadata/gbx_strata_top = "Doggerland"
+metadata/gbx_kind = "content"
+
+[node name="Shared" type="Node3D" parent="." unique_id=1333896]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1317172162]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 449.24405, 0)
+mesh = SubResource("BoxMesh_71qpd")
+
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=110121509 instance_placeholder="res://world/content/blocks/greybox/block_gbx_036/layer_doggerland.tscn"]

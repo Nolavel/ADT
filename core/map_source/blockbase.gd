@@ -23,6 +23,8 @@ class_name BlockBase
 @export var district: String = ""
 @export var scene_path: String = "res://world/placeholders/towers_placeholder/T001.tscn"
 
+## Ring 0: силуэт квартала. Экспортируется в BlockData.silhouette_scene_path.
+@export var silhouette_scene_path: String = ""
 ## Высота заполняется автоматически из AABB меша в _ready().
 ## protected-по-конвенции: наследники могут читать, но не должны
 ## переопределять напрямую — только через _compute_height(), если нужна другая логика.

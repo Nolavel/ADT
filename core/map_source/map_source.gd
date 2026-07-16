@@ -122,7 +122,8 @@ func register_block(b_id: String, node: Node3D, height: float, district: String)
 		"height":    height,
 		"district":  district,
 		"scene_path": "",
-		"strata_ids": {}
+		"strata_ids": {},
+		"silhouette_scene_path": "",
 	}
 
 	for stratum in strata:
@@ -148,12 +149,8 @@ func export_data() -> void:
 		bd.position = Vector3(p[0], p[1], p[2])
 		bd.height   = dict["height"]
 		bd.district = dict["district"]
-		# TODO(markers): маркеры MapSource пока не знают о разделении
-		# силуэт/контент — экспортируют старый scene_path как контент.
-		# Обновление схемы маркеров — в бэклоге; для демо world_data.tres
-		# собирается вручную.
 		bd.content_scene_path    = dict["scene_path"]
-		bd.silhouette_scene_path = ""
+		bd.silhouette_scene_path = dict.get("silhouette_scene_path", "")
 		bd.strata_ids = dict["strata_ids"]
 		world.blocks.append(bd)
 
@@ -190,7 +187,7 @@ func _register_scene_blocks() -> void:
 			register_block(marker.id, marker, marker.block_height, marker.district)
 			# Записываем scene_path из маркера в словарь
 			_block_data[marker.id]["scene_path"] = marker.scene_path
-
+			_block_data[marker.id]["silhouette_scene_path"] = marker.silhouette_scene_path
 
 # ── Спавн-маркер ─────────────────────────────────────────────────────────────
 
