@@ -927,7 +927,56 @@ strata_ids = {
 "manifold": "gbx_067-MF"
 }
 
+[sub_resource type="Resource" id="Resource_ap5js"]
+script = ExtResource("2_xy5s7")
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_c5u2u"]
+script = ExtResource("2_xy5s7")
+col = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_opvd3"]
+script = ExtResource("2_xy5s7")
+col = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_byf6v"]
+script = ExtResource("2_xy5s7")
+row = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_5jyta"]
+script = ExtResource("2_xy5s7")
+row = 1
+col = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_nudfg"]
+script = ExtResource("2_xy5s7")
+row = 1
+col = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_0ec8d"]
+script = ExtResource("2_xy5s7")
+row = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
+[sub_resource type="Resource" id="Resource_ki1ss"]
+script = ExtResource("2_xy5s7")
+row = 2
+col = 1
+content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+
+[sub_resource type="Resource" id="Resource_mfsvo"]
+script = ExtResource("2_xy5s7")
+row = 2
+col = 2
+content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+
 [resource]
 script = ExtResource("3_ke6ng")
 blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_ffflj"), SubResource("Resource_m1w6v"), SubResource("Resource_msege"), SubResource("Resource_3v5xq"), SubResource("Resource_1h1a2"), SubResource("Resource_0d14d"), SubResource("Resource_keauj"), SubResource("Resource_0s121"), SubResource("Resource_0gn5r"), SubResource("Resource_e721p"), SubResource("Resource_4lwtn"), SubResource("Resource_r6yy8"), SubResource("Resource_xg1b1"), SubResource("Resource_ry6a7"), SubResource("Resource_nrsnq"), SubResource("Resource_mg0i4"), SubResource("Resource_u4ku0"), SubResource("Resource_ddot7"), SubResource("Resource_su1e6"), SubResource("Resource_8m7wj"), SubResource("Resource_5oak0"), SubResource("Resource_ybfrt"), SubResource("Resource_iott4"), SubResource("Resource_6bwk8"), SubResource("Resource_noiwr"), SubResource("Resource_8mrrg"), SubResource("Resource_vq61x"), SubResource("Resource_tsxtl"), SubResource("Resource_lmndv"), SubResource("Resource_1247l"), SubResource("Resource_ac613"), SubResource("Resource_52jsq"), SubResource("Resource_2hbg3"), SubResource("Resource_jm7bu"), SubResource("Resource_f6kgm"), SubResource("Resource_rkw6m"), SubResource("Resource_83lhi"), SubResource("Resource_kj3ki"), SubResource("Resource_qxrh6"), SubResource("Resource_smtyo"), SubResource("Resource_d1yb5"), SubResource("Resource_vrb70"), SubResource("Resource_fhyh2"), SubResource("Resource_i70ks"), SubResource("Resource_weqsb"), SubResource("Resource_asta7"), SubResource("Resource_gmy23"), SubResource("Resource_jl8e0"), SubResource("Resource_wakq5"), SubResource("Resource_w1r2h"), SubResource("Resource_uxxe8"), SubResource("Resource_aymqd"), SubResource("Resource_ksg8s"), SubResource("Resource_yxb7w"), SubResource("Resource_pwrvf"), SubResource("Resource_rlngp"), SubResource("Resource_xwti0"), SubResource("Resource_24jmf"), SubResource("Resource_7ujl7"), SubResource("Resource_b2jsp"), SubResource("Resource_q588c"), SubResource("Resource_0vbv1"), SubResource("Resource_ktvyj"), SubResource("Resource_7ic77"), SubResource("Resource_bhq7q"), SubResource("Resource_i2pch"), SubResource("Resource_qr6en"), SubResource("Resource_5dvqv")])
+ground_tiles = Array[ExtResource("2_xy5s7")]([SubResource("Resource_ap5js"), SubResource("Resource_c5u2u"), SubResource("Resource_opvd3"), SubResource("Resource_byf6v"), SubResource("Resource_5jyta"), SubResource("Resource_nudfg"), SubResource("Resource_0ec8d"), SubResource("Resource_ki1ss"), SubResource("Resource_mfsvo")])
 spawn_point = Vector3(0, 25, 0)

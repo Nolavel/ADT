@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/items/item_resource.gd" id="1_itemres"]
+
+[resource]
+script = ExtResource("1_itemres")
+id = "test_can"
+display_name = "Consetta Can"
+weight = 0.5
+max_stack = 8
+can_throw = true
+can_use_in_hands = false

@@ -153,6 +153,23 @@ func export_data() -> void:
 		bd.silhouette_scene_path = dict.get("silhouette_scene_path", "")
 		bd.strata_ids = dict["strata_ids"]
 		world.blocks.append(bd)
+		
+	# ── Плиты земли ─────────────────────────────────────────────────────────
+	# Сетка 3×3 — геометрия в константах WorldSystems. Контент-сцены
+	# чередуются a/b (как в прежнем ручном world_data.tres).
+	const GT_CONTENT_PATHS := [
+		"res://world/content/ground_tiles/gt_content_a.tscn",
+		"res://world/content/ground_tiles/gt_content_b.tscn",
+	]
+	var gt_index := 0
+	for row in WorldSystems.GROUND_GRID_SIZE.y:
+		for col in WorldSystems.GROUND_GRID_SIZE.x:
+			var gt := GroundTileData.new()
+			gt.row = row
+			gt.col = col
+			gt.content_scene_path = GT_CONTENT_PATHS[gt_index % 2]
+			world.ground_tiles.append(gt)
+			gt_index += 1
 
 	world.spawn_point = WorldSystems.spawn_point
 

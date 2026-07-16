@@ -11,6 +11,10 @@ class_name InteractComponent
 ##Подбираемые и переносимые объекты:
 ##PickupItem﻿ (можно параметром отмечать «can_carry», «can_store_in_inventory», «can_throw»).
 
+## Слой 10 (бит 9) — Interactables. Держать в синхроне с Project Settings
+## → Layer Names → 3D Physics.
+const INTERACTABLES_COLLISION_MASK: int = 512
+
 @onready var player: CharacterBody3D = get_parent() ## cсылка на игрока
 @onready var dymamic_cursor_ui: MouseCursorUI = $"../DynamicCursorUI"
 ## в случае если захотим визуально что-то менять с курсором при интерактивности
@@ -20,6 +24,8 @@ class_name InteractComponent
 
 @onready var pickup_slot: Node3D = $"../PickupSlot"
 ## прототип-набросок куда цепляется предмет (потом можно сделать - аттачить к Bone руки)
+
+@onready var inventory: InventoryComponent = $"../InventoryComponent"
 
 @onready var debug_label: Label = $Label
 ## через него видем какой обьект в фокусе, name, его возможности, количество
@@ -31,6 +37,7 @@ var closest_distance: float = INF
 var detected_count: int = 0
 
 func _ready() -> void:
+	player_focus_cast.collision_mask = INTERACTABLES_COLLISION_MASK
 	## вкл допом программно
 	player_focus_cast.enabled = true
 	player_focus_cast.collision_mask = 512  # 10-й слой (Interactables)
@@ -184,6 +191,14 @@ func try_interact() -> void:
 			_activate_button(current_interactable)
 		InteractableObject.InteractionType.VEHICLE:  # flying car
 			_enter_vehicle(current_interactable)
+		InteractableObject.InteractionType.INVENTORY_ONLY:
+			_store_to_inventory(current_interactable)
+			
+## INVENTORY_ONLY: предмет уходит в инвентарь напрямую, минуя руки.
+## При отказе (перевес) остаётся в мире нетронутым.
+func _store_to_inventory(object: InteractableObject) -> void:
+	if inventory.try_add(object.item):
+		object.queue_free()
 			
 func _pickup_item(item: InteractableObject) -> void:
 	if carried_item: return

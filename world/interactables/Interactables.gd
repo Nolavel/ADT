@@ -4,6 +4,10 @@ class_name InteractableObject
 ## ВАЖНО !!! для этих объектов их обнаружения используем для area группу "interactables"
 ## а также слой 10 (бит 9, значение 512 = Interactables) 
 
+## BUTTON: излучается при активации. Двери/лифты/терминалы подписываются
+## на этот сигнал — сам объект не знает, кто на него реагирует.
+signal activated(by: Node)
+
 enum InteractionType {
 	BUTTON,              ## просто кнопка/терминал
 	CARRY_ONLY,          ## можно поднять и нести, но не класть в инвентарь
@@ -19,6 +23,10 @@ enum InteractionType {
 @export var can_throw: bool = false        ## можно ли бросать
 @export var can_use_in_hands: bool = false ## например, включать фонарик, сканер и т.п.
 
+
+## Данные предмета для инвентаря (data/items/*.tres).
+## Обязателен для INVENTORY_ONLY и CARRY_AND_INVENTORY, для остальных — null.
+@export var item: ItemResource = null
 ## ВИЗУАЛЬНАЯ ИНДИКАЦИЯ
 @export_group("Визуальная индикация")
 @export var enable_visual_indicator: bool = true ## Показывать ли спрайт над объектом
@@ -26,6 +34,8 @@ enum InteractionType {
 ## ВНУТРЕННИЕ ПЕРЕМЕННЫЕ
 var is_being_carried: bool = false ## Находится ли объект в руках у игрока
 var is_detected: bool = false      ## Обнаружен ли ShapeCast'ом
+
+
 
 ## Ссылка на дочернюю зону обнаружения
 @onready var interaction_area: Area3D = $Area
