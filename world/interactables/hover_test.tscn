@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://tfirmx15wush"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_5h11f"]
+size = Vector3(4, 1.5, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5h11f"]
+size = Vector3(4, 1.5, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bx8n8"]
+size = Vector3(2, 2, 2)
+
+[node name="HoverTest" type="CharacterBody3D" unique_id=17550472]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1636169312]
+mesh = SubResource("BoxMesh_5h11f")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1786854196]
+shape = SubResource("BoxShape3D_5h11f")
+
+[node name="DoorAnchor" type="Marker3D" parent="." unique_id=1166992580]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 2)
+
+[node name="HoverEntryTrigger" type="Area3D" parent="." unique_id=1222824727]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 2)
+collision_layer = 1024
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HoverEntryTrigger" unique_id=1738602094]
+shape = SubResource("BoxShape3D_bx8n8")

@@ -35,7 +35,7 @@ extends Camera3D
 
 # === Компоненты по PlayerState.Mode ===
 var _on_foot: OnFootCameraComponent
-var _vehicle_hover: VehicleHoverCameraComponent
+var _hover: HoverCameraComponent
 var _tube_transit: TubeTransitCameraComponent
 var _active_component: Node
 
@@ -68,9 +68,9 @@ func _ready():
 	_on_foot.lbl_follow = lbl_follow
 	add_child(_on_foot)
 
-	_vehicle_hover = VehicleHoverCameraComponent.new()
-	_vehicle_hover.camera = self
-	add_child(_vehicle_hover)
+	_hover = HoverCameraComponent.new()
+	_hover.camera = self
+	add_child(_hover)
 
 	_tube_transit = TubeTransitCameraComponent.new()
 	_tube_transit.camera = self
@@ -135,8 +135,8 @@ func _switch_active_component(mode) -> void:
 	match mode:
 		PlayerState.Mode.ON_FOOT:
 			_active_component = _on_foot
-		PlayerState.Mode.VEHICLE_HOVER:
-			_active_component = _vehicle_hover
+		PlayerState.Mode.HOVER:
+			_active_component = _hover
 		PlayerState.Mode.TUBE_TRANSIT:
 			_active_component = _tube_transit
 		_:
@@ -258,8 +258,8 @@ func set_target_reference(p: Node3D) -> void:
 	if _on_foot:
 		_on_foot.target = p
 		_on_foot.setup()
-	if _vehicle_hover:
-		_vehicle_hover.target = p
+	if _hover:
+		_hover.target = p
 	if _tube_transit:
 		_tube_transit.target = p
 	print("✅ SystemCamera: target назначен")

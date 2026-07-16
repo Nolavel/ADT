@@ -21,6 +21,8 @@ signal secondary_click_pressed(screen_pos: Vector2)
 signal secondary_click_held(screen_pos: Vector2, duration: float)
 signal secondary_click_released(screen_pos: Vector2)
 
+
+
 ## --- Interact ---
 ## Прототип-эксперимент с hold-таймером на Interact убран (был не тем,
 ## что нужно по факту — держать R ~1 сек как отдельный action).
@@ -41,6 +43,13 @@ signal stream_debug_toggled()
 ## ввода, поэтому таймер живёт здесь, а не в потребителе.
 signal tabs_key_tapped()
 signal tabs_key_held()
+
+## ── Маршрутизация interact ──────────────────────────────────────────────
+## Пока claim удерживается (игрок в зоне двери ховера или на борту),
+## interact уходит владельцу claim напрямую, сигнал interact_pressed
+## НЕ излучается — InteractComponent в это время слеп. Один владелец
+## решения вместо гонки подписчиков.
+var _interact_claimant: Node = null
 
 const TABS_HOLD_TIME: float = 0.5
 const RUN_TRIGGER_TIME: float = 0.5
@@ -80,7 +89,17 @@ func _physics_process(delta: float) -> void:
 ## ============================================
 func _handle_interact() -> void:
 	if Input.is_action_just_pressed("interact"):
-		interact_pressed.emit()
+		if is_instance_valid(_interact_claimant):
+			_interact_claimant.on_interact_claimed()
+		else:
+			interact_pressed.emit()
+		
+func claim_interact(claimant: Node) -> void:
+	_interact_claimant = claimant
+
+func release_interact(claimant: Node) -> void:
+	if _interact_claimant == claimant:
+		_interact_claimant = null
 
 
 ## ============================================

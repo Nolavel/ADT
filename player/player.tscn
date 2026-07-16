@@ -32,6 +32,7 @@
 [ext_resource type="Texture2D" uid="uid://bvosok2fh0g2m" path="res://assets/textures/pins/pin_step_walk.png" id="32_fp3m1"]
 [ext_resource type="Script" uid="uid://7ft3gsmqmrmi" path="res://ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd" id="32_ftrmt"]
 [ext_resource type="Texture2D" uid="uid://d34gm7xpy2app" path="res://assets/textures/pins/pin_step_sprint.png" id="33_wmpjg"]
+[ext_resource type="Script" uid="uid://dfrq4uw3iba6d" path="res://player/player_components/inventory_component/inventory_component.gd" id="35_q28gw"]
 [ext_resource type="PackedScene" uid="uid://5fn1xrmc4k84" path="res://player/player_components/nav_component/nav_component.tscn" id="36_ge24q"]
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://player/player_components/interact_component/interact_component.gd" id="37_1gbpw"]
 
@@ -1488,3 +1489,6 @@ grow_vertical = 2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1)
 
 [node name="NavComponent" parent="." unique_id=875864907 instance=ExtResource("36_ge24q")]
+
+[node name="InventoryComponent" type="Node3D" parent="." unique_id=1888358445]
+script = ExtResource("35_q28gw")

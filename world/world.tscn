@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://duxn5rqcau5dw" path="res://tools/stats_display/stats_sisplay.tscn" id="2_h5o24"]
 [ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/input_debugger/input_debugger.tscn" id="3_mmdvd"]
 [ext_resource type="PackedScene" uid="uid://cnhshfsm2gpjs" path="res://tools/scan_folder_files/scan_folder_files.tscn" id="4_fn3g3"]
+[ext_resource type="PackedScene" uid="uid://tfirmx15wush" path="res://world/interactables/hover_test.tscn" id="5_mmdvd"]
 
 [node name="World" type="Node3D" unique_id=2119433318 groups=["world_root"]]
 script = ExtResource("1_tcf2h")
@@ -17,3 +18,6 @@ print_log = false
 
 [node name="ProjectStats_AND_ExitTrigger" parent="." unique_id=1192114593 instance=ExtResource("4_fn3g3")]
 exit_scene = false
+
+[node name="HoverTest" parent="." unique_id=17550472 instance=ExtResource("5_mmdvd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)

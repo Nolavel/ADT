@@ -1,5 +1,5 @@
 # =============================================================================
-# vehicle_hover_camera_component.gd
+# hover_camera_component.gd
 # Компонент камеры для PlayerState.Mode.VEHICLE_HOVER.
 #
 # ЗАГЛУШКА: фиксированный офсет позади цели, без специфичной физики
@@ -7,7 +7,7 @@
 # и т.п.) — отдельная задача, когда будет готов входной триггер транспорта.
 # =============================================================================
 extends Node
-class_name VehicleHoverCameraComponent
+class_name HoverCameraComponent
 
 @export var offset: Vector3 = Vector3(0, 2.5, 6.0)
 @export var pitch_deg: float = -18.0

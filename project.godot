@@ -216,6 +216,7 @@ switch_shoulder={
 3d_physics/layer_3="wall"
 3d_physics/layer_4="PhysicsObjects"
 3d_physics/layer_10="Interactables"
+3d_physics/layer_11="TransportTriggers"
 3d_physics/layer_20="3D_GUI"
 
 [physics]
