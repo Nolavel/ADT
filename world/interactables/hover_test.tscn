@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://tfirmx15wush"]
 
+[ext_resource type="Script" uid="uid://4mhp5bskroil" path="res://core/controllers/transport/hover_entry_trigger.gd" id="1_iqrxv"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_5h11f"]
 size = Vector3(4, 1.5, 2)
 
@@ -18,11 +20,12 @@ mesh = SubResource("BoxMesh_5h11f")
 shape = SubResource("BoxShape3D_5h11f")
 
 [node name="DoorAnchor" type="Marker3D" parent="." unique_id=1166992580]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 1)
 
 [node name="HoverEntryTrigger" type="Area3D" parent="." unique_id=1222824727]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 2)
-collision_layer = 1024
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 1)
+collision_layer = 1025
+script = ExtResource("1_iqrxv")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HoverEntryTrigger" unique_id=1738602094]
 shape = SubResource("BoxShape3D_bx8n8")

@@ -62,6 +62,8 @@ func _ready() -> void:
 # ── Зона двери ───────────────────────────────────────────────────────────────
 
 func _on_body_entered(body: Node3D) -> void:
+	if body == _hover:
+		return   # собственный корпус ховера — не пассажир
 	if _state != State.IDLE or not body is CharacterBody3D:
 		return
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
