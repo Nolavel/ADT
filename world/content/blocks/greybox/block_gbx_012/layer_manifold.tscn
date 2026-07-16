@@ -1,25 +1,21 @@
 [gd_scene format=3 uid="uid://d2yb1kwhkf00i"]
 
-[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_hdp82"]
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_hdp82"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
-albedo_texture = ExtResource("1_hdp82")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_6v2r3"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_hdp82"]
+material = ExtResource("1_hdp82")
 size = Vector3(449.14484, 127.919464, 127.99213)
 
-[sub_resource type="BoxMesh" id="BoxMesh_gj5co"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_6v2r3"]
+material = ExtResource("1_hdp82")
 size = Vector3(199.54286, 113.64675, 279.2511)
 
-[node name="LayerManifold" type="Node3D" unique_id=737016040]
+[node name="LayerManifold" type="Node3D" unique_id=1885662644]
 
-[node name="Shape1" type="MeshInstance3D" parent="." unique_id=1863607739]
+[node name="Shape1" type="MeshInstance3D" parent="." unique_id=2060670351]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -131.82872, 1107.021, 59.15944)
-mesh = SubResource("BoxMesh_6v2r3")
+mesh = SubResource("BoxMesh_hdp82")
 
-[node name="Shape2" type="MeshInstance3D" parent="." unique_id=1053377429]
+[node name="Shape2" type="MeshInstance3D" parent="." unique_id=1102680601]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 125.579834, 1123.568, 72.28201)
-mesh = SubResource("BoxMesh_gj5co")
+mesh = SubResource("BoxMesh_6v2r3")

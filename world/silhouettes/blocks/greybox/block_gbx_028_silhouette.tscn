@@ -1,20 +1,16 @@
 [gd_scene format=3 uid="uid://dbek4mnvnya41"]
 
-[ext_resource type="Texture2D" uid="uid://bsw2ip0l7l3go" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_01.png" id="1_rmn4m"]
+[ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_rmn4m"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_36sre"]
-albedo_texture = ExtResource("1_rmn4m")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_7deq3"]
-material = SubResource("StandardMaterial3D_36sre")
+[sub_resource type="BoxMesh" id="BoxMesh_rmn4m"]
+material = ExtResource("1_rmn4m")
 size = Vector3(688.5127, 711.7572, 660.00085)
 
-[node name="BlockGbx028Silhouette" type="Node3D" unique_id=173674954]
+[node name="BlockGbx028Silhouette" type="Node3D" unique_id=1678337696]
 metadata/gbx_size = Vector3(688.5127, 711.7572, 660.00085)
 metadata/gbx_strata_top = "Doggerland"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1459891785]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=594997484]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 355.8786, 0)
-mesh = SubResource("BoxMesh_7deq3")
+mesh = SubResource("BoxMesh_rmn4m")

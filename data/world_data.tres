@@ -1,86 +1,933 @@
-[gd_resource type="Resource" script_class="WorldData" format=3 uid="uid://tjmke2s051gw"]
+[gd_resource type="Resource" script_class="WorldData" format=3]
 
-[ext_resource type="Script" uid="uid://b7tqqbk2k4e4i" path="res://world/resources/world_data.gd" id="1_wd"]
-[ext_resource type="Script" uid="uid://df5adq7w1iw73" path="res://world/resources/block_data.gd" id="2_bd"]
-[ext_resource type="Script" uid="uid://b2ps2vfyw42ui" path="res://world/resources/ground_tile_data.gd" id="3_gt"]
+[ext_resource type="Script" path="res://world/resources/block_data.gd" id="1_e4cvp"]
+[ext_resource type="Script" path="res://world/resources/ground_tile_data.gd" id="2_xy5s7"]
+[ext_resource type="Script" path="res://world/resources/world_data.gd" id="3_ke6ng"]
 
-[sub_resource type="Resource" id="Resource_block_a1_003"]
-script = ExtResource("2_bd")
-id = "block_a1_003"
-position = Vector3(150, 0, 500)
-height = 3200.0
+[sub_resource type="Resource" id="Resource_ffflj"]
+script = ExtResource("1_e4cvp")
+id = "Block-001"
+position = Vector3(298.47534, 0, 0)
+height = 2550.0
 district = "A1"
-silhouette_scene_path = "res://world/silhouettes/blocks/block_a1_003_silhouette.tscn"
-content_scene_path = "res://world/content/blocks/block_a1_003/block_a1_003.tscn"
+content_scene_path = "res://world/placeholders/towers_placeholder/id001_blockhaze_placeholder.tscn"
+strata_ids = {
+"doggerland": "Block-001-DG",
+"glare": "Block-001-GL",
+"manifold": "Block-001-MF"
+}
 
-[sub_resource type="Resource" id="Resource_block_a1_001"]
-script = ExtResource("2_bd")
-id = "block_a1_001"
-position = Vector3(0, 0, 1700)
-height = 3200.0
+[sub_resource type="Resource" id="Resource_m1w6v"]
+script = ExtResource("1_e4cvp")
+id = "gbx_001"
+position = Vector3(-2148.8804, 0, -3022.3904)
+height = 2167.1252
 district = "A1"
-silhouette_scene_path = "res://world/silhouettes/blocks/block_a1_001_silhouette.tscn"
-content_scene_path = "res://world/content/blocks/block_a1_001/block_a1_001.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
+strata_ids = {
+"doggerland": "gbx_001-DG",
+"glare": "gbx_001-GL",
+"manifold": "gbx_001-MF"
+}
 
-[sub_resource type="Resource" id="Resource_block_a1_004"]
-script = ExtResource("2_bd")
-id = "block_a1_004"
-position = Vector3(-2200, 0, -1600)
-height = 3200.0
+[sub_resource type="Resource" id="Resource_msege"]
+script = ExtResource("1_e4cvp")
+id = "gbx_002"
+position = Vector3(-1476.3433, 0, -2925.2937)
+height = 1483.6133
 district = "A1"
-silhouette_scene_path = "res://world/silhouettes/blocks/block_a1_004_silhouette.tscn"
-content_scene_path = "res://world/content/blocks/block_a1_004/block_a1_004.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_035_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_035/block_gbx_035.tscn"
+strata_ids = {
+"doggerland": "gbx_002-DG",
+"glare": "gbx_002-GL",
+"manifold": "gbx_002-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r0_c0"]
-script = ExtResource("3_gt")
-content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+[sub_resource type="Resource" id="Resource_3v5xq"]
+script = ExtResource("1_e4cvp")
+id = "gbx_003"
+position = Vector3(-3036.574, 0, -2285.406)
+height = 2439.4648
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_005_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_005/block_gbx_005.tscn"
+strata_ids = {
+"doggerland": "gbx_003-DG",
+"glare": "gbx_003-GL",
+"manifold": "gbx_003-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r0_c1"]
-script = ExtResource("3_gt")
-col = 1
-content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+[sub_resource type="Resource" id="Resource_1h1a2"]
+script = ExtResource("1_e4cvp")
+id = "gbx_004"
+position = Vector3(-2269.7742, 0, -2171.272)
+height = 1502.5962
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tscn"
+strata_ids = {
+"doggerland": "gbx_004-DG",
+"glare": "gbx_004-GL",
+"manifold": "gbx_004-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r0_c2"]
-script = ExtResource("3_gt")
-col = 2
-content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+[sub_resource type="Resource" id="Resource_0d14d"]
+script = ExtResource("1_e4cvp")
+id = "gbx_005"
+position = Vector3(-1463.0022, 0, -2207.0605)
+height = 650.0981
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_037_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_037/block_gbx_037.tscn"
+strata_ids = {
+"doggerland": "gbx_005-DG",
+"manifold": "gbx_005-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r1_c0"]
-script = ExtResource("3_gt")
-row = 1
-content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+[sub_resource type="Resource" id="Resource_keauj"]
+script = ExtResource("1_e4cvp")
+id = "gbx_006"
+position = Vector3(-3031.7927, 0, -1353.4379)
+height = 1505.3528
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_039_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_039/block_gbx_039.tscn"
+strata_ids = {
+"doggerland": "gbx_006-DG",
+"glare": "gbx_006-GL",
+"manifold": "gbx_006-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r1_c1"]
-script = ExtResource("3_gt")
-row = 1
-col = 1
-content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+[sub_resource type="Resource" id="Resource_0s121"]
+script = ExtResource("1_e4cvp")
+id = "gbx_007"
+position = Vector3(-2253.0105, 0, -1523.8834)
+height = 1345.4865
+district = "A1"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
+strata_ids = {
+"doggerland": "gbx_007-DG",
+"glare": "gbx_007-GL",
+"manifold": "gbx_007-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r1_c2"]
-script = ExtResource("3_gt")
-row = 1
-col = 2
-content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+[sub_resource type="Resource" id="Resource_0gn5r"]
+script = ExtResource("1_e4cvp")
+id = "gbx_008"
+position = Vector3(-760.4535, 0, -2883.2058)
+height = 1242.4083
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
+strata_ids = {
+"doggerland": "gbx_008-DG",
+"glare": "gbx_008-GL",
+"manifold": "gbx_008-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r2_c0"]
-script = ExtResource("3_gt")
-row = 2
-content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+[sub_resource type="Resource" id="Resource_e721p"]
+script = ExtResource("1_e4cvp")
+id = "gbx_009"
+position = Vector3(714.23975, 0, -2927.8887)
+height = 932.25183
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
+strata_ids = {
+"doggerland": "gbx_009-DG",
+"manifold": "gbx_009-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r2_c1"]
-script = ExtResource("3_gt")
-row = 2
-col = 1
-content_scene_path = "res://world/content/ground_tiles/gt_content_b.tscn"
+[sub_resource type="Resource" id="Resource_4lwtn"]
+script = ExtResource("1_e4cvp")
+id = "gbx_010"
+position = Vector3(-603.08325, 0, -2253.9033)
+height = 2439.4648
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_005_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_005/block_gbx_005.tscn"
+strata_ids = {
+"doggerland": "gbx_010-DG",
+"glare": "gbx_010-GL",
+"manifold": "gbx_010-MF"
+}
 
-[sub_resource type="Resource" id="Resource_gt_r2_c2"]
-script = ExtResource("3_gt")
-row = 2
-col = 2
-content_scene_path = "res://world/content/ground_tiles/gt_content_a.tscn"
+[sub_resource type="Resource" id="Resource_r6yy8"]
+script = ExtResource("1_e4cvp")
+id = "gbx_011"
+position = Vector3(-4.773509, 0, -2224.8381)
+height = 932.25183
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
+strata_ids = {
+"doggerland": "gbx_011-DG",
+"manifold": "gbx_011-MF"
+}
+
+[sub_resource type="Resource" id="Resource_xg1b1"]
+script = ExtResource("1_e4cvp")
+id = "gbx_012"
+position = Vector3(-786.28174, 0, -1476.3336)
+height = 981.80334
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_012_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_012/block_gbx_012.tscn"
+strata_ids = {
+"doggerland": "gbx_012-DG",
+"manifold": "gbx_012-MF"
+}
+
+[sub_resource type="Resource" id="Resource_ry6a7"]
+script = ExtResource("1_e4cvp")
+id = "gbx_013"
+position = Vector3(39.97063, 0, -1513.635)
+height = 736.76025
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_036_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_036/block_gbx_036.tscn"
+strata_ids = {
+"doggerland": "gbx_013-DG",
+"manifold": "gbx_013-MF"
+}
+
+[sub_resource type="Resource" id="Resource_nrsnq"]
+script = ExtResource("1_e4cvp")
+id = "gbx_014"
+position = Vector3(697.04175, 0, -1409.2715)
+height = 1483.6133
+district = "A2"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_035_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_035/block_gbx_035.tscn"
+strata_ids = {
+"doggerland": "gbx_014-DG",
+"glare": "gbx_014-GL",
+"manifold": "gbx_014-MF"
+}
+
+[sub_resource type="Resource" id="Resource_mg0i4"]
+script = ExtResource("1_e4cvp")
+id = "gbx_015"
+position = Vector3(1501.815, 0, -2951.3586)
+height = 1897.3019
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_032_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_032/block_gbx_032.tscn"
+strata_ids = {
+"doggerland": "gbx_015-DG",
+"glare": "gbx_015-GL",
+"manifold": "gbx_015-MF"
+}
+
+[sub_resource type="Resource" id="Resource_u4ku0"]
+script = ExtResource("1_e4cvp")
+id = "gbx_016"
+position = Vector3(2107.5505, 0, -2848.5247)
+height = 2281.2043
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_001_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_001/block_gbx_001.tscn"
+strata_ids = {
+"doggerland": "gbx_016-DG",
+"glare": "gbx_016-GL",
+"manifold": "gbx_016-MF"
+}
+
+[sub_resource type="Resource" id="Resource_ddot7"]
+script = ExtResource("1_e4cvp")
+id = "gbx_017"
+position = Vector3(2923.844, 0, -2937.4375)
+height = 692.76825
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_038_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_038/block_gbx_038.tscn"
+strata_ids = {
+"doggerland": "gbx_017-DG",
+"manifold": "gbx_017-MF"
+}
+
+[sub_resource type="Resource" id="Resource_su1e6"]
+script = ExtResource("1_e4cvp")
+id = "gbx_018"
+position = Vector3(1417.8468, 0, -2250.4456)
+height = 2013.8278
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
+strata_ids = {
+"doggerland": "gbx_018-DG",
+"glare": "gbx_018-GL",
+"manifold": "gbx_018-MF"
+}
+
+[sub_resource type="Resource" id="Resource_8m7wj"]
+script = ExtResource("1_e4cvp")
+id = "gbx_019"
+position = Vector3(2290.718, 0, -2163.221)
+height = 1925.1792
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_019_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_019/block_gbx_019.tscn"
+strata_ids = {
+"doggerland": "gbx_019-DG",
+"glare": "gbx_019-GL",
+"manifold": "gbx_019-MF"
+}
+
+[sub_resource type="Resource" id="Resource_5oak0"]
+script = ExtResource("1_e4cvp")
+id = "gbx_020"
+position = Vector3(2945.4768, 0, -2177.2097)
+height = 725.05804
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
+strata_ids = {
+"doggerland": "gbx_020-DG",
+"manifold": "gbx_020-MF"
+}
+
+[sub_resource type="Resource" id="Resource_ybfrt"]
+script = ExtResource("1_e4cvp")
+id = "gbx_021"
+position = Vector3(1454.4395, 0, -1464.837)
+height = 711.7572
+district = "A3"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_028_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_028/block_gbx_028.tscn"
+strata_ids = {
+"doggerland": "gbx_021-DG",
+"manifold": "gbx_021-MF"
+}
+
+[sub_resource type="Resource" id="Resource_iott4"]
+script = ExtResource("1_e4cvp")
+id = "gbx_022"
+position = Vector3(-2250.0305, 0, -738.24426)
+height = 1925.1792
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_019_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_019/block_gbx_019.tscn"
+strata_ids = {
+"doggerland": "gbx_022-DG",
+"glare": "gbx_022-GL",
+"manifold": "gbx_022-MF"
+}
+
+[sub_resource type="Resource" id="Resource_6bwk8"]
+script = ExtResource("1_e4cvp")
+id = "gbx_023"
+position = Vector3(-1504.8447, 0, -687.72235)
+height = 725.05804
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
+strata_ids = {
+"doggerland": "gbx_023-DG",
+"manifold": "gbx_023-MF"
+}
+
+[sub_resource type="Resource" id="Resource_noiwr"]
+script = ExtResource("1_e4cvp")
+id = "gbx_024"
+position = Vector3(-2971.8098, 0, 77.16133)
+height = 1927.6503
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
+strata_ids = {
+"doggerland": "gbx_024-DG",
+"glare": "gbx_024-GL",
+"manifold": "gbx_024-MF"
+}
+
+[sub_resource type="Resource" id="Resource_8mrrg"]
+script = ExtResource("1_e4cvp")
+id = "gbx_025"
+position = Vector3(-2195.0444, 0, -11.096244)
+height = 1242.4083
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
+strata_ids = {
+"doggerland": "gbx_025-DG",
+"glare": "gbx_025-GL",
+"manifold": "gbx_025-MF"
+}
+
+[sub_resource type="Resource" id="Resource_vq61x"]
+script = ExtResource("1_e4cvp")
+id = "gbx_026"
+position = Vector3(-2863.4094, 0, 818.58105)
+height = 2167.1252
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
+strata_ids = {
+"doggerland": "gbx_026-DG",
+"glare": "gbx_026-GL",
+"manifold": "gbx_026-MF"
+}
+
+[sub_resource type="Resource" id="Resource_tsxtl"]
+script = ExtResource("1_e4cvp")
+id = "gbx_027"
+position = Vector3(-2283.382, 0, 790.0219)
+height = 2461.5933
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
+strata_ids = {
+"doggerland": "gbx_027-DG",
+"glare": "gbx_027-GL",
+"manifold": "gbx_027-MF"
+}
+
+[sub_resource type="Resource" id="Resource_lmndv"]
+script = ExtResource("1_e4cvp")
+id = "gbx_028"
+position = Vector3(-1445.3086, 0, 728.55)
+height = 389.74405
+district = "A4"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_025_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_025/block_gbx_025.tscn"
+strata_ids = {
+"doggerland": "gbx_028-DG"
+}
+
+[sub_resource type="Resource" id="Resource_1247l"]
+script = ExtResource("1_e4cvp")
+id = "gbx_029"
+position = Vector3(-757.87177, 0, -723.60846)
+height = 722.75555
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_031_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_031/block_gbx_031.tscn"
+strata_ids = {
+"doggerland": "gbx_029-DG",
+"manifold": "gbx_029-MF"
+}
+
+[sub_resource type="Resource" id="Resource_ac613"]
+script = ExtResource("1_e4cvp")
+id = "gbx_030"
+position = Vector3(775.5875, 0, -714.67914)
+height = 932.25183
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
+strata_ids = {
+"doggerland": "gbx_030-DG",
+"manifold": "gbx_030-MF"
+}
+
+[sub_resource type="Resource" id="Resource_52jsq"]
+script = ExtResource("1_e4cvp")
+id = "gbx_031"
+position = Vector3(-778.13416, 0, 14.152089)
+height = 675.2047
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_004_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_004/block_gbx_004.tscn"
+strata_ids = {
+"doggerland": "gbx_031-DG",
+"manifold": "gbx_031-MF"
+}
+
+[sub_resource type="Resource" id="Resource_2hbg3"]
+script = ExtResource("1_e4cvp")
+id = "gbx_032"
+position = Vector3(8.907651, 0, -20.33703)
+height = 386.88544
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_014/block_gbx_014.tscn"
+strata_ids = {
+"doggerland": "gbx_032-DG"
+}
+
+[sub_resource type="Resource" id="Resource_jm7bu"]
+script = ExtResource("1_e4cvp")
+id = "gbx_033"
+position = Vector3(644.4142, 0, 75.60253)
+height = 2461.5933
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
+strata_ids = {
+"doggerland": "gbx_033-DG",
+"glare": "gbx_033-GL",
+"manifold": "gbx_033-MF"
+}
+
+[sub_resource type="Resource" id="Resource_f6kgm"]
+script = ExtResource("1_e4cvp")
+id = "gbx_034"
+position = Vector3(-686.6198, 0, 725.19)
+height = 725.05804
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
+strata_ids = {
+"doggerland": "gbx_034-DG",
+"manifold": "gbx_034-MF"
+}
+
+[sub_resource type="Resource" id="Resource_rkw6m"]
+script = ExtResource("1_e4cvp")
+id = "gbx_035"
+position = Vector3(84.29544, 0, 749.6734)
+height = 2013.8278
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
+strata_ids = {
+"doggerland": "gbx_035-DG",
+"glare": "gbx_035-GL",
+"manifold": "gbx_035-MF"
+}
+
+[sub_resource type="Resource" id="Resource_83lhi"]
+script = ExtResource("1_e4cvp")
+id = "gbx_036"
+position = Vector3(806.82544, 0, 720.49677)
+height = 2013.8278
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
+strata_ids = {
+"doggerland": "gbx_036-DG",
+"glare": "gbx_036-GL",
+"manifold": "gbx_036-MF"
+}
+
+[sub_resource type="Resource" id="Resource_kj3ki"]
+script = ExtResource("1_e4cvp")
+id = "gbx_037"
+position = Vector3(2210.0557, 0, -742.3078)
+height = 1345.4865
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
+strata_ids = {
+"doggerland": "gbx_037-DG",
+"glare": "gbx_037-GL",
+"manifold": "gbx_037-MF"
+}
+
+[sub_resource type="Resource" id="Resource_qxrh6"]
+script = ExtResource("1_e4cvp")
+id = "gbx_038"
+position = Vector3(2963.9128, 0, -762.00653)
+height = 1324.8495
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
+strata_ids = {
+"doggerland": "gbx_038-DG",
+"glare": "gbx_038-GL",
+"manifold": "gbx_038-MF"
+}
+
+[sub_resource type="Resource" id="Resource_smtyo"]
+script = ExtResource("1_e4cvp")
+id = "gbx_039"
+position = Vector3(1484.7816, 0, 4.78553)
+height = 1373.2423
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_003/block_gbx_003.tscn"
+strata_ids = {
+"doggerland": "gbx_039-DG",
+"glare": "gbx_039-GL",
+"manifold": "gbx_039-MF"
+}
+
+[sub_resource type="Resource" id="Resource_d1yb5"]
+script = ExtResource("1_e4cvp")
+id = "gbx_040"
+position = Vector3(2125.6309, 0, 54.932167)
+height = 1502.5962
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tscn"
+strata_ids = {
+"doggerland": "gbx_040-DG",
+"glare": "gbx_040-GL",
+"manifold": "gbx_040-MF"
+}
+
+[sub_resource type="Resource" id="Resource_vrb70"]
+script = ExtResource("1_e4cvp")
+id = "gbx_041"
+position = Vector3(2999.2551, 0, -44.103146)
+height = 1897.3019
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_032_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_032/block_gbx_032.tscn"
+strata_ids = {
+"doggerland": "gbx_041-DG",
+"glare": "gbx_041-GL",
+"manifold": "gbx_041-MF"
+}
+
+[sub_resource type="Resource" id="Resource_fhyh2"]
+script = ExtResource("1_e4cvp")
+id = "gbx_042"
+position = Vector3(1459.3069, 0, 729.95715)
+height = 332.81235
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_016_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_016/block_gbx_016.tscn"
+strata_ids = {
+"doggerland": "gbx_042-DG"
+}
+
+[sub_resource type="Resource" id="Resource_i70ks"]
+script = ExtResource("1_e4cvp")
+id = "gbx_043"
+position = Vector3(2887.6067, 0, 694.589)
+height = 1927.6503
+district = "A6"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
+strata_ids = {
+"doggerland": "gbx_043-DG",
+"glare": "gbx_043-GL",
+"manifold": "gbx_043-MF"
+}
+
+[sub_resource type="Resource" id="Resource_weqsb"]
+script = ExtResource("1_e4cvp")
+id = "gbx_044"
+position = Vector3(-2912.8237, 0, 1503.5419)
+height = 2281.2043
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_001_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_001/block_gbx_001.tscn"
+strata_ids = {
+"doggerland": "gbx_044-DG",
+"glare": "gbx_044-GL",
+"manifold": "gbx_044-MF"
+}
+
+[sub_resource type="Resource" id="Resource_asta7"]
+script = ExtResource("1_e4cvp")
+id = "gbx_045"
+position = Vector3(-2206.984, 0, 1431.7877)
+height = 2081.3406
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
+strata_ids = {
+"doggerland": "gbx_045-DG",
+"glare": "gbx_045-GL",
+"manifold": "gbx_045-MF"
+}
+
+[sub_resource type="Resource" id="Resource_gmy23"]
+script = ExtResource("1_e4cvp")
+id = "gbx_046"
+position = Vector3(-1420.7516, 0, 1456.1748)
+height = 1028.0521
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_017_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_017/block_gbx_017.tscn"
+strata_ids = {
+"doggerland": "gbx_046-DG",
+"glare": "gbx_046-GL",
+"manifold": "gbx_046-MF"
+}
+
+[sub_resource type="Resource" id="Resource_jl8e0"]
+script = ExtResource("1_e4cvp")
+id = "gbx_047"
+position = Vector3(-2935.1587, 0, 2163.916)
+height = 1164.7511
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_033_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_033/block_gbx_033.tscn"
+strata_ids = {
+"doggerland": "gbx_047-DG",
+"glare": "gbx_047-GL",
+"manifold": "gbx_047-MF"
+}
+
+[sub_resource type="Resource" id="Resource_wakq5"]
+script = ExtResource("1_e4cvp")
+id = "gbx_048"
+position = Vector3(-1492.3518, 0, 2185.1267)
+height = 1927.6503
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
+strata_ids = {
+"doggerland": "gbx_048-DG",
+"glare": "gbx_048-GL",
+"manifold": "gbx_048-MF"
+}
+
+[sub_resource type="Resource" id="Resource_w1r2h"]
+script = ExtResource("1_e4cvp")
+id = "gbx_049"
+position = Vector3(-2935.0447, 0, 2944.423)
+height = 692.76825
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_038_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_038/block_gbx_038.tscn"
+strata_ids = {
+"doggerland": "gbx_049-DG",
+"manifold": "gbx_049-MF"
+}
+
+[sub_resource type="Resource" id="Resource_uxxe8"]
+script = ExtResource("1_e4cvp")
+id = "gbx_050"
+position = Vector3(-2237.4646, 0, 2951.726)
+height = 2461.5933
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
+strata_ids = {
+"doggerland": "gbx_050-DG",
+"glare": "gbx_050-GL",
+"manifold": "gbx_050-MF"
+}
+
+[sub_resource type="Resource" id="Resource_aymqd"]
+script = ExtResource("1_e4cvp")
+id = "gbx_051"
+position = Vector3(-1501.8462, 0, 2902.6504)
+height = 2081.3406
+district = "A7"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
+strata_ids = {
+"doggerland": "gbx_051-DG",
+"glare": "gbx_051-GL",
+"manifold": "gbx_051-MF"
+}
+
+[sub_resource type="Resource" id="Resource_ksg8s"]
+script = ExtResource("1_e4cvp")
+id = "gbx_052"
+position = Vector3(61.665802, 0, 1458.7318)
+height = 2081.3406
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
+strata_ids = {
+"doggerland": "gbx_052-DG",
+"glare": "gbx_052-GL",
+"manifold": "gbx_052-MF"
+}
+
+[sub_resource type="Resource" id="Resource_yxb7w"]
+script = ExtResource("1_e4cvp")
+id = "gbx_053"
+position = Vector3(728.2876, 0, 1473.2308)
+height = 1324.8495
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
+strata_ids = {
+"doggerland": "gbx_053-DG",
+"glare": "gbx_053-GL",
+"manifold": "gbx_053-MF"
+}
+
+[sub_resource type="Resource" id="Resource_pwrvf"]
+script = ExtResource("1_e4cvp")
+id = "gbx_054"
+position = Vector3(-709.7609, 0, 2171.2966)
+height = 2167.1252
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
+strata_ids = {
+"doggerland": "gbx_054-DG",
+"glare": "gbx_054-GL",
+"manifold": "gbx_054-MF"
+}
+
+[sub_resource type="Resource" id="Resource_rlngp"]
+script = ExtResource("1_e4cvp")
+id = "gbx_055"
+position = Vector3(9.337172, 0, 2186.9775)
+height = 499.55087
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_030_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_030/block_gbx_030.tscn"
+strata_ids = {
+"doggerland": "gbx_055-DG"
+}
+
+[sub_resource type="Resource" id="Resource_xwti0"]
+script = ExtResource("1_e4cvp")
+id = "gbx_056"
+position = Vector3(728.66565, 0, 2203.502)
+height = 332.81235
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_016_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_016/block_gbx_016.tscn"
+strata_ids = {
+"doggerland": "gbx_056-DG"
+}
+
+[sub_resource type="Resource" id="Resource_24jmf"]
+script = ExtResource("1_e4cvp")
+id = "gbx_057"
+position = Vector3(-785.9055, 0, 3025.4055)
+height = 991.9223
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_007_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_007/block_gbx_007.tscn"
+strata_ids = {
+"doggerland": "gbx_057-DG",
+"manifold": "gbx_057-MF"
+}
+
+[sub_resource type="Resource" id="Resource_7ujl7"]
+script = ExtResource("1_e4cvp")
+id = "gbx_058"
+position = Vector3(-39.541645, 0, 2948.015)
+height = 1164.7511
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_033_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_033/block_gbx_033.tscn"
+strata_ids = {
+"doggerland": "gbx_058-DG",
+"glare": "gbx_058-GL",
+"manifold": "gbx_058-MF"
+}
+
+[sub_resource type="Resource" id="Resource_b2jsp"]
+script = ExtResource("1_e4cvp")
+id = "gbx_059"
+position = Vector3(770.70575, 0, 2924.784)
+height = 1242.4083
+district = "A8"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
+strata_ids = {
+"doggerland": "gbx_059-DG",
+"glare": "gbx_059-GL",
+"manifold": "gbx_059-MF"
+}
+
+[sub_resource type="Resource" id="Resource_q588c"]
+script = ExtResource("1_e4cvp")
+id = "gbx_060"
+position = Vector3(1513.3245, 0, 1482.5238)
+height = 386.88544
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_014/block_gbx_014.tscn"
+strata_ids = {
+"doggerland": "gbx_060-DG"
+}
+
+[sub_resource type="Resource" id="Resource_0vbv1"]
+script = ExtResource("1_e4cvp")
+id = "gbx_061"
+position = Vector3(2256.981, 0, 1388.8217)
+height = 2520.9744
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_034_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_034/block_gbx_034.tscn"
+strata_ids = {
+"doggerland": "gbx_061-DG",
+"glare": "gbx_061-GL",
+"manifold": "gbx_061-MF"
+}
+
+[sub_resource type="Resource" id="Resource_ktvyj"]
+script = ExtResource("1_e4cvp")
+id = "gbx_062"
+position = Vector3(2917.768, 0, 1507.455)
+height = 1345.4865
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
+strata_ids = {
+"doggerland": "gbx_062-DG",
+"glare": "gbx_062-GL",
+"manifold": "gbx_062-MF"
+}
+
+[sub_resource type="Resource" id="Resource_7ic77"]
+script = ExtResource("1_e4cvp")
+id = "gbx_063"
+position = Vector3(1417.904, 0, 2156.9714)
+height = 1324.8495
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
+strata_ids = {
+"doggerland": "gbx_063-DG",
+"glare": "gbx_063-GL",
+"manifold": "gbx_063-MF"
+}
+
+[sub_resource type="Resource" id="Resource_bhq7q"]
+script = ExtResource("1_e4cvp")
+id = "gbx_064"
+position = Vector3(2945.5203, 0, 2286.6787)
+height = 2461.5933
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
+strata_ids = {
+"doggerland": "gbx_064-DG",
+"glare": "gbx_064-GL",
+"manifold": "gbx_064-MF"
+}
+
+[sub_resource type="Resource" id="Resource_i2pch"]
+script = ExtResource("1_e4cvp")
+id = "gbx_065"
+position = Vector3(1431.0764, 0, 2886.042)
+height = 2081.3406
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
+strata_ids = {
+"doggerland": "gbx_065-DG",
+"glare": "gbx_065-GL",
+"manifold": "gbx_065-MF"
+}
+
+[sub_resource type="Resource" id="Resource_qr6en"]
+script = ExtResource("1_e4cvp")
+id = "gbx_066"
+position = Vector3(2164.596, 0, 2854.233)
+height = 2167.1252
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
+strata_ids = {
+"doggerland": "gbx_066-DG",
+"glare": "gbx_066-GL",
+"manifold": "gbx_066-MF"
+}
+
+[sub_resource type="Resource" id="Resource_5dvqv"]
+script = ExtResource("1_e4cvp")
+id = "gbx_067"
+position = Vector3(2909.3682, 0, 2936.27)
+height = 675.2047
+district = "A9"
+silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_004_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/greybox/block_gbx_004/block_gbx_004.tscn"
+strata_ids = {
+"doggerland": "gbx_067-DG",
+"manifold": "gbx_067-MF"
+}
 
 [resource]
-script = ExtResource("1_wd")
-blocks = Array[ExtResource("2_bd")]([SubResource("Resource_block_a1_003"), SubResource("Resource_block_a1_001"), SubResource("Resource_block_a1_004")])
-ground_tiles = Array[ExtResource("3_gt")]([SubResource("Resource_gt_r0_c0"), SubResource("Resource_gt_r0_c1"), SubResource("Resource_gt_r0_c2"), SubResource("Resource_gt_r1_c0"), SubResource("Resource_gt_r1_c1"), SubResource("Resource_gt_r1_c2"), SubResource("Resource_gt_r2_c0"), SubResource("Resource_gt_r2_c1"), SubResource("Resource_gt_r2_c2")])
-spawn_point = Vector3(0, 0, 200)
+script = ExtResource("3_ke6ng")
+blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_ffflj"), SubResource("Resource_m1w6v"), SubResource("Resource_msege"), SubResource("Resource_3v5xq"), SubResource("Resource_1h1a2"), SubResource("Resource_0d14d"), SubResource("Resource_keauj"), SubResource("Resource_0s121"), SubResource("Resource_0gn5r"), SubResource("Resource_e721p"), SubResource("Resource_4lwtn"), SubResource("Resource_r6yy8"), SubResource("Resource_xg1b1"), SubResource("Resource_ry6a7"), SubResource("Resource_nrsnq"), SubResource("Resource_mg0i4"), SubResource("Resource_u4ku0"), SubResource("Resource_ddot7"), SubResource("Resource_su1e6"), SubResource("Resource_8m7wj"), SubResource("Resource_5oak0"), SubResource("Resource_ybfrt"), SubResource("Resource_iott4"), SubResource("Resource_6bwk8"), SubResource("Resource_noiwr"), SubResource("Resource_8mrrg"), SubResource("Resource_vq61x"), SubResource("Resource_tsxtl"), SubResource("Resource_lmndv"), SubResource("Resource_1247l"), SubResource("Resource_ac613"), SubResource("Resource_52jsq"), SubResource("Resource_2hbg3"), SubResource("Resource_jm7bu"), SubResource("Resource_f6kgm"), SubResource("Resource_rkw6m"), SubResource("Resource_83lhi"), SubResource("Resource_kj3ki"), SubResource("Resource_qxrh6"), SubResource("Resource_smtyo"), SubResource("Resource_d1yb5"), SubResource("Resource_vrb70"), SubResource("Resource_fhyh2"), SubResource("Resource_i70ks"), SubResource("Resource_weqsb"), SubResource("Resource_asta7"), SubResource("Resource_gmy23"), SubResource("Resource_jl8e0"), SubResource("Resource_wakq5"), SubResource("Resource_w1r2h"), SubResource("Resource_uxxe8"), SubResource("Resource_aymqd"), SubResource("Resource_ksg8s"), SubResource("Resource_yxb7w"), SubResource("Resource_pwrvf"), SubResource("Resource_rlngp"), SubResource("Resource_xwti0"), SubResource("Resource_24jmf"), SubResource("Resource_7ujl7"), SubResource("Resource_b2jsp"), SubResource("Resource_q588c"), SubResource("Resource_0vbv1"), SubResource("Resource_ktvyj"), SubResource("Resource_7ic77"), SubResource("Resource_bhq7q"), SubResource("Resource_i2pch"), SubResource("Resource_qr6en"), SubResource("Resource_5dvqv")])
+spawn_point = Vector3(0, 25, 0)

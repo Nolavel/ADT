@@ -1,41 +1,37 @@
 [gd_scene format=3 uid="uid://dypp6y2betgga"]
 
-[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_ju2r6"]
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_ju2r6"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
-albedo_texture = ExtResource("1_ju2r6")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_lksw3"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_ju2r6"]
+material = ExtResource("1_ju2r6")
 size = Vector3(232.30318, 84.42592, 107.88616)
 
-[sub_resource type="BoxMesh" id="BoxMesh_n2mlp"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_lksw3"]
+material = ExtResource("1_ju2r6")
 size = Vector3(201.11966, 160.36444, 195.03813)
 
-[sub_resource type="BoxMesh" id="BoxMesh_wywfu"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_n2mlp"]
+material = ExtResource("1_ju2r6")
 size = Vector3(145.92343, 84.41995, 146.47623)
 
-[sub_resource type="BoxMesh" id="BoxMesh_w6h1m"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_wywfu"]
+material = ExtResource("1_ju2r6")
 size = Vector3(248.48384, 94.19316, 184.03706)
 
-[node name="LayerManifold" type="Node3D" unique_id=1543825918]
+[node name="LayerManifold" type="Node3D" unique_id=987969628]
 
-[node name="Shape1" type="MeshInstance3D" parent="." unique_id=327268013]
+[node name="Shape1" type="MeshInstance3D" parent="." unique_id=606794469]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.720604, 1110.2548, -12.552303)
+mesh = SubResource("BoxMesh_ju2r6")
+
+[node name="Shape2" type="MeshInstance3D" parent="." unique_id=898551153]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51.67647, 1119.9032, 64.50641)
 mesh = SubResource("BoxMesh_lksw3")
 
-[node name="Shape2" type="MeshInstance3D" parent="." unique_id=1136948093]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -51.67647, 1119.9032, 64.50641)
+[node name="Shape3" type="MeshInstance3D" parent="." unique_id=1364155112]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.53145, 1069.4181, 27.974358)
 mesh = SubResource("BoxMesh_n2mlp")
 
-[node name="Shape3" type="MeshInstance3D" parent="." unique_id=1054218199]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.53145, 1069.4181, 27.974358)
-mesh = SubResource("BoxMesh_wywfu")
-
-[node name="Shape4" type="MeshInstance3D" parent="." unique_id=630647752]
+[node name="Shape4" type="MeshInstance3D" parent="." unique_id=2056572905]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 92.567, 1128.476, -71.20025)
-mesh = SubResource("BoxMesh_w6h1m")
+mesh = SubResource("BoxMesh_wywfu")

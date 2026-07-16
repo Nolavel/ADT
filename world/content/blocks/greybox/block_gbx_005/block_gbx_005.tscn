@@ -1,28 +1,24 @@
 [gd_scene format=3 uid="uid://bfeclgrmpkbug"]
 
-[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_lq7ke"]
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_lq7ke"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
-albedo_texture = ExtResource("1_lq7ke")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_v0lqp"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_lq7ke"]
+material = ExtResource("1_lq7ke")
 size = Vector3(44.253365, 2974.957, 36.12639)
 
-[node name="BlockGbx005" type="Node3D" unique_id=1027437441]
+[node name="BlockGbx005" type="Node3D" unique_id=220618615]
 metadata/gbx_size = Vector3(295.02243, 2974.957, 240.84259)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "content"
 
-[node name="Shared" type="Node3D" parent="." unique_id=251590769]
+[node name="Shared" type="Node3D" parent="." unique_id=27212990]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=642935484]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1141228299]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1487.4785, 0)
-mesh = SubResource("BoxMesh_v0lqp")
+mesh = SubResource("BoxMesh_lq7ke")
 
-[node name="LayerDoggerland" type="Node3D" parent="." unique_id=2042805764 instance_placeholder="res://world/content/blocks/greybox/block_gbx_005/layer_doggerland.tscn"]
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=640418851 instance_placeholder="res://world/content/blocks/greybox/block_gbx_005/layer_doggerland.tscn"]
 
-[node name="LayerManifold" type="Node3D" parent="." unique_id=1384089264 instance_placeholder="res://world/content/blocks/greybox/block_gbx_005/layer_manifold.tscn"]
+[node name="LayerManifold" type="Node3D" parent="." unique_id=864966635 instance_placeholder="res://world/content/blocks/greybox/block_gbx_005/layer_manifold.tscn"]
 
-[node name="LayerGlare" type="Node3D" parent="." unique_id=90787640 instance_placeholder="res://world/content/blocks/greybox/block_gbx_005/layer_glare.tscn"]
+[node name="LayerGlare" type="Node3D" parent="." unique_id=1471896895 instance_placeholder="res://world/content/blocks/greybox/block_gbx_005/layer_glare.tscn"]

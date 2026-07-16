@@ -1,20 +1,16 @@
 [gd_scene format=3 uid="uid://cw3lgb5klqhxw"]
 
-[ext_resource type="Texture2D" uid="uid://bsw2ip0l7l3go" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_01.png" id="1_rncbm"]
+[ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_rncbm"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_36sre"]
-albedo_texture = ExtResource("1_rncbm")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_agwlh"]
-material = SubResource("StandardMaterial3D_36sre")
+[sub_resource type="BoxMesh" id="BoxMesh_rncbm"]
+material = ExtResource("1_rncbm")
 size = Vector3(231.58658, 2081.3406, 262.37103)
 
-[node name="BlockGbx021Silhouette" type="Node3D" unique_id=1856274445]
+[node name="BlockGbx021Silhouette" type="Node3D" unique_id=1023613197]
 metadata/gbx_size = Vector3(231.58658, 2081.3406, 262.37103)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1693566172]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=381180508]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1040.6703, 0)
-mesh = SubResource("BoxMesh_agwlh")
+mesh = SubResource("BoxMesh_rncbm")

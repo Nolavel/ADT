@@ -1,26 +1,22 @@
 [gd_scene format=3 uid="uid://csho3s2lxmeay"]
 
-[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_u2353"]
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_u2353"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
-albedo_texture = ExtResource("1_u2353")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_4m8tc"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_u2353"]
+material = ExtResource("1_u2353")
 size = Vector3(41.204872, 1383.1086, 78.32767)
 
-[node name="BlockGbx022" type="Node3D" unique_id=1114763236]
+[node name="BlockGbx022" type="Node3D" unique_id=1429815927]
 metadata/gbx_size = Vector3(274.69916, 1383.1086, 522.18445)
 metadata/gbx_strata_top = "Manifold"
 metadata/gbx_kind = "content"
 
-[node name="Shared" type="Node3D" parent="." unique_id=1503236331]
+[node name="Shared" type="Node3D" parent="." unique_id=1848932861]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=470864062]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1371069388]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 691.5543, 0)
-mesh = SubResource("BoxMesh_4m8tc")
+mesh = SubResource("BoxMesh_u2353")
 
-[node name="LayerDoggerland" type="Node3D" parent="." unique_id=416192297 instance_placeholder="res://world/content/blocks/greybox/block_gbx_022/layer_doggerland.tscn"]
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=1955647624 instance_placeholder="res://world/content/blocks/greybox/block_gbx_022/layer_doggerland.tscn"]
 
-[node name="LayerManifold" type="Node3D" parent="." unique_id=343247415 instance_placeholder="res://world/content/blocks/greybox/block_gbx_022/layer_manifold.tscn"]
+[node name="LayerManifold" type="Node3D" parent="." unique_id=657700894 instance_placeholder="res://world/content/blocks/greybox/block_gbx_022/layer_manifold.tscn"]

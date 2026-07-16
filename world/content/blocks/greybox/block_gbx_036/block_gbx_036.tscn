@@ -1,24 +1,20 @@
 [gd_scene format=3 uid="uid://bwv5gb63rqaj7"]
 
-[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_mwplq"]
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_mwplq"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jjcxl"]
-albedo_texture = ExtResource("1_mwplq")
-uv1_triplanar = true
-
-[sub_resource type="BoxMesh" id="BoxMesh_71qpd"]
-material = SubResource("StandardMaterial3D_jjcxl")
+[sub_resource type="BoxMesh" id="BoxMesh_mwplq"]
+material = ExtResource("1_mwplq")
 size = Vector3(46.527668, 898.4881, 84.94954)
 
-[node name="BlockGbx036" type="Node3D" unique_id=1022348381]
+[node name="BlockGbx036" type="Node3D" unique_id=1827505571]
 metadata/gbx_size = Vector3(310.18445, 898.4881, 566.33026)
 metadata/gbx_strata_top = "Doggerland"
 metadata/gbx_kind = "content"
 
-[node name="Shared" type="Node3D" parent="." unique_id=1333896]
+[node name="Shared" type="Node3D" parent="." unique_id=1545728317]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1317172162]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=192260856]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 449.24405, 0)
-mesh = SubResource("BoxMesh_71qpd")
+mesh = SubResource("BoxMesh_mwplq")
 
-[node name="LayerDoggerland" type="Node3D" parent="." unique_id=110121509 instance_placeholder="res://world/content/blocks/greybox/block_gbx_036/layer_doggerland.tscn"]
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=155236043 instance_placeholder="res://world/content/blocks/greybox/block_gbx_036/layer_doggerland.tscn"]
