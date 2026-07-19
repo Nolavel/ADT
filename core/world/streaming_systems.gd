@@ -181,7 +181,12 @@ func _process(_delta: float) -> void:
 	if not _initialized or not is_instance_valid(_player):
 		return
 
-	var player_pos: Vector3 = _player.global_position
+	# Якорь стриминга: пешком — игрок; в ховере — сам ховер (капсула игрока
+	# на борту выключена и неподвижна, следить за ней бессмысленно).
+	var anchor: Node3D = _player
+	if is_instance_valid(PlayerState.current_hover):
+		anchor = PlayerState.current_hover
+	var player_pos: Vector3 = anchor.global_position
 	WorldSystems.update_player_position(player_pos)
 
 	if DEBUG_LOAD_ALL:

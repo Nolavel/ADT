@@ -26,11 +26,11 @@ class_name HoverBase
 
 @export_group("Horizontal")
 ## Максимальная горизонтальная скорость, м/с.
-@export var max_speed: float = 30.0
+@export var max_speed: float = 120.0
 ## Разгон, м/с². Ниже max — ощущение массы.
-@export var acceleration: float = 18.0
+@export var acceleration: float = 58.0
 ## Торможение при отсутствии ввода, м/с² (сильнее разгона — отзывчивый стоп).
-@export var braking: float = 26.0
+@export var braking: float = 46.0
 
 @export_group("Turning")
 ## Скорость доворота корпуса к направлению движения, рад/с.
