@@ -10,6 +10,14 @@ enum ViewMode { TPS, ISOMETRIC }
 var mode: Mode = Mode.ON_FOOT
 var view_mode: ViewMode = ViewMode.ISOMETRIC
 
+## Персистентный под-режим камеры ховера (HoverCameraComponent.HoverView):
+## переживает выход-вход в транспорт. 0 = CHASE, 1 = COCKPIT.
+var hover_camera_view: int = 0
+
+## Текущий ховер игрока (корень HoverBase). null вне транспорта.
+## Пишет HoverEntryTrigger, читает camera_follow при входе в Mode.HOVER.
+var current_hover: Node3D = null
+
 ## Режим, который был активен до входа в MENU — чтобы корректно вернуться
 var _mode_before_menu: Mode = Mode.ON_FOOT
 

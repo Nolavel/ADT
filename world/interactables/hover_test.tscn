@@ -36,3 +36,9 @@ shape = SubResource("BoxShape3D_bx8n8")
 
 [node name="InputHoverController" type="Node" parent="." unique_id=1790197098]
 script = ExtResource("3_bqrf5")
+
+[node name="DoorSide" type="Marker3D" parent="." unique_id=374519188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 1.2)
+
+[node name="CockpitAnchor" type="Marker3D" parent="." unique_id=2010392621]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1466064, 0.9, 0.023489356)
