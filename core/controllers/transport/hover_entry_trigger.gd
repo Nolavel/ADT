@@ -46,7 +46,7 @@ var _state: State = State.IDLE
 var _hover: Node3D = null
 var _player: Node3D = null            # игрок в зоне (IDLE) или на борту
 var _door_anchor: Marker3D = null
-
+var _controller: InputHoverController = null
 
 func _ready() -> void:
 	_hover = get_node(hover_path)
@@ -54,6 +54,8 @@ func _ready() -> void:
 	if _door_anchor == null:
 		push_error("[HoverEntryTrigger] У ховера '%s' нет Marker3D 'DoorAnchor'"
 				% _hover.name)
+				
+	_controller = _hover.get_node_or_null("InputHoverController")
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -116,7 +118,7 @@ func _finish_boarding() -> void:
 	_player.process_mode = Node.PROCESS_MODE_DISABLED
 	_state = State.SEATED
 	print("[HoverEntryTrigger] SEATED в '%s' — interact для выхода" % _hover.name)
-	# TODO(hover_base): передать управление input_hover_controller.
+	if _controller: _controller.set_active(true)
 
 
 # ── Высадка ──────────────────────────────────────────────────────────────────
@@ -129,7 +131,7 @@ func _begin_exiting() -> void:
 
 	_state = State.EXITING
 	print("[HoverEntryTrigger] EXITING из '%s'" % _hover.name)
-	# TODO(hover_base): забрать управление у input_hover_controller.
+	if _controller: _controller.set_active(false)
 
 	_player.global_position = _door_anchor.global_position
 	_player.process_mode = Node.PROCESS_MODE_INHERIT

@@ -2,8 +2,8 @@
 
 > Актуально на: 2026-07-07
 > Engine: Godot 4.7+ / GDScript
-> Источник истины по режимам: `PlayerState.mode` (`ON_FOOT`, `VEHICLE_HOVER`, `TUBE_TRANSIT`, `MENU`),
-> `PlayerState.view_mode` (`TPS`, `ISOMETRIC`, `TOPDOWN`)
+> Источник истины по режимам: `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`, `MENU`),
+> `PlayerState.view_mode` (`TPS`, `ISOMETRIC`)
 >
 > This document is the single source of truth for input bindings. Update it
 > whenever an action is added, removed, or rebound in Project Settings → Input Map.
@@ -130,3 +130,14 @@ The only thing needed at this stage is camera freelook. No other interaction.
 |---|---|---|
 | `weapon_reload` | Висит на R (physical keycode 82) — раньше конфликтовал с `Interact`, конфликт снят переносом `Interact` на F. Оружия в игре пока нет — action держим про запас. |
 | `debug_info` | Оставляем / kept | Служебный дебаг-хоткей, не относится к геймплейному InputMap. |
+
+## 3. HOVER — управление ховером / hover controls
+
+| Action (Godot) | Клавиша / Key | RU описание | EN description |
+|---|---|---|---|
+| `move_forward` / `move_backward` | W / S | Тяга вперёд/назад | Thrust forward/backward |
+| `move_left` / `move_right` | A / D | Стрейф влево/вправо (с креном) | Strafe left/right (banks) |
+| `hover_up` | Space (удержание) | Набор высоты | Ascend |
+| `hover_down` | Ctrl (удержание) | Сброс высоты | Descend |
+| — | (отпустить Space/Ctrl) | Автоудержание высоты | Automatic altitude hold |
+| `Interact` | F | Выход (только при остановке) | Exit (near-zero speed only) |

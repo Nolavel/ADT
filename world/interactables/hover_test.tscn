@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://tfirmx15wush"]
 
+[ext_resource type="Script" uid="uid://bug2rx5notwjq" path="res://core/controllers/transport/base/hover_base.gd" id="1_2s5sk"]
 [ext_resource type="Script" uid="uid://4mhp5bskroil" path="res://core/controllers/transport/hover_entry_trigger.gd" id="1_iqrxv"]
+[ext_resource type="Script" uid="uid://bv5nk3jsp65cg" path="res://core/controllers/transport/base/input_hover_controller.gd" id="3_bqrf5"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_5h11f"]
 size = Vector3(4, 1.5, 2)
@@ -12,6 +14,8 @@ size = Vector3(4, 1.5, 2)
 size = Vector3(2, 2, 2)
 
 [node name="HoverTest" type="CharacterBody3D" unique_id=17550472]
+script = ExtResource("1_2s5sk")
+body_mesh_path = NodePath("MeshInstance3D")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1636169312]
 mesh = SubResource("BoxMesh_5h11f")
@@ -29,3 +33,6 @@ script = ExtResource("1_iqrxv")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HoverEntryTrigger" unique_id=1738602094]
 shape = SubResource("BoxShape3D_bx8n8")
+
+[node name="InputHoverController" type="Node" parent="." unique_id=1790197098]
+script = ExtResource("3_bqrf5")

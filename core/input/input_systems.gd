@@ -210,3 +210,12 @@ func is_lock_on_just_pressed() -> bool:
 	
 func is_switch_shoulder_just_pressed() -> bool:
 	return Input.is_action_just_pressed("switch_shoulder")
+
+## Горизонтальные намерения: x = вправо, y = вперёд (+1), длина ≤ 1.
+func get_move_vector() -> Vector2:
+	return Input.get_vector("move_left", "move_right",
+			"move_backward", "move_forward")
+
+## Вертикальная ось ховера: +1 вверх (hover_up), −1 вниз (hover_down).
+func get_hover_vertical_axis() -> float:
+	return Input.get_axis("hover_down", "hover_up")
