@@ -5,13 +5,15 @@
 [ext_resource type="Script" uid="uid://bv5nk3jsp65cg" path="res://core/controllers/transport/base/input_hover_controller.gd" id="3_bqrf5"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_5h11f"]
-size = Vector3(4, 1.5, 2)
+size = Vector3(2, 1.5, 4)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5h11f"]
-size = Vector3(4, 1.5, 2)
+size = Vector3(2, 1.5, 4)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bx8n8"]
 size = Vector3(2, 2, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bx8n8"]
 
 [node name="HoverTest" type="CharacterBody3D" unique_id=17550472]
 script = ExtResource("1_2s5sk")
@@ -24,11 +26,11 @@ mesh = SubResource("BoxMesh_5h11f")
 shape = SubResource("BoxShape3D_5h11f")
 
 [node name="DoorAnchor" type="Marker3D" parent="." unique_id=1166992580]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -0.92710876)
 
 [node name="HoverEntryTrigger" type="Area3D" parent="." unique_id=1222824727]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 1)
-collision_layer = 1025
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -0.92710876)
+collision_layer = 1024
 script = ExtResource("1_iqrxv")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HoverEntryTrigger" unique_id=1738602094]
@@ -38,7 +40,11 @@ shape = SubResource("BoxShape3D_bx8n8")
 script = ExtResource("3_bqrf5")
 
 [node name="DoorSide" type="Marker3D" parent="." unique_id=374519188]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1.2, 0)
 
 [node name="CockpitAnchor" type="Marker3D" parent="." unique_id=2010392621]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1466064, 0.9, 0.023489356)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -1.8)
+
+[node name="NoseMarker" type="MeshInstance3D" parent="." unique_id=1704101867]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -1.8)
+mesh = SubResource("BoxMesh_bx8n8")

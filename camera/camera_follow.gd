@@ -136,6 +136,8 @@ func _switch_active_component(mode) -> void:
 		PlayerState.Mode.ON_FOOT:
 			_active_component = _on_foot
 		PlayerState.Mode.HOVER:
+			_hover.target = PlayerState.current_hover
+			_hover.camera = self   # если camera не назначается в setup — проверь по аналогии с _on_foot
 			_active_component = _hover
 		PlayerState.Mode.TUBE_TRANSIT:
 			_active_component = _tube_transit

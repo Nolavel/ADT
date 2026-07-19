@@ -91,6 +91,7 @@ func on_interact_claimed() -> void:
 		State.IDLE:
 			if _player != null:
 				_begin_boarding()
+				PlayerState.current_hover = _hover
 		State.SEATED:
 			_begin_exiting()
 		_:
@@ -138,6 +139,7 @@ func _begin_exiting() -> void:
 	_player.visible = true
 
 	PlayerState.mode = PlayerState.Mode.ON_FOOT
+	PlayerState.current_hover = null
 	_state = State.IDLE
 	# Игрок стоит у двери — он всё ещё в Area, поэтому claim сохраняем:
 	# повторный interact = снова посадка. Claim снимется в body_exited.
