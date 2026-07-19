@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://h110anmbrux7" path="res://tools/scan_folder_files/project_stats_ui.gd" id="1_cnwk7"]
 [ext_resource type="Script" uid="uid://hse0ajxh67to" path="res://tools/scan_folder_files/project_scanner.gd" id="2_r84w1"]
+[ext_resource type="FontFile" uid="uid://bl6a6ig5x7lsc" path="res://assets/fonts/BlackRock/BlackRock-Regular.ttf" id="3_4syu8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t6i4e"]
 bg_color = Color(0.6, 0.6, 0.0862745, 0.423529)
@@ -22,9 +23,11 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [sub_resource type="LabelSettings" id="LabelSettings_1k5rj"]
+font = ExtResource("3_4syu8")
 font_size = 20
 
 [sub_resource type="LabelSettings" id="LabelSettings_pv8bp"]
+font = ExtResource("3_4syu8")
 font_size = 20
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7tsvq"]
@@ -35,9 +38,11 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [sub_resource type="LabelSettings" id="LabelSettings_2y2bp"]
+font = ExtResource("3_4syu8")
 font_size = 20
 
 [sub_resource type="LabelSettings" id="LabelSettings_eju87"]
+font = ExtResource("3_4syu8")
 font_size = 20
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gk7ii"]
@@ -48,22 +53,32 @@ corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
 [sub_resource type="LabelSettings" id="LabelSettings_3qumi"]
+font = ExtResource("3_4syu8")
 font_size = 20
 
 [sub_resource type="FontFile" id="FontFile_ibalp"]
 subpixel_positioning = 0
 msdf_pixel_range = 14
 msdf_size = 128
-cache/0/30/0/ascent = 0.0
-cache/0/30/0/descent = 0.0
-cache/0/30/0/underline_position = 0.0
-cache/0/30/0/underline_thickness = 0.0
-cache/0/30/0/scale = 1.0
+cache/0/variation_coordinates = {}
+cache/0/face_index = 0
+cache/0/embolden = 0.0
+cache/0/transform = Transform2D(1, 0, 0, 1, 0, 0)
+cache/0/spacing_top = 0
+cache/0/spacing_bottom = 0
+cache/0/spacing_space = 0
+cache/0/spacing_glyph = 0
+cache/0/baseline_offset = 0.0
 cache/0/16/0/ascent = 0.0
 cache/0/16/0/descent = 0.0
 cache/0/16/0/underline_position = 0.0
 cache/0/16/0/underline_thickness = 0.0
 cache/0/16/0/scale = 1.0
+cache/0/30/0/ascent = 0.0
+cache/0/30/0/descent = 0.0
+cache/0/30/0/underline_position = 0.0
+cache/0/30/0/underline_thickness = 0.0
+cache/0/30/0/scale = 1.0
 cache/0/40/0/ascent = 0.0
 cache/0/40/0/descent = 0.0
 cache/0/40/0/underline_position = 0.0
@@ -76,7 +91,7 @@ font_size = 40
 font_color = Color(1, 0, 0, 1)
 outline_size = 1
 
-[node name="ProjectStats_AND_ExitTrigger" type="Control"]
+[node name="ProjectStats_AND_ExitTrigger" type="Control" unique_id=75388126]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -85,10 +100,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_cnwk7")
 
-[node name="ProjectScanner" type="Node" parent="." groups=["project_scanner"]]
+[node name="ProjectScanner" type="Node" parent="." unique_id=1115666022 groups=["project_scanner"]]
 script = ExtResource("2_r84w1")
 
-[node name="LabelExitScene" type="Label" parent="."]
+[node name="LabelExitScene" type="Label" parent="." unique_id=348549692]
 modulate = Color(1, 1, 1, 0.490196)
 layout_mode = 1
 offset_left = 5.0
@@ -101,7 +116,7 @@ label_settings = SubResource("LabelSettings_4rivu")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PS_PanelUI" type="Panel" parent="."]
+[node name="PS_PanelUI" type="Panel" parent="." unique_id=594951780]
 modulate = Color(1, 1, 1, 0.490196)
 layout_mode = 1
 anchors_preset = -1
@@ -111,45 +126,45 @@ offset_right = 405.0
 offset_bottom = 235.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_o2gge")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PS_PanelUI"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PS_PanelUI" unique_id=1544719110]
 layout_mode = 1
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 117.0
 offset_bottom = 81.0
 
-[node name="FoldersLabel" type="Label" parent="PS_PanelUI/VBoxContainer"]
+[node name="FoldersLabel" type="Label" parent="PS_PanelUI/VBoxContainer" unique_id=831309074]
 layout_mode = 2
-text = "📁 Folders: ..."
+text = "📁 Folders in Project: 143"
 label_settings = SubResource("LabelSettings_1k5rj")
 vertical_alignment = 1
 
-[node name="FilesLabel" type="Label" parent="PS_PanelUI/VBoxContainer"]
+[node name="FilesLabel" type="Label" parent="PS_PanelUI/VBoxContainer" unique_id=90624419]
 layout_mode = 2
-text = "📄 Files: ..."
+text = "📄 Files in Project: 543"
 label_settings = SubResource("LabelSettings_pv8bp")
 vertical_alignment = 1
 
-[node name="LinesLabel" type="Label" parent="PS_PanelUI/VBoxContainer"]
+[node name="LinesLabel" type="Label" parent="PS_PanelUI/VBoxContainer" unique_id=1275351319]
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_7tsvq")
-text = "Scripts & Lines "
+text = "🧾 Scripts: 76 , lines of code: 6277"
 label_settings = SubResource("LabelSettings_2y2bp")
 
-[node name="ScenesLabel" type="Label" parent="PS_PanelUI/VBoxContainer"]
+[node name="ScenesLabel" type="Label" parent="PS_PanelUI/VBoxContainer" unique_id=1537249766]
 layout_mode = 2
-text = "Scenes"
+text = "🎬 Scenes in Project: 188"
 label_settings = SubResource("LabelSettings_eju87")
 vertical_alignment = 1
 
-[node name="SizeLabel" type="Label" parent="PS_PanelUI/VBoxContainer"]
+[node name="SizeLabel" type="Label" parent="PS_PanelUI/VBoxContainer" unique_id=1191389497]
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_gk7ii")
-text = "Size Project"
+text = "📦 Project Size: 34.40 MB"
 label_settings = SubResource("LabelSettings_3qumi")
 vertical_alignment = 1
 
-[node name="LabelCountdown" type="Label" parent="."]
+[node name="LabelCountdown" type="Label" parent="." unique_id=1051744835]
 visible = false
 layout_mode = 1
 anchors_preset = 8

@@ -12,6 +12,9 @@ func _ready():
 	# Label
 	if not stats_label:
 		stats_label = RichTextLabel.new()
+		var font = load("res://assets/fonts/BlackRock/BlackRock-Regular.ttf")
+		stats_label.add_theme_font_override("normal_font", font)
+		stats_label.add_theme_font_size_override("normal_font_size", 20)
 		stats_label.bbcode_enabled = true
 		add_child(stats_label)
 
