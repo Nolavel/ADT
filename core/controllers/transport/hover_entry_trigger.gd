@@ -90,8 +90,8 @@ func on_interact_claimed() -> void:
 	match _state:
 		State.IDLE:
 			if _player != null:
-				_begin_boarding()
 				PlayerState.current_hover = _hover
+				_begin_boarding()
 		State.SEATED:
 			_begin_exiting()
 		_:
@@ -102,7 +102,7 @@ func on_interact_claimed() -> void:
 
 func _begin_boarding() -> void:
 	_state = State.BOARDING
-	PlayerState.mode = PlayerState.Mode.HOVER   # пеший ввод гаснет сразу
+	PlayerState.set_mode(PlayerState.Mode.HOVER)   # пеший ввод гаснет сразу
 	print("[HoverEntryTrigger] BOARDING → '%s'" % _hover.name)
 
 	var tween := create_tween()
@@ -138,7 +138,7 @@ func _begin_exiting() -> void:
 	_player.process_mode = Node.PROCESS_MODE_INHERIT
 	_player.visible = true
 
-	PlayerState.mode = PlayerState.Mode.ON_FOOT
+	PlayerState.set_mode(PlayerState.Mode.ON_FOOT)
 	PlayerState.current_hover = null
 	_state = State.IDLE
 	# Игрок стоит у двери — он всё ещё в Area, поэтому claim сохраняем:

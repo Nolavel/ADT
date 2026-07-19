@@ -7,7 +7,7 @@ extends Node
 enum Mode { ON_FOOT, HOVER, TUBE_TRANSIT, MENU }
 enum ViewMode { TPS, ISOMETRIC }
 
-var mode: Mode = Mode.ON_FOOT
+var mode: Mode = Mode.ON_FOOT   # менять ТОЛЬКО через set_mode()/open_menu()/close_menu()
 var view_mode: ViewMode = ViewMode.ISOMETRIC
 
 ## Персистентный под-режим камеры ховера (HoverCameraComponent.HoverView):
