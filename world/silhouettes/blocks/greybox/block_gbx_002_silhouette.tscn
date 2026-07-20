@@ -2,26 +2,42 @@
 
 [ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_pehin"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_pehin"]
+material = ExtResource("1_pehin")
+size = Vector3(600, 1000, 600)
+
 [sub_resource type="BoxMesh" id="BoxMesh_0tgvt"]
 material = ExtResource("1_pehin")
+size = Vector3(600, 1000, 600)
+
+[sub_resource type="BoxMesh" id="BoxMesh_86dxb"]
+material = ExtResource("1_pehin")
+size = Vector3(600, 824.4983, 600)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5tw5t"]
 size = Vector3(600, 2824.4983, 600)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_86dxb"]
-size = Vector3(600, 2824.4983, 600)
-
-[node name="BlockGbx002Silhouette" type="Node3D" unique_id=2115344123]
+[node name="BlockGbx002Silhouette" type="Node3D" unique_id=1088117618]
 metadata/gbx_size = Vector3(600, 2824.4983, 600)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=168822893]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1412.2491, 0)
+[node name="MeshDoggerland" type="MeshInstance3D" parent="." unique_id=1561864323]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
+mesh = SubResource("BoxMesh_pehin")
+
+[node name="MeshManifold" type="MeshInstance3D" parent="." unique_id=7316272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
 mesh = SubResource("BoxMesh_0tgvt")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1521595245 groups=["wall"]]
+[node name="MeshGlare" type="MeshInstance3D" parent="." unique_id=337528018]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2412.249, 0)
+mesh = SubResource("BoxMesh_86dxb")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=868212282 groups=["wall"]]
 collision_layer = 4
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=710909221]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=311217293]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1412.2491, 0)
-shape = SubResource("BoxShape3D_86dxb")
+shape = SubResource("BoxShape3D_5tw5t")

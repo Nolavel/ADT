@@ -4,24 +4,40 @@
 
 [sub_resource type="BoxMesh" id="BoxMesh_t8wr7"]
 material = ExtResource("1_t8wr7")
+size = Vector3(400, 1000, 400)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xkbl1"]
+material = ExtResource("1_t8wr7")
+size = Vector3(400, 1000, 400)
+
+[sub_resource type="BoxMesh" id="BoxMesh_4ook1"]
+material = ExtResource("1_t8wr7")
+size = Vector3(400, 670.56006, 400)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dimkn"]
 size = Vector3(400, 2670.56, 400)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_xkbl1"]
-size = Vector3(400, 2670.56, 400)
-
-[node name="BlockGbx009Silhouette" type="Node3D" unique_id=1400818139]
+[node name="BlockGbx009Silhouette" type="Node3D" unique_id=1986319301]
 metadata/gbx_size = Vector3(400, 2670.56, 400)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1344642302]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1335.28, 0)
+[node name="MeshDoggerland" type="MeshInstance3D" parent="." unique_id=748529529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
 mesh = SubResource("BoxMesh_t8wr7")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1142833194 groups=["wall"]]
+[node name="MeshManifold" type="MeshInstance3D" parent="." unique_id=1675686304]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
+mesh = SubResource("BoxMesh_xkbl1")
+
+[node name="MeshGlare" type="MeshInstance3D" parent="." unique_id=1029701965]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2335.28, 0)
+mesh = SubResource("BoxMesh_4ook1")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1458584906 groups=["wall"]]
 collision_layer = 4
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=360652871]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1455848083]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1335.28, 0)
-shape = SubResource("BoxShape3D_xkbl1")
+shape = SubResource("BoxShape3D_dimkn")

@@ -253,9 +253,11 @@ func _save_content_scene(path: String, block_id: String, size: Vector3,
 	return _pack_and_save(root, path)
 
 
-## Силуэт: тёмный габаритный объём (нижняя грань на y=0, размер точно как у
-## контента) + постоянная коллизия — StaticBody3D в группе "wall" (физслой 3,
-## project.godot), никогда не выгружается конвейером стриминга.
+## Силуэт: один сегмент-меш на каждую достигнутую страту (нижняя грань блока
+## на y=0, каждый сегмент точно заполняет свою высотную полосу) — сегменты
+## скрываются/показываются независимо, когда игрок проходит сквозь блок по
+## страте. Коллизия НЕ сегментируется — один сплошной StaticBody3D на весь
+## size, группа "wall" (физслой 3, project.godot), никогда не выгружается.
 func _save_silhouette_scene(path: String, block_id: String, size: Vector3,
 		strata_top: String, mat: StandardMaterial3D) -> bool:
 
@@ -265,16 +267,20 @@ func _save_silhouette_scene(path: String, block_id: String, size: Vector3,
 	root.set_meta("gbx_strata_top", strata_top)
 	root.set_meta("gbx_kind", "silhouette")
 
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	mesh.material = mat
+	for stratum in _strata_reached(size.y):
+		var band := _strata_band(stratum, size.y)
+		var h := band.y - band.x
 
-	var mi := MeshInstance3D.new()
-	mi.name = "MeshInstance3D"
-	mi.mesh = mesh
-	mi.position = Vector3(0.0, size.y * 0.5, 0.0)
-	root.add_child(mi)
-	mi.owner = root
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(size.x, h, size.z)
+		mesh.material = mat
+
+		var mi := MeshInstance3D.new()
+		mi.name = "Mesh%s" % stratum
+		mi.mesh = mesh
+		mi.position = Vector3(0.0, band.x + h * 0.5, 0.0)
+		root.add_child(mi)
+		mi.owner = root
 
 	var body := StaticBody3D.new()
 	body.name = "StaticBody3D"

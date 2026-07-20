@@ -2,26 +2,42 @@
 
 [ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_nu4tg"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_nu4tg"]
+material = ExtResource("1_nu4tg")
+size = Vector3(450, 1000, 400)
+
 [sub_resource type="BoxMesh" id="BoxMesh_oqo8d"]
 material = ExtResource("1_nu4tg")
+size = Vector3(450, 1000, 400)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cgbaf"]
+material = ExtResource("1_nu4tg")
+size = Vector3(450, 728.1262, 400)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_qvg6t"]
 size = Vector3(450, 2728.1262, 400)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_cgbaf"]
-size = Vector3(450, 2728.1262, 400)
-
-[node name="BlockGbx011Silhouette" type="Node3D" unique_id=284120978]
+[node name="BlockGbx011Silhouette" type="Node3D" unique_id=1709557479]
 metadata/gbx_size = Vector3(450, 2728.1262, 400)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2121238307]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1364.0631, 0)
+[node name="MeshDoggerland" type="MeshInstance3D" parent="." unique_id=375716904]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
+mesh = SubResource("BoxMesh_nu4tg")
+
+[node name="MeshManifold" type="MeshInstance3D" parent="." unique_id=879243630]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
 mesh = SubResource("BoxMesh_oqo8d")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1216540948 groups=["wall"]]
+[node name="MeshGlare" type="MeshInstance3D" parent="." unique_id=733129327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2364.063, 0)
+mesh = SubResource("BoxMesh_cgbaf")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=260898427 groups=["wall"]]
 collision_layer = 4
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1489156565]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=972943081]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1364.0631, 0)
-shape = SubResource("BoxShape3D_cgbaf")
+shape = SubResource("BoxShape3D_qvg6t")

@@ -16,6 +16,7 @@ size = Vector3(2, 2, 2)
 [sub_resource type="BoxMesh" id="BoxMesh_bx8n8"]
 
 [node name="HoverTest" type="CharacterBody3D" unique_id=17550472]
+collision_mask = 5
 script = ExtResource("1_2s5sk")
 body_mesh_path = NodePath("MeshInstance3D")
 

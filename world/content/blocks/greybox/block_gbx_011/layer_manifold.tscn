@@ -2,12 +2,12 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_rmo4p"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_a4n7m"]
+[sub_resource type="BoxMesh" id="BoxMesh_rmo4p"]
 material = ExtResource("1_rmo4p")
 size = Vector3(450, 1000, 400)
 
-[node name="LayerManifold" type="Node3D" unique_id=1132597510]
+[node name="LayerManifold" type="Node3D" unique_id=856628100]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=250290126]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1715712745]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
-mesh = SubResource("BoxMesh_a4n7m")
+mesh = SubResource("BoxMesh_rmo4p")

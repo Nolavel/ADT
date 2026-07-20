@@ -460,7 +460,7 @@ func _add_content(cell: StreamCell, packed: PackedScene) -> void:
 	instance.global_position = cell.position
 	cell.content_node = instance
 
-	if is_instance_valid(cell.silhouette_node):
+	if cell.type == CellType.GROUND_TILE and is_instance_valid(cell.silhouette_node):
 		cell.silhouette_node.visible = false   # физика силуэта продолжает жить
 
 	_set_state(cell, CellState.ACTIVE)
@@ -472,13 +472,17 @@ func _add_content(cell: StreamCell, packed: PackedScene) -> void:
 func _unload_content(cell: StreamCell) -> void:
 	if is_instance_valid(cell.content_node):
 		cell.content_node.queue_free()   # слой-инстанс освобождается вместе с ним
-	cell.content_node   = null
+	cell.content_node = null
+
+	if cell.type == CellType.BLOCK and not cell.layer_strata.is_empty():
+		_set_silhouette_segment(cell, cell.layer_strata, true)
+
 	cell.layer_instance = null
 	cell.layer_strata   = ""
 	cell.pending_strata = ""
 	cell.pending_path   = ""
 
-	if is_instance_valid(cell.silhouette_node):
+	if cell.type == CellType.GROUND_TILE and is_instance_valid(cell.silhouette_node):
 		cell.silhouette_node.visible = true
 
 	if cell.state != CellState.UNLOADED:
@@ -501,6 +505,7 @@ func _request_layer(cell: StreamCell, strata: String) -> void:
 	if is_instance_valid(cell.layer_instance):
 		cell.layer_instance.queue_free()
 		layer_changed.emit(cell.id, cell.layer_strata, false)
+		_set_silhouette_segment(cell, cell.layer_strata, true)
 	cell.layer_instance = null
 	cell.layer_strata   = ""
 
@@ -546,8 +551,22 @@ func _pump_layers(budget: int) -> void:
 			cell.layer_instance = placeholder.create_instance(false, packed)
 			cell.layer_strata   = cell.pending_strata
 			layer_changed.emit(cell.id, cell.layer_strata, true)
+			_set_silhouette_segment(cell, cell.layer_strata, false)
 		cell.pending_strata = ""
 		cell.pending_path   = ""
+
+
+## Прячет/показывает один сегмент силуэта квартала ("Mesh" + Strata) —
+## сегменты скрываются/показываются независимо друг от друга по мере того,
+## как материализуется/выгружается соответствующий страт-слой контента.
+## Коллизия силуэта не сегментирована и этой функцией не затрагивается.
+func _set_silhouette_segment(cell: StreamCell, strata: String, seg_visible: bool) -> void:
+	if not is_instance_valid(cell.silhouette_node):
+		return
+	var seg := cell.silhouette_node.get_node_or_null("Mesh" + strata)
+	if seg == null:
+		return
+	seg.visible = seg_visible
 
 
 ## Контракт имён: нода InstancePlaceholder в корне контент-сцены квартала

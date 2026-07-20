@@ -6,8 +6,8 @@
 material = ExtResource("1_vpnh7")
 size = Vector3(400, 1000, 600)
 
-[node name="LayerDoggerland" type="Node3D" unique_id=987701879]
+[node name="LayerDoggerland" type="Node3D" unique_id=1390919249]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1236789601]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=445706251]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
 mesh = SubResource("BoxMesh_vpnh7")

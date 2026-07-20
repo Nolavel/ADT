@@ -2,12 +2,12 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_qobu0"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_ei4ko"]
+[sub_resource type="BoxMesh" id="BoxMesh_qobu0"]
 material = ExtResource("1_qobu0")
 size = Vector3(500, 743.87646, 500)
 
-[node name="LayerGlare" type="Node3D" unique_id=1843195501]
+[node name="LayerGlare" type="Node3D" unique_id=686028500]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1043176635]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=209427618]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2371.9382, 0)
-mesh = SubResource("BoxMesh_ei4ko")
+mesh = SubResource("BoxMesh_qobu0")

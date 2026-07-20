@@ -6,8 +6,8 @@
 material = ExtResource("1_2nnqt")
 size = Vector3(400, 1000, 600)
 
-[node name="LayerManifold" type="Node3D" unique_id=1238142908]
+[node name="LayerManifold" type="Node3D" unique_id=819825646]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1752443708]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=336035066]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
 mesh = SubResource("BoxMesh_2nnqt")

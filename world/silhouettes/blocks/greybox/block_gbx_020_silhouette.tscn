@@ -2,26 +2,42 @@
 
 [ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_jocn5"]
 
+[sub_resource type="BoxMesh" id="BoxMesh_jocn5"]
+material = ExtResource("1_jocn5")
+size = Vector3(600, 1000, 500)
+
 [sub_resource type="BoxMesh" id="BoxMesh_5cv1s"]
 material = ExtResource("1_jocn5")
+size = Vector3(600, 1000, 500)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dg7ek"]
+material = ExtResource("1_jocn5")
+size = Vector3(600, 796.04004, 500)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_c2lyt"]
 size = Vector3(600, 2796.04, 500)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_dg7ek"]
-size = Vector3(600, 2796.04, 500)
-
-[node name="BlockGbx020Silhouette" type="Node3D" unique_id=390256692]
+[node name="BlockGbx020Silhouette" type="Node3D" unique_id=417144257]
 metadata/gbx_size = Vector3(600, 2796.04, 500)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1106194022]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1398.02, 0)
+[node name="MeshDoggerland" type="MeshInstance3D" parent="." unique_id=49875135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
+mesh = SubResource("BoxMesh_jocn5")
+
+[node name="MeshManifold" type="MeshInstance3D" parent="." unique_id=570158818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
 mesh = SubResource("BoxMesh_5cv1s")
 
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=841366679 groups=["wall"]]
+[node name="MeshGlare" type="MeshInstance3D" parent="." unique_id=1741477494]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2398.02, 0)
+mesh = SubResource("BoxMesh_dg7ek")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1571447155 groups=["wall"]]
 collision_layer = 4
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1581907467]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1856848135]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1398.02, 0)
-shape = SubResource("BoxShape3D_dg7ek")
+shape = SubResource("BoxShape3D_c2lyt")

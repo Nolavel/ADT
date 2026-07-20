@@ -6,8 +6,8 @@
 material = ExtResource("1_p4n1b")
 size = Vector3(400, 1000, 400)
 
-[node name="LayerManifold" type="Node3D" unique_id=1491613466]
+[node name="LayerManifold" type="Node3D" unique_id=1675528774]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=790567778]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1593753993]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
 mesh = SubResource("BoxMesh_p4n1b")

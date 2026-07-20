@@ -8,13 +8,12 @@
 script = ExtResource("1_e4cvp")
 id = "gbx_001"
 position = Vector3(-2148.8804, 0, -3022.3904)
-height = 2441.6921
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
 strata_ids = {
 "doggerland": "gbx_001-DG",
-"glare": "gbx_001-GL",
 "manifold": "gbx_001-MF"
 }
 
@@ -22,13 +21,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_002"
 position = Vector3(-1476.3433, 0, -2925.2937)
-height = 2965.837
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_035_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_035/block_gbx_035.tscn"
 strata_ids = {
 "doggerland": "gbx_002-DG",
-"glare": "gbx_002-GL",
 "manifold": "gbx_002-MF"
 }
 
@@ -36,13 +34,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_003"
 position = Vector3(-3036.574, 0, -2285.406)
-height = 2780.4785
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_005_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_005/block_gbx_005.tscn"
 strata_ids = {
 "doggerland": "gbx_003-DG",
-"glare": "gbx_003-GL",
 "manifold": "gbx_003-MF"
 }
 
@@ -50,13 +47,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_004"
 position = Vector3(-2269.7742, 0, -2171.272)
-height = 2340.7554
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tscn"
 strata_ids = {
 "doggerland": "gbx_004-DG",
-"glare": "gbx_004-GL",
 "manifold": "gbx_004-MF"
 }
 
@@ -64,13 +60,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_005"
 position = Vector3(-1463.0022, 0, -2207.0605)
-height = 2928.4556
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_037_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_037/block_gbx_037.tscn"
 strata_ids = {
 "doggerland": "gbx_005-DG",
-"glare": "gbx_005-GL",
 "manifold": "gbx_005-MF"
 }
 
@@ -78,13 +73,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_006"
 position = Vector3(-3031.7927, 0, -1353.4379)
-height = 2654.4277
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_039_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_039/block_gbx_039.tscn"
 strata_ids = {
 "doggerland": "gbx_006-DG",
-"glare": "gbx_006-GL",
 "manifold": "gbx_006-MF"
 }
 
@@ -92,13 +86,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_007"
 position = Vector3(-2253.0105, 0, -1523.8834)
-height = 2221.2646
+height = 1000.0
 district = "A1"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
 strata_ids = {
 "doggerland": "gbx_007-DG",
-"glare": "gbx_007-GL",
 "manifold": "gbx_007-MF"
 }
 
@@ -106,13 +99,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_008"
 position = Vector3(-760.4535, 0, -2883.2058)
-height = 2433.0356
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
 strata_ids = {
 "doggerland": "gbx_008-DG",
-"glare": "gbx_008-GL",
 "manifold": "gbx_008-MF"
 }
 
@@ -120,13 +112,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_009"
 position = Vector3(714.23975, 0, -2927.8887)
-height = 2829.0188
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
 strata_ids = {
 "doggerland": "gbx_009-DG",
-"glare": "gbx_009-GL",
 "manifold": "gbx_009-MF"
 }
 
@@ -134,13 +125,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_010"
 position = Vector3(-603.08325, 0, -2253.9033)
-height = 2780.4785
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_005_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_005/block_gbx_005.tscn"
 strata_ids = {
 "doggerland": "gbx_010-DG",
-"glare": "gbx_010-GL",
 "manifold": "gbx_010-MF"
 }
 
@@ -148,13 +138,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_011"
 position = Vector3(-4.773509, 0, -2224.8381)
-height = 2829.0188
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
 strata_ids = {
 "doggerland": "gbx_011-DG",
-"glare": "gbx_011-GL",
 "manifold": "gbx_011-MF"
 }
 
@@ -162,13 +151,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_012"
 position = Vector3(-786.28174, 0, -1476.3336)
-height = 2648.8472
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_012_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_012/block_gbx_012.tscn"
 strata_ids = {
 "doggerland": "gbx_012-DG",
-"glare": "gbx_012-GL",
 "manifold": "gbx_012-MF"
 }
 
@@ -176,13 +164,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_013"
 position = Vector3(39.97063, 0, -1513.635)
-height = 2386.989
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_036_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_036/block_gbx_036.tscn"
 strata_ids = {
 "doggerland": "gbx_013-DG",
-"glare": "gbx_013-GL",
 "manifold": "gbx_013-MF"
 }
 
@@ -190,13 +177,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_014"
 position = Vector3(697.04175, 0, -1409.2715)
-height = 2965.837
+height = 1000.0
 district = "A2"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_035_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_035/block_gbx_035.tscn"
 strata_ids = {
 "doggerland": "gbx_014-DG",
-"glare": "gbx_014-GL",
 "manifold": "gbx_014-MF"
 }
 
@@ -204,13 +190,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_015"
 position = Vector3(1501.815, 0, -2951.3586)
-height = 2458.0037
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_032_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_032/block_gbx_032.tscn"
 strata_ids = {
 "doggerland": "gbx_015-DG",
-"glare": "gbx_015-GL",
 "manifold": "gbx_015-MF"
 }
 
@@ -218,13 +203,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_016"
 position = Vector3(2107.5505, 0, -2848.5247)
-height = 2999.427
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_001_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_001/block_gbx_001.tscn"
 strata_ids = {
 "doggerland": "gbx_016-DG",
-"glare": "gbx_016-GL",
 "manifold": "gbx_016-MF"
 }
 
@@ -232,13 +216,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_017"
 position = Vector3(2923.844, 0, -2937.4375)
-height = 2688.2432
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_038_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_038/block_gbx_038.tscn"
 strata_ids = {
 "doggerland": "gbx_017-DG",
-"glare": "gbx_017-GL",
 "manifold": "gbx_017-MF"
 }
 
@@ -246,13 +229,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_018"
 position = Vector3(1417.8468, 0, -2250.4456)
-height = 2968.5427
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
 strata_ids = {
 "doggerland": "gbx_018-DG",
-"glare": "gbx_018-GL",
 "manifold": "gbx_018-MF"
 }
 
@@ -260,13 +242,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_019"
 position = Vector3(2290.718, 0, -2163.221)
-height = 2522.8909
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_019_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_019/block_gbx_019.tscn"
 strata_ids = {
 "doggerland": "gbx_019-DG",
-"glare": "gbx_019-GL",
 "manifold": "gbx_019-MF"
 }
 
@@ -274,13 +255,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_020"
 position = Vector3(2945.4768, 0, -2177.2097)
-height = 2670.56
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
 strata_ids = {
 "doggerland": "gbx_020-DG",
-"glare": "gbx_020-GL",
 "manifold": "gbx_020-MF"
 }
 
@@ -288,13 +268,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_021"
 position = Vector3(1454.4395, 0, -1464.837)
-height = 2751.8486
+height = 1000.0
 district = "A3"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_028_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_028/block_gbx_028.tscn"
 strata_ids = {
 "doggerland": "gbx_021-DG",
-"glare": "gbx_021-GL",
 "manifold": "gbx_021-MF"
 }
 
@@ -302,13 +281,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_022"
 position = Vector3(-2250.0305, 0, -738.24426)
-height = 2522.8909
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_019_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_019/block_gbx_019.tscn"
 strata_ids = {
 "doggerland": "gbx_022-DG",
-"glare": "gbx_022-GL",
 "manifold": "gbx_022-MF"
 }
 
@@ -316,13 +294,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_023"
 position = Vector3(-1504.8447, 0, -687.72235)
-height = 2670.56
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
 strata_ids = {
 "doggerland": "gbx_023-DG",
-"glare": "gbx_023-GL",
 "manifold": "gbx_023-MF"
 }
 
@@ -330,13 +307,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_024"
 position = Vector3(-2971.8098, 0, 77.16133)
-height = 2299.667
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
 strata_ids = {
 "doggerland": "gbx_024-DG",
-"glare": "gbx_024-GL",
 "manifold": "gbx_024-MF"
 }
 
@@ -344,13 +320,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_025"
 position = Vector3(-2195.0444, 0, -11.096244)
-height = 2433.0356
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
 strata_ids = {
 "doggerland": "gbx_025-DG",
-"glare": "gbx_025-GL",
 "manifold": "gbx_025-MF"
 }
 
@@ -358,13 +333,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_026"
 position = Vector3(-2863.4094, 0, 818.58105)
-height = 2441.6921
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
 strata_ids = {
 "doggerland": "gbx_026-DG",
-"glare": "gbx_026-GL",
 "manifold": "gbx_026-MF"
 }
 
@@ -372,13 +346,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_027"
 position = Vector3(-2283.382, 0, 790.0219)
-height = 2542.599
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
 strata_ids = {
 "doggerland": "gbx_027-DG",
-"glare": "gbx_027-GL",
 "manifold": "gbx_027-MF"
 }
 
@@ -386,13 +359,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_028"
 position = Vector3(-1445.3086, 0, 728.55)
-height = 2225.0098
+height = 1000.0
 district = "A4"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_025_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_025/block_gbx_025.tscn"
 strata_ids = {
 "doggerland": "gbx_028-DG",
-"glare": "gbx_028-GL",
 "manifold": "gbx_028-MF"
 }
 
@@ -400,13 +372,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_029"
 position = Vector3(-757.87177, 0, -723.60846)
-height = 2701.0786
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_031_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_031/block_gbx_031.tscn"
 strata_ids = {
 "doggerland": "gbx_029-DG",
-"glare": "gbx_029-GL",
 "manifold": "gbx_029-MF"
 }
 
@@ -414,13 +385,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_030"
 position = Vector3(775.5875, 0, -714.67914)
-height = 2829.0188
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
 strata_ids = {
 "doggerland": "gbx_030-DG",
-"glare": "gbx_030-GL",
 "manifold": "gbx_030-MF"
 }
 
@@ -428,27 +398,25 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_031"
 position = Vector3(-778.13416, 0, 14.152089)
-height = 2873.018
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_004_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_004/block_gbx_004.tscn"
 strata_ids = {
 "doggerland": "gbx_031-DG",
-"glare": "gbx_031-GL",
 "manifold": "gbx_031-MF"
 }
 
 [sub_resource type="Resource" id="Resource_lmndv"]
 script = ExtResource("1_e4cvp")
 id = "gbx_032"
-position = Vector3(8.907651, 0, -20.33703)
-height = 2621.8398
+position = Vector3(-1242.2578, 0, 2470.3574)
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_014/block_gbx_014.tscn"
 strata_ids = {
 "doggerland": "gbx_032-DG",
-"glare": "gbx_032-GL",
 "manifold": "gbx_032-MF"
 }
 
@@ -456,13 +424,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_033"
 position = Vector3(644.4142, 0, 75.60253)
-height = 2542.599
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
 strata_ids = {
 "doggerland": "gbx_033-DG",
-"glare": "gbx_033-GL",
 "manifold": "gbx_033-MF"
 }
 
@@ -470,13 +437,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_034"
 position = Vector3(-686.6198, 0, 725.19)
-height = 2670.56
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
 strata_ids = {
 "doggerland": "gbx_034-DG",
-"glare": "gbx_034-GL",
 "manifold": "gbx_034-MF"
 }
 
@@ -484,13 +450,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_035"
 position = Vector3(84.29544, 0, 749.6734)
-height = 2968.5427
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
 strata_ids = {
 "doggerland": "gbx_035-DG",
-"glare": "gbx_035-GL",
 "manifold": "gbx_035-MF"
 }
 
@@ -498,13 +463,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_036"
 position = Vector3(806.82544, 0, 720.49677)
-height = 2968.5427
+height = 1000.0
 district = "A5"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
 strata_ids = {
 "doggerland": "gbx_036-DG",
-"glare": "gbx_036-GL",
 "manifold": "gbx_036-MF"
 }
 
@@ -512,13 +476,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_037"
 position = Vector3(2210.0557, 0, -742.3078)
-height = 2221.2646
+height = 1000.0
 district = "A6"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
 strata_ids = {
 "doggerland": "gbx_037-DG",
-"glare": "gbx_037-GL",
 "manifold": "gbx_037-MF"
 }
 
@@ -526,13 +489,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_038"
 position = Vector3(2963.9128, 0, -762.00653)
-height = 2989.0728
+height = 1000.0
 district = "A6"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
 strata_ids = {
 "doggerland": "gbx_038-DG",
-"glare": "gbx_038-GL",
 "manifold": "gbx_038-MF"
 }
 
@@ -540,13 +502,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_039"
 position = Vector3(1484.7816, 0, 4.78553)
-height = 2349.369
+height = 1000.0
 district = "A6"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_003/block_gbx_003.tscn"
 strata_ids = {
 "doggerland": "gbx_039-DG",
-"glare": "gbx_039-GL",
 "manifold": "gbx_039-MF"
 }
 
@@ -554,13 +515,12 @@ strata_ids = {
 script = ExtResource("1_e4cvp")
 id = "gbx_040"
 position = Vector3(2125.6309, 0, 54.932167)
-height = 2340.7554
+height = 1000.0
 district = "A6"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
 content_scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tscn"
 strata_ids = {
 "doggerland": "gbx_040-DG",
-"glare": "gbx_040-GL",
 "manifold": "gbx_040-MF"
 }
 
@@ -625,4 +585,4 @@ silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r2_c
 script = ExtResource("3_ke6ng")
 blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_e4cvp"), SubResource("Resource_xy5s7"), SubResource("Resource_ke6ng"), SubResource("Resource_ffflj"), SubResource("Resource_m1w6v"), SubResource("Resource_msege"), SubResource("Resource_3v5xq"), SubResource("Resource_1h1a2"), SubResource("Resource_0d14d"), SubResource("Resource_keauj"), SubResource("Resource_0s121"), SubResource("Resource_0gn5r"), SubResource("Resource_e721p"), SubResource("Resource_4lwtn"), SubResource("Resource_r6yy8"), SubResource("Resource_xg1b1"), SubResource("Resource_ry6a7"), SubResource("Resource_nrsnq"), SubResource("Resource_mg0i4"), SubResource("Resource_u4ku0"), SubResource("Resource_ddot7"), SubResource("Resource_su1e6"), SubResource("Resource_8m7wj"), SubResource("Resource_5oak0"), SubResource("Resource_ybfrt"), SubResource("Resource_iott4"), SubResource("Resource_6bwk8"), SubResource("Resource_noiwr"), SubResource("Resource_8mrrg"), SubResource("Resource_vq61x"), SubResource("Resource_tsxtl"), SubResource("Resource_lmndv"), SubResource("Resource_1247l"), SubResource("Resource_ac613"), SubResource("Resource_52jsq"), SubResource("Resource_2hbg3"), SubResource("Resource_jm7bu"), SubResource("Resource_f6kgm"), SubResource("Resource_rkw6m"), SubResource("Resource_83lhi")])
 ground_tiles = Array[ExtResource("2_xy5s7")]([SubResource("Resource_kj3ki"), SubResource("Resource_qxrh6"), SubResource("Resource_smtyo"), SubResource("Resource_d1yb5"), SubResource("Resource_vrb70"), SubResource("Resource_fhyh2"), SubResource("Resource_i70ks"), SubResource("Resource_weqsb"), SubResource("Resource_asta7")])
-spawn_point = Vector3(-105.35486, 0, -702.84686)
+spawn_point = Vector3(226.80664, 0, -137.20831)
