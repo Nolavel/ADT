@@ -4,18 +4,18 @@
 
 [sub_resource type="BoxMesh" id="BoxMesh_2nnqt"]
 material = ExtResource("1_2nnqt")
-size = Vector3(307.93005, 612.0577, 276.47034)
+size = Vector3(300, 1000, 300)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ked4d"]
 material = ExtResource("1_2nnqt")
-size = Vector3(223.44057, 289.73587, 254.96394)
+size = Vector3(330, 550, 330)
 
 [node name="LayerManifold" type="Node3D" unique_id=824350389]
 
 [node name="Shape1" type="MeshInstance3D" parent="." unique_id=1967879739]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.3640137, 1347.4813, -38.990158)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
 mesh = SubResource("BoxMesh_2nnqt")
 
 [node name="Shape2" type="MeshInstance3D" parent="." unique_id=584798942]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -87.58781, 1589.5073, 89.372536)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1589.507, 0)
 mesh = SubResource("BoxMesh_ked4d")

@@ -3,7 +3,6 @@
 [ext_resource type="Script" uid="uid://yq6u1mda12pc" path="res://core/map_source/map_source.gd" id="1_upnkk"]
 [ext_resource type="Texture2D" uid="uid://cjltkwabuxkyc" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_05.png" id="2_ovdp1"]
 [ext_resource type="Texture2D" uid="uid://p80uqckupev6" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_07.png" id="3_moi5e"]
-[ext_resource type="PackedScene" uid="uid://btyn3081k3ola" path="res://core/map_source/markers/blockhaze_marker.tscn" id="4_ja3h1"]
 [ext_resource type="Script" uid="uid://cr4yuevfslinn" path="res://core/map_source/blockbase.gd" id="5_753aq"]
 [ext_resource type="Script" uid="uid://45ki68uq8hm8" path="res://core/map_source/spawner.gd" id="5_ikph1"]
 [ext_resource type="PackedScene" uid="uid://6cmjmiivbieh" path="res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn" id="6_rf8af"]
@@ -34,13 +33,6 @@
 [ext_resource type="PackedScene" uid="uid://be5kbwolqtuwn" path="res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn" id="29_56tdt"]
 [ext_resource type="PackedScene" uid="uid://dfv54ym0q2bna" path="res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn" id="30_7otay"]
 [ext_resource type="PackedScene" uid="uid://dwkdgbm35pljh" path="res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn" id="31_sahta"]
-[ext_resource type="PackedScene" uid="uid://dyvoq6xnvpidf" path="res://world/silhouettes/blocks/greybox/block_gbx_016_silhouette.tscn" id="32_1oc3b"]
-[ext_resource type="PackedScene" uid="uid://cw3lgb5klqhxw" path="res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn" id="33_laxja"]
-[ext_resource type="PackedScene" uid="uid://c3hahv1pxj6k0" path="res://world/silhouettes/blocks/greybox/block_gbx_017_silhouette.tscn" id="34_5ohfs"]
-[ext_resource type="PackedScene" uid="uid://d2fkr3bumurla" path="res://world/silhouettes/blocks/greybox/block_gbx_033_silhouette.tscn" id="35_ip0lg"]
-[ext_resource type="PackedScene" uid="uid://bb3kbmk6li6kh" path="res://world/silhouettes/blocks/greybox/block_gbx_030_silhouette.tscn" id="36_vf84v"]
-[ext_resource type="PackedScene" uid="uid://poeoqdtk6i6m" path="res://world/silhouettes/blocks/greybox/block_gbx_007_silhouette.tscn" id="37_r0pco"]
-[ext_resource type="PackedScene" uid="uid://ciwg805dxt82w" path="res://world/silhouettes/blocks/greybox/block_gbx_034_silhouette.tscn" id="38_eoiym"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nqtne"]
 size = Vector3(9600, 1000, 9600)
@@ -166,23 +158,16 @@ debug_color = Color(0, 11.708403, 13.469126, 1)
 [node name="BLOCKS" type="Node3D" parent="." unique_id=342622999]
 editor_description = "Placeholders"
 
-[node name="BLOCK-001" parent="BLOCKS" unique_id=1531042291 instance=ExtResource("4_ja3h1")]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 298.47534, 0, 0)
-id = "Block-001"
-
-[node name="GBX_001_block_gbx_024" type="Node3D" parent="BLOCKS" unique_id=1865885037]
+[node name="BLOCK_001_authorial" type="Node3D" parent="BLOCKS" unique_id=1865885037]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2148.8804, 0, -3022.3904)
 script = ExtResource("5_753aq")
 id = "gbx_001"
-block_name = "block_gbx_024"
+block_name = "BLOCK_001_authorial"
 district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_001_block_gbx_024" unique_id=445915333 instance=ExtResource("6_rf8af")]
-metadata/gbx_size = Vector3(232.0527, 2167.1252, 429.7256)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/BLOCK_001_authorial" unique_id=445915333 instance=ExtResource("6_rf8af")]
 
 [node name="GBX_002_block_gbx_035" type="Node3D" parent="BLOCKS" unique_id=429325745]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1476.3433, 0, -2925.2937)
@@ -193,10 +178,7 @@ district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_035/block_gbx_035.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_035_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_002_block_gbx_035" unique_id=745739138 instance=ExtResource("7_58fi2")]
-metadata/gbx_size = Vector3(528.3081, 1483.6133, 409.75223)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_002_block_gbx_035" unique_id=745739138 instance=ExtResource("7_58fi2")]
 
 [node name="GBX_003_block_gbx_005" type="Node3D" parent="BLOCKS" unique_id=1464319366]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3036.574, 0, -2285.406)
@@ -207,10 +189,7 @@ district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_005/block_gbx_005.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_005_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_003_block_gbx_005" unique_id=394692188 instance=ExtResource("8_yd3yb")]
-metadata/gbx_size = Vector3(295.02243, 2439.4648, 240.84259)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_003_block_gbx_005" unique_id=394692188 instance=ExtResource("8_yd3yb")]
 
 [node name="GBX_004_block_gbx_026" type="Node3D" parent="BLOCKS" unique_id=1581020097]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2269.7742, 0, -2171.272)
@@ -221,10 +200,7 @@ district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_004_block_gbx_026" unique_id=1760285614 instance=ExtResource("9_bel1l")]
-metadata/gbx_size = Vector3(439.70764, 1502.5962, 269.5866)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_004_block_gbx_026" unique_id=1760285614 instance=ExtResource("9_bel1l")]
 
 [node name="GBX_005_block_gbx_037" type="Node3D" parent="BLOCKS" unique_id=33270733]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1463.0022, 0, -2207.0605)
@@ -235,10 +211,7 @@ district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_037/block_gbx_037.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_037_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_005_block_gbx_037" unique_id=832453284 instance=ExtResource("10_uv1i1")]
-metadata/gbx_size = Vector3(623.9822, 650.0981, 664.0895)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_005_block_gbx_037" unique_id=832453284 instance=ExtResource("10_uv1i1")]
 
 [node name="GBX_006_block_gbx_039" type="Node3D" parent="BLOCKS" unique_id=1192594477]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3031.7927, 0, -1353.4379)
@@ -249,10 +222,7 @@ district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_039/block_gbx_039.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_039_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_006_block_gbx_039" unique_id=221390904 instance=ExtResource("11_h1l3j")]
-metadata/gbx_size = Vector3(259.03552, 1505.3528, 321.36572)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_006_block_gbx_039" unique_id=221390904 instance=ExtResource("11_h1l3j")]
 
 [node name="GBX_007_block_gbx_013" type="Node3D" parent="BLOCKS" unique_id=200472735]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2253.0105, 0, -1523.8834)
@@ -263,10 +233,7 @@ district = "A1"
 scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_007_block_gbx_013" unique_id=33377527 instance=ExtResource("12_hda0u")]
-metadata/gbx_size = Vector3(436.70837, 1345.4865, 531.90234)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_007_block_gbx_013" unique_id=33377527 instance=ExtResource("12_hda0u")]
 
 [node name="GBX_008_block_gbx_010" type="Node3D" parent="BLOCKS" unique_id=969642707]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -760.4535, 0, -2883.2058)
@@ -277,10 +244,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_008_block_gbx_010" unique_id=1282201937 instance=ExtResource("13_2rig0")]
-metadata/gbx_size = Vector3(454.6179, 1242.4083, 556.029)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_008_block_gbx_010" unique_id=1282201937 instance=ExtResource("13_2rig0")]
 
 [node name="GBX_009_block_gbx_008" type="Node3D" parent="BLOCKS" unique_id=705888784]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 714.23975, 0, -2927.8887)
@@ -291,10 +255,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_009_block_gbx_008" unique_id=821924128 instance=ExtResource("14_u04ek")]
-metadata/gbx_size = Vector3(349.14005, 932.25183, 588.8592)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_009_block_gbx_008" unique_id=821924128 instance=ExtResource("14_u04ek")]
 
 [node name="GBX_010_block_gbx_005" type="Node3D" parent="BLOCKS" unique_id=1322671078]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -603.08325, 0, -2253.9033)
@@ -305,10 +266,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_005/block_gbx_005.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_005_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_010_block_gbx_005" unique_id=1475469847 instance=ExtResource("8_yd3yb")]
-metadata/gbx_size = Vector3(295.02243, 2439.4648, 240.84259)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_010_block_gbx_005" unique_id=1475469847 instance=ExtResource("8_yd3yb")]
 
 [node name="GBX_011_block_gbx_008" type="Node3D" parent="BLOCKS" unique_id=1730776175]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.773509, 0, -2224.8381)
@@ -319,10 +277,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_011_block_gbx_008" unique_id=1116105087 instance=ExtResource("14_u04ek")]
-metadata/gbx_size = Vector3(349.14005, 932.25183, 588.8592)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_011_block_gbx_008" unique_id=1116105087 instance=ExtResource("14_u04ek")]
 
 [node name="GBX_012_block_gbx_012" type="Node3D" parent="BLOCKS" unique_id=693852021]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -786.28174, 0, -1476.3336)
@@ -333,10 +288,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_012/block_gbx_012.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_012_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_012_block_gbx_012" unique_id=290879721 instance=ExtResource("15_ypdgm")]
-metadata/gbx_size = Vector3(541.61035, 981.80334, 331.765)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_012_block_gbx_012" unique_id=290879721 instance=ExtResource("15_ypdgm")]
 
 [node name="GBX_013_block_gbx_036" type="Node3D" parent="BLOCKS" unique_id=533974541]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.97063, 0, -1513.635)
@@ -347,10 +299,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_036/block_gbx_036.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_036_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_013_block_gbx_036" unique_id=337594959 instance=ExtResource("16_xy2t1")]
-metadata/gbx_size = Vector3(310.18445, 736.76025, 566.33026)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_013_block_gbx_036" unique_id=337594959 instance=ExtResource("16_xy2t1")]
 
 [node name="GBX_014_block_gbx_035" type="Node3D" parent="BLOCKS" unique_id=2082470224]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 697.04175, 0, -1409.2715)
@@ -361,10 +310,7 @@ district = "A2"
 scene_path = "res://world/content/blocks/greybox/block_gbx_035/block_gbx_035.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_035_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_014_block_gbx_035" unique_id=1657765533 instance=ExtResource("7_58fi2")]
-metadata/gbx_size = Vector3(528.3081, 1483.6133, 409.75223)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_014_block_gbx_035" unique_id=1657765533 instance=ExtResource("7_58fi2")]
 
 [node name="GBX_015_block_gbx_032" type="Node3D" parent="BLOCKS" unique_id=364882791]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1501.815, 0, -2951.3586)
@@ -375,10 +321,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_032/block_gbx_032.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_032_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_015_block_gbx_032" unique_id=680505903 instance=ExtResource("17_ccc7i")]
-metadata/gbx_size = Vector3(424.70746, 1897.3019, 281.39822)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_015_block_gbx_032" unique_id=680505903 instance=ExtResource("17_ccc7i")]
 
 [node name="GBX_016_block_gbx_001" type="Node3D" parent="BLOCKS" unique_id=36916141]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2107.5505, 0, -2848.5247)
@@ -389,10 +332,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_001/block_gbx_001.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_001_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_016_block_gbx_001" unique_id=1213598215 instance=ExtResource("18_o28l4")]
-metadata/gbx_size = Vector3(356.44836, 2281.2043, 276.2609)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_016_block_gbx_001" unique_id=1213598215 instance=ExtResource("18_o28l4")]
 
 [node name="GBX_017_block_gbx_038" type="Node3D" parent="BLOCKS" unique_id=1683055051]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2923.844, 0, -2937.4375)
@@ -403,10 +343,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_038/block_gbx_038.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_038_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_017_block_gbx_038" unique_id=148659242 instance=ExtResource("19_fg3cx")]
-metadata/gbx_size = Vector3(694.79395, 692.76825, 612.6658)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_017_block_gbx_038" unique_id=148659242 instance=ExtResource("19_fg3cx")]
 
 [node name="GBX_018_block_gbx_040" type="Node3D" parent="BLOCKS" unique_id=1860537754]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1417.8468, 0, -2250.4456)
@@ -417,10 +354,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_018_block_gbx_040" unique_id=9032564 instance=ExtResource("20_afg3g")]
-metadata/gbx_size = Vector3(415.75177, 2013.8278, 405.61295)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_018_block_gbx_040" unique_id=9032564 instance=ExtResource("20_afg3g")]
 
 [node name="GBX_019_block_gbx_019" type="Node3D" parent="BLOCKS" unique_id=197517775]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2290.718, 0, -2163.221)
@@ -431,10 +365,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_019/block_gbx_019.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_019_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_019_block_gbx_019" unique_id=910177374 instance=ExtResource("21_f0bty")]
-metadata/gbx_size = Vector3(400.77097, 1925.1792, 402.7016)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_019_block_gbx_019" unique_id=910177374 instance=ExtResource("21_f0bty")]
 
 [node name="GBX_020_block_gbx_009" type="Node3D" parent="BLOCKS" unique_id=1883228570]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2945.4768, 0, -2177.2097)
@@ -445,10 +376,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_020_block_gbx_009" unique_id=223545186 instance=ExtResource("22_aivbh")]
-metadata/gbx_size = Vector3(569.80743, 725.05804, 504.5326)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_020_block_gbx_009" unique_id=223545186 instance=ExtResource("22_aivbh")]
 
 [node name="GBX_021_block_gbx_028" type="Node3D" parent="BLOCKS" unique_id=517659060]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1454.4395, 0, -1464.837)
@@ -459,10 +387,7 @@ district = "A3"
 scene_path = "res://world/content/blocks/greybox/block_gbx_028/block_gbx_028.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_028_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_021_block_gbx_028" unique_id=1678337696 instance=ExtResource("23_8ot8x")]
-metadata/gbx_size = Vector3(688.5127, 711.7572, 660.00085)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_021_block_gbx_028" unique_id=1678337696 instance=ExtResource("23_8ot8x")]
 
 [node name="GBX_022_block_gbx_019" type="Node3D" parent="BLOCKS" unique_id=736583442]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2250.0305, 0, -738.24426)
@@ -473,10 +398,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_019/block_gbx_019.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_019_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_022_block_gbx_019" unique_id=1006565997 instance=ExtResource("21_f0bty")]
-metadata/gbx_size = Vector3(400.77097, 1925.1792, 402.7016)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_022_block_gbx_019" unique_id=1006565997 instance=ExtResource("21_f0bty")]
 
 [node name="GBX_023_block_gbx_009" type="Node3D" parent="BLOCKS" unique_id=1980786454]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1504.8447, 0, -687.72235)
@@ -487,10 +409,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_023_block_gbx_009" unique_id=1502411594 instance=ExtResource("22_aivbh")]
-metadata/gbx_size = Vector3(569.80743, 725.05804, 504.5326)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_023_block_gbx_009" unique_id=1502411594 instance=ExtResource("22_aivbh")]
 
 [node name="GBX_024_block_gbx_029" type="Node3D" parent="BLOCKS" unique_id=1233809336]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2971.8098, 0, 77.16133)
@@ -501,10 +420,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_024_block_gbx_029" unique_id=1268919864 instance=ExtResource("24_vfv3x")]
-metadata/gbx_size = Vector3(384.42908, 1927.6503, 424.65573)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_024_block_gbx_029" unique_id=1268919864 instance=ExtResource("24_vfv3x")]
 
 [node name="GBX_025_block_gbx_010" type="Node3D" parent="BLOCKS" unique_id=1101363412]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2195.0444, 0, -11.096244)
@@ -515,10 +431,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_025_block_gbx_010" unique_id=870358741 instance=ExtResource("13_2rig0")]
-metadata/gbx_size = Vector3(454.6179, 1242.4083, 556.029)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_025_block_gbx_010" unique_id=870358741 instance=ExtResource("13_2rig0")]
 
 [node name="GBX_026_block_gbx_024" type="Node3D" parent="BLOCKS" unique_id=445391573]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2863.4094, 0, 818.58105)
@@ -529,10 +442,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_026_block_gbx_024" unique_id=784016445 instance=ExtResource("6_rf8af")]
-metadata/gbx_size = Vector3(232.0527, 2167.1252, 429.7256)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_026_block_gbx_024" unique_id=784016445 instance=ExtResource("6_rf8af")]
 
 [node name="GBX_027_block_gbx_015" type="Node3D" parent="BLOCKS" unique_id=1719724780]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2283.382, 0, 790.0219)
@@ -543,10 +453,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_027_block_gbx_015" unique_id=1667046896 instance=ExtResource("25_27clg")]
-metadata/gbx_size = Vector3(364.0545, 2461.5933, 367.37698)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_027_block_gbx_015" unique_id=1667046896 instance=ExtResource("25_27clg")]
 
 [node name="GBX_028_block_gbx_025" type="Node3D" parent="BLOCKS" unique_id=197125843]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1445.3086, 0, 728.55)
@@ -557,10 +464,7 @@ district = "A4"
 scene_path = "res://world/content/blocks/greybox/block_gbx_025/block_gbx_025.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_025_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_028_block_gbx_025" unique_id=835921552 instance=ExtResource("26_t7nwy")]
-metadata/gbx_size = Vector3(616.3904, 389.74405, 660.8143)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_028_block_gbx_025" unique_id=835921552 instance=ExtResource("26_t7nwy")]
 
 [node name="GBX_029_block_gbx_031" type="Node3D" parent="BLOCKS" unique_id=826565564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -757.87177, 0, -723.60846)
@@ -571,10 +475,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_031/block_gbx_031.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_031_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_029_block_gbx_031" unique_id=1762548305 instance=ExtResource("27_vgq8p")]
-metadata/gbx_size = Vector3(386.993, 722.75555, 503.575)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_029_block_gbx_031" unique_id=1762548305 instance=ExtResource("27_vgq8p")]
 
 [node name="GBX_030_block_gbx_008" type="Node3D" parent="BLOCKS" unique_id=1527580428]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 775.5875, 0, -714.67914)
@@ -585,10 +486,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_008/block_gbx_008.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_008_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_030_block_gbx_008" unique_id=257765729 instance=ExtResource("14_u04ek")]
-metadata/gbx_size = Vector3(349.14005, 932.25183, 588.8592)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_030_block_gbx_008" unique_id=257765729 instance=ExtResource("14_u04ek")]
 
 [node name="GBX_031_block_gbx_004" type="Node3D" parent="BLOCKS" unique_id=1435668092]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -778.13416, 0, 14.152089)
@@ -599,10 +497,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_004/block_gbx_004.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_004_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_031_block_gbx_004" unique_id=951570562 instance=ExtResource("28_48ry2")]
-metadata/gbx_size = Vector3(525.9752, 675.2047, 536.27893)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_031_block_gbx_004" unique_id=951570562 instance=ExtResource("28_48ry2")]
 
 [node name="GBX_032_block_gbx_014" type="Node3D" parent="BLOCKS" unique_id=667563691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.907651, 0, -20.33703)
@@ -613,10 +508,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_014/block_gbx_014.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_032_block_gbx_014" unique_id=1818285102 instance=ExtResource("29_56tdt")]
-metadata/gbx_size = Vector3(439.22888, 386.88544, 564.26355)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_032_block_gbx_014" unique_id=1818285102 instance=ExtResource("29_56tdt")]
 
 [node name="GBX_033_block_gbx_015" type="Node3D" parent="BLOCKS" unique_id=759557250]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 644.4142, 0, 75.60253)
@@ -627,10 +519,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_033_block_gbx_015" unique_id=1689670639 instance=ExtResource("25_27clg")]
-metadata/gbx_size = Vector3(364.0545, 2461.5933, 367.37698)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_033_block_gbx_015" unique_id=1689670639 instance=ExtResource("25_27clg")]
 
 [node name="GBX_034_block_gbx_009" type="Node3D" parent="BLOCKS" unique_id=2040497793]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -686.6198, 0, 725.19)
@@ -641,10 +530,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_009/block_gbx_009.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_009_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_034_block_gbx_009" unique_id=897361574 instance=ExtResource("22_aivbh")]
-metadata/gbx_size = Vector3(569.80743, 725.05804, 504.5326)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_034_block_gbx_009" unique_id=897361574 instance=ExtResource("22_aivbh")]
 
 [node name="GBX_035_block_gbx_040" type="Node3D" parent="BLOCKS" unique_id=629098580]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 84.29544, 0, 749.6734)
@@ -655,10 +541,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_035_block_gbx_040" unique_id=1986263158 instance=ExtResource("20_afg3g")]
-metadata/gbx_size = Vector3(415.75177, 2013.8278, 405.61295)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_035_block_gbx_040" unique_id=1986263158 instance=ExtResource("20_afg3g")]
 
 [node name="GBX_036_block_gbx_040" type="Node3D" parent="BLOCKS" unique_id=504249956]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 806.82544, 0, 720.49677)
@@ -669,10 +552,7 @@ district = "A5"
 scene_path = "res://world/content/blocks/greybox/block_gbx_040/block_gbx_040.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_040_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_036_block_gbx_040" unique_id=913981782 instance=ExtResource("20_afg3g")]
-metadata/gbx_size = Vector3(415.75177, 2013.8278, 405.61295)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_036_block_gbx_040" unique_id=913981782 instance=ExtResource("20_afg3g")]
 
 [node name="GBX_037_block_gbx_013" type="Node3D" parent="BLOCKS" unique_id=1360381034]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2210.0557, 0, -742.3078)
@@ -683,10 +563,7 @@ district = "A6"
 scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_037_block_gbx_013" unique_id=1968380818 instance=ExtResource("12_hda0u")]
-metadata/gbx_size = Vector3(436.70837, 1345.4865, 531.90234)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_037_block_gbx_013" unique_id=1968380818 instance=ExtResource("12_hda0u")]
 
 [node name="GBX_038_block_gbx_023" type="Node3D" parent="BLOCKS" unique_id=337106983]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2963.9128, 0, -762.00653)
@@ -697,10 +574,7 @@ district = "A6"
 scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_038_block_gbx_023" unique_id=1229270598 instance=ExtResource("30_7otay")]
-metadata/gbx_size = Vector3(530.55774, 1324.8495, 526.1924)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_038_block_gbx_023" unique_id=1229270598 instance=ExtResource("30_7otay")]
 
 [node name="GBX_039_block_gbx_003" type="Node3D" parent="BLOCKS" unique_id=2088502897]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1484.7816, 0, 4.78553)
@@ -711,10 +585,7 @@ district = "A6"
 scene_path = "res://world/content/blocks/greybox/block_gbx_003/block_gbx_003.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_039_block_gbx_003" unique_id=281712663 instance=ExtResource("31_sahta")]
-metadata/gbx_size = Vector3(354.83212, 1373.2423, 458.0821)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_039_block_gbx_003" unique_id=281712663 instance=ExtResource("31_sahta")]
 
 [node name="GBX_040_block_gbx_026" type="Node3D" parent="BLOCKS" unique_id=1990708439]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2125.6309, 0, 54.932167)
@@ -725,388 +596,7 @@ district = "A6"
 scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_040_block_gbx_026" unique_id=822272497 instance=ExtResource("9_bel1l")]
-metadata/gbx_size = Vector3(439.70764, 1502.5962, 269.5866)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_041_block_gbx_032" type="Node3D" parent="BLOCKS" unique_id=1623712805]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2999.2551, 0, -44.103146)
-script = ExtResource("5_753aq")
-id = "gbx_041"
-block_name = "block_gbx_032"
-district = "A6"
-scene_path = "res://world/content/blocks/greybox/block_gbx_032/block_gbx_032.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_032_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_041_block_gbx_032" unique_id=463128698 instance=ExtResource("17_ccc7i")]
-metadata/gbx_size = Vector3(424.70746, 1897.3019, 281.39822)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_042_block_gbx_016" type="Node3D" parent="BLOCKS" unique_id=2078342809]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1459.3069, 0, 729.95715)
-script = ExtResource("5_753aq")
-id = "gbx_042"
-block_name = "block_gbx_016"
-district = "A6"
-scene_path = "res://world/content/blocks/greybox/block_gbx_016/block_gbx_016.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_016_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_042_block_gbx_016" unique_id=886828652 instance=ExtResource("32_1oc3b")]
-metadata/gbx_size = Vector3(306.8014, 332.81235, 677.42847)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_043_block_gbx_029" type="Node3D" parent="BLOCKS" unique_id=214783389]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2887.6067, 0, 694.589)
-script = ExtResource("5_753aq")
-id = "gbx_043"
-block_name = "block_gbx_029"
-district = "A6"
-scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_043_block_gbx_029" unique_id=19602572 instance=ExtResource("24_vfv3x")]
-metadata/gbx_size = Vector3(384.42908, 1927.6503, 424.65573)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_044_block_gbx_001" type="Node3D" parent="BLOCKS" unique_id=402649470]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2912.8237, 0, 1503.5419)
-script = ExtResource("5_753aq")
-id = "gbx_044"
-block_name = "block_gbx_001"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_001/block_gbx_001.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_001_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_044_block_gbx_001" unique_id=1343530356 instance=ExtResource("18_o28l4")]
-metadata/gbx_size = Vector3(356.44836, 2281.2043, 276.2609)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_045_block_gbx_021" type="Node3D" parent="BLOCKS" unique_id=1338561823]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2206.984, 0, 1431.7877)
-script = ExtResource("5_753aq")
-id = "gbx_045"
-block_name = "block_gbx_021"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_045_block_gbx_021" unique_id=1023613197 instance=ExtResource("33_laxja")]
-metadata/gbx_size = Vector3(231.58658, 2081.3406, 262.37103)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_046_block_gbx_017" type="Node3D" parent="BLOCKS" unique_id=153171667]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1420.7516, 0, 1456.1748)
-script = ExtResource("5_753aq")
-id = "gbx_046"
-block_name = "block_gbx_017"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_017/block_gbx_017.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_017_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_046_block_gbx_017" unique_id=1706740758 instance=ExtResource("34_5ohfs")]
-metadata/gbx_size = Vector3(498.53656, 1028.0521, 562.92847)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_047_block_gbx_033" type="Node3D" parent="BLOCKS" unique_id=1336008238]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2935.1587, 0, 2163.916)
-script = ExtResource("5_753aq")
-id = "gbx_047"
-block_name = "block_gbx_033"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_033/block_gbx_033.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_033_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_047_block_gbx_033" unique_id=207626308 instance=ExtResource("35_ip0lg")]
-metadata/gbx_size = Vector3(552.0376, 1164.7511, 589.11194)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_048_block_gbx_029" type="Node3D" parent="BLOCKS" unique_id=667627663]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1492.3518, 0, 2185.1267)
-script = ExtResource("5_753aq")
-id = "gbx_048"
-block_name = "block_gbx_029"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_029/block_gbx_029.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_029_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_048_block_gbx_029" unique_id=154787821 instance=ExtResource("24_vfv3x")]
-metadata/gbx_size = Vector3(384.42908, 1927.6503, 424.65573)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_049_block_gbx_038" type="Node3D" parent="BLOCKS" unique_id=1636000190]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2935.0447, 0, 2944.423)
-script = ExtResource("5_753aq")
-id = "gbx_049"
-block_name = "block_gbx_038"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_038/block_gbx_038.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_038_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_049_block_gbx_038" unique_id=56418733 instance=ExtResource("19_fg3cx")]
-metadata/gbx_size = Vector3(694.79395, 692.76825, 612.6658)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_050_block_gbx_015" type="Node3D" parent="BLOCKS" unique_id=2090573178]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2237.4646, 0, 2951.726)
-script = ExtResource("5_753aq")
-id = "gbx_050"
-block_name = "block_gbx_015"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_050_block_gbx_015" unique_id=1136092699 instance=ExtResource("25_27clg")]
-metadata/gbx_size = Vector3(364.0545, 2461.5933, 367.37698)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_051_block_gbx_021" type="Node3D" parent="BLOCKS" unique_id=60376970]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1501.8462, 0, 2902.6504)
-script = ExtResource("5_753aq")
-id = "gbx_051"
-block_name = "block_gbx_021"
-district = "A7"
-scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_051_block_gbx_021" unique_id=877671708 instance=ExtResource("33_laxja")]
-metadata/gbx_size = Vector3(231.58658, 2081.3406, 262.37103)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_052_block_gbx_021" type="Node3D" parent="BLOCKS" unique_id=121902201]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61.665802, 0, 1458.7318)
-script = ExtResource("5_753aq")
-id = "gbx_052"
-block_name = "block_gbx_021"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_052_block_gbx_021" unique_id=784442969 instance=ExtResource("33_laxja")]
-metadata/gbx_size = Vector3(231.58658, 2081.3406, 262.37103)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_053_block_gbx_023" type="Node3D" parent="BLOCKS" unique_id=234388619]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 728.2876, 0, 1473.2308)
-script = ExtResource("5_753aq")
-id = "gbx_053"
-block_name = "block_gbx_023"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_053_block_gbx_023" unique_id=1688171298 instance=ExtResource("30_7otay")]
-metadata/gbx_size = Vector3(530.55774, 1324.8495, 526.1924)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_054_block_gbx_024" type="Node3D" parent="BLOCKS" unique_id=8802670]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -709.7609, 0, 2171.2966)
-script = ExtResource("5_753aq")
-id = "gbx_054"
-block_name = "block_gbx_024"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_054_block_gbx_024" unique_id=1429899723 instance=ExtResource("6_rf8af")]
-metadata/gbx_size = Vector3(232.0527, 2167.1252, 429.7256)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_055_block_gbx_030" type="Node3D" parent="BLOCKS" unique_id=108198526]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.337172, 0, 2186.9775)
-script = ExtResource("5_753aq")
-id = "gbx_055"
-block_name = "block_gbx_030"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_030/block_gbx_030.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_030_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_055_block_gbx_030" unique_id=2006148881 instance=ExtResource("36_vf84v")]
-metadata/gbx_size = Vector3(679.4688, 499.55087, 570.7931)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_056_block_gbx_016" type="Node3D" parent="BLOCKS" unique_id=1993776567]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 728.66565, 0, 2203.502)
-script = ExtResource("5_753aq")
-id = "gbx_056"
-block_name = "block_gbx_016"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_016/block_gbx_016.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_016_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_056_block_gbx_016" unique_id=178411478 instance=ExtResource("32_1oc3b")]
-metadata/gbx_size = Vector3(306.8014, 332.81235, 677.42847)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_057_block_gbx_007" type="Node3D" parent="BLOCKS" unique_id=1522756283]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -785.9055, 0, 3025.4055)
-script = ExtResource("5_753aq")
-id = "gbx_057"
-block_name = "block_gbx_007"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_007/block_gbx_007.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_007_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_057_block_gbx_007" unique_id=274349935 instance=ExtResource("37_r0pco")]
-metadata/gbx_size = Vector3(377.59137, 991.9223, 293.0279)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_058_block_gbx_033" type="Node3D" parent="BLOCKS" unique_id=946110147]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -39.541645, 0, 2948.015)
-script = ExtResource("5_753aq")
-id = "gbx_058"
-block_name = "block_gbx_033"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_033/block_gbx_033.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_033_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_058_block_gbx_033" unique_id=1507575276 instance=ExtResource("35_ip0lg")]
-metadata/gbx_size = Vector3(552.0376, 1164.7511, 589.11194)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_059_block_gbx_010" type="Node3D" parent="BLOCKS" unique_id=661932777]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 770.70575, 0, 2924.784)
-script = ExtResource("5_753aq")
-id = "gbx_059"
-block_name = "block_gbx_010"
-district = "A8"
-scene_path = "res://world/content/blocks/greybox/block_gbx_010/block_gbx_010.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_010_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_059_block_gbx_010" unique_id=1975400675 instance=ExtResource("13_2rig0")]
-metadata/gbx_size = Vector3(454.6179, 1242.4083, 556.029)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_060_block_gbx_014" type="Node3D" parent="BLOCKS" unique_id=552533251]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1513.3245, 0, 1482.5238)
-script = ExtResource("5_753aq")
-id = "gbx_060"
-block_name = "block_gbx_014"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_014/block_gbx_014.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_060_block_gbx_014" unique_id=1639487362 instance=ExtResource("29_56tdt")]
-metadata/gbx_size = Vector3(439.22888, 386.88544, 564.26355)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_061_block_gbx_034" type="Node3D" parent="BLOCKS" unique_id=1364060516]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2256.981, 0, 1388.8217)
-script = ExtResource("5_753aq")
-id = "gbx_061"
-block_name = "block_gbx_034"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_034/block_gbx_034.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_034_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_061_block_gbx_034" unique_id=441691368 instance=ExtResource("38_eoiym")]
-metadata/gbx_size = Vector3(434.1249, 2520.9744, 237.9901)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_062_block_gbx_013" type="Node3D" parent="BLOCKS" unique_id=1718636583]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2917.768, 0, 1507.455)
-script = ExtResource("5_753aq")
-id = "gbx_062"
-block_name = "block_gbx_013"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_013/block_gbx_013.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_013_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_062_block_gbx_013" unique_id=733476086 instance=ExtResource("12_hda0u")]
-metadata/gbx_size = Vector3(436.70837, 1345.4865, 531.90234)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_063_block_gbx_023" type="Node3D" parent="BLOCKS" unique_id=1972882594]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1417.904, 0, 2156.9714)
-script = ExtResource("5_753aq")
-id = "gbx_063"
-block_name = "block_gbx_023"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_023/block_gbx_023.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_063_block_gbx_023" unique_id=1727500856 instance=ExtResource("30_7otay")]
-metadata/gbx_size = Vector3(530.55774, 1324.8495, 526.1924)
-metadata/gbx_strata_top = "Manifold"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_064_block_gbx_015" type="Node3D" parent="BLOCKS" unique_id=746044850]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2945.5203, 0, 2286.6787)
-script = ExtResource("5_753aq")
-id = "gbx_064"
-block_name = "block_gbx_015"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_015/block_gbx_015.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_015_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_064_block_gbx_015" unique_id=1754962710 instance=ExtResource("25_27clg")]
-metadata/gbx_size = Vector3(364.0545, 2461.5933, 367.37698)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_065_block_gbx_021" type="Node3D" parent="BLOCKS" unique_id=1812314575]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1431.0764, 0, 2886.042)
-script = ExtResource("5_753aq")
-id = "gbx_065"
-block_name = "block_gbx_021"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_021/block_gbx_021.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_021_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_065_block_gbx_021" unique_id=309437399 instance=ExtResource("33_laxja")]
-metadata/gbx_size = Vector3(231.58658, 2081.3406, 262.37103)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_066_block_gbx_024" type="Node3D" parent="BLOCKS" unique_id=1087154959]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2164.596, 0, 2854.233)
-script = ExtResource("5_753aq")
-id = "gbx_066"
-block_name = "block_gbx_024"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_024/block_gbx_024.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_066_block_gbx_024" unique_id=962820634 instance=ExtResource("6_rf8af")]
-metadata/gbx_size = Vector3(232.0527, 2167.1252, 429.7256)
-metadata/gbx_strata_top = "Glare"
-metadata/gbx_kind = "silhouette"
-
-[node name="GBX_067_block_gbx_004" type="Node3D" parent="BLOCKS" unique_id=1504575491]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2909.3682, 0, 2936.27)
-script = ExtResource("5_753aq")
-id = "gbx_067"
-block_name = "block_gbx_004"
-district = "A9"
-scene_path = "res://world/content/blocks/greybox/block_gbx_004/block_gbx_004.tscn"
-silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_004_silhouette.tscn"
-
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_067_block_gbx_004" unique_id=347533944 instance=ExtResource("28_48ry2")]
-metadata/gbx_size = Vector3(525.9752, 675.2047, 536.27893)
-metadata/gbx_strata_top = "Doggerland"
-metadata/gbx_kind = "silhouette"
+[node name="SilhouettePreview" parent="BLOCKS/GBX_040_block_gbx_026" unique_id=822272497 instance=ExtResource("9_bel1l")]
 
 [node name="Spawner" type="Node3D" parent="." unique_id=221293653]
 script = ExtResource("5_ikph1")
@@ -1294,5 +784,3 @@ metadata/dis_name = "Habitat 9"
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Districts/A9" unique_id=825657643]
 shape = SubResource("BoxShape3D_272my")
 debug_color = Color(0, 1.883, 1.328, 1)
-
-[editable path="BLOCKS/BLOCK-001"]

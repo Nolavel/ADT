@@ -6,7 +6,7 @@
 #
 # ДВА КОЛЬЦА:
 #   Ring 0 (силуэты) — создаются один раз в initialize() и живут до reset():
-#     • 9 силуэтов плит земли (одна общая сцена, позиции из WorldSystems);
+#     • 9 силуэтов плит земли (своя сцена на плиту, позиции из WorldSystems);
 #       несут ПОСТОЯННУЮ коллизию пола — страховочная поверхность.
 #     • Силуэты кварталов (своя сцена на квартал).
 #   Ring 1 (контент) — ячейки конвейера (плиты + кварталы), грузятся и
@@ -92,6 +92,7 @@ class StreamCell:
 	var position:        Vector3      # мировая позиция (низ/пол ячейки)
 	var coords:          Vector2i     # координаты сетки — только GROUND_TILE
 	var content_path:    String
+	var silhouette_path: String
 	var state:           CellState = CellState.UNLOADED
 	var failed:          bool = false # битый путь/ресурс — исключена навсегда
 	var silhouette_node: Node3D = null
@@ -262,11 +263,12 @@ func _build_cells() -> void:
 	for td: GroundTileData in _world_data.ground_tiles:
 		var coords := Vector2i(td.col, td.row)
 		var cell := StreamCell.new()
-		cell.id           = WorldSystems.get_tile_id(coords)
-		cell.type         = CellType.GROUND_TILE
-		cell.position     = WorldSystems.get_tile_position(coords)
-		cell.coords       = coords
-		cell.content_path = td.content_scene_path
+		cell.id              = WorldSystems.get_tile_id(coords)
+		cell.type            = CellType.GROUND_TILE
+		cell.position        = WorldSystems.get_tile_position(coords)
+		cell.coords          = coords
+		cell.content_path    = td.content_scene_path
+		cell.silhouette_path = td.silhouette_scene_path
 		_register_cell(cell)
 
 	for bd: BlockData in _world_data.blocks:
@@ -291,16 +293,11 @@ func _register_cell(cell: StreamCell) -> void:
 
 ## Ring 0: силуэты создаются синхронно один раз и живут до reset().
 func _spawn_ring0() -> void:
-	var tile_sil := load(_world_data.ground_tile_silhouette_path) as PackedScene
-	if tile_sil == null:
-		push_error("[StreamingSystems] Ground tile silhouette not found: "
-				+ _world_data.ground_tile_silhouette_path)
-
 	for cell: StreamCell in _cells.values():
 		var packed: PackedScene = null
 		match cell.type:
 			CellType.GROUND_TILE:
-				packed = tile_sil
+				packed = _load_tile_silhouette(cell)
 			CellType.BLOCK:
 				packed = _load_block_silhouette(cell.id)
 		if packed == null:
@@ -310,6 +307,18 @@ func _spawn_ring0() -> void:
 		_stream_container.add_child(sil)
 		sil.global_position  = cell.position
 		cell.silhouette_node = sil
+
+
+func _load_tile_silhouette(cell: StreamCell) -> PackedScene:
+	if cell.silhouette_path.is_empty():
+		push_error("[StreamingSystems] Ground tile %s has no silhouette"
+				% cell.id)
+		return null
+	var packed := load(cell.silhouette_path) as PackedScene
+	if packed == null:
+		push_error("[StreamingSystems] Ground tile silhouette not found: "
+				+ cell.silhouette_path)
+	return packed
 
 
 func _load_block_silhouette(block_id: String) -> PackedScene:

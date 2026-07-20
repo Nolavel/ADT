@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://decyerikmtdt8"]
+[gd_scene format=3]
 
 [ext_resource type="Texture2D" uid="uid://bsw2ip0l7l3go" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_01.png" id="1_w43vy"]
 
@@ -13,16 +13,16 @@ uv1_triplanar = true
 material = SubResource("StandardMaterial3D_eibrl")
 size = Vector3(2200, 1, 2200)
 
-[node name="GtSilhouette" type="Node3D" unique_id=979592806]
+[node name="GtSilhouetteR2C1" type="Node3D"]
 
-[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=10599025 groups=["floor"]]
+[node name="StaticBody3D" type="StaticBody3D" parent="." groups=["floor"]]
 collision_layer = 3
 collision_mask = 3
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1981584054]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
 shape = SubResource("BoxShape3D_5h11f")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1081808483]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
 mesh = SubResource("BoxMesh_5h11f")

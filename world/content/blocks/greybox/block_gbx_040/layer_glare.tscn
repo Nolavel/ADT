@@ -4,16 +4,16 @@
 
 [sub_resource type="BoxMesh" id="BoxMesh_g85u2"]
 material = ExtResource("1_g85u2")
-size = Vector3(258.50253, 358.57764, 210.50601)
+size = Vector3(220, 900, 220)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ruqbi"]
 material = ExtResource("1_g85u2")
-size = Vector3(149.68343, 303.41965, 146.1312)
+size = Vector3(250, 400, 250)
 
 [node name="LayerGlare" type="Node3D" unique_id=1328959513]
 
 [node name="Shape1" type="MeshInstance3D" parent="." unique_id=1408150236]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54.612946, 2221.305, -21.617409)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2450, 0)
 mesh = SubResource("BoxMesh_g85u2")
 
 [node name="Shape2" type="MeshInstance3D" parent="." unique_id=1796048344]

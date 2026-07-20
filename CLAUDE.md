@@ -34,7 +34,7 @@ State and cross-scene concerns live in a small set of autoloads, each with one c
 - **`WorldSystems`** (`core/world/world_systems.gd`) — the single source of truth for world geometry: strata height bands (Doggerland/Manifold/Glare), the ground-tile grid, tile-coordinate math, and session state that must survive scene changes (spawn point, current strata/district/tile). Pure math only — no physics nodes.
 - **`StreamingSystems`** (`core/world/streaming_systems.gd`) — the world-content streaming pipeline; the *only* owner of streamed content (`world.gd` doesn't know about individual cells). Two rings: Ring 0 = permanent-collision silhouettes for all ground tiles/blocks, spawned once; Ring 1 = actual content cells (ground tiles + blocks), state machine `UNLOADED → QUEUED → LOADING → READY → ACTIVE`, streamed in/out by XZ radius from the player, threaded-loaded with a per-frame instantiation budget. Blocks additionally materialize one "strata layer" (`InstancePlaceholder` named `Layer<StrataName>`) matching the player's current vertical strata — this naming contract (`LayerDoggerland`/`LayerManifold`/`LayerGlare`) must be respected by any new block content scene.
 - **`InputSystems`** (`core/input/input_systems.gd`) — the *only* place that calls `Input.*`. Translates raw input into signals (`primary_click_pressed`, `interact_pressed`, etc.) or query methods (`is_jump_just_pressed()`, `get_move_axis()`); it has zero game logic and never decides what an input means — that's left to subscribers reacting to `PlayerState`.
-- **`PlayerState`** (`core/player_state/player_state.gd`) — single source of truth for player `mode` (`ON_FOOT`, `VEHICLE_HOVER`, `TUBE_TRANSIT`, `MENU`) and `view_mode` (`TPS`, `ISOMETRIC`, `TOPDOWN`). `MENU` must only be entered/exited via `open_menu()`/`close_menu()` (these also own `get_tree().paused`) — never set `mode = MENU` directly.
+- **`PlayerState`** (`core/player_state/player_state.gd`) — single source of truth for player `mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`, `MENU`) and `view_mode` (`TPS`, `ISOMETRIC`). `TOPDOWN` was removed entirely (not just deferred) — do not reintroduce it. `MENU` must only be entered/exited via `open_menu()`/`close_menu()` (these also own `get_tree().paused`) — never set `mode = MENU` directly.
 
 ### Scene bootstrap (`world/world.gd`)
 
@@ -48,14 +48,14 @@ Any node/scene in these lists can implement `on_world_ready(context: WorldContex
 ### Player (`player/player.gd` + `player/player_components/`)
 
 `player.gd` (on `CharacterBody3D`) owns physics, animation state machine, and rotation directly (not delegated to components) for both movement modes it supports:
-- **Click-to-move / navigation** (`ISOMETRIC`/`TOPDOWN` view modes) — driven by `NavigationComponent`, path following in `_handle_navigation`.
+- **Click-to-move / navigation** (`ISOMETRIC` view mode) — driven by `NavigationComponent`, path following in `_handle_navigation`.
 - **Direct WASD movement** (`TPS` view mode) — `TPSMovementSystem` (a `WORLD_SYSTEM_SCRIPTS` entry) feeds `set_direct_move_input()` every physics frame; `player.gd` does the actual velocity/rotation/animation in `_apply_direct_movement`.
 
 Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `player_components/` is a component-per-concern layout (`attributes`, `equipment`, `health`, `hunger`, `interact`, `inventory`, `movement`, `nav`, `progression`, `save_player`, `sleep`, `stamina`, `wallet`); most subdirectories are currently **empty scaffolding** — only `nav_component`, `stamina_component`, and `interact_component` have implementations. Don't assume a component directory implies working code; check for a `.gd` file.
 
 ### Camera (`camera/`)
 
-`camera_follow.gd` is the host; per-mode behavior lives in `camera_component/` (`on_foot_camera_component`, `vehicle_hover_camera_component`, `tube_transit_camera_component`, `camera_shake_component`). Reads input exclusively through `InputSystems` query methods, not `Input.*` directly.
+`camera_follow.gd` is the host; per-mode behavior lives in `camera_component/`: `on_foot_camera_component` (ISOMETRIC orbital + TPS, with two sub-state helpers — `TpsShoulderCameraState` for left/right shoulder offset and `TpsCombatCameraState` for Explore↔Locked lock-on), `hover_camera_component` (renamed from `vehicle_hover_camera_component`; `HoverView` = CHASE/COCKPIT), `tube_transit_camera_component` (stub, freelook only), `camera_shake_component` (additive-only, pure getter — cannot leave a residual offset by construction). `camera_follow.gd` also owns an internal `CameraState{GAME, MENU_PAUSE}` for the menu tween, separate from `PlayerState.Mode`. Reads input exclusively through `InputSystems` query methods, not `Input.*` directly.
 
 ### Transport (`core/controllers/transport/`)
 
@@ -65,11 +65,19 @@ Vehicle/transit controllers split into `base/` (shared behavior: `hover_vehicle_
 
 `WorldData`/`GroundTileData`/`BlockData`/`CityZoneData` (`world/resources/*.gd`) are `Resource` subclasses defining the declarative content list `StreamingSystems` consumes at runtime (tile/block positions, content scene paths, silhouette scene paths). Editing world layout means editing `data/world_data.tres` (or the resource via the Godot inspector), not code.
 
+### Block markers (`core/map_source/blockbase.gd`, `map_source.tscn`)
+
+`BlockBase` (`class_name BlockBase`, extends `Node3D`) is the shared carrier for every tower/block marker placed in `map_source.tscn`: common fields (`id`, `block_name`, `district`, `scene_path`, `silhouette_scene_path`, `block_height`) plus shared logic (`_find_mesh`, `_compute_height`, a `_ready()` that is final by convention). Per-strata or per-purpose specialization is done by **subclassing** `BlockBase` (e.g. `BlockHaze` for residential towers, adding `floor_count`/`has_rooftop_garden`) and overriding the virtual hooks (`_on_marker_ready`, `get_marker_data`, `_log_extra_info`) — never by editing the base class per-use-case.
+
+Markers are generated by `tools/block_generator/block_placer.gd` (an `EditorScript`, run manually via File → Run in the editor, not autoloaded — there is nothing to "turn off"). It clears and regenerates only nodes whose **name** starts with the `GBX_` prefix; nodes without that prefix are left untouched. **To make a generated marker authorial/hand-owned, rename it to remove the `GBX_` prefix** — otherwise the next `block_placer.gd` run will delete and regenerate it regardless of any manual edits made to its fields.
+
 ## Key gameplay conventions worth knowing before touching related code
 
 - **Height/strata convention**: ground floor = world Y 0; strata bands (`STRATA_DOGGERLAND/MANIFOLD/GLARE`) are read directly off `pos.y`, no offset.
 - **Tile coordinates** are always `Vector2i(col, row)` — `.x` = column (world X axis), `.y` = row (world Z axis). Tile id format: `"gt_r%d_c%d" % [row, col]`.
 - **Streaming distances are XZ-only**; blocks are full-height columns spanning `GAMEPLAY_HEIGHT`, so vertical filtering for blocks is meaningless — vertical detail is handled by the strata-layer mechanism instead.
+- **Ground tiles have per-tile content/silhouette scenes**, same pattern as blocks: `GroundTileData.content_scene_path`/`silhouette_scene_path` are set individually, one pair per `(row, col)` — `map_source.gd` generates the paths (`gt_content_r{row}_c{col}.tscn` / `gt_silhouette_r{row}_c{col}.tscn`), not a shared scene. There is no `WorldData`-level shared silhouette anymore.
+- **Player spawn** is a single `Vector3` (`WorldSystems.spawn_point`), placed via one marker in `map_source.tscn`. Its Y is currently hard-clamped to `Y_CITY_ZONE_TOP` at commit time (`_commit_spawn_point`) regardless of raycast hit height — this is why it's ground-tile-only today; placing on other strata requires removing that clamp.
 - Global node groups (`project.godot` `[global_group]`): `Player`, `wall`, `interactables`, `floor`, `vehicle`, `world_root` (fast lookup via `get_first_node_in_group`), `district`.
 
 # Project Rules (Vertical Trespass)
