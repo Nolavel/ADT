@@ -500,7 +500,7 @@ silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_004_si
 [node name="SilhouettePreview" parent="BLOCKS/GBX_031_block_gbx_004" unique_id=951570562 instance=ExtResource("28_48ry2")]
 
 [node name="GBX_032_block_gbx_014" type="Node3D" parent="BLOCKS" unique_id=667563691]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.907651, 0, -20.33703)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1242.2578, 0, 2470.3574)
 script = ExtResource("5_753aq")
 id = "gbx_032"
 block_name = "block_gbx_014"

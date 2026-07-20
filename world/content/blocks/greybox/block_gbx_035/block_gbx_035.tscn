@@ -2,21 +2,23 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_gymob"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_gymob"]
+[sub_resource type="BoxMesh" id="BoxMesh_isxm3"]
 material = ExtResource("1_gymob")
-size = Vector3(79.246216, 1809.2845, 61.462833)
+size = Vector3(75, 2965.837, 67.5)
 
-[node name="BlockGbx035" type="Node3D" unique_id=633451288]
-metadata/gbx_size = Vector3(528.3081, 1809.2845, 409.75223)
-metadata/gbx_strata_top = "Manifold"
+[node name="BlockGbx035" type="Node3D" unique_id=1496118661]
+metadata/gbx_size = Vector3(500, 2965.837, 450)
+metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "content"
 
-[node name="Shared" type="Node3D" parent="." unique_id=107079744]
+[node name="Shared" type="Node3D" parent="." unique_id=300369773]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=68732390]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 904.6423, 0)
-mesh = SubResource("BoxMesh_gymob")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1055402518]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1482.9185, 0)
+mesh = SubResource("BoxMesh_isxm3")
 
-[node name="LayerDoggerland" type="Node3D" parent="." unique_id=247041391 instance_placeholder="res://world/content/blocks/greybox/block_gbx_035/layer_doggerland.tscn"]
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=1947157604 instance_placeholder="res://world/content/blocks/greybox/block_gbx_035/layer_doggerland.tscn"]
 
-[node name="LayerManifold" type="Node3D" parent="." unique_id=1345740939 instance_placeholder="res://world/content/blocks/greybox/block_gbx_035/layer_manifold.tscn"]
+[node name="LayerManifold" type="Node3D" parent="." unique_id=1052957861 instance_placeholder="res://world/content/blocks/greybox/block_gbx_035/layer_manifold.tscn"]
+
+[node name="LayerGlare" type="Node3D" parent="." unique_id=342759419 instance_placeholder="res://world/content/blocks/greybox/block_gbx_035/layer_glare.tscn"]

@@ -2,28 +2,12 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_qobu0"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_qobu0"]
-material = ExtResource("1_qobu0")
-size = Vector3(331.61203, 459.72812, 167.55258)
-
 [sub_resource type="BoxMesh" id="BoxMesh_ei4ko"]
 material = ExtResource("1_qobu0")
-size = Vector3(293.67856, 399.5284, 209.52747)
+size = Vector3(500, 743.87646, 500)
 
-[sub_resource type="BoxMesh" id="BoxMesh_nr11p"]
-material = ExtResource("1_qobu0")
-size = Vector3(306.0701, 417.28372, 135.69797)
+[node name="LayerGlare" type="Node3D" unique_id=1843195501]
 
-[node name="LayerGlare" type="Node3D" unique_id=1421609793]
-
-[node name="Shape1" type="MeshInstance3D" parent="." unique_id=133710650]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 96.81339, 2644.1921, 23.279232)
-mesh = SubResource("BoxMesh_qobu0")
-
-[node name="Shape2" type="MeshInstance3D" parent="." unique_id=889403099]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.583168, 2563.4382, 20.77415)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1043176635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2371.9382, 0)
 mesh = SubResource("BoxMesh_ei4ko")
-
-[node name="Shape3" type="MeshInstance3D" parent="." unique_id=1070816457]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.73574, 2268.556, 27.440891)
-mesh = SubResource("BoxMesh_nr11p")

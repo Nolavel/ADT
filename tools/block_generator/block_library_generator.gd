@@ -18,6 +18,17 @@
 #   • В корне контент- и силуэт-сцен пишет меты для плейсера (шаг B) и MapSource:
 #       "gbx_size": Vector3, "gbx_strata_top": String, "gbx_kind": String
 #
+# ГЕОМЕТРИЯ:
+#   • Footprint (X/Z) выбираются независимо друг от друга из FOOTPRINT_CHOICES.
+#   • Высота = DOGGERLAND_HEIGHT + MANIFOLD_HEIGHT + случайная надбавка Glare
+#     (2200–3000 суммарно) — каждый блок теперь ВСЕГДА пересекает все три
+#     страты, strata_top всегда "Glare".
+#   • Каждый слой страты — один сплошной BoxMesh на всю ширину/глубину блока
+#     и точно на высоту своей полосы (без случайного разброса пристроек).
+#   • Силуэт — точная копия габарита контента (без урезания высоты) и несёт
+#     постоянную коллизию (StaticBody3D, группа "wall", физслой 3) — раньше
+#     силуэты были чисто визуальными.
+#
 # КОНВЕНЦИИ (сверено с block_a1_001 / silhouette, HEAD 7e3c400):
 #   • Меши — BoxMesh, StandardMaterial3D с uv1_triplanar = true.
 #   • Нижняя грань блока на y=0 локально: MeshInstance смещён на height/2.
@@ -37,24 +48,14 @@ const SEED: int = 20260716
 ## Сколько блоков сгенерировать всего.
 const BLOCK_COUNT: int = 40
 
-## Доля силуэтной высоты от полной (силуэт чуть ниже контента — как в ручных
-## блоках: контент 3200, силуэт 2600).
-const SILHOUETTE_HEIGHT_FACTOR: float = 0.82
+## Ширина/глубина блока (м) — X и Z выбираются независимо друг от друга.
+const FOOTPRINT_CHOICES: PackedFloat32Array = [400.0, 450.0, 500.0, 600.0]
 
-## Распределение блоков по максимальной страте: [Doggerland, Manifold, Glare].
-## Доггерленд плотный и низкий → больше низких блоков.
-const STRATA_WEIGHTS := [0.40, 0.35, 0.25]
-
-## Диапазоны габаритов по максимальной страте блока.
-## footprint — ширина/глубина (м), height — полная высота контента (м).
-const SIZE_RANGES := {
-	"Doggerland": { "footprint": Vector2(300.0, 700.0), "height": Vector2(300.0, 900.0) },
-	"Manifold":   { "footprint": Vector2(250.0, 600.0), "height": Vector2(1100.0, 1900.0) },
-	"Glare":      { "footprint": Vector2(200.0, 500.0), "height": Vector2(2100.0, 3200.0) },
-}
-
-## Сколько дополнительных объёмов (пристроек) генерировать в каждом слое страты.
-const LAYER_SHAPES_RANGE := Vector2i(2, 4)
+## Каждый блок теперь всегда пересекает все три страты: фиксированная высота
+## Doggerland + Manifold, и случайная надбавка Glare сверху.
+const DOGGERLAND_HEIGHT: float = 1000.0
+const MANIFOLD_HEIGHT:   float = 1000.0
+const GLARE_HEIGHT_RANGE: Vector2 = Vector2(200.0, 1000.0)
 
 
 # ── Пути ─────────────────────────────────────────────────────────────────────
@@ -93,15 +94,15 @@ func _run() -> void:
 	var made := 0
 	for i in BLOCK_COUNT:
 		var block_id := "block_gbx_%03d" % (i + 1)
-		var strata_top := _pick_strata(rng)
-		var ranges: Dictionary = SIZE_RANGES[strata_top]
+		var strata_top := "Glare"
 
 		var size := Vector3(
-				rng.randf_range(ranges["footprint"].x, ranges["footprint"].y),
-				rng.randf_range(ranges["height"].x,    ranges["height"].y),
-				rng.randf_range(ranges["footprint"].x, ranges["footprint"].y))
+				FOOTPRINT_CHOICES[rng.randi_range(0, FOOTPRINT_CHOICES.size() - 1)],
+				DOGGERLAND_HEIGHT + MANIFOLD_HEIGHT
+						+ rng.randf_range(GLARE_HEIGHT_RANGE.x, GLARE_HEIGHT_RANGE.y),
+				FOOTPRINT_CHOICES[rng.randi_range(0, FOOTPRINT_CHOICES.size() - 1)])
 
-		if _generate_block(block_id, size, strata_top, mat_content, mat_silhouette, rng):
+		if _generate_block(block_id, size, strata_top, mat_content, mat_silhouette):
 			made += 1
 
 	print("[BlockLibraryGenerator] ✅ Готово: %d/%d блоков (seed=%d)" % [made, BLOCK_COUNT, SEED])
@@ -133,8 +134,7 @@ func _ensure_material(mat_path: String, tex_path: String) -> StandardMaterial3D:
 # ── Генерация одного блока ───────────────────────────────────────────────────
 
 func _generate_block(block_id: String, size: Vector3, strata_top: String,
-		mat_content: StandardMaterial3D, mat_silhouette: StandardMaterial3D,
-		rng: RandomNumberGenerator) -> bool:
+		mat_content: StandardMaterial3D, mat_silhouette: StandardMaterial3D) -> bool:
 
 	var block_dir := CONTENT_DIR.path_join(block_id)
 	DirAccess.make_dir_recursive_absolute(block_dir)
@@ -143,7 +143,7 @@ func _generate_block(block_id: String, size: Vector3, strata_top: String,
 	var layer_paths := {}   # { "Doggerland": "res://.../layer_doggerland.tscn", ... }
 	for stratum in _strata_reached(size.y):
 		var path := block_dir.path_join("layer_%s.tscn" % stratum.to_lower())
-		if not _save_layer_scene(path, stratum, size, mat_content, rng):
+		if not _save_layer_scene(path, stratum, size, mat_content):
 			return false
 		layer_paths[stratum] = path
 
@@ -172,45 +172,29 @@ func _strata_reached(height: float) -> Array[String]:
 	return result
 
 
-func _pick_strata(rng: RandomNumberGenerator) -> String:
-	var roll := rng.randf()
-	if roll < STRATA_WEIGHTS[0]:
-		return "Doggerland"
-	elif roll < STRATA_WEIGHTS[0] + STRATA_WEIGHTS[1]:
-		return "Manifold"
-	return "Glare"
-
-
 # ── Сцены ────────────────────────────────────────────────────────────────────
 
-## Слой страты: несколько зелёных объёмов в высотной полосе своей страты.
+## Слой страты: один сплошной объём на всю ширину/глубину блока, точно
+## заполняющий высотную полосу своей страты.
 func _save_layer_scene(path: String, stratum: String, block_size: Vector3,
-		mat: StandardMaterial3D, rng: RandomNumberGenerator) -> bool:
+		mat: StandardMaterial3D) -> bool:
 
 	var band := _strata_band(stratum, block_size.y)
 	var root := Node3D.new()
 	root.name = "Layer%s" % stratum
 
-	var count := rng.randi_range(LAYER_SHAPES_RANGE.x, LAYER_SHAPES_RANGE.y)
-	for i in count:
-		var w := block_size.x * rng.randf_range(0.3, 0.9)
-		var d := block_size.z * rng.randf_range(0.3, 0.9)
-		var h := (band.y - band.x) * rng.randf_range(0.25, 0.85)
-		var y := rng.randf_range(band.x, band.y - h)
+	var h := band.y - band.x
 
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(w, h, d)
-		mesh.material = mat
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(block_size.x, h, block_size.z)
+	mesh.material = mat
 
-		var mi := MeshInstance3D.new()
-		mi.name = "Shape%d" % (i + 1)
-		mi.mesh = mesh
-		mi.position = Vector3(
-				rng.randf_range(-block_size.x * 0.25, block_size.x * 0.25),
-				y + h * 0.5,
-				rng.randf_range(-block_size.z * 0.25, block_size.z * 0.25))
-		root.add_child(mi)
-		mi.owner = root
+	var mi := MeshInstance3D.new()
+	mi.name = "MeshInstance3D"
+	mi.mesh = mesh
+	mi.position = Vector3(0.0, band.x + h * 0.5, 0.0)
+	root.add_child(mi)
+	mi.owner = root
 
 	return _pack_and_save(root, path)
 
@@ -269,28 +253,46 @@ func _save_content_scene(path: String, block_id: String, size: Vector3,
 	return _pack_and_save(root, path)
 
 
-## Силуэт: один тёмный габаритный объём, нижняя грань на y=0.
+## Силуэт: тёмный габаритный объём (нижняя грань на y=0, размер точно как у
+## контента) + постоянная коллизия — StaticBody3D в группе "wall" (физслой 3,
+## project.godot), никогда не выгружается конвейером стриминга.
 func _save_silhouette_scene(path: String, block_id: String, size: Vector3,
 		strata_top: String, mat: StandardMaterial3D) -> bool:
 
-	var h := size.y * SILHOUETTE_HEIGHT_FACTOR
-
 	var root := Node3D.new()
 	root.name = "%sSilhouette" % block_id.to_pascal_case()
-	root.set_meta("gbx_size", Vector3(size.x, h, size.z))
+	root.set_meta("gbx_size", size)
 	root.set_meta("gbx_strata_top", strata_top)
 	root.set_meta("gbx_kind", "silhouette")
 
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(size.x, h, size.z)
+	mesh.size = size
 	mesh.material = mat
 
 	var mi := MeshInstance3D.new()
 	mi.name = "MeshInstance3D"
 	mi.mesh = mesh
-	mi.position = Vector3(0.0, h * 0.5, 0.0)
+	mi.position = Vector3(0.0, size.y * 0.5, 0.0)
 	root.add_child(mi)
 	mi.owner = root
+
+	var body := StaticBody3D.new()
+	body.name = "StaticBody3D"
+	body.collision_layer = 1 << 2   # физслой 3 = "wall" (project.godot)
+	body.collision_mask  = 0
+	body.add_to_group("wall", true)   # persistent=true — иначе группа не сохранится в .tscn
+	root.add_child(body)
+	body.owner = root
+
+	var shape := BoxShape3D.new()
+	shape.size = size
+
+	var cs := CollisionShape3D.new()
+	cs.name = "CollisionShape3D"
+	cs.shape = shape
+	cs.position = Vector3(0.0, size.y * 0.5, 0.0)
+	body.add_child(cs)
+	cs.owner = root
 
 	return _pack_and_save(root, path)
 

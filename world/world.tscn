@@ -20,4 +20,4 @@ print_log = false
 exit_scene = false
 
 [node name="HoverTest" parent="." unique_id=17550472 instance=ExtResource("5_mmdvd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.990112, 1.2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 1.2, -700)

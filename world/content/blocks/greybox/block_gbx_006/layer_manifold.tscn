@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cnos3y7au53y7"]
+
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_pjbem"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_fx74b"]
+material = ExtResource("1_pjbem")
+size = Vector3(600, 1000, 600)
+
+[node name="LayerManifold" type="Node3D" unique_id=1453882472]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=739430868]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1500, 0)
+mesh = SubResource("BoxMesh_fx74b")

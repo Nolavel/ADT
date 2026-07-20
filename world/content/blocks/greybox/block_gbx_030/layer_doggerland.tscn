@@ -2,28 +2,12 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_3n1qh"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_3n1qh"]
-material = ExtResource("1_3n1qh")
-size = Vector3(327.74832, 228.10828, 407.22067)
-
 [sub_resource type="BoxMesh" id="BoxMesh_n7p7p"]
 material = ExtResource("1_3n1qh")
-size = Vector3(340.4873, 369.35614, 194.4952)
+size = Vector3(600, 1000, 600)
 
-[sub_resource type="BoxMesh" id="BoxMesh_qesrq"]
-material = ExtResource("1_3n1qh")
-size = Vector3(258.1948, 178.31024, 495.94366)
+[node name="LayerDoggerland" type="Node3D" unique_id=1906391280]
 
-[node name="LayerDoggerland" type="Node3D" unique_id=545352144]
-
-[node name="Shape1" type="MeshInstance3D" parent="." unique_id=2122217969]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -163.34601, 411.17944, 60.64868)
-mesh = SubResource("BoxMesh_3n1qh")
-
-[node name="Shape2" type="MeshInstance3D" parent="." unique_id=369529242]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -109.115265, 231.70319, 127.7587)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1329707844]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
 mesh = SubResource("BoxMesh_n7p7p")
-
-[node name="Shape3" type="MeshInstance3D" parent="." unique_id=1148226202]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136.57976, 276.86227, -35.447746)
-mesh = SubResource("BoxMesh_qesrq")

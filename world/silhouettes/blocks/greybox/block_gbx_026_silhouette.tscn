@@ -4,13 +4,24 @@
 
 [sub_resource type="BoxMesh" id="BoxMesh_64rtq"]
 material = ExtResource("1_64rtq")
-size = Vector3(439.70764, 1502.5962, 269.5866)
+size = Vector3(600, 2340.7554, 600)
 
-[node name="BlockGbx026Silhouette" type="Node3D" unique_id=1760285614]
-metadata/gbx_size = Vector3(439.70764, 1502.5962, 269.5866)
-metadata/gbx_strata_top = "Manifold"
+[sub_resource type="BoxShape3D" id="BoxShape3D_roq6l"]
+size = Vector3(600, 2340.7554, 600)
+
+[node name="BlockGbx026Silhouette" type="Node3D" unique_id=119916468]
+metadata/gbx_size = Vector3(600, 2340.7554, 600)
+metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=855632323]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 751.2981, 0)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=90282094]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1170.3777, 0)
 mesh = SubResource("BoxMesh_64rtq")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1354091819 groups=["wall"]]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=786206440]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1170.3777, 0)
+shape = SubResource("BoxShape3D_roq6l")

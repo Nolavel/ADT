@@ -2,23 +2,23 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_f32nh"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_f32nh"]
+[sub_resource type="BoxMesh" id="BoxMesh_c6xgn"]
 material = ExtResource("1_f32nh")
-size = Vector3(70.97563, 2349.33, 57.463684)
+size = Vector3(90, 2824.4983, 90)
 
-[node name="BlockGbx002" type="Node3D" unique_id=1697287858]
-metadata/gbx_size = Vector3(473.17087, 2349.33, 383.09122)
+[node name="BlockGbx002" type="Node3D" unique_id=123666293]
+metadata/gbx_size = Vector3(600, 2824.4983, 600)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "content"
 
-[node name="Shared" type="Node3D" parent="." unique_id=2036388574]
+[node name="Shared" type="Node3D" parent="." unique_id=1969241568]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=707651501]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1174.665, 0)
-mesh = SubResource("BoxMesh_f32nh")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1204634964]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1412.2491, 0)
+mesh = SubResource("BoxMesh_c6xgn")
 
-[node name="LayerDoggerland" type="Node3D" parent="." unique_id=1939852239 instance_placeholder="res://world/content/blocks/greybox/block_gbx_002/layer_doggerland.tscn"]
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=933392898 instance_placeholder="res://world/content/blocks/greybox/block_gbx_002/layer_doggerland.tscn"]
 
-[node name="LayerManifold" type="Node3D" parent="." unique_id=1679969150 instance_placeholder="res://world/content/blocks/greybox/block_gbx_002/layer_manifold.tscn"]
+[node name="LayerManifold" type="Node3D" parent="." unique_id=351942258 instance_placeholder="res://world/content/blocks/greybox/block_gbx_002/layer_manifold.tscn"]
 
-[node name="LayerGlare" type="Node3D" parent="." unique_id=1120099298 instance_placeholder="res://world/content/blocks/greybox/block_gbx_002/layer_glare.tscn"]
+[node name="LayerGlare" type="Node3D" parent="." unique_id=1976451262 instance_placeholder="res://world/content/blocks/greybox/block_gbx_002/layer_glare.tscn"]

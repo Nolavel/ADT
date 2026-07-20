@@ -2,20 +2,12 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_0yueb"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_0yueb"]
-material = ExtResource("1_0yueb")
-size = Vector3(388.36316, 342.312, 246.0491)
-
 [sub_resource type="BoxMesh" id="BoxMesh_47d2r"]
 material = ExtResource("1_0yueb")
-size = Vector3(519.24023, 285.7953, 492.36856)
+size = Vector3(600, 1000, 500)
 
-[node name="LayerDoggerland" type="Node3D" unique_id=698108730]
+[node name="LayerDoggerland" type="Node3D" unique_id=1333325753]
 
-[node name="Shape1" type="MeshInstance3D" parent="." unique_id=1718585917]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.193115, 462.60535, -138.3387)
-mesh = SubResource("BoxMesh_0yueb")
-
-[node name="Shape2" type="MeshInstance3D" parent="." unique_id=298442143]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 149.86371, 565.86035, 97.85367)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2040443626]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
 mesh = SubResource("BoxMesh_47d2r")

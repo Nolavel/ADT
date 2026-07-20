@@ -2,19 +2,23 @@
 
 [ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_f67ex"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_f67ex"]
+[sub_resource type="BoxMesh" id="BoxMesh_10xgu"]
 material = ExtResource("1_f67ex")
-size = Vector3(103.2769, 867.9966, 99.00013)
+size = Vector3(90, 2751.8486, 75)
 
-[node name="BlockGbx028" type="Node3D" unique_id=928382284]
-metadata/gbx_size = Vector3(688.5127, 867.9966, 660.00085)
-metadata/gbx_strata_top = "Doggerland"
+[node name="BlockGbx028" type="Node3D" unique_id=199826900]
+metadata/gbx_size = Vector3(600, 2751.8486, 500)
+metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "content"
 
-[node name="Shared" type="Node3D" parent="." unique_id=1138082776]
+[node name="Shared" type="Node3D" parent="." unique_id=2145049413]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1399708276]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 433.9983, 0)
-mesh = SubResource("BoxMesh_f67ex")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=1997389592]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1375.9243, 0)
+mesh = SubResource("BoxMesh_10xgu")
 
-[node name="LayerDoggerland" type="Node3D" parent="." unique_id=1293756218 instance_placeholder="res://world/content/blocks/greybox/block_gbx_028/layer_doggerland.tscn"]
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=876308610 instance_placeholder="res://world/content/blocks/greybox/block_gbx_028/layer_doggerland.tscn"]
+
+[node name="LayerManifold" type="Node3D" parent="." unique_id=1882676692 instance_placeholder="res://world/content/blocks/greybox/block_gbx_028/layer_manifold.tscn"]
+
+[node name="LayerGlare" type="Node3D" parent="." unique_id=633966721 instance_placeholder="res://world/content/blocks/greybox/block_gbx_028/layer_glare.tscn"]

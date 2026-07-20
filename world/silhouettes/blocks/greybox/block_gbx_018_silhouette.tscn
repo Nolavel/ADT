@@ -2,15 +2,26 @@
 
 [ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_3wovw"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_3wovw"]
+[sub_resource type="BoxMesh" id="BoxMesh_edfpn"]
 material = ExtResource("1_3wovw")
-size = Vector3(340.16702, 500.12857, 329.85373)
+size = Vector3(600, 2837.5425, 400)
 
-[node name="BlockGbx018Silhouette" type="Node3D" unique_id=1522607971]
-metadata/gbx_size = Vector3(340.16702, 500.12857, 329.85373)
-metadata/gbx_strata_top = "Doggerland"
+[sub_resource type="BoxShape3D" id="BoxShape3D_f75o7"]
+size = Vector3(600, 2837.5425, 400)
+
+[node name="BlockGbx018Silhouette" type="Node3D" unique_id=805317113]
+metadata/gbx_size = Vector3(600, 2837.5425, 400)
+metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1720152007]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 250.06429, 0)
-mesh = SubResource("BoxMesh_3wovw")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=627213284]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1418.7712, 0)
+mesh = SubResource("BoxMesh_edfpn")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1332494889 groups=["wall"]]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=1474174434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1418.7712, 0)
+shape = SubResource("BoxShape3D_f75o7")

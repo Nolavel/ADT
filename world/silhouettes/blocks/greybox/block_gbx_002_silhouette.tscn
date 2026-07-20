@@ -2,15 +2,26 @@
 
 [ext_resource type="Material" uid="uid://diipkfp4sa5us" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_pehin"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_pehin"]
+[sub_resource type="BoxMesh" id="BoxMesh_0tgvt"]
 material = ExtResource("1_pehin")
-size = Vector3(473.17087, 1926.4507, 383.09122)
+size = Vector3(600, 2824.4983, 600)
 
-[node name="BlockGbx002Silhouette" type="Node3D" unique_id=908368021]
-metadata/gbx_size = Vector3(473.17087, 1926.4507, 383.09122)
+[sub_resource type="BoxShape3D" id="BoxShape3D_86dxb"]
+size = Vector3(600, 2824.4983, 600)
+
+[node name="BlockGbx002Silhouette" type="Node3D" unique_id=2115344123]
+metadata/gbx_size = Vector3(600, 2824.4983, 600)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=845376687]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 963.22534, 0)
-mesh = SubResource("BoxMesh_pehin")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=168822893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1412.2491, 0)
+mesh = SubResource("BoxMesh_0tgvt")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1521595245 groups=["wall"]]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=710909221]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1412.2491, 0)
+shape = SubResource("BoxShape3D_86dxb")
