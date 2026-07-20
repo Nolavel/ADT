@@ -39,6 +39,11 @@ const STRATA_DOGGERLAND  := Vector2(0.0,    1000.0)
 const STRATA_MANIFOLD    := Vector2(1000.0, 2000.0)
 const STRATA_GLARE       := Vector2(2000.0, 3200.0)
 
+## Буфер вокруг порога страты — смена страты требует захода за порог на
+## этот запас, иначе игрок у самой границы дёргает конвейер материализации
+## страт-слоёв (_request_layer) туда-сюда каждый кадр.
+const STRATA_HYSTERESIS: float = 50.0
+
 const DISTRICT_A1        := Vector2(0.0,    1600.0)
 const DISTRICT_A2        := Vector2(2000.0, 6000.0)
 const DISTRICT_A3        := Vector2(6000.0, 8600.0)
@@ -94,7 +99,7 @@ func set_current_district(district: String) -> void:
 ## Вызывается StreamingSystems каждый кадр с позицией игрока.
 ## Обновляет текущую страту и текущий тайл.
 func update_player_position(pos: Vector3) -> void:
-	set_current_strata(get_strata_by_height(pos.y))
+	set_current_strata(_get_strata_with_hysteresis(pos.y, current_strata))
 
 	var coords := get_tile_coords(pos)
 	if coords != current_tile:
@@ -112,6 +117,33 @@ func get_strata_by_height(height: float) -> String:
 		return "Manifold"
 	else:
 		return "Glare"
+
+
+## Гистерезис вокруг порогов страт: не переключает, пока высота не зайдёт
+## за порог на STRATA_HYSTERESIS в сторону перехода — без этого игрок у
+## самой границы дёргает _request_layer каждый кадр.
+func _get_strata_with_hysteresis(height: float, current: String) -> String:
+	var candidate := current
+	while true:
+		var next := candidate
+		match candidate:
+			"Doggerland":
+				if height >= STRATA_MANIFOLD.x + STRATA_HYSTERESIS:
+					next = "Manifold"
+			"Manifold":
+				if height < STRATA_MANIFOLD.x - STRATA_HYSTERESIS:
+					next = "Doggerland"
+				elif height >= STRATA_GLARE.x + STRATA_HYSTERESIS:
+					next = "Glare"
+			"Glare":
+				if height < STRATA_GLARE.x - STRATA_HYSTERESIS:
+					next = "Manifold"
+			_:
+				return get_strata_by_height(height)
+		if next == candidate:
+			break
+		candidate = next
+	return candidate
 
 
 # ── Математика тайловой сетки ─────────────────────────────────────────────────

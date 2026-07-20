@@ -78,6 +78,12 @@ const MAX_CONCURRENT_LOADS := 2
 ## Фоновая загрузка кадр не грузит — дорого именно инстанцирование.
 const INSTANTIATION_BUDGET_PER_FRAME := 1
 
+## Зона вокруг границы страты (метры от порога по Y), в которой соседний
+## страт-слой активных кварталов упреждающе кладётся в _packed_cache — чтобы
+## к моменту реального пересечения (с учётом WorldSystems.STRATA_HYSTERESIS)
+## материализация не ждала фоновой загрузки.
+const STRATA_PRELOAD_MARGIN: float = 100.0
+
 
 # ── Типы ──────────────────────────────────────────────────────────────────────
 
@@ -192,6 +198,8 @@ func _process(_delta: float) -> void:
 
 	if DEBUG_LOAD_ALL:
 		return
+
+	_prewarm_upcoming_layers(player_pos)
 
 	# Скан радиусов — дросселирован по пройденному пути.
 	if player_pos.distance_to(_last_check_position) >= STREAM_CHECK_DISTANCE:
@@ -495,6 +503,37 @@ func _on_strata_changed(new_strata: String) -> void:
 	for cell: StreamCell in _cells.values():
 		if cell.type == CellType.BLOCK and cell.state == CellState.ACTIVE:
 			_request_layer(cell, new_strata)
+
+
+## Упреждающая фоновая прогрузка: пока игрок в пределах STRATA_PRELOAD_MARGIN
+## от границы страты, кладёт PackedScene соседнего страт-слоя активных
+## кварталов в _packed_cache — само переключение (материализация +
+## гашение сегмента силуэта) по-прежнему делают _request_layer/_pump_layers
+## при фактическом пересечении границы.
+func _prewarm_upcoming_layers(player_pos: Vector3) -> void:
+	var h := player_pos.y
+	var near_manifold_boundary := absf(h - WorldSystems.STRATA_MANIFOLD.x) <= STRATA_PRELOAD_MARGIN
+	var near_glare_boundary    := absf(h - WorldSystems.STRATA_GLARE.x)    <= STRATA_PRELOAD_MARGIN
+	if not (near_manifold_boundary or near_glare_boundary):
+		return
+	for cell: StreamCell in _cells.values():
+		if cell.type != CellType.BLOCK or cell.state != CellState.ACTIVE:
+			continue
+		if near_manifold_boundary:
+			_prewarm_layer(cell, "Doggerland" if cell.layer_strata == "Manifold" else "Manifold")
+		if near_glare_boundary:
+			_prewarm_layer(cell, "Manifold" if cell.layer_strata == "Glare" else "Glare")
+
+
+func _prewarm_layer(cell: StreamCell, strata: String) -> void:
+	if cell.layer_strata == strata or cell.pending_strata == strata:
+		return
+	var placeholder := _find_layer_placeholder(cell, strata)
+	if placeholder == null:
+		return
+	var path := placeholder.get_instance_path()
+	if not _packed_cache.has(path):
+		ResourceLoader.load_threaded_request(path)
 
 
 func _request_layer(cell: StreamCell, strata: String) -> void:
