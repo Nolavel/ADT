@@ -78,6 +78,10 @@ const MAX_CONCURRENT_LOADS := 2
 ## Фоновая загрузка кадр не грузит — дорого именно инстанцирование.
 const INSTANTIATION_BUDGET_PER_FRAME := 1
 
+## Temporary debug instrumentation for tracking down streaming-related
+## "ripple between blocks at max hover speed" — remove once diagnosed.
+const DEBUG_QUEUE_PRINTS: bool = true
+
 ## Зона вокруг границы страты (метры от порога по Y), в которой соседний
 ## страт-слой активных кварталов упреждающе кладётся в _packed_cache — чтобы
 ## к моменту реального пересечения (с учётом WorldSystems.STRATA_HYSTERESIS)
@@ -100,6 +104,7 @@ class StreamCell:
 	var content_path:    String
 	var silhouette_path: String
 	var state:           CellState = CellState.UNLOADED
+	var queued_at:       int = 0     # Time.get_ticks_msec() when enqueued — debug latency tracking
 	var failed:          bool = false # битый путь/ресурс — исключена навсегда
 	var silhouette_node: Node3D = null
 	var content_node:    Node3D = null
@@ -344,13 +349,16 @@ func _load_block_silhouette(block_id: String) -> PackedScene:
 # ── Скан (по метрике типа ячейки) ─────────────────────────────────────────────
 
 func _scan(player_pos: Vector3) -> void:
+	var newly_queued := 0
 	for cell: StreamCell in _cells.values():
 		if cell.failed:
 			continue
 		if _is_in_load_range(cell, player_pos):
 			if cell.state == CellState.UNLOADED:
+				cell.queued_at = Time.get_ticks_msec()
 				_queue.append(cell)
 				_set_state(cell, CellState.QUEUED)
+				newly_queued += 1
 		elif _is_out_of_range(cell, player_pos):
 			match cell.state:
 				CellState.QUEUED:
@@ -362,6 +370,10 @@ func _scan(player_pos: Vector3) -> void:
 	# Ближайшее — в голову очереди.
 	_queue.sort_custom(func(a: StreamCell, b: StreamCell) -> bool:
 		return _dist_xz(player_pos, a.position) < _dist_xz(player_pos, b.position))
+
+	if DEBUG_QUEUE_PRINTS and newly_queued > 0:
+		print("[StreamingSystems][DEBUG] scan queued=%d queue_size=%d loads_in_flight=%d anchor_speed=%.2f"
+				% [newly_queued, _queue.size(), _loads_in_flight, _get_anchor_speed()])
 
 
 func _is_in_load_range(cell: StreamCell, player_pos: Vector3) -> bool:
@@ -392,6 +404,9 @@ func _tile_ring(cell: StreamCell, player_pos: Vector3) -> int:
 # ── Прокачка конвейера (каждый кадр) ─────────────────────────────────────────
 
 func _pump(player_pos: Vector3) -> void:
+	if DEBUG_QUEUE_PRINTS and not _queue.is_empty() and _loads_in_flight >= MAX_CONCURRENT_LOADS:
+		print("[StreamingSystems][DEBUG] SATURATED queue_size=%d" % _queue.size())
+
 	# 1. Старт фоновых загрузок из очереди (кэш-хит идёт сразу в READY).
 	while not _queue.is_empty() and _loads_in_flight < MAX_CONCURRENT_LOADS:
 		var cell: StreamCell = _queue.pop_front()
@@ -472,6 +487,10 @@ func _add_content(cell: StreamCell, packed: PackedScene) -> void:
 		cell.silhouette_node.visible = false   # физика силуэта продолжает жить
 
 	_set_state(cell, CellState.ACTIVE)
+
+	if DEBUG_QUEUE_PRINTS and cell.queued_at > 0:
+		print("[StreamingSystems][DEBUG] activated %-14s latency=%dms queue_size=%d"
+				% [cell.id, Time.get_ticks_msec() - cell.queued_at, _queue.size()])
 
 	if cell.type == CellType.BLOCK:
 		_request_layer(cell, WorldSystems.current_strata)
@@ -631,3 +650,14 @@ func _set_state(cell: StreamCell, new_state: CellState) -> void:
 
 func _dist_xz(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))
+
+
+## Debug-only: current speed of the streaming anchor (player or hover, same
+## resolution as _process()). Returns 0.0 if the anchor exposes no velocity.
+func _get_anchor_speed() -> float:
+	var anchor: Node3D = _player
+	if is_instance_valid(PlayerState.current_hover):
+		anchor = PlayerState.current_hover
+	if anchor is CharacterBody3D:
+		return (anchor as CharacterBody3D).velocity.length()
+	return 0.0

@@ -4,23 +4,32 @@
 # Владелец: world.gd, WORLD_SYSTEM_SCRIPTS. Следит за тем же anchor'ом, что и
 # StreamingSystems._process() (пешком — игрок, в ховере — сам ховер): в
 # пределах margin метров до истинной границы World Zone плавно доворачивает
-# горизонтальную скорость анкора обратно к центру, сила растёт по мере
-# приближения к самой границе — не жёсткая стена, а мягкая коррекция курса.
-# Аналогично — потолок по Y (GAMEPLAY_HEIGHT): гасит/разворачивает вертикальную
-# скорость, если анкор поднимается слишком высоко.
+# ЖЕЛАЕМОЕ направление движения анкора к центру — не саму velocity.
 #
-# Приоритет тестирования — ховер (см. рабочие заметки проекта); пеший игрок
-# получает ту же логику бесплатно за счёт общего anchor-паттерна, но
-# практически до границы дойти пешком почти нереально (буфер 1500м между
-# городом и краем мира).
+# ВАЖНО (урок первой версии): прямая запись в anchor.velocity отсюда ловила
+# гонку с HoverBase._process_horizontal() — та каждый кадр читает текущую
+# velocity и инерционно тянет её обратно к вводу игрока (см. move_toward к
+# target_h, посчитанному из _intent_move). Обе системы писали в одно и то же
+# свойство — визуально дрожь у границы, независимая от стриминга. Чинится тем
+# же принципом, что уже есть в проекте: TPSMovementSystem не трогает
+# player.gd.velocity напрямую, а зовёт set_direct_move_input() — подмешивает
+# НАМЕРЕНИЕ, оставляя владельца физики единственным писателем скорости.
+# Здесь то же самое: HoverBase.set_border_steering_bias() подмешивается в
+# wish_dir до расчёта инерции внутри самого HoverBase.
+#
+# Потолок по Y (GAMEPLAY_HEIGHT) пока НЕ реализован — HoverBase._process_vertical()
+# перезаписывает velocity.y с нуля каждый кадр из _intent_vertical/_hold_altitude,
+# так что прямая правка отсюда была бы не гонкой, а чистым no-op (перетиралась
+# бы молча). Нужен аналогичный intent-хук в _process_vertical() — не браться
+# за него, пока не протестирован сценарий подлёта к потолку.
 # =============================================================================
 extends Node
 class_name WorldBorderGuardSystem
 
-## Начинаем доворачивать курс за столько метров до истинной границы (и XZ, и Y).
+## Начинаем доворачивать курс за столько метров до истинной границы (XZ).
 @export var margin: float = 500.0
 
-## Доля скорости, направляемая к центру/вниз у самой границы (0..1).
+## Доля направления, доворачиваемая к центру у самой границы (0..1).
 @export var max_turn_strength: float = 0.6
 
 var _player: CharacterBody3D
@@ -38,8 +47,7 @@ func _physics_process(_delta: float) -> void:
 	if anchor == null:
 		return
 
-	_apply_xz_turn(anchor)
-	_apply_ceiling_turn(anchor)
+	_apply_xz_bias(anchor)
 
 
 ## Тот же anchor-паттерн, что в StreamingSystems._process() — пешком игрок,
@@ -50,40 +58,23 @@ func _current_anchor() -> CharacterBody3D:
 	return _player
 
 
-func _apply_xz_turn(anchor: CharacterBody3D) -> void:
+## Подмешивает намерение довернуть к центру — сама скорость не трогается,
+## решение остаётся за HoverBase. У пешего игрока такого хука пока нет
+## (приоритет тестирования — ховер); при отсутствии метода тихо ничего не
+## делает, а не падает.
+func _apply_xz_bias(anchor: CharacterBody3D) -> void:
+	if not anchor.has_method("set_border_steering_bias"):
+		return
+
 	var pos := anchor.global_position
 	var half := WorldSystems.WORLD_ZONE_SIZE * 0.5   # (4800, 4800)
 
 	var turn := maxf(
 			_edge_turn_strength(absf(pos.x), half.x),
 			_edge_turn_strength(absf(pos.z), half.y))
-	if turn <= 0.0:
-		return
 
-	var horizontal := Vector3(anchor.velocity.x, 0.0, anchor.velocity.z)
-	var speed := horizontal.length()
-	if speed < 0.01:
-		return
-
-	var current_dir := horizontal / speed
 	var to_center := Vector3(-pos.x, 0.0, -pos.z).normalized()
-	var blended := current_dir.lerp(to_center, turn).normalized()
-
-	anchor.velocity.x = blended.x * speed
-	anchor.velocity.z = blended.z * speed
-
-
-## Потолок односторонний (пол уже держит физическая коллизия, страта Y=0
-## границей "мира" в смысле разворота не является) — гасим только подъём.
-func _apply_ceiling_turn(anchor: CharacterBody3D) -> void:
-	if anchor.velocity.y <= 0.0:
-		return
-
-	var turn := _edge_turn_strength(anchor.global_position.y, WorldSystems.GAMEPLAY_HEIGHT)
-	if turn <= 0.0:
-		return
-
-	anchor.velocity.y = lerpf(anchor.velocity.y, 0.0, turn)
+	anchor.set_border_steering_bias(to_center, turn)
 
 
 ## 0.0 вне margin, растёт линейно до max_turn_strength у самой границы extent.

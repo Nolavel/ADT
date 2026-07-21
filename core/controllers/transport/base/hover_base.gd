@@ -97,12 +97,34 @@ func _physics_process(delta: float) -> void:
 
 # ── Горизонталь: инерция ─────────────────────────────────────────────────────
 
+## Мировое направление разворота у границы (WorldBorderGuardSystem) и его сила
+## (0..1). НЕ трогает velocity напрямую — подмешивается в wish_dir до расчёта
+## инерции, тем же принципом, что TPSMovementSystem → player.gd через
+## set_direct_move_input(): HoverBase остаётся единственным писателем velocity.
+## Прямая правка velocity снаружи здесь ловила гонку с этой же функцией —
+## _process_horizontal читает текущую velocity каждый кадр и инерционно тянет
+## её обратно к вводу игрока, сводя любую внешнюю правку velocity в дрожь.
+var _border_bias_dir:      Vector3 = Vector3.ZERO
+var _border_bias_strength: float   = 0.0
+
+
+func set_border_steering_bias(world_dir: Vector3, strength: float) -> void:
+	_border_bias_dir      = world_dir
+	_border_bias_strength = clampf(strength, 0.0, 1.0)
+
+
 func _process_horizontal(delta: float) -> void:
 	# Намерение в локальных осях корпуса → мировое направление.
 	var forward := -global_transform.basis.z
 	var right   :=  global_transform.basis.x
 	var wish_dir := (forward * _intent_move.y + right * _intent_move.x)
 	wish_dir.y = 0.0
+
+	# Разворот у границы — доворачиваем ЖЕЛАЕМОЕ направление, а не результат.
+	if _border_bias_strength > 0.0 and wish_dir.length() > 0.01:
+		var wish_len := wish_dir.length()
+		wish_dir = wish_dir.normalized().lerp(_border_bias_dir, _border_bias_strength) \
+				.normalized() * wish_len
 
 	var target_h := wish_dir.normalized() * max_speed * wish_dir.length() \
 			if wish_dir.length() > 0.01 else Vector3.ZERO
