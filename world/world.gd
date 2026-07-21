@@ -59,6 +59,8 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	TPSMovementSystem,
 	MenuSystem,
 	ZoomRulerSystem,
+	WorldBorderDebugSystem,
+	WorldBorderGuardSystem
 ]
 
 ## 2) Самостоятельные 3D-сцены — instantiate(), родитель = stream_container.
