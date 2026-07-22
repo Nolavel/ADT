@@ -1,0 +1,73 @@
+[gd_scene format=3 uid="uid://1xy6ncfpv0ib"]
+
+[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_6b5dt"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bs5ex"]
+size = Vector3(160, 2730, 180)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1kwxm"]
+albedo_color = Color(0.22, 0.24, 0.28, 1)
+albedo_texture = ExtResource("1_6b5dt")
+uv1_triplanar = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_kmdo6"]
+material = SubResource("StandardMaterial3D_1kwxm")
+size = Vector3(160, 3, 180)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4dgbq"]
+size = Vector3(140, 2980, 220)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hbsv0"]
+material = SubResource("StandardMaterial3D_1kwxm")
+size = Vector3(140, 3, 220)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e8krp"]
+size = Vector3(180, 2790, 150)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dlwk6"]
+material = SubResource("StandardMaterial3D_1kwxm")
+size = Vector3(180, 3, 150)
+
+[node name="Block3TowerSilhouette" type="Node3D" unique_id=1714171493]
+metadata/gbx_size = Vector3(560, 2980, 220)
+metadata/gbx_strata_top = "Glare"
+metadata/gbx_kind = "silhouette"
+
+[node name="Wall_0" type="StaticBody3D" parent="." unique_id=539330374 groups=["wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -200, 0, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall_0" unique_id=996581241]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1365, 0)
+shape = SubResource("BoxShape3D_bs5ex")
+
+[node name="Pad_0" type="MeshInstance3D" parent="." unique_id=348793175]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -200, 1.5, 0)
+mesh = SubResource("BoxMesh_kmdo6")
+
+[node name="Wall_1" type="StaticBody3D" parent="." unique_id=610299901 groups=["wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall_1" unique_id=2004345070]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1490, 0)
+shape = SubResource("BoxShape3D_4dgbq")
+
+[node name="Pad_1" type="MeshInstance3D" parent="." unique_id=1488836632]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.5, 0)
+mesh = SubResource("BoxMesh_hbsv0")
+
+[node name="Wall_2" type="StaticBody3D" parent="." unique_id=1041391582 groups=["wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 190, 0, 0)
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wall_2" unique_id=793345091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1395, 0)
+shape = SubResource("BoxShape3D_e8krp")
+
+[node name="Pad_2" type="MeshInstance3D" parent="." unique_id=1367959536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 190, 1.5, 0)
+mesh = SubResource("BoxMesh_dlwk6")

@@ -32,6 +32,7 @@
 [ext_resource type="PackedScene" uid="uid://ew1cb630cbvm" path="res://world/silhouettes/blocks/greybox/block_gbx_004_silhouette.tscn" id="28_48ry2"]
 [ext_resource type="PackedScene" uid="uid://be5kbwolqtuwn" path="res://world/silhouettes/blocks/greybox/block_gbx_014_silhouette.tscn" id="29_56tdt"]
 [ext_resource type="PackedScene" uid="uid://dfv54ym0q2bna" path="res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn" id="30_7otay"]
+[ext_resource type="PackedScene" uid="uid://1xy6ncfpv0ib" path="res://world/silhouettes/blocks/test/block_3tower_silhouette.tscn" id="31_ira0p"]
 [ext_resource type="PackedScene" uid="uid://dwkdgbm35pljh" path="res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn" id="31_sahta"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nqtne"]
@@ -101,6 +102,7 @@ size = Vector3(3200, 3200, 3200)
 size = Vector3(3200, 3200, 3200)
 
 [node name="MapSource" type="Node3D" unique_id=1797648371]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 926.6255, 0)
 script = ExtResource("1_upnkk")
 
 [node name="STRATA_Doggerland" type="Area3D" parent="." unique_id=1787207308 groups=["strata"]]
@@ -597,6 +599,19 @@ scene_path = "res://world/content/blocks/greybox/block_gbx_026/block_gbx_026.tsc
 silhouette_scene_path = "res://world/silhouettes/blocks/greybox/block_gbx_026_silhouette.tscn"
 
 [node name="SilhouettePreview" parent="BLOCKS/GBX_040_block_gbx_026" unique_id=822272497 instance=ExtResource("9_bel1l")]
+
+[node name="FEATURED_3tower" type="Node3D" parent="BLOCKS" unique_id=956227401]
+script = ExtResource("5_753aq")
+id = "featured_3tower"
+block_name = "block_3tower"
+district = "A5"
+scene_path = "res://world/content/blocks/test/block_3tower/block_3tower.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/test/block_3tower_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/FEATURED_3tower" unique_id=1714171493 instance=ExtResource("31_ira0p")]
+metadata/gbx_size = Vector3(560, 2980, 220)
+metadata/gbx_strata_top = "Glare"
+metadata/gbx_kind = "silhouette"
 
 [node name="Spawner" type="Node3D" parent="." unique_id=221293653]
 script = ExtResource("5_ikph1")

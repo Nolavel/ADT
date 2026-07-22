@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="StrataDeckProfile" format=3 uid="uid://bdg13snv0vnh0"]
+
+[ext_resource type="Script" uid="uid://ug3k7ybkm077" path="res://world/resources/strata_deck_profile.gd" id="1_7c3tr"]
+
+[resource]
+script = ExtResource("1_7c3tr")
+pattern = "C"
+visual_floor_pitch = 12.0

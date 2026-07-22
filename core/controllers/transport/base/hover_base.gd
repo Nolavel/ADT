@@ -6,6 +6,16 @@
 # псевдофизика: инерция через lerp к целевой скорости, yaw со сглаживанием,
 # визуальный крен корпуса без влияния на коллизии.
 #
+# ГОРИЗОНТАЛЬ — экспоненциальное сглаживание velocity.lerp(target, k) вместо
+# move_toward с переключаемым rate. Причина (2026-07, после разбора дрожи):
+# move_toward + выбор rate по сравнению длин target/current — это bang-bang
+# без гистерезиса; у max_speed current колеблется вокруг target в пределах
+# float-погрешности, rate дёргается accel↔braking каждый кадр → видимая
+# конвульсия. lerp — система первого порядка, критически задемпфирована by
+# design, вокруг цели колебаться не может. Модель подтверждена рабочим
+# mech-контроллером (ZoE-подобный "feel"): один коэффициент, выбираемый по
+# наличию ввода, а не по сравнению скоростей.
+#
 # ВЕРТИКАЛЬ — полуавтомат ("игроку проще простого"):
 #   • hover_up / hover_down удерживаются — набор/сброс высоты;
 #   • отпущены — текущая высота удерживается автоматически (без дрейфа),
@@ -27,10 +37,13 @@ class_name HoverBase
 @export_group("Horizontal")
 ## Максимальная горизонтальная скорость, м/с.
 @export var max_speed: float = 60.0
-## Разгон, м/с². Ниже max — ощущение массы.
-@export var acceleration: float = 36.0
-## Торможение при отсутствии ввода, м/с² (сильнее разгона — отзывчивый стоп).
-@export var braking: float = 32.0
+## Отзывчивость разгона (1/с): выше — быстрее выходит на скорость. Это
+## коэффициент экспоненты в lerp, а не м/с² — ощущение массы задаётся тем,
+## насколько он НИЖЕ braking (медленный разгон, резкий стоп).
+@export var acceleration: float = 6.0
+## Отзывчивость торможения при отсутствии ввода (1/с). Выше разгона =
+## отпустил газ, ховер тормозит резче, чем разгонялся.
+@export var braking: float = 8.0
 
 @export_group("Turning")
 ## Скорость доворота корпуса к направлению движения, рад/с.
@@ -60,6 +73,13 @@ var _controlled: bool = false
 var _hold_altitude: float = 0.0
 var _body_mesh: Node3D = null
 
+## Мировое направление разворота у границы (WorldBorderGuardSystem) и его сила
+## (0..1). НЕ трогает velocity напрямую — подмешивается в wish_dir до расчёта
+## инерции, тем же принципом, что TPSMovementSystem → player.gd через
+## set_direct_move_input(): HoverBase остаётся единственным писателем velocity.
+var _border_bias_dir:      Vector3 = Vector3.ZERO
+var _border_bias_strength: float   = 0.0
+
 
 func _ready() -> void:
 	_hold_altitude = global_position.y
@@ -83,6 +103,12 @@ func set_controlled(controlled: bool) -> void:
 		_intent_vertical = 0.0
 
 
+## Разворот у границы мира. Подмешивается в желаемое направление, не в velocity.
+func set_border_steering_bias(world_dir: Vector3, strength: float) -> void:
+	_border_bias_dir      = world_dir
+	_border_bias_strength = clampf(strength, 0.0, 1.0)
+
+
 func _physics_process(delta: float) -> void:
 	if not _intent_fresh:
 		_intent_move = Vector2.ZERO
@@ -95,23 +121,7 @@ func _physics_process(delta: float) -> void:
 	_process_banking(delta)
 
 
-# ── Горизонталь: инерция ─────────────────────────────────────────────────────
-
-## Мировое направление разворота у границы (WorldBorderGuardSystem) и его сила
-## (0..1). НЕ трогает velocity напрямую — подмешивается в wish_dir до расчёта
-## инерции, тем же принципом, что TPSMovementSystem → player.gd через
-## set_direct_move_input(): HoverBase остаётся единственным писателем velocity.
-## Прямая правка velocity снаружи здесь ловила гонку с этой же функцией —
-## _process_horizontal читает текущую velocity каждый кадр и инерционно тянет
-## её обратно к вводу игрока, сводя любую внешнюю правку velocity в дрожь.
-var _border_bias_dir:      Vector3 = Vector3.ZERO
-var _border_bias_strength: float   = 0.0
-
-
-func set_border_steering_bias(world_dir: Vector3, strength: float) -> void:
-	_border_bias_dir      = world_dir
-	_border_bias_strength = clampf(strength, 0.0, 1.0)
-
+# ── Горизонталь: экспоненциальное сглаживание ────────────────────────────────
 
 func _process_horizontal(delta: float) -> void:
 	# Намерение в локальных осях корпуса → мировое направление.
@@ -126,12 +136,19 @@ func _process_horizontal(delta: float) -> void:
 		wish_dir = wish_dir.normalized().lerp(_border_bias_dir, _border_bias_strength) \
 				.normalized() * wish_len
 
-	var target_h := wish_dir.normalized() * max_speed * wish_dir.length() \
-			if wish_dir.length() > 0.01 else Vector3.ZERO
+	# Целевая горизонтальная скорость. wish_dir.length() (0..1) сохраняет
+	# аналоговый ввод — половина стика = половина макс. скорости.
+	var target_h := wish_dir * max_speed if wish_dir.length() > 0.01 else Vector3.ZERO
+
+	# Один коэффициент, выбираемый по НАЛИЧИЮ ввода, а не по сравнению длин —
+	# именно это убирает bang-bang дрожь у max_speed. lerp никогда не
+	# перелетает цель, поэтому колебаться вокруг неё не может.
+	var k := acceleration if _intent_move.length() > 0.1 else braking
 
 	var current_h := Vector3(velocity.x, 0.0, velocity.z)
-	var rate := acceleration if target_h.length() > current_h.length() else braking
-	current_h = current_h.move_toward(target_h, rate * delta)
+	# Framerate-независимое сглаживание: 1 - exp(-k*dt) вместо k*dt даёт
+	# одинаковое ощущение при любом FPS (важно на нестабильном Forward+).
+	current_h = current_h.lerp(target_h, 1.0 - exp(-k * delta))
 
 	velocity.x = current_h.x
 	velocity.z = current_h.z
