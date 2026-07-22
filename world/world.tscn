@@ -14,9 +14,6 @@ script = ExtResource("1_tcf2h")
 [node name="HoverTest" parent="StreamContainer" unique_id=17550472 instance=ExtResource("5_mmdvd")]
 physics_interpolation_mode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 220, 1.2, -100)
-collision_layer = 1
-collision_mask = 4
-safe_margin = 0.01
 
 [node name="StatsDisplay" parent="." unique_id=1462911267 instance=ExtResource("2_h5o24")]
 print_log = false

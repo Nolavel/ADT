@@ -125,6 +125,8 @@ func _finish_boarding() -> void:
 # ── Высадка ──────────────────────────────────────────────────────────────────
 
 func _begin_exiting() -> void:
+	var v := (_hover as CharacterBody3D).velocity
+	print("[exit] v=(%.2f, %.2f, %.2f)  on_floor=%s" % [v.x, v.y, v.z, str((_hover as CharacterBody3D).is_on_floor())])
 	if _hover_speed() > exit_speed_threshold:
 		print("[HoverEntryTrigger] ✖ Выход запрещён: скорость %.1f м/с"
 				% _hover_speed())
@@ -148,5 +150,6 @@ func _begin_exiting() -> void:
 
 func _hover_speed() -> float:
 	if _hover is CharacterBody3D:
-		return (_hover as CharacterBody3D).velocity.length()
-	return 0.0   # болванка без hover_base неподвижна
+		var v := (_hover as CharacterBody3D).velocity
+		return Vector2(v.x, v.z).length()
+	return 0.0

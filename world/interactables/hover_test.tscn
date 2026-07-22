@@ -16,8 +16,9 @@ size = Vector3(2, 2, 2)
 [sub_resource type="BoxMesh" id="BoxMesh_bx8n8"]
 
 [node name="HoverTest" type="CharacterBody3D" unique_id=17550472]
-collision_layer = 0
-collision_mask = 0
+collision_mask = 6
+motion_mode = 1
+safe_margin = 0.01
 script = ExtResource("1_2s5sk")
 body_mesh_path = NodePath("MeshInstance3D")
 
@@ -31,7 +32,7 @@ shape = SubResource("BoxShape3D_5h11f")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -0.92710876)
 
 [node name="HoverEntryTrigger" type="Area3D" parent="." unique_id=1222824727]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -0.92710876)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.25515747, -0.92710876)
 collision_layer = 1024
 script = ExtResource("1_iqrxv")
 

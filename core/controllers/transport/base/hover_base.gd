@@ -36,7 +36,7 @@ class_name HoverBase
 
 @export_group("Horizontal")
 ## Максимальная горизонтальная скорость, м/с.
-@export var max_speed: float = 60.0
+@export var max_speed: float = 20.0
 ## Отзывчивость разгона (1/с): выше — быстрее выходит на скорость. Это
 ## коэффициент экспоненты в lerp, а не м/с² — ощущение массы задаётся тем,
 ## насколько он НИЖЕ braking (медленный разгон, резкий стоп).
@@ -60,6 +60,11 @@ class_name HoverBase
 @export var body_mesh_path: NodePath
 ## Максимальный крен в повороте, рад.
 @export var max_bank_angle: float = 0.35
+
+## Ниже этой горизонтальной скорости (м/с) без ввода ховер защёлкивается в
+## полный покой — lerp сам ноль не даёт. Должно быть ВЫШЕ порога высадки
+## HoverEntryTrigger.exit_speed_threshold (0.5), иначе выход всё равно глохнет.
+const STOP_EPSILON: float = 0.6
 
 ## Намерения текущего кадра. move: x=вправо, y=вперёд, в диапазоне [-1..1];
 ## vertical: [-1..1] (вверх/вниз), 0 = удержание высоты.
@@ -153,6 +158,12 @@ func _process_horizontal(delta: float) -> void:
 	velocity.x = current_h.x
 	velocity.z = current_h.z
 
+	# lerp к нулю не доходит (система 1-го порядка) — гасим микроскорость в ноль,
+	# иначе ховер «тлеет» на ~десятых м/с и не считается стоящим (гейт высадки).
+	if _intent_move.length() < 0.1 and Vector2(velocity.x, velocity.z).length() < STOP_EPSILON:
+		velocity.x = 0.0
+		velocity.z = 0.0
+
 	# Корпус доворачивается к направлению движения (не мгновенно).
 	if current_h.length() > 1.0:
 		var target_yaw := atan2(-current_h.x, -current_h.z)
@@ -163,10 +174,15 @@ func _process_horizontal(delta: float) -> void:
 
 func _process_vertical(delta: float) -> void:
 	if absf(_intent_vertical) > 0.01:
+		# Активный набор/снижение высоты по вводу.
 		velocity.y = _intent_vertical * vertical_speed
 		_hold_altitude = global_position.y + velocity.y * delta
+	elif is_on_floor():
+		# Стоим на опоре (палуба/земля): не боремся с ней, оседаем в покой.
+		velocity.y = 0.0
+		_hold_altitude = global_position.y
 	else:
-		# Удержание: демпфированный возврат к _hold_altitude, без дрейфа.
+		# Удержание высоты в воздухе: демпфированный возврат к _hold_altitude, без дрейфа.
 		var error := _hold_altitude - global_position.y
 		velocity.y = error * altitude_hold_stiffness
 

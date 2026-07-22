@@ -102,7 +102,6 @@ size = Vector3(3200, 3200, 3200)
 size = Vector3(3200, 3200, 3200)
 
 [node name="MapSource" type="Node3D" unique_id=1797648371]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 926.6255, 0)
 script = ExtResource("1_upnkk")
 
 [node name="STRATA_Doggerland" type="Area3D" parent="." unique_id=1787207308 groups=["strata"]]
