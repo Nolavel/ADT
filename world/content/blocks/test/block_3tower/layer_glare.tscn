@@ -2,170 +2,170 @@
 
 [ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_g23n3"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tpwcj"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e1hgv"]
 albedo_color = Color(0.55, 0.62, 0.55, 1)
 albedo_texture = ExtResource("1_g23n3")
 uv1_triplanar = true
 
-[sub_resource type="BoxMesh" id="BoxMesh_he0uv"]
-material = SubResource("StandardMaterial3D_tpwcj")
+[sub_resource type="BoxMesh" id="BoxMesh_g23n3"]
+material = SubResource("StandardMaterial3D_e1hgv")
 size = Vector3(160, 0.5, 180)
 
-[sub_resource type="MultiMesh" id="MultiMesh_iu0p5"]
+[sub_resource type="MultiMesh" id="MultiMesh_he0uv"]
 transform_format = 1
-instance_count = 52
-mesh = SubResource("BoxMesh_he0uv")
-buffer = PackedFloat32Array(1, 0, 0, 0, 0, 1, 0, 2106, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2118, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2130, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2142, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2154, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2166, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2178, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2190, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2202, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2214, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2226, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2238, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2250, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2262, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2274, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2286, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2298, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2310, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2322, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2334, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2346, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2358, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2370, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2382, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2394, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2406, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2418, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2430, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2442, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2454, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2466, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2478, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2490, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2502, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2514, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2526, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2538, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2550, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2562, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2574, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2586, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2598, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2610, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2622, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2634, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2646, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2658, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2670, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2682, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2694, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2706, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2718, 0, 0, 1, 0)
+instance_count = 31
+mesh = SubResource("BoxMesh_g23n3")
+buffer = PackedFloat32Array(1, 0, 0, 0, 0, 1, 0, 2110, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2130, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2150, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2170, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2190, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2210, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2230, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2250, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2270, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2290, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2310, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2330, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2350, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2370, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2390, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2410, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2430, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2450, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2470, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2490, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2510, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2530, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2550, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2570, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2590, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2610, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2630, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2650, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2670, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2690, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2710, 0, 0, 1, 0)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_yddi5"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_iu0p5"]
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vnyr7"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ps1m7"]
 albedo_color = Color(0.95, 0.72, 0.3, 1)
 albedo_texture = ExtResource("1_g23n3")
 uv1_triplanar = true
 
-[sub_resource type="BoxMesh" id="BoxMesh_2xupk"]
-material = SubResource("StandardMaterial3D_vnyr7")
+[sub_resource type="BoxMesh" id="BoxMesh_yddi5"]
+material = SubResource("StandardMaterial3D_ps1m7")
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_s15t3"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_2xupk"]
+size = Vector3(15, 1.5, 60)
+
+[sub_resource type="BoxMesh" id="BoxMesh_s15t3"]
+material = SubResource("StandardMaterial3D_ps1m7")
 size = Vector3(15, 1.5, 60)
 
 [sub_resource type="BoxMesh" id="BoxMesh_02ho7"]
-material = SubResource("StandardMaterial3D_vnyr7")
-size = Vector3(15, 1.5, 60)
-
-[sub_resource type="BoxMesh" id="BoxMesh_y6r8p"]
-material = SubResource("StandardMaterial3D_tpwcj")
+material = SubResource("StandardMaterial3D_e1hgv")
 size = Vector3(140, 0.5, 220)
 
-[sub_resource type="MultiMesh" id="MultiMesh_ya2ft"]
+[sub_resource type="MultiMesh" id="MultiMesh_y6r8p"]
 transform_format = 1
-instance_count = 73
-mesh = SubResource("BoxMesh_y6r8p")
-buffer = PackedFloat32Array(1, 0, 0, 0, 0, 1, 0, 2106, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2118, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2130, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2142, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2154, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2166, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2178, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2190, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2202, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2214, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2226, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2238, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2250, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2262, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2274, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2286, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2298, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2310, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2322, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2334, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2346, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2358, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2370, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2382, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2394, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2406, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2418, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2430, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2442, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2454, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2466, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2478, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2490, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2502, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2514, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2526, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2538, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2550, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2562, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2574, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2586, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2598, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2610, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2622, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2634, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2646, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2658, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2670, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2682, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2694, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2706, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2718, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2730, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2742, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2754, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2766, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2778, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2790, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2802, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2814, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2826, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2838, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2850, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2862, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2874, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2886, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2898, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2910, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2922, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2934, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2946, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2958, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2970, 0, 0, 1, 0)
+instance_count = 44
+mesh = SubResource("BoxMesh_02ho7")
+buffer = PackedFloat32Array(1, 0, 0, 0, 0, 1, 0, 2110, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2130, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2150, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2170, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2190, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2210, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2230, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2250, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2270, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2290, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2310, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2330, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2350, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2370, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2390, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2410, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2430, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2450, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2470, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2490, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2510, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2530, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2550, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2570, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2590, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2610, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2630, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2650, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2670, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2690, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2710, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2730, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2750, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2770, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2790, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2810, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2830, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2850, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2870, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2890, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2910, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2930, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2950, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2970, 0, 0, 1, 0)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_2f366"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_ya2ft"]
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="BoxMesh" id="BoxMesh_w323f"]
-material = SubResource("StandardMaterial3D_vnyr7")
+[sub_resource type="BoxMesh" id="BoxMesh_2f366"]
+material = SubResource("StandardMaterial3D_ps1m7")
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_rldya"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_w323f"]
+size = Vector3(15, 1.5, 60)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rldya"]
+material = SubResource("StandardMaterial3D_ps1m7")
 size = Vector3(15, 1.5, 60)
 
 [sub_resource type="BoxMesh" id="BoxMesh_0pqrh"]
-material = SubResource("StandardMaterial3D_vnyr7")
-size = Vector3(15, 1.5, 60)
-
-[sub_resource type="BoxMesh" id="BoxMesh_o5vfx"]
-material = SubResource("StandardMaterial3D_tpwcj")
+material = SubResource("StandardMaterial3D_e1hgv")
 size = Vector3(180, 0.5, 150)
 
-[sub_resource type="MultiMesh" id="MultiMesh_ycgk7"]
+[sub_resource type="MultiMesh" id="MultiMesh_o5vfx"]
 transform_format = 1
-instance_count = 57
-mesh = SubResource("BoxMesh_o5vfx")
-buffer = PackedFloat32Array(1, 0, 0, 0, 0, 1, 0, 2106, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2118, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2130, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2142, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2154, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2166, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2178, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2190, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2202, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2214, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2226, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2238, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2250, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2262, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2274, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2286, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2298, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2310, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2322, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2334, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2346, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2358, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2370, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2382, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2394, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2406, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2418, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2430, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2442, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2454, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2466, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2478, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2490, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2502, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2514, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2526, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2538, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2550, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2562, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2574, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2586, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2598, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2610, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2622, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2634, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2646, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2658, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2670, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2682, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2694, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2706, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2718, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2730, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2742, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2754, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2766, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2778, 0, 0, 1, 0)
+instance_count = 34
+mesh = SubResource("BoxMesh_0pqrh")
+buffer = PackedFloat32Array(1, 0, 0, 0, 0, 1, 0, 2110, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2130, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2150, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2170, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2190, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2210, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2230, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2250, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2270, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2290, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2310, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2330, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2350, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2370, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2390, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2410, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2430, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2450, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2470, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2490, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2510, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2530, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2550, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2570, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2590, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2610, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2630, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2650, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2670, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2690, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2710, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2730, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2750, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 2770, 0, 0, 1, 0)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_utwtn"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_ycgk7"]
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="BoxMesh" id="BoxMesh_hx5v8"]
-material = SubResource("StandardMaterial3D_vnyr7")
+[sub_resource type="BoxMesh" id="BoxMesh_utwtn"]
+material = SubResource("StandardMaterial3D_ps1m7")
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_d8da8"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_hx5v8"]
 size = Vector3(15, 1.5, 60)
 
-[sub_resource type="BoxMesh" id="BoxMesh_sbllu"]
-material = SubResource("StandardMaterial3D_vnyr7")
+[sub_resource type="BoxMesh" id="BoxMesh_d8da8"]
+material = SubResource("StandardMaterial3D_ps1m7")
 size = Vector3(15, 1.5, 60)
 
-[node name="LayerGlare" type="Node3D" unique_id=2129599018]
+[node name="LayerGlare" type="Node3D" unique_id=860345532]
 
-[node name="Tower_0" type="Node3D" parent="." unique_id=1463658482]
+[node name="Tower_0" type="Node3D" parent="." unique_id=1712437025]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -200, 0, 0)
 
-[node name="Floors_Glare" type="MultiMeshInstance3D" parent="Tower_0" unique_id=459572827]
-multimesh = SubResource("MultiMesh_iu0p5")
+[node name="Floors_Glare" type="MultiMeshInstance3D" parent="Tower_0" unique_id=1243978597]
+multimesh = SubResource("MultiMesh_he0uv")
 
-[node name="Deck_Glare_0" type="StaticBody3D" parent="Tower_0" unique_id=226099715 groups=["floor"]]
+[node name="Deck_Glare_0" type="StaticBody3D" parent="Tower_0" unique_id=36630800 groups=["floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 87.5, 2266.4055, 0)
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_0/Deck_Glare_0" unique_id=983201432]
-shape = SubResource("BoxShape3D_yddi5")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_0/Deck_Glare_0" unique_id=1368917653]
+shape = SubResource("BoxShape3D_iu0p5")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tower_0/Deck_Glare_0" unique_id=1005861753]
-mesh = SubResource("BoxMesh_2xupk")
+[node name="Mesh" type="MeshInstance3D" parent="Tower_0/Deck_Glare_0" unique_id=2130181630]
+mesh = SubResource("BoxMesh_yddi5")
 
-[node name="Deck_Glare_1" type="StaticBody3D" parent="Tower_0" unique_id=1903038286 groups=["floor"]]
+[node name="Deck_Glare_1" type="StaticBody3D" parent="Tower_0" unique_id=826373864 groups=["floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 87.5, 2633.7756, 0)
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_0/Deck_Glare_1" unique_id=1074127046]
-shape = SubResource("BoxShape3D_s15t3")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_0/Deck_Glare_1" unique_id=653590875]
+shape = SubResource("BoxShape3D_2xupk")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tower_0/Deck_Glare_1" unique_id=2090832602]
-mesh = SubResource("BoxMesh_02ho7")
+[node name="Mesh" type="MeshInstance3D" parent="Tower_0/Deck_Glare_1" unique_id=293440928]
+mesh = SubResource("BoxMesh_s15t3")
 
-[node name="Tower_1" type="Node3D" parent="." unique_id=399046141]
+[node name="Tower_1" type="Node3D" parent="." unique_id=209401777]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
 
-[node name="Floors_Glare" type="MultiMeshInstance3D" parent="Tower_1" unique_id=1382234028]
-multimesh = SubResource("MultiMesh_ya2ft")
+[node name="Floors_Glare" type="MultiMeshInstance3D" parent="Tower_1" unique_id=1425330022]
+multimesh = SubResource("MultiMesh_y6r8p")
 
-[node name="Deck_Glare_0" type="StaticBody3D" parent="Tower_1" unique_id=1053123018 groups=["floor"]]
+[node name="Deck_Glare_0" type="StaticBody3D" parent="Tower_1" unique_id=863982085 groups=["floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 77.5, 2270.644, 0)
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_1/Deck_Glare_0" unique_id=1970624297]
-shape = SubResource("BoxShape3D_2f366")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_1/Deck_Glare_0" unique_id=1971178925]
+shape = SubResource("BoxShape3D_ya2ft")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tower_1/Deck_Glare_0" unique_id=2013601382]
-mesh = SubResource("BoxMesh_w323f")
+[node name="Mesh" type="MeshInstance3D" parent="Tower_1/Deck_Glare_0" unique_id=266480414]
+mesh = SubResource("BoxMesh_2f366")
 
-[node name="Deck_Glare_1" type="StaticBody3D" parent="Tower_1" unique_id=1268188261 groups=["floor"]]
+[node name="Deck_Glare_1" type="StaticBody3D" parent="Tower_1" unique_id=1896247944 groups=["floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 77.5, 2822.076, 0)
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_1/Deck_Glare_1" unique_id=814363763]
-shape = SubResource("BoxShape3D_rldya")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_1/Deck_Glare_1" unique_id=1832971875]
+shape = SubResource("BoxShape3D_w323f")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tower_1/Deck_Glare_1" unique_id=915524762]
-mesh = SubResource("BoxMesh_0pqrh")
+[node name="Mesh" type="MeshInstance3D" parent="Tower_1/Deck_Glare_1" unique_id=1532607142]
+mesh = SubResource("BoxMesh_rldya")
 
-[node name="Tower_2" type="Node3D" parent="." unique_id=1897021006]
+[node name="Tower_2" type="Node3D" parent="." unique_id=1673265070]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 190, 0, 0)
 
-[node name="Floors_Glare" type="MultiMeshInstance3D" parent="Tower_2" unique_id=17373273]
-multimesh = SubResource("MultiMesh_ycgk7")
+[node name="Floors_Glare" type="MultiMeshInstance3D" parent="Tower_2" unique_id=163346605]
+multimesh = SubResource("MultiMesh_o5vfx")
 
-[node name="Deck_Glare_0" type="StaticBody3D" parent="Tower_2" unique_id=872796687 groups=["floor"]]
+[node name="Deck_Glare_0" type="StaticBody3D" parent="Tower_2" unique_id=1993802235 groups=["floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -97.5, 2242.0527, 0)
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_2/Deck_Glare_0" unique_id=684823438]
-shape = SubResource("BoxShape3D_utwtn")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_2/Deck_Glare_0" unique_id=1543505140]
+shape = SubResource("BoxShape3D_ycgk7")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tower_2/Deck_Glare_0" unique_id=512844475]
-mesh = SubResource("BoxMesh_hx5v8")
+[node name="Mesh" type="MeshInstance3D" parent="Tower_2/Deck_Glare_0" unique_id=2005999314]
+mesh = SubResource("BoxMesh_utwtn")
 
-[node name="Deck_Glare_1" type="StaticBody3D" parent="Tower_2" unique_id=535219507 groups=["floor"]]
+[node name="Deck_Glare_1" type="StaticBody3D" parent="Tower_2" unique_id=479379749 groups=["floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -97.5, 2518.0527, 0)
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_2/Deck_Glare_1" unique_id=385938173]
-shape = SubResource("BoxShape3D_d8da8")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Tower_2/Deck_Glare_1" unique_id=651537292]
+shape = SubResource("BoxShape3D_hx5v8")
 
-[node name="Mesh" type="MeshInstance3D" parent="Tower_2/Deck_Glare_1" unique_id=293607345]
-mesh = SubResource("BoxMesh_sbllu")
+[node name="Mesh" type="MeshInstance3D" parent="Tower_2/Deck_Glare_1" unique_id=668321475]
+mesh = SubResource("BoxMesh_d8da8")

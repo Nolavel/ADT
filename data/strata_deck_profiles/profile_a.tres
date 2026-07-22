@@ -4,3 +4,4 @@
 
 [resource]
 script = ExtResource("1_cvjks")
+visual_floor_pitch = 10.0

@@ -5,4 +5,4 @@
 [resource]
 script = ExtResource("1_xtiso")
 pattern = "B"
-visual_floor_pitch = 7.0
+visual_floor_pitch = 15.0

@@ -5,4 +5,4 @@
 [resource]
 script = ExtResource("1_7c3tr")
 pattern = "C"
-visual_floor_pitch = 12.0
+visual_floor_pitch = 20.0

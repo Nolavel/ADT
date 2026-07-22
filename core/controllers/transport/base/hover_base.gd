@@ -36,7 +36,7 @@ class_name HoverBase
 
 @export_group("Horizontal")
 ## Максимальная горизонтальная скорость, м/с.
-@export var max_speed: float = 20.0
+@export var max_speed: float = 100.0
 ## Отзывчивость разгона (1/с): выше — быстрее выходит на скорость. Это
 ## коэффициент экспоненты в lerp, а не м/с² — ощущение массы задаётся тем,
 ## насколько он НИЖЕ braking (медленный разгон, резкий стоп).
@@ -123,6 +123,8 @@ func _physics_process(delta: float) -> void:
 	_process_horizontal(delta)
 	_process_vertical(delta)
 	move_and_slide()
+	if _controlled:
+		print("v=(%.2f,%.2f,%.2f) yaw=%.3f fps=%d" % [velocity.x, velocity.y, velocity.z, rotation.y, Engine.get_frames_per_second()])
 	_process_banking(delta)
 
 

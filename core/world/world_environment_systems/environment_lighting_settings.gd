@@ -56,7 +56,7 @@ extends Resource
 ## Плотность тумана по времени суток (ночью плотнее — дымка между башнями).
 @export var fog_density_curve: Curve
 ## Насколько туман «съедает» небо у горизонта (0..1).
-@export var fog_sky_affect: float = 0.35
+@export var fog_sky_affect: float = 1.0
 
 
 func _init() -> void:

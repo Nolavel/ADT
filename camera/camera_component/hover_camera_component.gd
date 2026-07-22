@@ -89,6 +89,10 @@ func update(delta: float) -> void:
 					goal.origin, 1.0 - exp(-chase_stiffness * delta))
 			camera.global_transform.basis = camera.global_transform.basis.slerp(
 					goal.basis, 1.0 - exp(-chase_yaw_lag * delta))
+			var d := camera.global_position.distance_to(target.global_position)
+			print("cam=%.2f,%.2f,%.2f goal=%.2f,%.2f,%.2f dist=%.1f dt=%.4f" % [
+				camera.global_position.x, camera.global_position.y, camera.global_position.z,
+				goal.origin.x, goal.origin.y, goal.origin.z, d, delta])
 
 	_update_fov(delta)
 	_handle_view_toggle()
@@ -107,8 +111,20 @@ func _desired_transform() -> Transform3D:
 	if _current_view() == HoverView.COCKPIT:
 		return _cockpit.global_transform
 
-	# CHASE: позиция за кормой в осях корпуса, взгляд на корпус.
-	var pos: Vector3 = target.global_transform * chase_offset
+	# CHASE: оффсет откладываем от направления ДВИЖЕНИЯ (velocity гладок),
+	# а не от global_transform корпуса — его yaw дрожит через lerp_angle и
+	# на плече chase_offset это дрожание маха́ет камеру вбок.
+	var flat_vel := Vector3(target.velocity.x, 0.0, target.velocity.z) \
+			if target is HoverBase else Vector3.ZERO
+	var back_dir: Vector3
+	if flat_vel.length() > 1.0:
+		back_dir = -flat_vel.normalized()          # «назад» = против движения
+	else:
+		# Стоим/еле ползём — направления нет, берём корму корпуса как есть.
+		back_dir = target.global_transform.basis.z
+	var pos := target.global_position \
+			+ back_dir * chase_offset.z \
+			+ Vector3.UP * chase_offset.y
 	var t := Transform3D(Basis.IDENTITY, pos)
 	return t.looking_at(target.global_position + Vector3.UP * 1.0, Vector3.UP)
 

@@ -205,14 +205,17 @@ func _add_decks(root: Node3D, tower: Node3D, stratum: String, t: Dictionary,
 	var overhang: float = profile.deck_overhang
 	var depth := clampf(t["fd"] * 0.6, 20.0, 60.0)
 	var dir: float = t["deck_dir"]
-	var face_x := dir * float(t["fw"]) * 0.5
+	var face_x: float = dir * float(t["fw"]) * 0.5
 
 	for k in heights.size():
 		var deck := StaticBody3D.new()
 		deck.name = "Deck_%s_%d" % [stratum, k]
-		deck.collision_layer = 1 << 1          # физслой 2 = "floor"
+		# Слой 1|2 (world+floor)=3 — ТОЧНО как плиты земли (gt_silhouette
+		# collision_layer=3). Слой 2 (floor) в одиночку не ловит никто: перс
+		# маскирует 1, ховер 1|3. Бит 1 (world) — общий знаменатель, им и цепляем.
+		deck.collision_layer = (1 << 0) | (1 << 1)   # = 3
 		deck.collision_mask = 0
-		deck.add_to_group("floor", true)       # persistent=true — иначе не в .tscn
+		deck.add_to_group("floor", true)
 		deck.position = Vector3(face_x + dir * overhang * 0.5, heights[k], 0.0)
 		_own(root, deck, tower)
 

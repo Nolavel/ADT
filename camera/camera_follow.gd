@@ -96,6 +96,7 @@ func _process(delta):
 	if not target:
 		return
 
+	# Меню-анимация и MENU_PAUSE — кадровые (визуальные твины), остаются здесь.
 	if state_animating:
 		_update_state_animation(delta)
 		_apply_shake_on_top(delta)
@@ -107,11 +108,22 @@ func _process(delta):
 			_apply_shake_on_top(delta)
 		return
 
-	# GAME — активный компонент сам пишет position/rotation камеры
+	# GAME: следование камеры ушло в _physics_process (см. ниже).
+	# Здесь в GAME только shake поверх уже посчитанной физикой трансформации.
+	_apply_shake_on_top(delta)
+
+
+func _physics_process(delta):
+	if not target:
+		return
+	if state_animating or current_state == CameraState.MENU_PAUSE:
+		return   # в эти состояния камера пишется из _process
+
+	# Следование считаем в фиксированном такте — dt здесь всегда стабилен,
+	# поэтому exp-сглаживание идёт ровными шагами (лог 2026-07-22: в _process
+	# dt плясал 0.022↔0.032 и колбасил камеру на дистанции при гладкой цели).
 	if _active_component and _active_component.has_method("update"):
 		_active_component.update(delta)
-
-	_apply_shake_on_top(delta)
 
 
 ## Shake считается ПОСЛЕ того как компонент/анимация уже посчитали базовую
