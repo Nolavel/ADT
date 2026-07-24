@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://c2k2h7y5judqe"]
+
+[ext_resource type="ArrayMesh" uid="uid://dxux13iw7a2y0" path="res://assets/floor_meshes/001/gla/001_glare_floor.tres" id="1_0kkst"]
+
+[node name="MeshesCreator" type="Node3D" unique_id=160538755]
+
+[node name="000" type="CSGCombiner3D" parent="." unique_id=1722612067]
+autosmooth = true
+
+[node name="CSGCombiner3D" type="CSGBox3D" parent="000" unique_id=1283453685]
+size = Vector3(400, 0.5, 400)
+
+[node name="CSGBox3D3" type="CSGBox3D" parent="000" unique_id=1645394536]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 0, 0)
+operation = 2
+size = Vector3(50, 1, 100)
+
+[node name="CSGBox3D4" type="CSGBox3D" parent="000" unique_id=2098725751]
+operation = 1
+size = Vector3(250, 0.5, 250)
+
+[node name="CSGBox3D" type="CSGBox3D" parent="000" unique_id=1155621887]
+operation = 2
+size = Vector3(100, 1, 100)
+
+[node name="CSGBox3D2" type="CSGBox3D" parent="000" unique_id=128892719]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 0, 0)
+operation = 2
+size = Vector3(50, 1, 100)
+
+[node name="CSGCylinder3D" type="CSGTorus3D" parent="000" unique_id=869817278]
+transform = Transform3D(0.9999999, 0, 0, 0, 0.9999999, 0, 0, 0, 1, 0, 0, 0)
+operation = 2
+inner_radius = 155.877
+outer_radius = 195.0
+sides = 64
+ring_sides = 64
+
+[node name="CSGBakedMeshInstance3D" type="MeshInstance3D" parent="." unique_id=1366756466]
+mesh = ExtResource("1_0kkst")

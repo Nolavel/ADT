@@ -1,3 +1,3 @@
-extends HoverVehicleBase
+extends HoverBase
 
 ## hover_truck
