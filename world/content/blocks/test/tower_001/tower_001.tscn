@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://bwh3ijtaiyawa"]
+
+[node name="Tower001" type="Node3D" unique_id=463531198]
+metadata/gbx_size = Vector3(400, 3000, 400)
+metadata/gbx_strata_top = "Glare"
+metadata/gbx_kind = "content"
+
+[node name="Shared" type="Node3D" parent="." unique_id=971226882]
+
+[node name="LayerDoggerland" type="Node3D" parent="." unique_id=1668470579 instance_placeholder="res://world/content/blocks/test/tower_001/layer_doggerland.tscn"]
+
+[node name="LayerManifold" type="Node3D" parent="." unique_id=462699416 instance_placeholder="res://world/content/blocks/test/tower_001/layer_manifold.tscn"]
+
+[node name="LayerGlare" type="Node3D" parent="." unique_id=1443999264 instance_placeholder="res://world/content/blocks/test/tower_001/layer_glare.tscn"]

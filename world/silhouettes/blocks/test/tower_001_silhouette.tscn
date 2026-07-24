@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://dhq5k04cppjic"]
+
+[ext_resource type="Material" uid="uid://cwjyy3a577j35" path="res://assets/tres/greybox_mat_content.tres" id="1_o6jy4"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_o6jy4"]
+size = Vector3(400, 3, 400)
+
+[node name="Tower001Silhouette" type="Node3D" unique_id=677959032]
+metadata/gbx_size = Vector3(400, 3000, 400)
+metadata/gbx_strata_top = "Glare"
+metadata/gbx_kind = "silhouette"
+
+[node name="Pad" type="MeshInstance3D" parent="." unique_id=175221683]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = ExtResource("1_o6jy4")
+mesh = SubResource("BoxMesh_o6jy4")

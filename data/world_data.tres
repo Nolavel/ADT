@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://world/resources/ground_tile_data.gd" id="2_xy5s7"]
 [ext_resource type="Script" path="res://world/resources/world_data.gd" id="3_ke6ng"]
 
-[sub_resource type="Resource" id="Resource_ffflj"]
+[sub_resource type="Resource" id="Resource_e4cvp"]
 script = ExtResource("1_e4cvp")
 id = "gbx_001"
 position = Vector3(-2148.8804, 0, -3022.3904)
@@ -17,7 +17,7 @@ strata_ids = {
 "manifold": "gbx_001-MF"
 }
 
-[sub_resource type="Resource" id="Resource_m1w6v"]
+[sub_resource type="Resource" id="Resource_xy5s7"]
 script = ExtResource("1_e4cvp")
 id = "gbx_002"
 position = Vector3(-1476.3433, 0, -2925.2937)
@@ -30,7 +30,7 @@ strata_ids = {
 "manifold": "gbx_002-MF"
 }
 
-[sub_resource type="Resource" id="Resource_msege"]
+[sub_resource type="Resource" id="Resource_ke6ng"]
 script = ExtResource("1_e4cvp")
 id = "gbx_003"
 position = Vector3(-3036.574, 0, -2285.406)
@@ -43,7 +43,7 @@ strata_ids = {
 "manifold": "gbx_003-MF"
 }
 
-[sub_resource type="Resource" id="Resource_3v5xq"]
+[sub_resource type="Resource" id="Resource_ffflj"]
 script = ExtResource("1_e4cvp")
 id = "gbx_004"
 position = Vector3(-2269.7742, 0, -2171.272)
@@ -56,7 +56,7 @@ strata_ids = {
 "manifold": "gbx_004-MF"
 }
 
-[sub_resource type="Resource" id="Resource_1h1a2"]
+[sub_resource type="Resource" id="Resource_m1w6v"]
 script = ExtResource("1_e4cvp")
 id = "gbx_005"
 position = Vector3(-1463.0022, 0, -2207.0605)
@@ -69,7 +69,7 @@ strata_ids = {
 "manifold": "gbx_005-MF"
 }
 
-[sub_resource type="Resource" id="Resource_0d14d"]
+[sub_resource type="Resource" id="Resource_msege"]
 script = ExtResource("1_e4cvp")
 id = "gbx_006"
 position = Vector3(-3031.7927, 0, -1353.4379)
@@ -82,7 +82,7 @@ strata_ids = {
 "manifold": "gbx_006-MF"
 }
 
-[sub_resource type="Resource" id="Resource_keauj"]
+[sub_resource type="Resource" id="Resource_3v5xq"]
 script = ExtResource("1_e4cvp")
 id = "gbx_007"
 position = Vector3(-2253.0105, 0, -1523.8834)
@@ -95,7 +95,7 @@ strata_ids = {
 "manifold": "gbx_007-MF"
 }
 
-[sub_resource type="Resource" id="Resource_0s121"]
+[sub_resource type="Resource" id="Resource_1h1a2"]
 script = ExtResource("1_e4cvp")
 id = "gbx_008"
 position = Vector3(-760.4535, 0, -2883.2058)
@@ -108,7 +108,7 @@ strata_ids = {
 "manifold": "gbx_008-MF"
 }
 
-[sub_resource type="Resource" id="Resource_0gn5r"]
+[sub_resource type="Resource" id="Resource_0d14d"]
 script = ExtResource("1_e4cvp")
 id = "gbx_009"
 position = Vector3(714.23975, 0, -2927.8887)
@@ -121,7 +121,7 @@ strata_ids = {
 "manifold": "gbx_009-MF"
 }
 
-[sub_resource type="Resource" id="Resource_e721p"]
+[sub_resource type="Resource" id="Resource_keauj"]
 script = ExtResource("1_e4cvp")
 id = "gbx_010"
 position = Vector3(-603.08325, 0, -2253.9033)
@@ -134,7 +134,7 @@ strata_ids = {
 "manifold": "gbx_010-MF"
 }
 
-[sub_resource type="Resource" id="Resource_4lwtn"]
+[sub_resource type="Resource" id="Resource_0s121"]
 script = ExtResource("1_e4cvp")
 id = "gbx_011"
 position = Vector3(-4.773509, 0, -2224.8381)
@@ -147,7 +147,7 @@ strata_ids = {
 "manifold": "gbx_011-MF"
 }
 
-[sub_resource type="Resource" id="Resource_r6yy8"]
+[sub_resource type="Resource" id="Resource_0gn5r"]
 script = ExtResource("1_e4cvp")
 id = "gbx_012"
 position = Vector3(-786.28174, 0, -1476.3336)
@@ -160,7 +160,7 @@ strata_ids = {
 "manifold": "gbx_012-MF"
 }
 
-[sub_resource type="Resource" id="Resource_xg1b1"]
+[sub_resource type="Resource" id="Resource_e721p"]
 script = ExtResource("1_e4cvp")
 id = "gbx_013"
 position = Vector3(39.97063, 0, -1513.635)
@@ -173,7 +173,7 @@ strata_ids = {
 "manifold": "gbx_013-MF"
 }
 
-[sub_resource type="Resource" id="Resource_ry6a7"]
+[sub_resource type="Resource" id="Resource_4lwtn"]
 script = ExtResource("1_e4cvp")
 id = "gbx_014"
 position = Vector3(697.04175, 0, -1409.2715)
@@ -186,7 +186,7 @@ strata_ids = {
 "manifold": "gbx_014-MF"
 }
 
-[sub_resource type="Resource" id="Resource_nrsnq"]
+[sub_resource type="Resource" id="Resource_r6yy8"]
 script = ExtResource("1_e4cvp")
 id = "gbx_015"
 position = Vector3(1501.815, 0, -2951.3586)
@@ -199,7 +199,7 @@ strata_ids = {
 "manifold": "gbx_015-MF"
 }
 
-[sub_resource type="Resource" id="Resource_mg0i4"]
+[sub_resource type="Resource" id="Resource_xg1b1"]
 script = ExtResource("1_e4cvp")
 id = "gbx_016"
 position = Vector3(2107.5505, 0, -2848.5247)
@@ -212,7 +212,7 @@ strata_ids = {
 "manifold": "gbx_016-MF"
 }
 
-[sub_resource type="Resource" id="Resource_u4ku0"]
+[sub_resource type="Resource" id="Resource_ry6a7"]
 script = ExtResource("1_e4cvp")
 id = "gbx_017"
 position = Vector3(2923.844, 0, -2937.4375)
@@ -225,7 +225,7 @@ strata_ids = {
 "manifold": "gbx_017-MF"
 }
 
-[sub_resource type="Resource" id="Resource_ddot7"]
+[sub_resource type="Resource" id="Resource_nrsnq"]
 script = ExtResource("1_e4cvp")
 id = "gbx_018"
 position = Vector3(1417.8468, 0, -2250.4456)
@@ -238,7 +238,7 @@ strata_ids = {
 "manifold": "gbx_018-MF"
 }
 
-[sub_resource type="Resource" id="Resource_su1e6"]
+[sub_resource type="Resource" id="Resource_mg0i4"]
 script = ExtResource("1_e4cvp")
 id = "gbx_019"
 position = Vector3(2290.718, 0, -2163.221)
@@ -251,7 +251,7 @@ strata_ids = {
 "manifold": "gbx_019-MF"
 }
 
-[sub_resource type="Resource" id="Resource_8m7wj"]
+[sub_resource type="Resource" id="Resource_u4ku0"]
 script = ExtResource("1_e4cvp")
 id = "gbx_020"
 position = Vector3(2945.4768, 0, -2177.2097)
@@ -264,7 +264,7 @@ strata_ids = {
 "manifold": "gbx_020-MF"
 }
 
-[sub_resource type="Resource" id="Resource_5oak0"]
+[sub_resource type="Resource" id="Resource_ddot7"]
 script = ExtResource("1_e4cvp")
 id = "gbx_021"
 position = Vector3(1454.4395, 0, -1464.837)
@@ -277,7 +277,7 @@ strata_ids = {
 "manifold": "gbx_021-MF"
 }
 
-[sub_resource type="Resource" id="Resource_ybfrt"]
+[sub_resource type="Resource" id="Resource_su1e6"]
 script = ExtResource("1_e4cvp")
 id = "gbx_022"
 position = Vector3(-2250.0305, 0, -738.24426)
@@ -290,7 +290,7 @@ strata_ids = {
 "manifold": "gbx_022-MF"
 }
 
-[sub_resource type="Resource" id="Resource_iott4"]
+[sub_resource type="Resource" id="Resource_8m7wj"]
 script = ExtResource("1_e4cvp")
 id = "gbx_023"
 position = Vector3(-1504.8447, 0, -687.72235)
@@ -303,7 +303,7 @@ strata_ids = {
 "manifold": "gbx_023-MF"
 }
 
-[sub_resource type="Resource" id="Resource_6bwk8"]
+[sub_resource type="Resource" id="Resource_5oak0"]
 script = ExtResource("1_e4cvp")
 id = "gbx_024"
 position = Vector3(-2971.8098, 0, 77.16133)
@@ -316,7 +316,7 @@ strata_ids = {
 "manifold": "gbx_024-MF"
 }
 
-[sub_resource type="Resource" id="Resource_noiwr"]
+[sub_resource type="Resource" id="Resource_ybfrt"]
 script = ExtResource("1_e4cvp")
 id = "gbx_025"
 position = Vector3(-2195.0444, 0, -11.096244)
@@ -329,7 +329,7 @@ strata_ids = {
 "manifold": "gbx_025-MF"
 }
 
-[sub_resource type="Resource" id="Resource_8mrrg"]
+[sub_resource type="Resource" id="Resource_iott4"]
 script = ExtResource("1_e4cvp")
 id = "gbx_026"
 position = Vector3(-2863.4094, 0, 818.58105)
@@ -342,7 +342,7 @@ strata_ids = {
 "manifold": "gbx_026-MF"
 }
 
-[sub_resource type="Resource" id="Resource_vq61x"]
+[sub_resource type="Resource" id="Resource_6bwk8"]
 script = ExtResource("1_e4cvp")
 id = "gbx_027"
 position = Vector3(-2283.382, 0, 790.0219)
@@ -355,7 +355,7 @@ strata_ids = {
 "manifold": "gbx_027-MF"
 }
 
-[sub_resource type="Resource" id="Resource_tsxtl"]
+[sub_resource type="Resource" id="Resource_noiwr"]
 script = ExtResource("1_e4cvp")
 id = "gbx_028"
 position = Vector3(-1445.3086, 0, 728.55)
@@ -368,7 +368,7 @@ strata_ids = {
 "manifold": "gbx_028-MF"
 }
 
-[sub_resource type="Resource" id="Resource_lmndv"]
+[sub_resource type="Resource" id="Resource_8mrrg"]
 script = ExtResource("1_e4cvp")
 id = "gbx_029"
 position = Vector3(-757.87177, 0, -723.60846)
@@ -381,7 +381,7 @@ strata_ids = {
 "manifold": "gbx_029-MF"
 }
 
-[sub_resource type="Resource" id="Resource_1247l"]
+[sub_resource type="Resource" id="Resource_vq61x"]
 script = ExtResource("1_e4cvp")
 id = "gbx_030"
 position = Vector3(775.5875, 0, -714.67914)
@@ -394,7 +394,7 @@ strata_ids = {
 "manifold": "gbx_030-MF"
 }
 
-[sub_resource type="Resource" id="Resource_ac613"]
+[sub_resource type="Resource" id="Resource_tsxtl"]
 script = ExtResource("1_e4cvp")
 id = "gbx_031"
 position = Vector3(-778.13416, 0, 14.152089)
@@ -407,7 +407,7 @@ strata_ids = {
 "manifold": "gbx_031-MF"
 }
 
-[sub_resource type="Resource" id="Resource_52jsq"]
+[sub_resource type="Resource" id="Resource_lmndv"]
 script = ExtResource("1_e4cvp")
 id = "gbx_032"
 position = Vector3(-1242.2578, 0, 2470.3574)
@@ -420,7 +420,7 @@ strata_ids = {
 "manifold": "gbx_032-MF"
 }
 
-[sub_resource type="Resource" id="Resource_2hbg3"]
+[sub_resource type="Resource" id="Resource_1247l"]
 script = ExtResource("1_e4cvp")
 id = "gbx_033"
 position = Vector3(644.4142, 0, 75.60253)
@@ -433,7 +433,7 @@ strata_ids = {
 "manifold": "gbx_033-MF"
 }
 
-[sub_resource type="Resource" id="Resource_jm7bu"]
+[sub_resource type="Resource" id="Resource_ac613"]
 script = ExtResource("1_e4cvp")
 id = "gbx_034"
 position = Vector3(-686.6198, 0, 725.19)
@@ -446,7 +446,7 @@ strata_ids = {
 "manifold": "gbx_034-MF"
 }
 
-[sub_resource type="Resource" id="Resource_f6kgm"]
+[sub_resource type="Resource" id="Resource_52jsq"]
 script = ExtResource("1_e4cvp")
 id = "gbx_035"
 position = Vector3(84.29544, 0, 749.6734)
@@ -459,7 +459,7 @@ strata_ids = {
 "manifold": "gbx_035-MF"
 }
 
-[sub_resource type="Resource" id="Resource_rkw6m"]
+[sub_resource type="Resource" id="Resource_2hbg3"]
 script = ExtResource("1_e4cvp")
 id = "gbx_036"
 position = Vector3(806.82544, 0, 720.49677)
@@ -472,7 +472,7 @@ strata_ids = {
 "manifold": "gbx_036-MF"
 }
 
-[sub_resource type="Resource" id="Resource_83lhi"]
+[sub_resource type="Resource" id="Resource_jm7bu"]
 script = ExtResource("1_e4cvp")
 id = "gbx_037"
 position = Vector3(2210.0557, 0, -742.3078)
@@ -485,7 +485,7 @@ strata_ids = {
 "manifold": "gbx_037-MF"
 }
 
-[sub_resource type="Resource" id="Resource_kj3ki"]
+[sub_resource type="Resource" id="Resource_f6kgm"]
 script = ExtResource("1_e4cvp")
 id = "gbx_038"
 position = Vector3(2963.9128, 0, -762.00653)
@@ -498,7 +498,7 @@ strata_ids = {
 "manifold": "gbx_038-MF"
 }
 
-[sub_resource type="Resource" id="Resource_qxrh6"]
+[sub_resource type="Resource" id="Resource_rkw6m"]
 script = ExtResource("1_e4cvp")
 id = "gbx_039"
 position = Vector3(1484.7816, 0, 4.78553)
@@ -511,7 +511,7 @@ strata_ids = {
 "manifold": "gbx_039-MF"
 }
 
-[sub_resource type="Resource" id="Resource_smtyo"]
+[sub_resource type="Resource" id="Resource_83lhi"]
 script = ExtResource("1_e4cvp")
 id = "gbx_040"
 position = Vector3(2125.6309, 0, 54.932167)
@@ -524,7 +524,7 @@ strata_ids = {
 "manifold": "gbx_040-MF"
 }
 
-[sub_resource type="Resource" id="Resource_d1yb5"]
+[sub_resource type="Resource" id="Resource_kj3ki"]
 script = ExtResource("1_e4cvp")
 id = "featured_3tower"
 height = 3.0
@@ -535,57 +535,69 @@ strata_ids = {
 "doggerland": "featured_3tower-DG"
 }
 
-[sub_resource type="Resource" id="Resource_vrb70"]
+[sub_resource type="Resource" id="Resource_qxrh6"]
+script = ExtResource("1_e4cvp")
+id = "tower_001"
+position = Vector3(100, 0, -600)
+height = 3.0
+district = "A5"
+silhouette_scene_path = "res://world/silhouettes/blocks/test/tower_001_silhouette.tscn"
+content_scene_path = "res://world/content/blocks/test/tower_001/tower_001.tscn"
+strata_ids = {
+"doggerland": "tower_001-DG"
+}
+
+[sub_resource type="Resource" id="Resource_smtyo"]
 script = ExtResource("2_xy5s7")
 content_scene_path = "res://world/content/ground_tiles/gt_content_r0_c0.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r0_c0.tscn"
 
-[sub_resource type="Resource" id="Resource_fhyh2"]
+[sub_resource type="Resource" id="Resource_d1yb5"]
 script = ExtResource("2_xy5s7")
 col = 1
 content_scene_path = "res://world/content/ground_tiles/gt_content_r0_c1.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r0_c1.tscn"
 
-[sub_resource type="Resource" id="Resource_i70ks"]
+[sub_resource type="Resource" id="Resource_vrb70"]
 script = ExtResource("2_xy5s7")
 col = 2
 content_scene_path = "res://world/content/ground_tiles/gt_content_r0_c2.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r0_c2.tscn"
 
-[sub_resource type="Resource" id="Resource_weqsb"]
+[sub_resource type="Resource" id="Resource_fhyh2"]
 script = ExtResource("2_xy5s7")
 row = 1
 content_scene_path = "res://world/content/ground_tiles/gt_content_r1_c0.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r1_c0.tscn"
 
-[sub_resource type="Resource" id="Resource_asta7"]
+[sub_resource type="Resource" id="Resource_i70ks"]
 script = ExtResource("2_xy5s7")
 row = 1
 col = 1
 content_scene_path = "res://world/content/ground_tiles/gt_content_r1_c1.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r1_c1.tscn"
 
-[sub_resource type="Resource" id="Resource_gmy23"]
+[sub_resource type="Resource" id="Resource_weqsb"]
 script = ExtResource("2_xy5s7")
 row = 1
 col = 2
 content_scene_path = "res://world/content/ground_tiles/gt_content_r1_c2.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r1_c2.tscn"
 
-[sub_resource type="Resource" id="Resource_jl8e0"]
+[sub_resource type="Resource" id="Resource_asta7"]
 script = ExtResource("2_xy5s7")
 row = 2
 content_scene_path = "res://world/content/ground_tiles/gt_content_r2_c0.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r2_c0.tscn"
 
-[sub_resource type="Resource" id="Resource_wakq5"]
+[sub_resource type="Resource" id="Resource_gmy23"]
 script = ExtResource("2_xy5s7")
 row = 2
 col = 1
 content_scene_path = "res://world/content/ground_tiles/gt_content_r2_c1.tscn"
 silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r2_c1.tscn"
 
-[sub_resource type="Resource" id="Resource_w1r2h"]
+[sub_resource type="Resource" id="Resource_jl8e0"]
 script = ExtResource("2_xy5s7")
 row = 2
 col = 2
@@ -594,6 +606,6 @@ silhouette_scene_path = "res://world/silhouettes/ground_tiles/gt_silhouette_r2_c
 
 [resource]
 script = ExtResource("3_ke6ng")
-blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_ffflj"), SubResource("Resource_m1w6v"), SubResource("Resource_msege"), SubResource("Resource_3v5xq"), SubResource("Resource_1h1a2"), SubResource("Resource_0d14d"), SubResource("Resource_keauj"), SubResource("Resource_0s121"), SubResource("Resource_0gn5r"), SubResource("Resource_e721p"), SubResource("Resource_4lwtn"), SubResource("Resource_r6yy8"), SubResource("Resource_xg1b1"), SubResource("Resource_ry6a7"), SubResource("Resource_nrsnq"), SubResource("Resource_mg0i4"), SubResource("Resource_u4ku0"), SubResource("Resource_ddot7"), SubResource("Resource_su1e6"), SubResource("Resource_8m7wj"), SubResource("Resource_5oak0"), SubResource("Resource_ybfrt"), SubResource("Resource_iott4"), SubResource("Resource_6bwk8"), SubResource("Resource_noiwr"), SubResource("Resource_8mrrg"), SubResource("Resource_vq61x"), SubResource("Resource_tsxtl"), SubResource("Resource_lmndv"), SubResource("Resource_1247l"), SubResource("Resource_ac613"), SubResource("Resource_52jsq"), SubResource("Resource_2hbg3"), SubResource("Resource_jm7bu"), SubResource("Resource_f6kgm"), SubResource("Resource_rkw6m"), SubResource("Resource_83lhi"), SubResource("Resource_kj3ki"), SubResource("Resource_qxrh6"), SubResource("Resource_smtyo"), SubResource("Resource_d1yb5")])
-ground_tiles = Array[ExtResource("2_xy5s7")]([SubResource("Resource_vrb70"), SubResource("Resource_fhyh2"), SubResource("Resource_i70ks"), SubResource("Resource_weqsb"), SubResource("Resource_asta7"), SubResource("Resource_gmy23"), SubResource("Resource_jl8e0"), SubResource("Resource_wakq5"), SubResource("Resource_w1r2h")])
-spawn_point = Vector3(0, 25, 0)
+blocks = Array[ExtResource("1_e4cvp")]([SubResource("Resource_e4cvp"), SubResource("Resource_xy5s7"), SubResource("Resource_ke6ng"), SubResource("Resource_ffflj"), SubResource("Resource_m1w6v"), SubResource("Resource_msege"), SubResource("Resource_3v5xq"), SubResource("Resource_1h1a2"), SubResource("Resource_0d14d"), SubResource("Resource_keauj"), SubResource("Resource_0s121"), SubResource("Resource_0gn5r"), SubResource("Resource_e721p"), SubResource("Resource_4lwtn"), SubResource("Resource_r6yy8"), SubResource("Resource_xg1b1"), SubResource("Resource_ry6a7"), SubResource("Resource_nrsnq"), SubResource("Resource_mg0i4"), SubResource("Resource_u4ku0"), SubResource("Resource_ddot7"), SubResource("Resource_su1e6"), SubResource("Resource_8m7wj"), SubResource("Resource_5oak0"), SubResource("Resource_ybfrt"), SubResource("Resource_iott4"), SubResource("Resource_6bwk8"), SubResource("Resource_noiwr"), SubResource("Resource_8mrrg"), SubResource("Resource_vq61x"), SubResource("Resource_tsxtl"), SubResource("Resource_lmndv"), SubResource("Resource_1247l"), SubResource("Resource_ac613"), SubResource("Resource_52jsq"), SubResource("Resource_2hbg3"), SubResource("Resource_jm7bu"), SubResource("Resource_f6kgm"), SubResource("Resource_rkw6m"), SubResource("Resource_83lhi"), SubResource("Resource_kj3ki"), SubResource("Resource_qxrh6")])
+ground_tiles = Array[ExtResource("2_xy5s7")]([SubResource("Resource_smtyo"), SubResource("Resource_d1yb5"), SubResource("Resource_vrb70"), SubResource("Resource_fhyh2"), SubResource("Resource_i70ks"), SubResource("Resource_weqsb"), SubResource("Resource_asta7"), SubResource("Resource_gmy23"), SubResource("Resource_jl8e0")])
+spawn_point = Vector3(250.78998, 0, -277.04462)

@@ -23,17 +23,17 @@
 extends EditorScript
 
 
-const CONTENT_PATH:    String = "res://world/content/blocks/test/block_3tower/block_3tower.tscn"
-const SILHOUETTE_PATH: String = "res://world/silhouettes/blocks/test/block_3tower_silhouette.tscn"
+const CONTENT_PATH:    String = "res://world/content/blocks/test/tower_001/tower_001.tscn"
+const SILHOUETTE_PATH: String = "res://world/silhouettes/blocks/test/tower_001_silhouette.tscn"
 const BLOCKBASE_SCRIPT: String = "res://core/map_source/blockbase.gd"
 
-const MARKER_NAME: String = "FEATURED_3tower"
-const MARKER_ID:   String = "featured_3tower"
+const MARKER_NAME: String = "tower_001"
+const MARKER_ID:   String = "tower_001"
 const DISTRICT:    String = "A5"
 
 ## Куда ставим блок. (0,0) = центр города (центр тайла A5). y=0 — низ блока на
 ## поверхности CityZone (башни идут вверх от 0).
-const POSITION: Vector3 = Vector3(0.0, 0.0, 0.0)
+const POSITION: Vector3 = Vector3(100.0, 0.0, 600.0)
 
 
 func _run() -> void:

@@ -34,6 +34,7 @@
 [ext_resource type="PackedScene" uid="uid://dfv54ym0q2bna" path="res://world/silhouettes/blocks/greybox/block_gbx_023_silhouette.tscn" id="30_7otay"]
 [ext_resource type="PackedScene" uid="uid://1xy6ncfpv0ib" path="res://world/silhouettes/blocks/test/block_3tower_silhouette.tscn" id="31_ira0p"]
 [ext_resource type="PackedScene" uid="uid://dwkdgbm35pljh" path="res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn" id="31_sahta"]
+[ext_resource type="PackedScene" uid="uid://dhq5k04cppjic" path="res://world/silhouettes/blocks/test/tower_001_silhouette.tscn" id="32_c4gy1"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nqtne"]
 size = Vector3(9600, 1000, 9600)
@@ -607,8 +608,19 @@ district = "A5"
 scene_path = "res://world/content/blocks/test/block_3tower/block_3tower.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/test/block_3tower_silhouette.tscn"
 
-[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/FEATURED_3tower" unique_id=1714171493 instance=ExtResource("31_ira0p")]
-metadata/gbx_size = Vector3(560, 2980, 220)
+[node name="SilhouettePreview" parent="BLOCKS/FEATURED_3tower" unique_id=1714171493 instance=ExtResource("31_ira0p")]
+
+[node name="tower_001" type="Node3D" parent="BLOCKS" unique_id=377849560]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 0, -600)
+script = ExtResource("5_753aq")
+id = "tower_001"
+block_name = "block_3tower"
+district = "A5"
+scene_path = "res://world/content/blocks/test/tower_001/tower_001.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/test/tower_001_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/tower_001" unique_id=450093685 instance=ExtResource("32_c4gy1")]
+metadata/gbx_size = Vector3(400, 3000, 400)
 metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
