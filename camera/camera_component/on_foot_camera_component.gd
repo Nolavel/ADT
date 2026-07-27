@@ -19,6 +19,10 @@ class_name OnFootCameraComponent
 ## zoom_in/zoom_out.
 signal zoom_input_received()
 
+const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх InputSystems
+const TPS_PITCH_MIN: float = -50.0
+const TPS_PITCH_MAX: float = 20.0
+
 @export var rotation_speed: float = 8.0
 
 @export_group("Orbit")
@@ -32,6 +36,7 @@ signal zoom_input_received()
 @export_group("TPS View")
 ## Плейсхолдер — подобрать по месту, главное сохранена логика возврата в ISOMETRIC.
 @export var tps_angle: float = -10.0
+
 
 @export_group("Follow")
 @export var follow_rotation_damping: float = 3.0
@@ -174,17 +179,27 @@ func update(delta: float) -> void:
 
 
 func _handle_tps_follow(delta: float) -> void:
-	if InputSystems.is_lock_on_just_pressed():  # TODO: добавить в InputSystems
+	# --- Free mouse look (TLOU-style) ---
+	var look := InputSystems.get_look_delta()
+	camera_target_yaw += look.x * MOUSE_SENSITIVITY
+	camera_target_yaw = wrapf(camera_target_yaw, -PI, PI)
+	tps_angle -= look.y * MOUSE_SENSITIVITY * 0.6
+	tps_angle = clamp(tps_angle, TPS_PITCH_MIN, TPS_PITCH_MAX)
+
+	# --- Lock-on (combat state overrides yaw only when locked) ---
+	if InputSystems.is_lock_on_just_pressed():
 		_tps_combat.try_toggle_lock(target)
 
 	var result := _tps_combat.update(delta, target, camera_target_yaw)
-	camera_target_yaw = result.yaw
-
-	if result.distance_override > 0.0 and not zoom_animating:
-		target_zoom_distance = result.distance_override
-		current_zoom_distance = lerp(current_zoom_distance, result.distance_override, delta * 6.0)
-
-	tps_angle = -10.0 + result.pitch_offset_deg  # базовый угол + sway
+	if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
+		camera_target_yaw = result.yaw
+		if result.distance_override > 0.0 and not zoom_animating:
+			target_zoom_distance = result.distance_override
+			current_zoom_distance = lerp(current_zoom_distance, result.distance_override, delta * 6.0)
+		tps_angle = -10.0 + result.pitch_offset_deg
+	else:
+		# EXPLORE: preserve mouse yaw, apply procedural sway only
+		tps_angle = -10.0 + result.pitch_offset_deg
 
 
 func _update_zoom_animation(delta: float):
@@ -310,7 +325,16 @@ func _update_camera_position(delta):
 			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
 
 			camera_target_pos = target.global_position + offset
-			camera_target_pitch = tps_angle
+			
+			# --- Wall avoidance: pull camera in when geometry blocks the view ---
+			var space_state := camera.get_world_3d().direct_space_state
+			var eye_pos := target.global_position + Vector3(0, 1.6, 0)
+			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, 1 << 2)
+			query.collide_with_areas = false
+			var hit := space_state.intersect_ray(query)
+			if hit:
+				camera_target_pos = hit.position + hit.normal * 0.25
+			#camera_target_pitch = tps_angle
 
 		_:  # ISOMETRIC
 			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))

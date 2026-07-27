@@ -2,8 +2,17 @@
 # drag_target_button.gd
 # ## RU: Кнопка-цель drag-handle паттерна. Состояние выставляет контроллер.
 #        Визуал состояний рисуется в _draw(): пунктир (1) → уголки (2) → рамка (3).
+#        Сам рисунок живёт в target_contour.gd — там же, откуда его берёт
+#        барабан главного меню.
 # ## ENG: Drag-handle target button. State is driven by the controller.
 #         State visuals are drawn in _draw(): dashes (1) → corners (2) → frame (3).
+#         The drawing itself lives in target_contour.gd, shared with the
+#         main-menu revolver drum.
+#
+# ВНИМАНИЕ: этот класс владеет position / scale / modulate кнопки
+# (_home_position, lean_toward, reset_position, _apply_state). Не наследуй от
+# него кнопку, чья раскладка считается снаружи — будет два владельца на одни
+# свойства. Именно поэтому RevolverSlotButton наследуется от Button, а не отсюда.
 # =============================================================================
 extends Button
 class_name DragTargetButton
@@ -35,6 +44,7 @@ var _pulse: float = 0.0
 ## RU: 0 = уголки далеко, 1 = уголки прижаты / ENG: 0 = corners far, 1 = tight
 var _corner_tightness: float = 0.0
 
+
 func _ready() -> void:
 	disabled = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -42,6 +52,7 @@ func _ready() -> void:
 	_home_position = position
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
 	_apply_state(true)
+
 
 func _process(delta: float) -> void:
 	if drag_state == DragState.IDLE:
@@ -61,6 +72,7 @@ func set_drag_state(new_state: int) -> void:
 	_apply_state(false)
 	queue_redraw()
 
+
 ## RU: направление на хэндл в глобальных координатах (для наклона)
 ## ENG: direction toward the handle in global space (used for lean)
 func lean_toward(handle_global_center: Vector2) -> void:
@@ -68,6 +80,7 @@ func lean_toward(handle_global_center: Vector2) -> void:
 		return
 	var dir: Vector2 = (handle_global_center - get_global_rect().get_center()).normalized()
 	position = position.lerp(_home_position + dir * lean_distance, 0.25)
+
 
 func reset_position() -> void:
 	position = _home_position
@@ -80,6 +93,7 @@ func _state_color() -> Color:
 		DragState.NEAREST:  return nearest_color
 		DragState.ACTIVE:   return active_color
 		_:                  return idle_color
+
 
 func _apply_state(instant: bool) -> void:
 	var target_scale: float = 1.0
@@ -100,7 +114,7 @@ func _apply_state(instant: bool) -> void:
 		_corner_tightness = target_tight
 		return
 
-	if _tween and _tween.is_running():
+	if _tween != null and _tween.is_running():
 		_tween.kill()
 	_tween = create_tween().set_parallel(true)
 	_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
@@ -110,7 +124,7 @@ func _apply_state(instant: bool) -> void:
 
 	## RU: короткий импульс при захвате / ENG: quick pop on lock-on
 	if drag_state == DragState.ACTIVE:
-		var pop := create_tween()
+		var pop: Tween = create_tween()
 		pop.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		pop.tween_property(self, "scale", Vector2.ONE * (active_scale + 0.06), 0.06)
 		pop.tween_property(self, "scale", Vector2.ONE * active_scale, 0.10)
@@ -125,51 +139,16 @@ func _draw() -> void:
 
 	## RU: рамка отходит наружу когда цель ещё "далеко"
 	## ENG: frame sits further out while the target is still "far"
-	var pad: float = lerp(frame_padding + 10.0, frame_padding, _corner_tightness)
+	var pad: float = lerpf(frame_padding + 10.0, frame_padding, _corner_tightness)
 	var r := Rect2(Vector2(-pad, -pad), size + Vector2(pad, pad) * 2.0)
 	var col: Color = _state_color()
 
 	match drag_state:
 		DragState.AWAITING:
-			col.a *= lerp(0.45, 0.95, _pulse)
-			_draw_dashed_rect(r, col)
+			col.a *= lerpf(0.45, 0.95, _pulse)
+			TargetContour.draw_dashed_rect(self, r, col, border_width, dash_length, dash_gap, _dash_offset)
 		DragState.NEAREST:
-			_draw_corners(r, col, lerp(corner_length, corner_length * 1.6, _corner_tightness))
+			var l: float = lerpf(corner_length, corner_length * 1.6, _corner_tightness)
+			TargetContour.draw_corners(self, r, col, border_width + 1.0, l)
 		DragState.ACTIVE:
-			draw_rect(r, col, false, border_width + 1.0)
-			draw_rect(r, Color(col.r, col.g, col.b, 0.12), true)
-
-func _draw_dashed_rect(r: Rect2, col: Color) -> void:
-	var pts := [
-		r.position,
-		r.position + Vector2(r.size.x, 0),
-		r.position + r.size,
-		r.position + Vector2(0, r.size.y),
-	]
-	for i in 4:
-		_draw_dashed_line_offset(pts[i], pts[(i + 1) % 4], col)
-
-func _draw_dashed_line_offset(from: Vector2, to: Vector2, col: Color) -> void:
-	var total: float = from.distance_to(to)
-	var dir: Vector2 = (to - from).normalized()
-	var step: float = dash_length + dash_gap
-	var t: float = -_dash_offset
-	while t < total:
-		var a: float = maxf(t, 0.0)
-		var b: float = minf(t + dash_length, total)
-		if b > a:
-			draw_line(from + dir * a, from + dir * b, col, border_width)
-		t += step
-
-func _draw_corners(r: Rect2, col: Color, length: float) -> void:
-	var l: float = minf(length, minf(r.size.x, r.size.y) * 0.45)
-	var w: float = border_width + 1.0
-	var tl: Vector2 = r.position
-	var tr: Vector2 = r.position + Vector2(r.size.x, 0)
-	var br: Vector2 = r.position + r.size
-	var bl: Vector2 = r.position + Vector2(0, r.size.y)
-
-	draw_line(tl, tl + Vector2(l, 0), col, w); draw_line(tl, tl + Vector2(0, l), col, w)
-	draw_line(tr, tr - Vector2(l, 0), col, w); draw_line(tr, tr + Vector2(0, l), col, w)
-	draw_line(br, br - Vector2(l, 0), col, w); draw_line(br, br - Vector2(0, l), col, w)
-	draw_line(bl, bl + Vector2(l, 0), col, w); draw_line(bl, bl - Vector2(0, l), col, w)
+			TargetContour.draw_frame(self, r, col, border_width + 1.0)

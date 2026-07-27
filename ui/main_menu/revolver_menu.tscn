@@ -1,13 +1,119 @@
-[gd_scene format=3 uid="uid://bd645uki0bxhr"]
+[gd_scene load_steps=4 format=3 uid="uid://bd645uki0bxhr"]
 
-[ext_resource type="Script" uid="uid://dfwf7kcxmq81i" path="res://ui/main_menu/revolver_menu.gd" id="1_e0sqg"]
+[ext_resource type="Script" uid="uid://dfwf7kcxmq81i" path="res://ui/main_menu/revolver_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://ui/main_menu/revolver_slot_button.gd" id="2_slot"]
 
-[node name="RevolverMenu" type="Control" unique_id=160373349]
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[node name="RevolverMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 1
-script = ExtResource("1_e0sqg")
+script = ExtResource("1_menu")
+
+[node name="Slots" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SlotContinue" type="Button" parent="Slots"]
+layout_mode = 0
+offset_right = 160.0
+offset_bottom = 34.0
+focus_mode = 0
+mouse_filter = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+disabled = true
+text = "Continue"
+flat = true
+script = ExtResource("2_slot")
+slot_id = &"continue"
+
+[node name="SlotNewGame" type="Button" parent="Slots"]
+layout_mode = 0
+offset_right = 160.0
+offset_bottom = 34.0
+focus_mode = 0
+mouse_filter = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+disabled = true
+text = "New Game"
+flat = true
+script = ExtResource("2_slot")
+slot_id = &"new_game"
+
+[node name="SlotLoadGame" type="Button" parent="Slots"]
+layout_mode = 0
+offset_right = 160.0
+offset_bottom = 34.0
+focus_mode = 0
+mouse_filter = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+disabled = true
+text = "Load Game"
+flat = true
+script = ExtResource("2_slot")
+slot_id = &"load_game"
+
+[node name="SlotSettings" type="Button" parent="Slots"]
+layout_mode = 0
+offset_right = 160.0
+offset_bottom = 34.0
+focus_mode = 0
+mouse_filter = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+disabled = true
+text = "Settings"
+flat = true
+script = ExtResource("2_slot")
+slot_id = &"settings"
+
+[node name="SlotCredits" type="Button" parent="Slots"]
+layout_mode = 0
+offset_right = 160.0
+offset_bottom = 34.0
+focus_mode = 0
+mouse_filter = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+disabled = true
+text = "Credits"
+flat = true
+script = ExtResource("2_slot")
+slot_id = &"credits"
+
+[node name="SlotQuit" type="Button" parent="Slots"]
+layout_mode = 0
+offset_right = 160.0
+offset_bottom = 34.0
+focus_mode = 0
+mouse_filter = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+disabled = true
+text = "Quit"
+flat = true
+script = ExtResource("2_slot")
+slot_id = &"quit"
+
+[node name="Hammer" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "PULL"

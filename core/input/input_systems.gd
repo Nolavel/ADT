@@ -60,12 +60,22 @@ var _tabs_pressing: bool = false
 var _secondary_click_duration: float = 0.0
 var _secondary_click_active: bool = false
 
+# --- Mouse Look ---
+## Sensitivity baked in here so consumers get camera-ready deltas.
+const MOUSE_SENSITIVITY: float = 0.003
+
+var _mouse_look_delta: Vector2 = Vector2.ZERO
+var _frame_look_delta: Vector2 = Vector2.ZERO
+
 
 func _ready() -> void:
 	# ALWAYS — иначе после PlayerState.open_menu() (get_tree().paused = true)
 	# этот autoload перестанет получать _unhandled_input и Escape не сработает.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse_look_delta += event.relative * MOUSE_SENSITIVITY
 
 ## Escape ("pause") ловим отдельно от физики — работает независимо от
 ## текущей паузы и режима. Само решение что делать по этому сигналу —
@@ -77,6 +87,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_frame_look_delta = _mouse_look_delta
+	_mouse_look_delta = Vector2.ZERO
+	
 	_handle_interact()
 	_handle_primary_click()
 	_handle_secondary_click(delta)
@@ -219,3 +232,7 @@ func get_move_vector() -> Vector2:
 ## Вертикальная ось ховера: +1 вверх (hover_up), −1 вниз (hover_down).
 func get_hover_vertical_axis() -> float:
 	return Input.get_axis("hover_down", "hover_up")
+	
+## --- Mouse look (TPS/FPS camera control) ---
+func get_look_delta() -> Vector2:
+	return _frame_look_delta

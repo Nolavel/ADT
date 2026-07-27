@@ -26,6 +26,10 @@ var speed: float = 0.0
 var target_speed: float = 0.0
 var movement_enabled: bool = true
 
+## Camera yaw reference for TLOU-style idle rotation and backpedal detection.
+## Set by TPSMovementSystem every physics frame.
+var _camera_yaw: float = 0.0
+
 ## --- Direct movement (TPS, WASD) — кэш входных данных, пишет
 ## TPSMovementSystem каждый physics-кадр через set_direct_move_input().
 ## Сам velocity/анимацию/поворот считает player.gd, чтобы физика и
@@ -309,17 +313,24 @@ func _update_direct_move_target_speed() -> void:
 	target_speed = run_speed if running else walk_speed
 
 
-## GTA-стиль: A/D — чистый стрейф относительно камеры, персонаж плавно
-## разворачивается лицом по направлению суммарного вектора движения
-## (тот же lerp_angle, что уже используется в _handle_navigation).
 func _apply_direct_movement(delta: float) -> void:
 	if _direct_move_direction.length() > 0.01:
 		var dir := _direct_move_direction.normalized()
 		velocity.x = dir.x * speed
 		velocity.z = dir.z * speed
 
-		var target_facing := atan2(dir.x, dir.z)
-		rotation.y = lerp_angle(rotation.y, target_facing, delta * 10.0)
+		# TLOU-style rotation: face movement direction when moving forward
+		# relative to camera; face camera when backpedaling / strafing
+		var move_facing := atan2(dir.x, dir.z)
+		var cam_facing := _camera_yaw + PI   # "forward" from camera's POV
+		var angle_diff := absf(wrapf(move_facing - cam_facing, -PI, PI))
+
+		if angle_diff < PI * 0.5:
+			# Forward hemisphere: face movement direction
+			rotation.y = lerp_angle(rotation.y, move_facing, delta * 10.0)
+		else:
+			# Backward hemisphere: face camera (backpedal / strafe)
+			rotation.y = lerp_angle(rotation.y, cam_facing, delta * 6.0)
 
 		if current_state == MovementState.IDLE or current_state == MovementState.DECELERATING:
 			_change_state(MovementState.RUNNING if is_running_mode else MovementState.WALKING)
@@ -328,8 +339,10 @@ func _apply_direct_movement(delta: float) -> void:
 		elif not is_running_mode and current_state != MovementState.WALKING:
 			_change_state(MovementState.WALKING)
 	else:
-		# Инпута нет — тормозим тем же decel, что и клик-муф, чтобы ощущение
-		# было единообразным между режимами.
+		# Idle: slowly turn to face camera direction
+		rotation.y = lerp_angle(rotation.y, _camera_yaw + PI, delta * 3.0)
+
+		# Deceleration — same rate as click-to-move for consistent feel
 		if speed > 0.1:
 			var decel_rate = run_speed / decel_time
 			velocity.x = move_toward(velocity.x, 0.0, delta * decel_rate)
@@ -437,3 +450,6 @@ func get_state_name() -> String:
 		MovementState.RUNNING: return "бежит"
 		MovementState.DECELERATING: return "тормозит"
 		_: return "неизвестно"
+		
+func set_camera_yaw(yaw: float) -> void:
+	_camera_yaw = yaw

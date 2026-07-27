@@ -81,9 +81,10 @@ func _physics_process(_delta: float) -> void:
 
 	if input_vec.length() < 0.01:
 		player_node.set_direct_move_input(Vector3.ZERO, want_run)
+		player_node.set_camera_yaw(camera.global_rotation.y)
 		return
 
-	# camera-relative, сплющенное по Y — стандартный GTA/TPS паттерн
+	# camera-relative, flattened to Y — standard GTA/TPS pattern
 	var cam_basis := camera.global_transform.basis
 	var forward := -cam_basis.z
 	var right := cam_basis.x
@@ -94,3 +95,4 @@ func _physics_process(_delta: float) -> void:
 
 	var direction := (forward * -input_vec.y) + (right * input_vec.x)
 	player_node.set_direct_move_input(direction, want_run)
+	player_node.set_camera_yaw(camera.global_rotation.y)

@@ -6,6 +6,10 @@
 # ## ENG: Drag-handle controller. Release with a nudge — the handle flies to
 #         whichever target best matches the nudge direction and always lands.
 #         Release without motion — interact with the target underneath, if any.
+#
+# Рассчитан на НЕПОДВИЖНУЮ россыпь целей: выбор идёт по направлению и
+# расстоянию. Для барабана главного меню он не подходит — там цель одна и она
+# двигается, поэтому у барабана свой контроллер (revolver_hammer_controller.gd).
 # =============================================================================
 extends Node
 class_name DragHandleController
@@ -15,11 +19,14 @@ signal target_interacted(target: DragTargetButton)
 @export var nearest_radius: float = 130.0
 ## RU: Минимальная скорость толчка (px/сек), чтобы засчитать направление
 ## ENG: Minimum nudge speed (px/sec) for the direction to register
-@export var nudge_threshold: float = 06.0
+@export var nudge_threshold: float = 6.0
 ## RU: Время полёта до цели, сек / ENG: flight duration to the target, sec
 @export var flight_time: float = 0.18
 
 enum Phase { IDLE, DRAGGING, FLYING }
+
+## RU: Окно усреднения скорости, сек / ENG: velocity averaging window, sec
+const SAMPLE_WINDOW: float = 0.09
 
 var handle: Control
 var targets: Array[DragTargetButton] = []
@@ -27,10 +34,11 @@ var targets: Array[DragTargetButton] = []
 var _phase: int = Phase.IDLE
 var _handle_home: Vector2 = Vector2.ZERO
 var _grab_offset: Vector2 = Vector2.ZERO
-var _samples: Array = []
+var _samples: Array[Dictionary] = []
 var _velocity: Vector2 = Vector2.ZERO
-
-const SAMPLE_WINDOW := 0.09
+## RU: Блокировка захвата на время переходов между экранами
+## ENG: Blocks grabbing while screens are transitioning
+var _locked: bool = false
 
 # -----------------------------------------------------------------------------
 
@@ -44,16 +52,23 @@ func setup(p_handle: Control, p_targets: Array) -> void:
 	handle.button_down.connect(_on_handle_down)
 	handle.button_up.connect(_on_handle_up)
 
+
 func _process(delta: float) -> void:
 	if _phase == Phase.DRAGGING:
 		_process_drag(delta)
 
+
+func set_locked(value: bool) -> void:
+	_locked = value
+	if handle != null:
+		handle.disabled = value
+
+# -----------------------------------------------------------------------------
+# ## RU: Захват и протяжка / ENG: Grab and drag
 # -----------------------------------------------------------------------------
 
 func _on_handle_down() -> void:
 	if _locked or _phase == Phase.FLYING:
-		return
-	if _phase == Phase.FLYING:
 		return
 	_phase = Phase.DRAGGING
 	_grab_offset = handle.get_global_mouse_position() - handle.global_position
@@ -62,6 +77,7 @@ func _on_handle_down() -> void:
 	_velocity = Vector2.ZERO
 	for t in targets:
 		t.set_drag_state(DragTargetButton.DragState.AWAITING)
+
 
 func _process_drag(_delta: float) -> void:
 	var mouse: Vector2 = handle.get_global_mouse_position()
@@ -82,15 +98,16 @@ func _process_drag(_delta: float) -> void:
 			t.set_drag_state(DragTargetButton.DragState.AWAITING)
 			t.reset_position()
 
+
 func _on_handle_up() -> void:
 	if _phase != Phase.DRAGGING:
 		return
 	var target: DragTargetButton = _pick_target(_handle_center())
-	if target:
+	if target != null:
 		_fly_to(target)
 	else:
 		_clear_targets()
-		_return_handle()
+		reset_handle()
 
 # -----------------------------------------------------------------------------
 # ## RU: Выбор цели / ENG: Target selection
@@ -108,6 +125,7 @@ func _pick_target(center: Vector2) -> DragTargetButton:
 
 	return _nearest_target(center)
 
+
 ## RU: Из всех целей берём ту, что лучше всего совпадает с направлением.
 ##     Никакого конуса — что-то выбирается всегда.
 ## ENG: Pick whichever target best matches the direction.
@@ -124,6 +142,7 @@ func _best_by_direction(origin: Vector2, dir: Vector2) -> DragTargetButton:
 			best_dot = dot
 			best = t
 	return best
+
 
 func _nearest_target(point: Vector2) -> DragTargetButton:
 	var best: DragTargetButton = null
@@ -150,14 +169,11 @@ func _fly_to(target: DragTargetButton) -> void:
 			t.set_drag_state(DragTargetButton.DragState.AWAITING)
 
 	var dest: Vector2 = target.get_global_rect().get_center() - handle.size * 0.5
-	print("🚀 Летим → %s" % target.name)
 
-	var tw := handle.create_tween()
+	var tw: Tween = handle.create_tween()
 	tw.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tw.tween_property(handle, "global_position", dest, flight_time)
 	await tw.finished
-
-	print("💥 Попадание → %s" % target.name)
 
 	## RU: хэндл остаётся лежать на цели — домой не возвращаем.
 	##     Позицию сбросит reset_handle() при следующем открытии виджета.
@@ -169,16 +185,19 @@ func _fly_to(target: DragTargetButton) -> void:
 	_clear_targets()
 
 	target_interacted.emit(target)
+
 # -----------------------------------------------------------------------------
 
 func _handle_center() -> Vector2:
 	return handle.get_global_rect().get_center()
+
 
 func _push_sample(pos: Vector2) -> void:
 	var now: float = Time.get_ticks_msec() / 1000.0
 	_samples.append({"t": now, "p": pos})
 	while _samples.size() > 2 and now - _samples[0]["t"] > SAMPLE_WINDOW:
 		_samples.pop_front()
+
 
 func _measure_velocity() -> Vector2:
 	if _samples.size() < 2:
@@ -188,11 +207,13 @@ func _measure_velocity() -> Vector2:
 		return Vector2.ZERO
 	return (_samples[-1]["p"] - _samples[0]["p"]) / dt
 
+
 func _clear_targets() -> void:
 	for t in targets:
 		t.set_drag_state(DragTargetButton.DragState.IDLE)
 		t.reset_position()
-	
+
+
 ## RU: Вернуть хэндл на исходное место. Вызывать при открытии виджета.
 ## ENG: Return the handle to its home slot. Call when the widget opens.
 func reset_handle(instant: bool = false) -> void:
@@ -203,18 +224,6 @@ func reset_handle(instant: bool = false) -> void:
 	if instant:
 		handle.position = _handle_home
 		return
-	var tw := handle.create_tween()
+	var tw: Tween = handle.create_tween()
 	tw.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(handle, "position", _handle_home, 0.3)
-	
-func _return_handle() -> void:
-	reset_handle()
-	
-## RU: Блокировка захвата на время переходов между экранами
-## ENG: Blocks grabbing while screens are transitioning
-var _locked: bool = false
-
-func set_locked(value: bool) -> void:
-	_locked = value
-	if handle:
-		handle.disabled = value

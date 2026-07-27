@@ -1,13 +1,10 @@
 # =============================================================================
 # revolver_slot.gd
 # ## RU: Поведение одной каморы барабана. RefCounted, узлом не является —
-#        владеет им RevolverMenu, живёт ровно столько же, сколько меню.
-#        Тот же приём, что у TpsShoulderCameraState / TpsCombatCameraState
-#        внутри OnFootCameraComponent.
+#        владеет им RevolverMenu. Тот же приём, что у TpsShoulderCameraState /
+#        TpsCombatCameraState внутри OnFootCameraComponent.
 # ## ENG: Behaviour of a single revolver chamber. RefCounted, not a node —
-#         owned by RevolverMenu and lives exactly as long as it does. Same
-#         pattern as TpsShoulderCameraState / TpsCombatCameraState inside
-#         OnFootCameraComponent.
+#         owned by RevolverMenu. Same pattern as the TPS camera sub-states.
 #
 # Разделение обязанностей:
 #   delta_to_front() — чистый расчёт, ничего не трогает;
@@ -15,6 +12,9 @@
 #   set_focused()    — смена состояния, вызывается ТОЛЬКО в момент перехода.
 # Дорогие вещи (font_size override, reset_size, grab_focus) живут строго в
 # set_focused и по построению не могут попасть в покадровый путь.
+#
+# Этот класс — единственный владелец position / scale / modulate / pivot_offset
+# каморы. Кнопка сама их не трогает, она только рисует контур.
 # =============================================================================
 extends RefCounted
 class_name RevolverSlot
@@ -40,20 +40,17 @@ var button: RevolverSlotButton
 var base_angle_deg: float
 
 var _focused: bool = false
-var _shader: ShaderMaterial
 
 
 func _init(p_button: RevolverSlotButton, p_base_angle_deg: float) -> void:
 	button = p_button
 	base_angle_deg = p_base_angle_deg
-	_shader = button.material as ShaderMaterial
-	## RU: Приводим камору к состоянию покоя из кода, а не полагаемся на то,
-	##     что в сцене руками выставили нужные оверрайды.
+	## RU: Приводим камору к покою из кода, а не полагаемся на то, что в сцене
+	##     руками выставили нужные оверрайды.
 	_apply_state(false)
 
 
 ## RU: Модуль угла (в градусах) между каморой и фронтом барабана.
-## ENG: Absolute angle in degrees between this chamber and the front of the drum.
 func delta_to_front(rotation_deg: float) -> float:
 	return absf(wrapf(base_angle_deg + rotation_deg, -180.0, 180.0))
 
@@ -101,23 +98,19 @@ func _apply_state(value: bool) -> void:
 		button.add_theme_color_override(item, c)
 
 	## RU: Только фронтальная камора — рабочая кнопка. Остальные не жмутся,
-	##     не ловят мышь и не берут фокус. Так спуск не надо ловить вручную:
-	##     клик, ui_accept и кнопка геймпада приходят штатным Button.pressed.
-	## ENG: Only the front chamber is a live button. This is what makes click,
-	##      ui_accept and gamepad all work through plain Button.pressed.
+	##     не ловят мышь и не берут фокус.
 	button.disabled = not value
 	## RU: PASS, а не STOP: левый клик кнопка съедает сама, а колесо мыши
 	##     не обрабатывает и пропускает выше — в _gui_input барабана.
-	## ENG: PASS, not STOP: the button consumes left click but ignores the
-	##      wheel, letting it bubble up to the drum's _gui_input.
 	button.mouse_filter = Control.MOUSE_FILTER_PASS if value else Control.MOUSE_FILTER_IGNORE
 	button.focus_mode = Control.FOCUS_ALL if value else Control.FOCUS_NONE
 
 	## RU: Размер шрифта поменялся → минимальный размер кнопки устарел.
 	button.reset_size()
 
-	if _shader != null:
-		_shader.set_shader_parameter("active", 1.0 if value else 0.0)
+	button.set_chamber_state(
+		RevolverSlotButton.ChamberState.READY if value else RevolverSlotButton.ChamberState.IDLE
+	)
 
 	if value and button.is_inside_tree():
 		button.grab_focus()
