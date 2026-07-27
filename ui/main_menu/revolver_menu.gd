@@ -1,141 +1,237 @@
+# =============================================================================
+# revolver_menu.gd
+# ## RU: Радиальное меню «барабан револьвера». Пристыковано к правому краю:
+#        центр окружности уведён за экран, на виду только левая дуга.
+#        Камора на фронте — рабочая кнопка, она же спуск.
+# ## ENG: Radial "revolver drum" menu docked to the right edge: the circle
+#         centre sits off-screen, only the left arc is visible. The chamber at
+#         the front is the live button and doubles as the trigger.
+#
+# Обязанности:
+#   этот скрипт   — только вращение барабана и раздача состояния фронта;
+#   RevolverSlot  — поведение одной каморы;
+#   .tscn         — сами кнопки, тексты, slot_id, материалы.
+# Кнопки НЕ создаются кодом. Порядок узлов внутри %Slots = порядок камор.
+#
+# Наружу отдаются два разных события — раньше это было одно, из-за чего
+# прокрутка колесом читалась как подтверждение пункта:
+#   slot_focused — барабан довернулся, пункт под спуском (звук щелчка, превью);
+#   slot_fired   — по пункту нажали (переход).
+# =============================================================================
 extends Control
-## Radial "revolver cylinder" menu. Dock this Control to the right edge of the
-## screen (anchors: right=1, top=0, bottom=1, grow_horizontal=GROW_DIRECTION_BEGIN).
-## Center of the circle sits off-screen to the right; only the left arc is visible.
+class_name RevolverMenu
 
-signal item_selected(index: int, label: String)
+## RU: Барабан довернулся, под спуском новая камора. Не является подтверждением.
+signal slot_focused(index: int, slot_id: StringName)
+## RU: Спуск нажат по камере на фронте.
+signal slot_fired(index: int, slot_id: StringName)
 
-@export var items: Array[String] = ["Continue", "New Game", "Load Game", "Settings", "Credits", "Quit"]
+@export_group("Geometry")
 @export var radius: float = 310.0
-@export var dock_offset: float = 0.58   ## fraction of radius pushed off-screen, matches translate(58%) in the HTML version
-@export var rotation_speed: float = 0.18
+## RU: Центр окружности как доля собственного размера: (1, 0.5) — правый край,
+##     середина по высоте. Считается от size, поэтому переживает ресайз окна.
+## ENG: Circle centre as a fraction of own size. Derived from size, so it
+##      survives window resizes — nothing mutates position at _ready().
+@export var center_anchor: Vector2 = Vector2(1.0, 0.5)
+## RU: Доп. сдвиг центра в пикселях. +X уводит центр дальше за правый край.
+@export var center_offset: Vector2 = Vector2(180.0, 0.0)
+
+@export_group("Feel")
 @export var snap_duration: float = 0.26
+## RU: Градусов поворота на пиксель протяжки мышью/пальцем.
+@export var drag_sensitivity: float = 0.35
 
+@onready var _slots_root: Control = %Slots
+
+var _slots: Array[RevolverSlot] = []
+var _step_deg: float = 0.0
 var _rotation_deg: float = 0.0
-var _step: float = 0.0
-var _labels: Array[Label] = []
-var _selected_index: int = 0
-var _snap_tween: Tween
-var _touch_start_y: float = 0.0
-var _touch_start_rotation: float = 0.0
-var _dragging: bool = false
+var _focused_index: int = -1
 
-const NEON_SHADER := preload("res://ui/main_menu/neon_flicker.gdshader")
+var _snap_tween: Tween
+var _dragging: bool = false
+var _drag_start_y: float = 0.0
+var _drag_start_rotation: float = 0.0
+
 
 func _ready() -> void:
-	_step = 360.0 / items.size()
-	position.x += radius * dock_offset  # push circle center further right, matching the CSS transform
-	_build_labels()
+	_collect_slots()
+	if _slots.is_empty():
+		return
+	## RU: Центр зависит от size — пересобираем раскладку при любом ресайзе.
+	resized.connect(_render)
 	_render()
 
-func _build_labels() -> void:
-	for i in items.size():
-		var lbl := Label.new()
-		lbl.text = items[i]
-		lbl.add_theme_font_size_override("font_size", 20)
-		lbl.add_theme_color_override("font_color", Color(0.6, 0.57, 0.51))
-		lbl.pivot_offset = Vector2.ZERO
 
-		var mat := ShaderMaterial.new()
-		mat.shader = NEON_SHADER
-		mat.set_shader_parameter("seed", float(i) * 7.0)
-		lbl.material = mat
+# -----------------------------------------------------------------------------
+# ## RU: Сборка / ENG: Setup
+# -----------------------------------------------------------------------------
 
-		add_child(lbl)
-		_labels.append(lbl)
+func _collect_slots() -> void:
+	_slots.clear()
+
+	var buttons: Array[RevolverSlotButton] = []
+	for child in _slots_root.get_children():
+		if child is RevolverSlotButton:
+			buttons.append(child)
+
+	if buttons.is_empty():
+		push_error("RevolverMenu: под %Slots нет ни одной RevolverSlotButton — барабан пуст.")
+		return
+
+	_step_deg = 360.0 / float(buttons.size())
+
+	for i in buttons.size():
+		var button: RevolverSlotButton = buttons[i]
+		button.reset_size()
+		button.pressed.connect(_on_slot_pressed.bind(i))
+		_slots.append(RevolverSlot.new(button, float(i) * _step_deg))
+
+
+# -----------------------------------------------------------------------------
+# ## RU: Раскладка / ENG: Layout
+# -----------------------------------------------------------------------------
+
+func _center() -> Vector2:
+	return size * center_anchor + center_offset
+
 
 func _render() -> void:
-	var closest_delta := 360.0
-	for i in _labels.size():
-		var base_angle: float = i * _step
-		var current: float = base_angle + _rotation_deg
-		var rad: float = deg_to_rad(current)
-		var x: float = -cos(rad) * radius
-		var y: float = -sin(rad) * radius
+	if _slots.is_empty():
+		return
 
-		var delta: float = abs(wrapf(current, -180.0, 180.0))
-		var visibility: float = clamp(1.0 - delta / 130.0, 0.0, 1.0)
-		var s: float = 0.72 + 0.28 * clamp(1.0 - delta / 90.0, 0.0, 1.0)
+	## RU: Проход 1 — кто ближе к фронту. Чистый расчёт, ничего не мутирует.
+	var nearest: int = 0
+	var nearest_delta: float = 360.0
+	for i in _slots.size():
+		var d: float = _slots[i].delta_to_front(_rotation_deg)
+		if d < nearest_delta:
+			nearest_delta = d
+			nearest = i
 
-		var lbl := _labels[i]
-		lbl.position = Vector2(x, y)
-		lbl.modulate.a = visibility
-		lbl.scale = Vector2(s, s)
-		lbl.z_index = int(1000 - delta)
+	## RU: Проход 2 — смена фронта, если он действительно сменился.
+	if nearest != _focused_index:
+		if _focused_index >= 0:
+			_slots[_focused_index].set_focused(false)
+		_focused_index = nearest
+		_slots[nearest].set_focused(true)
+		slot_focused.emit(nearest, _slots[nearest].button.slot_id)
 
-		var is_active := delta < _step / 2.0
-		var mat := lbl.material as ShaderMaterial
-		if is_active:
-			lbl.add_theme_font_size_override("font_size", 28)
-			lbl.add_theme_color_override("font_color", Color(0.85, 0.83, 0.78))
-			mat.set_shader_parameter("active", 1.0)
-		else:
-			lbl.add_theme_font_size_override("font_size", 20)
-			lbl.add_theme_color_override("font_color", Color(0.6, 0.57, 0.51))
-			mat.set_shader_parameter("active", 0.0)
+	## RU: Проход 3 — раскладка. После смены фонта размеры уже пересчитаны.
+	var c: Vector2 = _center()
+	for slot in _slots:
+		slot.apply(c, _rotation_deg, radius)
 
-		if delta < closest_delta:
-			closest_delta = delta
-			_selected_index = i
 
-func _unhandled_input(event: InputEvent) -> void:
-	# Mouse wheel (desktop)
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_rotation_deg += 20.0 * rotation_speed
-			_render()
-			_queue_snap()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_rotation_deg -= 20.0 * rotation_speed
-			_render()
-			_queue_snap()
+# -----------------------------------------------------------------------------
+# ## RU: Ввод / ENG: Input
+# -----------------------------------------------------------------------------
 
-	# Touch drag (mobile)
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_dragging = true
-			_touch_start_y = event.position.y
-			_touch_start_rotation = _rotation_deg
-			if _snap_tween:
-				_snap_tween.kill()
-		else:
-			_dragging = false
-			_queue_snap()
+## RU: ui_up / ui_down перехватываем в _shortcut_input, потому что он идёт
+##     ДО обработки GUI. Иначе штатная навигация по фокусу Viewport'а увела бы
+##     фокус на соседний контрол — камеры разложены по кругу, «сосед сверху»
+##     там означает не то, что нужно.
+## ENG: Intercepted in _shortcut_input because it runs BEFORE GUI input —
+##      otherwise the viewport's focus navigation would hijack the arrows.
+func _shortcut_input(event: InputEvent) -> void:
+	if not is_visible_in_tree() or _slots.is_empty():
+		return
+	if event.is_action_pressed("ui_up", true):
+		step_by(-1)
+		accept_event()
+	elif event.is_action_pressed("ui_down", true):
+		step_by(1)
+		accept_event()
 
-	if event is InputEventScreenDrag and _dragging:
-		var dy: float = event.position.y - _touch_start_y
-		_rotation_deg = _touch_start_rotation + dy * 0.35
+
+func _gui_input(event: InputEvent) -> void:
+	if _slots.is_empty():
+		return
+
+	if event is InputEventMouseButton:
+		match event.button_index:
+			MOUSE_BUTTON_WHEEL_UP:
+				if event.pressed:
+					step_by(-1)
+					accept_event()
+			MOUSE_BUTTON_WHEEL_DOWN:
+				if event.pressed:
+					step_by(1)
+					accept_event()
+			MOUSE_BUTTON_LEFT:
+				## RU: Протяжка стартует только с пустого места дуги. Нажатие
+				##     по самой фронтальной каморе — это спуск, оно до сюда
+				##     не доходит: Button съедает его раньше.
+				if event.pressed:
+					_dragging = true
+					_drag_start_y = event.position.y
+					_drag_start_rotation = _rotation_deg
+					_kill_snap()
+				else:
+					if _dragging:
+						_dragging = false
+						_snap()
+				accept_event()
+
+	elif event is InputEventMouseMotion and _dragging:
+		_rotation_deg = _drag_start_rotation + (event.position.y - _drag_start_y) * drag_sensitivity
 		_render()
+		accept_event()
 
-func _queue_snap() -> void:
-	if _snap_tween:
-		_snap_tween.kill()
-	_snap_tween = create_tween()
-	_snap_tween.tween_interval(0.14)
-	_snap_tween.tween_callback(_snap)
 
-func _snap() -> void:
-	var target: float = round(_rotation_deg / _step) * _step
-	_animate_to(target)
+func _on_slot_pressed(index: int) -> void:
+	## RU: Страховка: выстрелить может только камора на фронте.
+	if index != _focused_index:
+		return
+	slot_fired.emit(index, _slots[index].button.slot_id)
 
-func _animate_to(target: float) -> void:
-	if _snap_tween:
-		_snap_tween.kill()
-	_snap_tween = create_tween()
-	_snap_tween.set_ease(Tween.EASE_OUT)
-	_snap_tween.set_trans(Tween.TRANS_CUBIC)
-	_snap_tween.tween_method(_set_rotation, _rotation_deg, target, snap_duration)
-	_snap_tween.tween_callback(func():
-		item_selected.emit(_selected_index, items[_selected_index])
-	)
 
-func _set_rotation(v: float) -> void:
-	_rotation_deg = v
-	_render()
+# -----------------------------------------------------------------------------
+# ## RU: Публичный API / ENG: Public API
+# -----------------------------------------------------------------------------
 
-## Call this to jump directly to an item (e.g. from a controller D-pad or a click on a visible label).
-func select_index(i: int) -> void:
-	var base_angle: float = i * _step
-	var target: float = -base_angle
+## RU: Провернуть барабан на direction камор (+1 вниз по списку, -1 вверх).
+func step_by(direction: int) -> void:
+	var snapped_now: float = roundf(_rotation_deg / _step_deg) * _step_deg
+	_animate_to(snapped_now - float(direction) * _step_deg)
+
+
+## RU: Довернуть барабан к конкретной каморе по кратчайшей дуге.
+func select_index(index: int) -> void:
+	if index < 0 or index >= _slots.size():
+		return
+	var target: float = -float(index) * _step_deg
 	var diff: float = wrapf(target - _rotation_deg, -180.0, 180.0)
 	_animate_to(_rotation_deg + diff)
+
+
+func focused_slot_id() -> StringName:
+	if _focused_index < 0:
+		return &""
+	return _slots[_focused_index].button.slot_id
+
+
+# -----------------------------------------------------------------------------
+# ## RU: Доводка / ENG: Snapping
+# -----------------------------------------------------------------------------
+
+func _snap() -> void:
+	_animate_to(roundf(_rotation_deg / _step_deg) * _step_deg)
+
+
+func _animate_to(target_deg: float) -> void:
+	_kill_snap()
+	_snap_tween = create_tween()
+	_snap_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_snap_tween.tween_method(_set_rotation, _rotation_deg, target_deg, snap_duration)
+
+
+func _kill_snap() -> void:
+	if _snap_tween != null and _snap_tween.is_valid():
+		_snap_tween.kill()
+	_snap_tween = null
+
+
+func _set_rotation(value: float) -> void:
+	_rotation_deg = value
+	_render()
