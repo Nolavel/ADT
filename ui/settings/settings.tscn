@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://c4bne6src32qd"]
+
+[ext_resource type="Script" uid="uid://bt53gmeyocgtj" path="res://ui/settings/setting.gd" id="1_bjc66"]
+[ext_resource type="Script" uid="uid://cmsb2tc8h5hh6" path="res://ui/widgets/toss/drag_target_button.gd" id="2_hrs25"]
+
+[node name="Settings" type="Control" unique_id=1545464280]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bjc66")
+
+[node name="btn_back" type="Button" parent="." unique_id=1646503013]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -180.0
+offset_right = -176.0
+offset_bottom = -155.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "bacl"
+script = ExtResource("2_hrs25")
+
+[node name="btn_drag_handle" type="Button" parent="." unique_id=2113313141]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -77.5
+offset_top = -180.0
+offset_right = 77.5
+offset_bottom = -155.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Take me and throw"

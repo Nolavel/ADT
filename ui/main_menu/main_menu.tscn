@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://dkjivnseotxlw"]
+
+[ext_resource type="PackedScene" uid="uid://bd645uki0bxhr" path="res://ui/main_menu/revolver_menu.tscn" id="1_uhj5c"]
+
+[node name="Demo" type="Control" unique_id=555351582]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="." unique_id=2055048090]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="RevolverMenu" parent="." unique_id=160373349 instance=ExtResource("1_uhj5c")]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -310.0
+offset_top = -147.0
+offset_right = -10.0
+offset_bottom = 153.0
+grow_horizontal = 0

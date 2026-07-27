@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://dwqwya2k7dimh"]
 
 [ext_resource type="Script" uid="uid://b6mfhcygfx02b" path="res://core/controllers/menu_controller/menu_controller.gd" id="1_x1j37"]
+[ext_resource type="PackedScene" uid="uid://c4bne6src32qd" path="res://ui/settings/settings.tscn" id="2_jc5ie"]
+[ext_resource type="Script" uid="uid://cmsb2tc8h5hh6" path="res://ui/widgets/toss/drag_target_button.gd" id="2_minnd"]
 
 [node name="InGameMenu" type="Control" unique_id=629233379]
 layout_mode = 3
@@ -10,6 +12,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_x1j37")
+settings_scene = ExtResource("2_jc5ie")
 
 [node name="btn_continue" type="Button" parent="." unique_id=1459814163]
 layout_mode = 1
@@ -18,13 +21,14 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -141.5
-offset_top = -12.5
-offset_right = -58.5
-offset_bottom = 12.5
+offset_left = -360.0
+offset_top = -140.0
+offset_right = -277.0
+offset_bottom = -115.0
 grow_horizontal = 2
 grow_vertical = 2
 text = "continue"
+script = ExtResource("2_minnd")
 
 [node name="btn_out" type="Button" parent="." unique_id=1497352880]
 layout_mode = 1
@@ -33,10 +37,58 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = 82.0
-offset_top = -12.5
-offset_right = 118.0
-offset_bottom = 12.5
+offset_left = 240.0
+offset_top = 60.0
+offset_right = 276.0
+offset_bottom = 85.0
 grow_horizontal = 2
 grow_vertical = 2
 text = "out"
+script = ExtResource("2_minnd")
+
+[node name="btn_settings" type="Button" parent="." unique_id=783720806]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = 60.0
+offset_right = -281.0
+offset_bottom = 85.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "settings"
+script = ExtResource("2_minnd")
+
+[node name="btn_last_save" type="Button" parent="." unique_id=1378024771]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 240.0
+offset_top = -140.0
+offset_right = 323.0
+offset_bottom = -115.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "last save"
+script = ExtResource("2_minnd")
+
+[node name="btn_drag_handle" type="Button" parent="." unique_id=578386606]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "( )"
