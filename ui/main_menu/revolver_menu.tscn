@@ -1,11 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://bd645uki0bxhr"]
+[gd_scene format=3 uid="uid://bd645uki0bxhr"]
 
 [ext_resource type="Script" uid="uid://dfwf7kcxmq81i" path="res://ui/main_menu/revolver_menu.gd" id="1_menu"]
-[ext_resource type="Script" path="res://ui/main_menu/revolver_slot_button.gd" id="2_slot"]
+[ext_resource type="Script" uid="uid://cj842yi8umgy2" path="res://ui/main_menu/revolver_slot_button.gd" id="2_slot"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
-[node name="RevolverMenu" type="Control"]
+[node name="RevolverMenu" type="Control" unique_id=1642345716]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,8 +13,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
+center_offset = Vector2(75, 0)
 
-[node name="Slots" type="Control" parent="."]
+[node name="Slots" type="Control" parent="." unique_id=963763907]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -24,7 +25,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="SlotContinue" type="Button" parent="Slots"]
+[node name="SlotContinue" type="Button" parent="Slots" unique_id=1158556244]
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 34.0
@@ -37,7 +38,7 @@ flat = true
 script = ExtResource("2_slot")
 slot_id = &"continue"
 
-[node name="SlotNewGame" type="Button" parent="Slots"]
+[node name="SlotNewGame" type="Button" parent="Slots" unique_id=1784735296]
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 34.0
@@ -50,7 +51,7 @@ flat = true
 script = ExtResource("2_slot")
 slot_id = &"new_game"
 
-[node name="SlotLoadGame" type="Button" parent="Slots"]
+[node name="SlotLoadGame" type="Button" parent="Slots" unique_id=2045298023]
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 34.0
@@ -63,7 +64,7 @@ flat = true
 script = ExtResource("2_slot")
 slot_id = &"load_game"
 
-[node name="SlotSettings" type="Button" parent="Slots"]
+[node name="SlotSettings" type="Button" parent="Slots" unique_id=1757181007]
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 34.0
@@ -76,7 +77,7 @@ flat = true
 script = ExtResource("2_slot")
 slot_id = &"settings"
 
-[node name="SlotCredits" type="Button" parent="Slots"]
+[node name="SlotCredits" type="Button" parent="Slots" unique_id=1438793991]
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 34.0
@@ -89,7 +90,7 @@ flat = true
 script = ExtResource("2_slot")
 slot_id = &"credits"
 
-[node name="SlotQuit" type="Button" parent="Slots"]
+[node name="SlotQuit" type="Button" parent="Slots" unique_id=130941110]
 layout_mode = 0
 offset_right = 160.0
 offset_bottom = 34.0
@@ -102,7 +103,7 @@ flat = true
 script = ExtResource("2_slot")
 slot_id = &"quit"
 
-[node name="Hammer" type="Button" parent="."]
+[node name="Hammer" type="Button" parent="." unique_id=747280491]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 8
