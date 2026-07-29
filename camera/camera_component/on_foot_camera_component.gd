@@ -20,11 +20,18 @@ class_name OnFootCameraComponent
 signal zoom_input_received()
 
 const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх InputSystems
-const TPS_DISTANCE: float = 2.6
-const TPS_PIVOT_HEIGHT: float = 1.45
-const TPS_OCCLUSION_HEIGHT: float = 1.5
+## Not proportional to BODY_HEIGHT on purpose — camera distance is taste, not
+## anatomy. Proportional to the old 2.6 @ 2.32m body would be ~2.02; 2.2 is
+## visually tighter framing for this camera family.
+const TPS_DISTANCE: float = 2.2
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
+
+## Used only if `target` doesn't expose character-metric getters (see
+## _target_metric_height()) — a safe non-zero default instead of silently
+## pivoting/casting at ground level.
+const TPS_PIVOT_HEIGHT_FALLBACK: float = 1.45
+const TPS_OCCLUSION_HEIGHT_FALLBACK: float = 1.5
 
 ## Frustum-vs-translation split for the shoulder offset — picked visually, not
 ## derived. Frustum offset keeps the look axis centered on screen (needed for
@@ -38,6 +45,9 @@ const TPS_SHOULDER_H_OFFSET_SIGN: float = 1.0
 var _tps_pitch_deg: float = -10.0
 ## Pitch offset from TpsCombatCameraState (explore sway / lock-on), added on top of _tps_pitch_deg.
 var _tps_pitch_offset_deg: float = 0.0
+## Set once _target_metric_height() has warned about a target with no
+## character-metric getters, so the warning doesn't spam every frame.
+var _warned_missing_target_metrics: bool = false
 
 @export var rotation_speed: float = 8.0
 
@@ -319,6 +329,18 @@ func _update_follow_rotation_animation(delta: float):
 		current_angle = follow_target_angle
 
 
+## Reads a character-metric getter off `target` via duck typing — target is
+## a generic Node3D, not necessarily the Player. Falls back to a fixed,
+## non-zero height (with a one-time warning) if target doesn't expose it.
+func _target_metric_height(method: StringName, fallback: float) -> float:
+	if target.has_method(method):
+		return float(target.call(method))
+	if not _warned_missing_target_metrics:
+		push_warning("OnFootCameraComponent: target '%s' has no %s() — using fallback height %.2f" % [target.name, method, fallback])
+		_warned_missing_target_metrics = true
+	return fallback
+
+
 func _update_camera_position(delta):
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
@@ -337,7 +359,8 @@ func _update_camera_position(delta):
 			var shoulder := right * (shoulder_offset * TPS_SHOULDER_TRANSLATION_RATIO)
 
 			# Base pivot: target + pivot height (shoulder level, not ground)
-			var pivot := target.global_position + Vector3(0, TPS_PIVOT_HEIGHT, 0)
+			var pivot_height := _target_metric_height(&"get_shoulder_height", TPS_PIVOT_HEIGHT_FALLBACK)
+			var pivot := target.global_position + Vector3(0, pivot_height, 0)
 			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
 
 			camera_target_pos = pivot + offset
@@ -348,7 +371,8 @@ func _update_camera_position(delta):
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
-			var eye_pos := target.global_position + Vector3(0, TPS_OCCLUSION_HEIGHT, 0)
+			var occlusion_height := _target_metric_height(&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK)
+			var eye_pos := target.global_position + Vector3(0, occlusion_height, 0)
 			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, (1 << 1) | (1 << 2))
 			query.collide_with_areas = false
 			var hit := space_state.intersect_ray(query)
@@ -364,6 +388,9 @@ func _update_camera_position(delta):
 			camera_target_pos = target.global_position + orbit_offset
 			camera_target_pitch = camera_angle
 			camera_target_yaw = current_angle
+
+			# TPS shoulder framing must not leak into ISOMETRIC — decay it back to 0.
+			camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
 
 	camera_current_pos = camera_current_pos.lerp(camera_target_pos, delta * view_transition_speed)
 	if not view_mode_animating:
