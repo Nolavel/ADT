@@ -10,6 +10,22 @@ transport are implemented. Combat, AI, missions and saving are not.
 > Нуарный опенворлд-прототип в вертикальном городе Блэкрок.
 > Соло-проект в активной разработке.
 
+## A note on names
+
+This project carries two names, deliberately.
+
+**Vertical Trespass** is the internal working title. It is formal — it names
+the build, the window title and `config/name`, and it is the name used
+throughout the code and documentation. It is not a marketing name and is not
+intended to be one.
+
+**ADT — Another Digital Thriller** is the public name. It is what the
+repository is called, what appears on itch.io and store pages, and the name
+the project will carry if it goes commercial.
+
+Use the internal name in code, commits, documentation and issues. Use the
+public name in anything a player or a storefront will see. Do not mix them.
+
 ---
 
 ## Run

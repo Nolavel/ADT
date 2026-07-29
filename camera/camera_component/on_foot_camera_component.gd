@@ -20,6 +20,8 @@ class_name OnFootCameraComponent
 signal zoom_input_received()
 
 const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх InputSystems
+const TPS_DISTANCE: float = 2.6
+const TPS_HEIGHT_OFFSET: float = 0.35
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
 
@@ -195,16 +197,13 @@ func _handle_tps_follow(delta: float) -> void:
 	if InputSystems.is_lock_on_just_pressed():
 		_tps_combat.try_toggle_lock(target)
 
-	var result := _tps_combat.update(delta, target, camera_target_yaw)
-	if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
-		camera_target_yaw = result.yaw
-		if result.distance_override > 0.0 and not zoom_animating:
-			target_zoom_distance = result.distance_override
-			current_zoom_distance = lerp(current_zoom_distance, result.distance_override, delta * 6.0)
-		camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
-	else:
-		# EXPLORE: preserve mouse pitch, apply procedural sway on top
-		camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
+		var result := _tps_combat.update(delta, target, camera_target_yaw)
+		if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
+			camera_target_yaw = result.yaw
+			# distance is fixed in TPS — ignore combat distance_override
+			camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
+		else:
+			camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
 
 
 func _update_zoom_animation(delta: float):
@@ -315,10 +314,10 @@ func _update_camera_position(delta):
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
 			var yaw_rad = camera_target_yaw
-			var pitch_rad = deg_to_rad(tps_angle)
+			var pitch_rad = deg_to_rad(_tps_pitch_deg)
 			var horizontal_direction = Vector3(sin(yaw_rad), 0, cos(yaw_rad))
-			var horizontal_distance = current_zoom_distance * cos(pitch_rad)
-			var vertical_distance = -current_zoom_distance * sin(pitch_rad)
+			var horizontal_distance = TPS_DISTANCE * cos(pitch_rad)
+			var vertical_distance = -TPS_DISTANCE * sin(pitch_rad)
 			var right := Vector3(
 				cos(yaw_rad),
 				0.0,
@@ -327,13 +326,16 @@ func _update_camera_position(delta):
 
 			var shoulder := right * _shoulder.update(delta)
 
+			# Base pivot: target + height offset (shoulder level, not ground)
+			var pivot := target.global_position + Vector3(0, TPS_HEIGHT_OFFSET, 0)
 			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
 
-			camera_target_pos = target.global_position + offset
-			
+			camera_target_pos = pivot + offset
+			camera_target_pitch = _tps_pitch_deg
+
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
-			var eye_pos := target.global_position + Vector3(0, 1.6, 0)
+			var eye_pos := pivot
 			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, (1 << 1) | (1 << 2))
 			query.collide_with_areas = false
 			var hit := space_state.intersect_ray(query)
@@ -369,21 +371,19 @@ func _handle_follow_toggle():
 			player_rotation_timer = 0.0
 
 
-## V переключает между двумя оставшимися видами — только когда зум упёрся
-## в соответствующий край диапазона (тот же принцип, что был в цепочке).
 func _handle_view_toggle():
 	if not InputSystems.is_toggle_view_just_pressed():
 		return
 	if zoom_animating or view_mode_animating:
-		return  # не начинаем переход, пока не устоялась текущая анимация
+		return
 
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.ISOMETRIC:
 			if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
 				_transition_to_view(PlayerState.ViewMode.TPS)
 		PlayerState.ViewMode.TPS:
-			if is_equal_approx_eps(target_zoom_distance, TPS_ZOOM_MAX):
-				_transition_to_view(PlayerState.ViewMode.ISOMETRIC)
+			# No zoom requirement to exit TPS — V always switches back
+			_transition_to_view(PlayerState.ViewMode.ISOMETRIC)
 
 
 func is_equal_approx_eps(a: float, b: float) -> bool:
@@ -399,8 +399,8 @@ func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 
 	match new_view:
 		PlayerState.ViewMode.TPS:
-			view_target_distance = TPS_ZOOM_MAX
-			view_target_pitch = tps_angle
+			view_target_distance = TPS_DISTANCE
+			view_target_pitch = _tps_pitch_deg
 
 		PlayerState.ViewMode.ISOMETRIC:
 			# из TPS — входим на ближнем крае ISO, лицом куда смотрел игрок
@@ -485,16 +485,13 @@ func _handle_zoom_input():
 		_start_zoom(ZOOM_STEP)
 		
 
-
-
 func _start_zoom(amount: float):
 	var min_zoom: float
 	var max_zoom: float
 
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
-			min_zoom = TPS_ZOOM_MIN
-			max_zoom = TPS_ZOOM_MAX
+			return  # zoom disabled in TPS — distance is fixed
 		_:
 			min_zoom = ISOMETRIC_ZOOM_MIN
 			max_zoom = ISOMETRIC_ZOOM_MAX
