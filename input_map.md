@@ -1,143 +1,139 @@
-# Vertical Trespass — InputMap / Карта управления
+# InputMap
 
-> Актуально на: 2026-07-07
-> Engine: Godot 4.7+ / GDScript
-> Источник истины по режимам: `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`, `MENU`),
-> `PlayerState.view_mode` (`TPS`, `ISOMETRIC`)
->
-> This document is the single source of truth for input bindings. Update it
-> whenever an action is added, removed, or rebound in Project Settings → Input Map.
-> Этот документ — единственный источник истины по биндингам ввода. Обновляйте
-> его при любом добавлении/удалении/перепривязке action'а в Project Settings → Input Map.
+> Verified against `project.godot` on **2026-07-29** · Godot 4.7 · GDScript
+
+**This document is the single source of truth for input bindings.** Update it
+in the same commit as any action added, removed or rebound in
+Project Settings → Input Map.
+
+Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
+`MENU`) and `PlayerState.view_mode` (`TPS`, `ISOMETRIC`).
+`TOPDOWN` was removed from the project — do not reintroduce it.
+
+`InputSystems` (`core/input/input_systems.gd`) is the only script that calls
+`Input.*`. Everything else subscribes to its signals or calls its query
+methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
+reads raw `KEY_*` deliberately.
+
+Action count: **29** — 25 live, 4 reserved and unread.
 
 ---
 
-## 1. Глобальные действия / Global actions
+## 1. Global
 
-Работают вне зависимости от `PlayerState.mode`.
-Work regardless of current `PlayerState.mode`.
+Active regardless of `PlayerState.mode`.
 
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
+| Action | Key | Description | RU |
 |---|---|---|---|
-| `pause` | Esc | Открыть/закрыть меню паузы | Open/close pause menu |
+| `pause` | `Esc` | Open / close pause menu; owns `get_tree().paused` via `PlayerState` | Меню паузы |
+| `toggle_stream_debug` | `\` | Toggle the streaming debug panel (observer only) | Панель отладки стриминга |
 
 ---
 
-## 2. ON_FOOT — общие для ISOMETRIC и TOPDOWN / shared for ISOMETRIC & TOPDOWN
+## 2. ON_FOOT — shared across ISOMETRIC and TPS
 
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
+| Action | Key | Description | RU |
 |---|---|---|---|
-| `Mouse_Left_Button` | ЛКМ / LMB | Остановить движение / отменить цель | Stop movement / cancel move target |
-| `Mouse_Right_Button` | ПКМ (клик) / RMB (click) | Идти в точку клика | Move to clicked point |
-| `Mouse_Right_Button` (удержание / hold) | ПКМ, удержание >0.5с / RMB hold >0.5s | Перейти на бег к точке | Switch to running toward target |
-| `Interact` | **F** | Подобрать/бросить предмет, активировать объект | Pick up/drop item, activate object |
-| `lean_left` | Q | Орбитальная камера — шаг влево (дискретно) | Orbital camera — step left (discrete) |
-| `lean_right` | E | Орбитальная камера — шаг вправо (дискретно) | Orbital camera — step right (discrete) |
-| `zoom_in` | Колесо вниз / Wheel down | Приблизить камеру | Zoom camera in |
-| `zoom_out` | Колесо вверх / Wheel up | Отдалить камеру | Zoom camera out |
-| `toggle_view` | V | Переключить ISOMETRIC ↔ TOPDOWN | Toggle ISOMETRIC ↔ TOPDOWN |
-| `toggle_follow` | P | Вкл/выкл слежение камеры за поворотом игрока | Toggle camera-follows-player-rotation |
-| `toggle_tabs` | Tab (тап / hold) | Тап — уведомление; холд — статус-камера | Tap — notifier; hold — status camera |
-| `Status` | X | UI-хоткей (потребитель ещё не реализован) | UI hotkey (consumer not implemented yet) |
-| `Inventory` | I | UI-хоткей (потребитель ещё не реализован) | UI hotkey (consumer not implemented yet) |
+| `mouse_left_button` | LMB | Stop movement / cancel move target | Отменить цель движения |
+| `mouse_right_button` | RMB click | Move to clicked point | Идти в точку |
+| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
+| `interact` | `F` | Pick up / drop item, activate object, board a hover | Взаимодействие |
+| `zoom_in` | Wheel down | Zoom camera in | Приблизить |
+| `zoom_out` | Wheel up | Zoom camera out | Отдалить |
+| `toggle_view` | `V` | Toggle `ISOMETRIC` ⇄ `TPS` | Смена вида |
+| `toggle_follow` | `P` | Toggle camera-follows-player-rotation | Слежение камеры |
+| `inventory` | `I` | Inventory | Инвентарь |
+| `map` | `M` | Map | Карта |
+| `status` | `X` | Status | Статус |
+| `toggle_tabs` | `Tab` | Tap — notifier; hold — status camera | Тап/холд — уведомление/статус-камера |
 
-
-**Примечание / Note:** click-to-move и орбиталка/зум/toggle_view — активны ТОЛЬКО в
-`PlayerState.mode == ON_FOOT` и `view_mode in [ISOMETRIC, TOPDOWN]`.
-Click-to-move and orbital/zoom/toggle_view are active ONLY when
-`PlayerState.mode == ON_FOOT` and `view_mode in [ISOMETRIC, TOPDOWN]`.
+> ⚠ **`toggle_tabs` and `lock_on` are both bound to `Tab`** and both are
+> on-foot actions. Unresolved collision — see `docs/planned_scope.md`.
 
 ---
 
-## 3. ON_FOOT + TPS (отложено, не реализовано / deferred, not implemented)
+## 3. ON_FOOT — ISOMETRIC only
 
-WASD-движение вместо click-to-move. Переключение вида (`toggle_view`) сейчас
-работает только между ISOMETRIC — включение TPS как отдельного
-view_mode будет отдельной задачей.
+Click-to-move navigation. Handled by `NavigationComponent` and
+`ClickToMoveSystem`.
 
-WASD movement instead of click-to-move. `toggle_view` currently only toggles
-between ISOMETRIC/TPS — wiring TPS in as a selectable view_mode is a
-separate future task.
-
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
+| Action | Key | Description | RU |
 |---|---|---|---|
-| `move_forward` | W | Движение вперёд | Move forward |
-| `move_backward` | S | Движение назад | Move backward |
-| `move_left` | A | Движение влево | Strafe left |
-| `move_right` | D | Движение вправо | Strafe right |
-| `jump` | Space | Прыжок | Jump |
-| `sprint` | Shift | Бег | Sprint |
-| `crouch` | C / Ctrl | Присед | Crouch |
-| `Interact` | F | Тот же action, что в ISO/TOPDOWN — семантика не зависит от вида камеры | Same action as ISO/TOPDOWN — semantics don't depend on camera view |
+| `lean_left` | `Q` | Orbital camera — discrete step left | Шаг камеры влево |
+| `lean_right` | `E` | Orbital camera — discrete step right | Шаг камеры вправо |
 
 ---
 
-## 4. VEHICLE_HOVER (контроллеры-заглушки, интерфейс зафиксирован заранее / stub controllers, interface reserved ahead of time)
+## 4. ON_FOOT — TPS only
 
-Решение: клавиатурное управление (не мышь), заглушки-контроллеры уже есть в
-`core/controllers/transport/base/hover_vehicle_base.gd` и подтипах
-(car/van/bus/truck).
+Direct movement. `TPSMovementSystem` feeds `player.gd` every physics frame.
 
-Decision: keyboard-only control (not mouse). Stub controllers already exist
-under `core/controllers/transport/base/hover_vehicle_base.gd` and its
-subtypes (car/van/bus/truck).
-
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
+| Action | Key | Description | RU |
 |---|---|---|---|
-| `move_forward` | W | Тяга вперёд (переиспользуем action, режимы взаимоисключающие) | Throttle forward (action reused — modes are mutually exclusive) |
-| `move_backward` | S | Тормоз/реверс (переиспользуем) | Brake/reverse (reused) |
-| `move_left` | A | Руль влево (переиспользуем) | Steer left (reused) |
-| `move_right` | D | Руль вправо (переиспользуем) | Steer right (reused) |
-| `sprint` | Shift | Буст (переиспользуем) | Boost (reused) |
-| `Interact` | F | Выйти из транспорта (переиспользуем — не заводим отдельный action) | Exit vehicle (reused — no separate action) |
+| `move_forward` | `W` | Forward | Вперёд |
+| `move_backward` | `S` | Backward | Назад |
+| `move_left` | `A` | Strafe left | Влево |
+| `move_right` | `D` | Strafe right | Вправо |
+| `jump` | `Space` | Jump | Прыжок |
+| `sprint` | `Shift` | Sprint; consumes stamina | Бег |
+| `switch_shoulder` | `Z` | Swap camera shoulder (`TpsShoulderCameraState`) | Смена плеча камеры |
+| `lock_on` | `Tab` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |
 
-**Примечание / Note:** `move_*`/`sprint`/`Interact` — те же Godot-action'ы, что
-и в ON_FOOT. Конфликта нет: `PlayerState.mode` в любой момент времени только
-один, и каждый контроллер сам решает, слушать ли сигнал/action, основываясь
-на текущем режиме.
-
-Same Godot actions as ON_FOOT. No conflict: `PlayerState.mode` is exclusive
-at any given time, and each controller decides for itself whether to react,
-based on the current mode.
+`lock_on` searches the `lockable` group. Occlusion-aware target selection is
+a known TODO, blocked on a raycast service that does not exist yet.
 
 ---
 
-## 5. TUBE_TRANSIT (низкий приоритет / low priority)
+## 5. HOVER
 
-Единственное, что нужно на этом этапе — фрилук камеры. Никакого другого
-взаимодействия.
+Entered through `HoverEntryTrigger` (`interact` near a hover). `Space` and
+`Ctrl` are shared with `jump` / `crouch` by design — the modes are mutually
+exclusive, so the bindings do not conflict at runtime.
 
-The only thing needed at this stage is camera freelook. No other interaction.
-
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
+| Action | Key | Description | RU |
 |---|---|---|---|
-| `Mouse_Right_Button` (удержание / hold) | ПКМ, удержание / RMB hold | Свободный обзор камерой | Camera freelook |
+| `move_forward` / `move_backward` | `W` / `S` | Thrust forward / reverse | Тяга |
+| `move_left` / `move_right` | `A` / `D` | Strafe / yaw | Стрейф |
+| `hover_up` | `Space` | Ascend; release engages altitude hold | Набор высоты |
+| `hover_down` | `Ctrl` | Descend; release engages altitude hold | Сброс высоты |
+| `toggle_view` | `V` | Camera `CHASE` ⇄ `COCKPIT` | Смена камеры |
+| `interact` | `F` | Exit — near-zero speed only | Выход |
+
+Input reaches the vehicle through `InputHoverController`
+(`core/controllers/transport/base/input_hover_controller.gd`), which calls
+`HoverBase.set_move_intent()` and does no physics of its own.
 
 ---
 
-## 6. MENU (`PlayerState.Mode.MENU`)
+## 6. TUBE_TRANSIT
 
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
-|---|---|---|---|
-| `pause` | Esc | Закрыть меню (Continue) | Close menu (Continue) |
-| — | ЛКМ по кнопкам UI / LMB on UI buttons | Continue / Quit — обрабатывается кнопками, отдельных хоткеев нет | Continue / Quit — handled via buttons, no dedicated hotkeys |
+Camera freelook only. No dedicated actions. Low priority.
 
 ---
 
-## 7. Существующие конфликты и мусорные action'ы / Known conflicts & stale actions
+## 7. MENU
 
-| Action | Статус | Комментарий |
+`pause` only. All other input is suppressed while `get_tree().paused` is
+true.
+
+---
+
+## 8. Reserved — defined but unread
+
+Present in `project.godot`, consumed by no script. Kept to avoid churning
+the input map; removed at the next review if still unread.
+
+| Action | Key | Note |
 |---|---|---|
-| `weapon_reload` | Висит на R (physical keycode 82) — раньше конфликтовал с `Interact`, конфликт снят переносом `Interact` на F. Оружия в игре пока нет — action держим про запас. |
-| `debug_info` | Оставляем / kept | Служебный дебаг-хоткей, не относится к геймплейному InputMap. |
+| `crouch` | `C`, `Ctrl` | No crouch state on the player |
+| `weapon_reload` | `R` | No weapons |
+| `debug_info` | `Enter` | Superseded by `toggle_stream_debug` |
+| `crafting` | *(unbound)* | No binding and no reader |
 
-## 3. HOVER — управление ховером / hover controls
+---
 
-| Action (Godot) | Клавиша / Key | RU описание | EN description |
-|---|---|---|---|
-| `move_forward` / `move_backward` | W / S | Тяга вперёд/назад | Thrust forward/backward |
-| `move_left` / `move_right` | A / D | Стрейф влево/вправо (с креном) | Strafe left/right (banks) |
-| `hover_up` | Space (удержание) | Набор высоты | Ascend |
-| `hover_down` | Ctrl (удержание) | Сброс высоты | Descend |
-| — | (отпустить Space/Ctrl) | Автоудержание высоты | Automatic altitude hold |
-| `Interact` | F | Выход (только при остановке) | Exit (near-zero speed only) |
+## Notes
+
+- `status` is bound with `device: 0` while every other action uses `-1`
+  (any device). Harmless for keyboard, but inconsistent — worth normalising.
+- Deadzone is `0.2` on every action.
