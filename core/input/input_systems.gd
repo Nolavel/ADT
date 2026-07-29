@@ -72,6 +72,9 @@ func _ready() -> void:
 	# ALWAYS — иначе после PlayerState.open_menu() (get_tree().paused = true)
 	# этот autoload перестанет получать _unhandled_input и Escape не сработает.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	PlayerState.mode_changed.connect(_on_player_mode_changed)
+	PlayerState.view_mode_changed.connect(_on_player_view_mode_changed)
+	_apply_mouse_mode()
 
 func _input(event: InputEvent) -> void:
 	if PlayerState.mode == PlayerState.Mode.MENU:
@@ -101,6 +104,24 @@ func _physics_process(delta: float) -> void:
 	_handle_secondary_click(delta)
 	_handle_tabs_key(delta)
 	_handle_ui_hotkeys()
+
+
+## ============================================
+## MOUSE MODE — cursor visibility/capture is a physical Input.* effect, so it
+## is applied here, driven by PlayerState.mode/view_mode rather than read from them.
+## ============================================
+func _on_player_mode_changed(_old_mode: PlayerState.Mode, _new_mode: PlayerState.Mode) -> void:
+	_apply_mouse_mode()
+
+func _on_player_view_mode_changed(_old_view: PlayerState.ViewMode, _new_view: PlayerState.ViewMode) -> void:
+	_apply_mouse_mode()
+
+func _apply_mouse_mode() -> void:
+	if PlayerState.mode == PlayerState.Mode.MENU:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if PlayerState.view_mode == PlayerState.ViewMode.TPS \
+			else Input.MOUSE_MODE_VISIBLE
 
 
 ## ============================================
