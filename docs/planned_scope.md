@@ -97,3 +97,7 @@ Named here so the absence is deliberate rather than overlooked:
 - **Missions.**
 - **Animation beyond the player's own state machine**, which currently lives
   directly in `player/player.gd`.
+- **Stair-stepping.** `StepRayHigh`/`StepRayLow` (`RayCast3D` nodes) existed
+  in `player/player.tscn`, but no line of code ever read them — no step-up
+  mechanic was ever wired to them. Removed 2026-07-30 along with the rest of
+  the character-scale rescale; the mechanic itself is not implemented.

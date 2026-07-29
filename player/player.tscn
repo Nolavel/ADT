@@ -44,9 +44,6 @@ height = 1.8
 radius = 0.38763408
 height = 1.8
 
-[sub_resource type="BoxMesh" id="BoxMesh_kw14p"]
-size = Vector3(0.5, 0.5, 0.5)
-
 [sub_resource type="SkeletonProfileHumanoid" id="SkeletonProfileHumanoid_2052k"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_co4c6"]
@@ -524,11 +521,6 @@ mesh = SubResource("CapsuleMesh_sneet")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_rmuui")
 debug_color = Color(1, 0.46666667, 0.8039216, 0.41960785)
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1033832766]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.734, 0.44)
-visible = false
-mesh = SubResource("BoxMesh_kw14p")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=462325761]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.00150155, 0)
@@ -1445,14 +1437,6 @@ bone = 9
 [node name="MeshInstance3D" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/ModifierBoneTarget3D" unique_id=1087586664]
 transform = Transform3D(1, -5.684342e-14, 0, 5.684342e-14, 1, 2.7355895e-13, 0, 2.1316282e-14, 1, -2.9802322e-07, 0.29870605, -5.9604645e-07)
 mesh = SubResource("CylinderMesh_rmuui")
-
-[node name="StepRayHigh" type="RayCast3D" parent="." unique_id=1003606337]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-target_position = Vector3(0, 0, 0.5)
-
-[node name="StepRayLow" type="RayCast3D" parent="." unique_id=2100972828]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.001141, 0)
-target_position = Vector3(0, 0.8, 0)
 
 [node name="DynamicCursorUI" type="Control" parent="." unique_id=1477939802]
 layout_mode = 3
