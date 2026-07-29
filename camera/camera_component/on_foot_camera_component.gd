@@ -27,6 +27,11 @@ const TPS_DISTANCE: float = 2.2
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
 
+## Position follow rate in TPS, separate from view_transition_speed (which
+## owns the ISOMETRIC <-> TPS transition animation). Steady-state lag behind
+## a target moving at constant speed is roughly speed / this value.
+const TPS_FOLLOW_SPEED: float = 16.0
+
 ## Used only if `target` doesn't expose character-metric getters (see
 ## _target_metric_height()) — a safe non-zero default instead of silently
 ## pivoting/casting at ground level.
@@ -392,7 +397,16 @@ func _update_camera_position(delta):
 			# TPS shoulder framing must not leak into ISOMETRIC — decay it back to 0.
 			camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
 
-	camera_current_pos = camera_current_pos.lerp(camera_target_pos, delta * view_transition_speed)
+	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
+	# from view_transition_speed so steady-state follow lag and the
+	# ISOMETRIC <-> TPS transition animation can be tuned independently.
+	# During the transition animation (or in ISOMETRIC), position still
+	# rides view_transition_speed, or the transition itself would jump.
+	var position_follow_speed := view_transition_speed
+	if PlayerState.view_mode == PlayerState.ViewMode.TPS and not view_mode_animating:
+		position_follow_speed = TPS_FOLLOW_SPEED
+
+	camera_current_pos = camera_current_pos.lerp(camera_target_pos, delta * position_follow_speed)
 	if not view_mode_animating:
 		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, delta * view_transition_speed)
 	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, delta * view_transition_speed)
