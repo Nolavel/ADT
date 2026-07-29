@@ -14,9 +14,9 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="Prok"
+config/name="ADT"
 run/main_scene="uid://bftcnbrfar8om"
-config/features=PackedStringArray("4.7", "C#", "Mobile")
+config/features=PackedStringArray("4.7", "C#", "Forward+")
 config/icon="res://icon.svg"
 
 [autoload]
@@ -38,7 +38,7 @@ window/stretch/aspect="expand"
 
 [dotnet]
 
-project/assembly_name="Prok"
+project/assembly_name="ADT"
 
 [editor_plugins]
 
