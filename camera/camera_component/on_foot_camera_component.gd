@@ -19,7 +19,6 @@ class_name OnFootCameraComponent
 ## zoom_in/zoom_out.
 signal zoom_input_received()
 
-const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх InputSystems
 ## Not proportional to BODY_HEIGHT on purpose — camera distance is taste, not
 ## anatomy. Proportional to the old 2.6 @ 2.32m body would be ~2.02; 2.2 is
 ## visually tighter framing for this camera family.
@@ -88,6 +87,18 @@ var _tps_sprint_pullback: float = 0.0
 @export_group("TPS View")
 ## Плейсхолдер — подобрать по месту, главное сохранена логика возврата в ISOMETRIC.
 @export var tps_angle: float = -10.0
+
+@export_group("Look")
+## Multiplier on top of InputSystems.MOUSE_SENSITIVITY. User preference —
+## belongs in a settings menu later, not a hardcoded constant.
+## InputSystems.MOUSE_SENSITIVITY = 0.003 rad/pixel is ~0.172 deg/pixel raw,
+## high for a third-person camera; 0.65 brings that down to ~0.11 deg/pixel,
+## closer to convention.
+## Perceived sensitivity changed sharply once TPS switched to
+## MOUSE_MODE_CAPTURED (commit 63c26fe) — before that the cursor hit the
+## screen edge and stopped moving the view. Don't go looking for the cause
+## of a "sensitivity feels different now" report in this file.
+@export var look_sensitivity: float = 0.65
 
 
 @export_group("Follow")
@@ -240,9 +251,9 @@ func _handle_tps_follow(delta: float) -> void:
 	# it needs an explicit rad_to_deg() conversion — this mismatch was the bug
 	# that made vertical look nearly unresponsive.
 	var look := InputSystems.get_look_delta()
-	camera_target_yaw += look.x * MOUSE_SENSITIVITY
+	camera_target_yaw += look.x * look_sensitivity
 	camera_target_yaw = wrapf(camera_target_yaw, -PI, PI)
-	_tps_pitch_deg -= rad_to_deg(look.y) * MOUSE_SENSITIVITY * TPS_PITCH_SENSITIVITY_RATIO
+	_tps_pitch_deg -= rad_to_deg(look.y) * look_sensitivity * TPS_PITCH_SENSITIVITY_RATIO
 	_tps_pitch_deg = clamp(_tps_pitch_deg, TPS_PITCH_MIN, TPS_PITCH_MAX)
 
 	# --- Lock-on (combat state overrides yaw only when locked) ---
