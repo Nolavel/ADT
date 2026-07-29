@@ -27,6 +27,8 @@ const TPS_PITCH_MAX: float = 20.0
 
 ## Runtime pitch accumulated from mouse look. Base tps_angle is the starting offset.
 var _tps_pitch_deg: float = -10.0
+## Pitch offset from TpsCombatCameraState (explore sway / lock-on), added on top of _tps_pitch_deg.
+var _tps_pitch_offset_deg: float = 0.0
 
 @export var rotation_speed: float = 8.0
 
@@ -197,13 +199,11 @@ func _handle_tps_follow(delta: float) -> void:
 	if InputSystems.is_lock_on_just_pressed():
 		_tps_combat.try_toggle_lock(target)
 
-		var result := _tps_combat.update(delta, target, camera_target_yaw)
-		if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
-			camera_target_yaw = result.yaw
-			# distance is fixed in TPS — ignore combat distance_override
-			camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
-		else:
-			camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
+	var result := _tps_combat.update(delta, target, camera_target_yaw)
+	_tps_pitch_offset_deg = result.pitch_offset_deg
+	if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
+		# distance is fixed in TPS — ignore combat distance_override
+		camera_target_yaw = result.yaw
 
 
 func _update_zoom_animation(delta: float):
