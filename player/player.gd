@@ -1,5 +1,21 @@
 extends CharacterBody3D
 
+## ============================================
+## CHARACTER METRICS
+## Single source of truth for the character's physical size. Every
+## height-derived value in the project must be computed from these instead
+## of being hardcoded, so that a change of scale stays local to this block.
+## The origin of this CharacterBody3D sits at the feet: a returned height is
+## also the height above the floor the character stands on. If the origin
+## convention ever changes, only the getters below need to change — callers
+## must keep asking for a named landmark height, never assume where origin is.
+## ============================================
+const BODY_HEIGHT: float = 1.8
+## Landmark heights as fractions of BODY_HEIGHT, measured from the feet.
+const EYE_RATIO: float = 0.94
+const SHOULDER_RATIO: float = 0.82
+const CHEST_RATIO: float = 0.72
+
 ## --- Movement Parameters ---
 @export_group("Movement")
 @export var walk_speed: float = 5.0
@@ -437,6 +453,18 @@ func _on_destination_reached() -> void:
 	stop_moving(true)
 
 ## --- Getters ---
+
+## Character metric getters — callers (camera, future IK/effects) ask for a
+## named landmark instead of hardcoding a height or knowing where origin is.
+func get_eye_height() -> float:
+	return BODY_HEIGHT * EYE_RATIO
+
+func get_shoulder_height() -> float:
+	return BODY_HEIGHT * SHOULDER_RATIO
+
+func get_chest_height() -> float:
+	return BODY_HEIGHT * CHEST_RATIO
+
 func get_current_speed() -> float:
 	return speed
 
