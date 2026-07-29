@@ -6,9 +6,9 @@ what you can pick up, what you must not touch, and how work gets accepted.
 ## Before anything
 
 1. Godot **4.7**, Forward+ renderer. Open the project, run `world/world.tscn`.
-2. Read `CLAUDE.md` — architecture, autoloads, and the contracts that must
+2. Read `../CLAUDE.md` — architecture, autoloads, and the contracts that must
    not be broken.
-3. Read `docs/GDSCRIPT_STYLE.md` — code conventions.
+3. Read `GDSCRIPT_STYLE.md` — code conventions.
 4. There is **no test framework**. "Tested" means: you ran the project and
    read Godot's output for `push_error` / `push_warning`.
 
@@ -27,7 +27,7 @@ Safe to pick up without deep context:
 
 - **Block and ground-tile content.** Assemble scenes against the existing
   data contract (see below). Verified by running the game. Fully parallel.
-- **Audio.** `core/sound/sound_systems.gd` is an empty seam.
+- **Audio.** No audio system exists yet — a clean, self-contained seam.
 - **UI widgets** under `ui/widgets/` — self-contained.
 - **English editing** of comments and docs.
 - **3D props** to written spec, outside the codebase.
@@ -35,16 +35,18 @@ Safe to pick up without deep context:
 Ask first — these need a spec from the owner:
 
 - Hover camera tuning (`camera/camera_component/hover_camera_component.gd`)
-- `lift_base.gd`, `tube_transit_base.gd` — clean interfaces, no consumer yet
 - TPS combat camera occlusion — blocked on a raycast service that does not
   exist yet
+
+Not open: anything listed in `planned_scope.md`. That page is a record of
+intent, not a task list.
 
 ## Do not touch without asking
 
 `core/world/streaming_systems.gd`, `core/world/world_systems.gd`,
 `core/player_state/player_state.gd`, `world/world.gd`, `core/map_source/`.
 
-These are load-bearing. Their invariants are documented in file headers
+These are load-bearing. Their invariants are documented in file headers,
 and breaking them fails silently, not loudly.
 
 ## Contracts you must respect
@@ -60,17 +62,24 @@ and breaking them fails silently, not loudly.
   `InstancePlaceholder` nodes named exactly `LayerDoggerland`,
   `LayerManifold`, `LayerGlare`. This is a name contract; violating it
   produces a warning and a missing layer, not a crash.
-- **`input_map.md`** must be updated in the same commit as any input action
-  added, removed or rebound.
+- **`GBX_` marker prefix.** Markers with that prefix are owned by the block
+  generator and will be deleted on its next run. Drop the prefix to make a
+  marker hand-owned.
+- **`../input_map.md`** must be updated in the same commit as any input
+  action added, removed or rebound.
 - **No new autoloads.**
 - **Attribute everything borrowed** — assets, references, code — in
-  `license.md`, in the same commit that adds it.
+  `CREDITS.md`, in the same commit that adds it.
 
 ## Scope rules
 
 The project deliberately keeps the number of simultaneously live systems
 small. Before proposing a new system, check that it serves at least two
 existing ones. A mechanic that exists only for itself is not built.
+
+Do not add placeholder scripts or empty directories for work that has not
+started. Planned scope belongs in `planned_scope.md`. An empty file in the
+tree reads as a promise.
 
 Rejected ideas are recorded with a reason rather than discarded.
 
@@ -83,5 +92,22 @@ Rejected ideas are recorded with a reason rather than discarded.
 - Open a PR describing **what you ran to verify it**, not just what you
   changed.
 - If you had to leave a temporary solution: say so in the PR, with the
-  reason and the condition for removing it. Undocumented workarounds are
-  the only kind that are refused.
+  reason and the condition for removing it. Undocumented workarounds are the
+  only kind that are refused.
+
+## Contributions and rights
+
+This is a proprietary project (see [`../LICENSE.md`](../LICENSE.md))
+intended for eventual commercial release.
+
+By submitting a contribution you confirm that it is your own work, and you
+grant the project owner a perpetual, worldwide, irrevocable, royalty-free
+licence to use, modify, sublicense and distribute it as part of this
+project, including commercially. You keep your own copyright and remain
+free to use your work elsewhere.
+
+Contributors are credited in `CREDITS.md`. If you would rather not be
+credited, say so.
+
+If you cannot agree to this, say so before starting — it is a fair position,
+and it is better raised early than after the work exists.
