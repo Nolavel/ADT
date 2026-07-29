@@ -24,7 +24,10 @@ const CHEST_RATIO: float = 0.72
 @export var decel_time: float = 0.8
 
 @export_group("Jump/Gravity")
-@export var jump_force: float = 8.0
+## Apex height = jump_force^2 / (2 * gravity). At 6.0/20.0 that's 0.9m, half
+## of BODY_HEIGHT — a deliberate game-balance choice, not a value derived
+## from BODY_HEIGHT. Change this number with the formula in mind, not blind.
+@export var jump_force: float = 6.0
 @export var gravity: float = 20.0
 
 @export_group("Animation")
