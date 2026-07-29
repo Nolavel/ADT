@@ -26,6 +26,9 @@ const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх
 const TPS_DISTANCE: float = 2.2
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
+## Vertical look is deliberately slower than horizontal — the traditional
+## "mouse Y feels heavier than mouse X" convention for TPS/FPS cameras.
+const TPS_PITCH_SENSITIVITY_RATIO: float = 0.7
 
 ## Position follow rate in TPS, separate from view_transition_speed (which
 ## owns the ISOMETRIC <-> TPS transition animation). Steady-state lag behind
@@ -231,10 +234,15 @@ func update(delta: float) -> void:
 
 func _handle_tps_follow(delta: float) -> void:
 	# --- Free mouse look (TLOU-style) ---
+	# `look` (InputSystems.get_look_delta()) is in radians — camera_target_yaw
+	# is also radians, so it can be added directly. _tps_pitch_deg is stored
+	# in DEGREES (clamped by TPS_PITCH_MIN/MAX, fed to deg_to_rad() later), so
+	# it needs an explicit rad_to_deg() conversion — this mismatch was the bug
+	# that made vertical look nearly unresponsive.
 	var look := InputSystems.get_look_delta()
 	camera_target_yaw += look.x * MOUSE_SENSITIVITY
 	camera_target_yaw = wrapf(camera_target_yaw, -PI, PI)
-	_tps_pitch_deg -= look.y * MOUSE_SENSITIVITY * 0.6
+	_tps_pitch_deg -= rad_to_deg(look.y) * MOUSE_SENSITIVITY * TPS_PITCH_SENSITIVITY_RATIO
 	_tps_pitch_deg = clamp(_tps_pitch_deg, TPS_PITCH_MIN, TPS_PITCH_MAX)
 
 	# --- Lock-on (combat state overrides yaw only when locked) ---
