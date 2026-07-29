@@ -4,7 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Godot 4.7 (Mobile renderer) project, internal codename **Prok**, working title **"Vertical Trespass"**. Almost entirely GDScript — the only C# file is `tools/scan_folder_files/project_scanner.cs` (an editor utility; `Prok.csproj` targets `net8.0`, `net9.0` for Android). Do not introduce C# for gameplay code unless asked; the codebase convention is GDScript.
+Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"Vertical Trespass"** (`config/name`); public title **"Another Digital Thriller"** — use the public title only in store-facing material, never in code or docs. Almost entirely GDScript — the only C# file is `tools/scan_folder_files/project_scanner.cs` (an editor utility). Do not introduce C# for gameplay code unless asked; the codebase convention is GDScript. Dropping C# entirely is an open backlog item.
+
+## Documents
+
+| File | Purpose |
+|---|---|
+| `docs/CONTRIBUTING.md` | What a collaborator may pick up, what is off-limits, contribution terms |
+| `docs/GDSCRIPT_STYLE.md` | Code conventions; stricter than the official Godot guide in places |
+| `docs/planned_scope.md` | Scope that is **not started**. Not a task list. |
+| `docs/CREDITS.md` | Third-party attributions, incl. the Godot MIT notice |
+| `INPUT_MAP.md` | Single source of truth for input bindings |
+| `LICENSE.md` | Proprietary; all rights reserved |
++
+ ## Working with the running editor
 
 Startup scene: `res://world/world.tscn`.
 
@@ -20,11 +33,12 @@ There is no separate unit-test framework (no GUT etc.); "testing" a change means
 
 ## Style conventions
 
-- `.gd` files: **tabs**, width 4 (`.editorconfig`). `.cs`: spaces, width 4.
-- LF line endings, UTF-8, final newline, trailing whitespace trimmed (not for `.md`).
-- Existing scripts use a large banner comment (`# ====...====`) at the top of every non-trivial autoload/system file explaining *why* the file exists and its contracts/invariants — follow this convention when adding a new system, not when adding a small helper.
-- `input_map.md` is documented as the **single source of truth for input bindings** — update it whenever an action is added/removed/rebound in Project Settings → Input Map (`project.godot` `[input]`).
-
+- `INPUT_MAP.md` is the **single source of truth for input bindings** (verified against `project.godot` 2026-07-29, 29 actions) — update it whenever an action is added/removed/rebound in Project Settings → Input Map (`project.godot` `[input]`).
+- Full conventions live in `docs/GDSCRIPT_STYLE.md`; collaborator-facing rules in `docs/CONTRIBUTING.md`. Read the style guide before writing GDScript.
+- **New comments are written in English.** Existing comments are largely Russian and are being translated header by header; do not add more Russian.
+- **Standing instruction when editing an existing script:** before changing it, check it against `docs/GDSCRIPT_STYLE.md` — static typing, declaration order, naming, banner header on systems, `TODO(scope):` form. If the file deviates, say so and offer the correction as a separate step. Do not silently reformat, and do not bundle a style pass into a behaviour change.
+- **Do not create placeholder scripts or empty directories** for work that has not started. Planned scope belongs in `docs/planned_scope.md`. An empty file in the tree reads as a promise.
+ 
 ## Architecture
 
 ### Autoload singletons (`project.godot` `[autoload]`)
@@ -51,7 +65,7 @@ Any node/scene in these lists can implement `on_world_ready(context: WorldContex
 - **Click-to-move / navigation** (`ISOMETRIC` view mode) — driven by `NavigationComponent`, path following in `_handle_navigation`.
 - **Direct WASD movement** (`TPS` view mode) — `TPSMovementSystem` (a `WORLD_SYSTEM_SCRIPTS` entry) feeds `set_direct_move_input()` every physics frame; `player.gd` does the actual velocity/rotation/animation in `_apply_direct_movement`.
 
-Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `player_components/` is a component-per-concern layout (`attributes`, `equipment`, `health`, `hunger`, `interact`, `inventory`, `movement`, `nav`, `progression`, `save_player`, `sleep`, `stamina`, `wallet`); most subdirectories are currently **empty scaffolding** — only `nav_component`, `stamina_component`, and `interact_component` have implementations. Don't assume a component directory implies working code; check for a `.gd` file.
+Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `player_components/` contains three implemented components: `nav_component`, `stamina_component`, `interact_component`. Empty placeholder directories for unstarted components (health, hunger, sleep, wallet, progression, equipment, crafting, save) were removed on 2026-07-29; that scope is recorded in `docs/planned_scope.md`.
 
 ### Camera (`camera/`)
 
@@ -59,7 +73,9 @@ Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `
 
 ### Transport (`core/controllers/transport/`)
 
-Vehicle/transit controllers split into `base/` (shared behavior: `hover_vehicle_base`, `hover_metro_base`, `lift_base`, `tube_transit_base`) and concrete `*_types/` (hover_bus/car/truck/van, metro train0-3), plus `ai_vehicle_controller.gd` / `input_vehicle_controller.gd` for AI vs. player-driven control.
++`base/hover_base.gd` is the shared hover behaviour (CharacterBody3D pseudo-physics, inertia, yaw smoothing, semi-automatic altitude hold). Control is fed in every frame through `set_move_intent(move, vertical)` — `base/input_hover_controller.gd` (`InputHoverController`) is the player-side implementation and reads exclusively through `InputSystems`. An AI-side controller will use the same interface. Boarding is handled by `hover_entry_trigger.gd` (FSM: `IDLE → BOARDING → SEATED → EXITING`), not by `InteractComponent`.
+
+- Metro, lifts, tube transit and additional hover types are **not implemented** — see `docs/planned_scope.md`. Their placeholder scripts were removed on 2026-07-29.
 
 ### World content data (`world/resources/`, `data/world_data.tres`)
 

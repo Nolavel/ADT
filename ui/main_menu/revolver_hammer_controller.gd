@@ -18,8 +18,19 @@ class_name RevolverHammerController
 
 ## RU: Курок взят в руку.
 signal pulled()
+## RU: Жест дотянул до зачёта (или перестал дотягивать). По нему камора
+##     показывает, встретит она курок или нет.
+signal aim_changed(valid: bool)
 ## RU: Курок долетел до каморы. Выстрел вешать сюда.
 signal struck()
+
+## RU: Минимальный путь курка от дома, px. Короче — жеста не было,
+##     курок возвращается домой и не стреляет.
+@export var min_travel: float = 45.0
+## RU: Насколько точно тянуть в сторону каморы. Это dot направлений:
+##     1.0 — строго в неё, 0.0 — любое перпендикулярное, −1.0 — куда угодно.
+##     0.25 ≈ конус ±75°.
+@export var aim_cone_dot: float = 0.25
 
 ## RU: Время полёта до каморы, сек / ENG: flight time to the chamber, sec
 @export var strike_time: float = 0.22
@@ -28,13 +39,16 @@ signal struck()
 ## RU: Время возврата на исходное место, сек
 @export var return_time: float = 0.30
 
-enum Phase { IDLE, PULLED, STRIKING }
+enum Phase { IDLE, PULLED, STRIKING, RETURNING }
 
 var hammer: Button
 
 var _phase: int = Phase.IDLE
 var _home: Vector2 = Vector2.ZERO
 var _grab_offset: Vector2 = Vector2.ZERO
+## RU: Откуда начали тянуть, в глобальных координатах.
+var _pull_start: Vector2 = Vector2.ZERO
+var _aim_valid: bool = false
 var _locked: bool = false
 ## RU: Возвращает глобальный центр каморы, по которой бить.
 var _destination: Callable = Callable()
@@ -63,6 +77,13 @@ func _process(_delta: float) -> void:
 		return
 	hammer.global_position = hammer.get_global_mouse_position() - _grab_offset
 
+	## RU: Пересчитываем зачёт каждый кадр, чтобы игрок ВИДЕЛ, выстрелит
+	##     отпускание или нет, а не узнавал об этом после.
+	var valid: bool = _gesture_valid()
+	if valid != _aim_valid:
+		_aim_valid = valid
+		aim_changed.emit(valid)
+
 
 func is_busy() -> bool:
 	return _phase != Phase.IDLE
@@ -80,14 +101,45 @@ func _on_hammer_down() -> void:
 		return
 	_phase = Phase.PULLED
 	_grab_offset = hammer.get_global_mouse_position() - hammer.global_position
+	_pull_start = hammer.global_position
+	_aim_valid = false
 	hammer.z_index = 100
 	pulled.emit()
 
 
+## RU: Отпускание стреляет ТОЛЬКО если жест состоялся: курок протянули
+##     достаточно далеко и в сторону каморы. Просто клик по курку — не выстрел.
+##     Это единственное место с проверкой: клавиатурный путь идёт через
+##     strike() напрямую, там жест проигрывается автоматически и проверять
+##     нечего.
 func _on_hammer_up() -> void:
 	if _phase != Phase.PULLED:
 		return
-	strike()
+
+	if _gesture_valid():
+		strike()
+		return
+
+	## RU: Жеста не было — курок возвращается домой, камора остаётся ждать.
+	_phase = Phase.RETURNING
+	_aim_valid = false
+	aim_changed.emit(false)
+	await _return_home()
+	_phase = Phase.IDLE
+	hammer.z_index = 0
+
+
+## RU: Путь достаточной длины И в сторону каморы.
+func _gesture_valid() -> bool:
+	if not _destination.is_valid():
+		return false
+	var travel: Vector2 = hammer.global_position - _pull_start
+	if travel.length() < min_travel:
+		return false
+	var to_dest: Vector2 = _destination.call() - hammer.get_global_rect().get_center()
+	if to_dest.length() < 1.0:
+		return true
+	return travel.normalized().dot(to_dest.normalized()) >= aim_cone_dot
 
 
 ## RU: Ударить по каморе. Тот же путь для руки и для клавиши — клавиша не
@@ -102,6 +154,7 @@ func strike() -> void:
 		return
 
 	_phase = Phase.STRIKING
+	_aim_valid = false
 	hammer.disabled = true
 
 	var dest: Vector2 = _destination.call() - hammer.size * 0.5

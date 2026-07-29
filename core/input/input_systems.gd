@@ -74,6 +74,8 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func _input(event: InputEvent) -> void:
+	if PlayerState.mode == PlayerState.Mode.MENU:
+		return
 	if event is InputEventMouseMotion:
 		_mouse_look_delta += event.relative * MOUSE_SENSITIVITY
 
@@ -87,8 +89,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_frame_look_delta = _mouse_look_delta
-	_mouse_look_delta = Vector2.ZERO
+	if PlayerState.mode == PlayerState.Mode.MENU:
+		_frame_look_delta = Vector2.ZERO
+		_mouse_look_delta = Vector2.ZERO
+	else:
+		_frame_look_delta = _mouse_look_delta
+		_mouse_look_delta = Vector2.ZERO
 	
 	_handle_interact()
 	_handle_primary_click()

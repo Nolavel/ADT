@@ -23,6 +23,9 @@ const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
 
+## Runtime pitch accumulated from mouse look. Base tps_angle is the starting offset.
+var _tps_pitch_deg: float = -10.0
+
 @export var rotation_speed: float = 8.0
 
 @export_group("Orbit")
@@ -133,6 +136,8 @@ func setup() -> void:
 	camera_current_pos = camera.global_position
 	current_zoom_distance = orbit_distance
 	target_zoom_distance = orbit_distance
+	
+	_tps_pitch_deg = tps_angle
 
 
 ## Вызывается хостом при входе в ON_FOOT (в т.ч. при возврате из MENU).
@@ -183,8 +188,8 @@ func _handle_tps_follow(delta: float) -> void:
 	var look := InputSystems.get_look_delta()
 	camera_target_yaw += look.x * MOUSE_SENSITIVITY
 	camera_target_yaw = wrapf(camera_target_yaw, -PI, PI)
-	tps_angle -= look.y * MOUSE_SENSITIVITY * 0.6
-	tps_angle = clamp(tps_angle, TPS_PITCH_MIN, TPS_PITCH_MAX)
+	_tps_pitch_deg -= look.y * MOUSE_SENSITIVITY * 0.6
+	_tps_pitch_deg = clamp(_tps_pitch_deg, TPS_PITCH_MIN, TPS_PITCH_MAX)
 
 	# --- Lock-on (combat state overrides yaw only when locked) ---
 	if InputSystems.is_lock_on_just_pressed():
@@ -196,10 +201,10 @@ func _handle_tps_follow(delta: float) -> void:
 		if result.distance_override > 0.0 and not zoom_animating:
 			target_zoom_distance = result.distance_override
 			current_zoom_distance = lerp(current_zoom_distance, result.distance_override, delta * 6.0)
-		tps_angle = -10.0 + result.pitch_offset_deg
+		camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
 	else:
-		# EXPLORE: preserve mouse yaw, apply procedural sway only
-		tps_angle = -10.0 + result.pitch_offset_deg
+		# EXPLORE: preserve mouse pitch, apply procedural sway on top
+		camera_target_pitch = _tps_pitch_deg + result.pitch_offset_deg
 
 
 func _update_zoom_animation(delta: float):
@@ -326,15 +331,14 @@ func _update_camera_position(delta):
 
 			camera_target_pos = target.global_position + offset
 			
-			# --- Wall avoidance: pull camera in when geometry blocks the view ---
+			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
 			var eye_pos := target.global_position + Vector3(0, 1.6, 0)
-			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, 1 << 2)
+			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, (1 << 1) | (1 << 2))
 			query.collide_with_areas = false
 			var hit := space_state.intersect_ray(query)
 			if hit:
 				camera_target_pos = hit.position + hit.normal * 0.25
-			#camera_target_pitch = tps_angle
 
 		_:  # ISOMETRIC
 			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))

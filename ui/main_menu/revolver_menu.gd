@@ -99,7 +99,7 @@ func _ready() -> void:
 
 	_hammer_controller = RevolverHammerController.new()
 	_hammer_controller.setup(_hammer, _front_chamber_center)
-	_hammer_controller.pulled.connect(_on_hammer_pulled)
+	_hammer_controller.aim_changed.connect(_on_hammer_aim_changed)
 	_hammer_controller.struck.connect(_on_hammer_struck)
 	add_child(_hammer_controller)   ## RU: обязательно — контроллеру нужен _process
 
@@ -144,8 +144,10 @@ func _collect_slots() -> void:
 	for i in buttons.size():
 		var button: RevolverSlotButton = buttons[i]
 		button.reset_size()
-		## RU: Клик и ui_accept не стреляют сами — они просят выстрел.
-		button.pressed.connect(invoke_slot.bind(i))
+		## RU: Камора НЕ подписана на pressed. Нажатие по каморе не стреляет:
+		##     стреляет только курок, долетевший до неё. Иначе курок был бы
+		##     украшением при живой кнопке. Кнопкой камора остаётся ради
+		##     фокуса и ui_accept, а тот идёт через invoke_slot() ниже.
 		_slots.append(RevolverSlot.new(button, float(i) * _step_deg))
 
 
@@ -247,6 +249,13 @@ func _shortcut_input(event: InputEvent) -> void:
 	if _busy:
 		return
 
+	## RU: ui_accept — тот же автоматический проход, что у удержания Esc:
+	##     клавиатура не обходит механику, курок всё равно летит.
+	if event.is_action_pressed("ui_accept", false):
+		invoke_slot(_focused_index)
+		accept_event()
+		return
+
 	if event.is_action_pressed("ui_up", true):
 		step_by(-1)
 		accept_event()
@@ -312,11 +321,14 @@ func _fire_hold_target() -> void:
 # ## RU: Курок / ENG: Hammer
 # -----------------------------------------------------------------------------
 
-## RU: Курок взяли в руку — камора на фронте показывает, что удар придёт в неё.
-func _on_hammer_pulled() -> void:
+## RU: Камора встаёт «на приём» не по факту захвата курка, а только когда жест
+##     дотянул до зачёта. Игрок видит заранее, выстрелит отпускание или нет.
+func _on_hammer_aim_changed(valid: bool) -> void:
 	if _focused_index < 0:
 		return
-	_slots[_focused_index].button.set_chamber_state(RevolverSlotButton.ChamberState.ARMED)
+	_slots[_focused_index].button.set_chamber_state(
+		RevolverSlotButton.ChamberState.ARMED if valid else RevolverSlotButton.ChamberState.READY
+	)
 
 
 func _on_hammer_struck() -> void:

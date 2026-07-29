@@ -43,7 +43,6 @@ func set_mode(new_mode: Mode) -> void:
 	print("[PlayerState] Mode: %s → %s" % [Mode.keys()[old_mode], Mode.keys()[new_mode]])
 
 
-## Единственная точка входа в MENU.
 func open_menu() -> void:
 	if mode == Mode.MENU:
 		return
@@ -51,17 +50,18 @@ func open_menu() -> void:
 	_mode_before_menu = mode
 	var old_mode := mode
 	mode = Mode.MENU
-	get_tree().paused = true          # пауза выставляется ДО сигнала
+	get_tree().paused = true # пауза выставляется ДО сигнала
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	mode_changed.emit(old_mode, Mode.MENU)
 	print("[PlayerState] Mode: %s → MENU (paused)" % Mode.keys()[old_mode])
 
 
-## Единственная точка выхода из MENU.
 func close_menu() -> void:
 	if mode != Mode.MENU:
 		return
 
-	get_tree().paused = false         # снимаем паузу ДО сигнала
+	get_tree().paused = false # снимаем паузу ДО сигнала
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if view_mode == ViewMode.TPS else Input.MOUSE_MODE_VISIBLE
 	var restored := _mode_before_menu
 	mode = restored
 	mode_changed.emit(Mode.MENU, restored)
@@ -74,6 +74,13 @@ func set_view_mode(new_view: ViewMode) -> void:
 	var old_view := view_mode
 	view_mode = new_view
 	view_mode_changed.emit(old_view, new_view)
+	
+	# Mouse mode: captured in TPS, visible in ISOMETRIC
+	match new_view:
+		ViewMode.TPS:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		ViewMode.ISOMETRIC:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 ## Удобный геттер для проверки "можно ли сейчас двигаться игроку ногами"
