@@ -468,6 +468,13 @@ func get_shoulder_height() -> float:
 func get_chest_height() -> float:
 	return BODY_HEIGHT * CHEST_RATIO
 
+## Current horizontal speed as a 0..1 fraction of run_speed. Lets the camera
+## react to how fast the character moves without knowing the balance numbers.
+func get_speed_ratio() -> float:
+	if run_speed <= 0.0:
+		return 0.0
+	return clampf(speed / run_speed, 0.0, 1.0)
+
 func get_current_speed() -> float:
 	return speed
 

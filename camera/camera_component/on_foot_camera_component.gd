@@ -32,6 +32,16 @@ const TPS_PITCH_MAX: float = 20.0
 ## a target moving at constant speed is roughly speed / this value.
 const TPS_FOLLOW_SPEED: float = 16.0
 
+## Extra camera distance at full run speed, on top of TPS_DISTANCE. Explicit
+## and tunable — the previous pull-back was an accidental by-product of the
+## follow-lag, not a setting. At run_speed, the residual TPS_FOLLOW_SPEED lag
+## (~0.6m) plus this (0.4m) adds up to roughly 1.0m total, versus the ~2.5m
+## the old shared-lag setup produced by accident.
+const TPS_SPRINT_PULLBACK: float = 0.4
+## How fast the pull-back follows a change of speed. Lower than the follow
+## rate on purpose, so it eases in instead of snapping when the run starts.
+const TPS_PULLBACK_SMOOTHING: float = 3.0
+
 ## Used only if `target` doesn't expose character-metric getters (see
 ## _target_metric_height()) — a safe non-zero default instead of silently
 ## pivoting/casting at ground level.
@@ -53,6 +63,14 @@ var _tps_pitch_offset_deg: float = 0.0
 ## Set once _target_metric_height() has warned about a target with no
 ## character-metric getters, so the warning doesn't spam every frame.
 var _warned_missing_target_metrics: bool = false
+## Set once _target_speed_ratio() has warned about a target with no
+## get_speed_ratio(), so the warning doesn't spam every frame.
+var _warned_missing_speed_ratio: bool = false
+## Smoothed sprint pull-back distance, eased toward speed_ratio *
+## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING. Only updated while in TPS
+## (see _update_camera_position) — frozen at its last value otherwise, and
+## resumes lerping toward the current ratio when TPS is re-entered.
+var _tps_sprint_pullback: float = 0.0
 
 @export var rotation_speed: float = 8.0
 
@@ -346,14 +364,31 @@ func _target_metric_height(method: StringName, fallback: float) -> float:
 	return fallback
 
 
+## Reads target.get_speed_ratio() via duck typing, same pattern as
+## _target_metric_height(). Falls back to 0 (no pull-back) with a one-time
+## warning if target doesn't expose it.
+func _target_speed_ratio() -> float:
+	if target.has_method(&"get_speed_ratio"):
+		return float(target.call(&"get_speed_ratio"))
+	if not _warned_missing_speed_ratio:
+		push_warning("OnFootCameraComponent: target '%s' has no get_speed_ratio() — sprint pull-back disabled" % target.name)
+		_warned_missing_speed_ratio = true
+	return 0.0
+
+
 func _update_camera_position(delta):
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
 			var yaw_rad = camera_target_yaw
 			var pitch_rad = deg_to_rad(_tps_pitch_deg)
 			var horizontal_direction = Vector3(sin(yaw_rad), 0, cos(yaw_rad))
-			var horizontal_distance = TPS_DISTANCE * cos(pitch_rad)
-			var vertical_distance = -TPS_DISTANCE * sin(pitch_rad)
+
+			var speed_ratio := _target_speed_ratio()
+			_tps_sprint_pullback = lerp(_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK, delta * TPS_PULLBACK_SMOOTHING)
+			var effective_distance := TPS_DISTANCE + _tps_sprint_pullback
+
+			var horizontal_distance = effective_distance * cos(pitch_rad)
+			var vertical_distance = -effective_distance * sin(pitch_rad)
 			var right := Vector3(
 				cos(yaw_rad),
 				0.0,
