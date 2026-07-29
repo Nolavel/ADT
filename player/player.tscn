@@ -37,9 +37,12 @@
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://player/player_components/interact_component/interact_component.gd" id="37_1gbpw"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
+radius = 0.38763408
+height = 1.8
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rmuui"]
-height = 2.3217773
+radius = 0.38763408
+height = 1.8
 
 [sub_resource type="BoxMesh" id="BoxMesh_kw14p"]
 size = Vector3(0.5, 0.5, 0.5)
@@ -513,11 +516,12 @@ script = ExtResource("1_w8ad2")
 player_animation_player = NodePath("player_base_mesh/AnimationPlayer")
 
 [node name="MeshTestPlayer" type="MeshInstance3D" parent="." unique_id=1158130833]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.80176656, 0)
 visible = false
 mesh = SubResource("CapsuleMesh_sneet")
 
 [node name="CollisionPlayer" type="CollisionShape3D" parent="." unique_id=386679554]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12670898, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_rmuui")
 debug_color = Color(1, 0.46666667, 0.8039216, 0.41960785)
 
@@ -527,12 +531,12 @@ visible = false
 mesh = SubResource("BoxMesh_kw14p")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=462325761]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5475097, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.00150155, 0)
 light_energy = 2.0
 omni_range = 25.0
 
 [node name="player_base_mesh" type="Node3D" parent="." unique_id=1076800133]
-transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, -1.0370535, 0)
+transform = Transform3D(0.38763408, 0, 0, 0, 0.38763408, 0, 0, 0, 0.38763408, 0, 0, 0)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="player_base_mesh" unique_id=1493118421]
 libraries/ = ExtResource("5_ftrmt")
@@ -1468,7 +1472,7 @@ script = ExtResource("37_1gbpw")
 [node name="PlayerFocusCast" type="ShapeCast3D" parent="InteractComponent" unique_id=1911257774]
 editor_description = "Этот шейпкаст служит для обнаружения интерактивных обьектов в фокусе перед игроком по группе \"Interactable\" и по слою \"Interactable\"
 "
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.21520996, 2.1754112)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.96861199, 1.68652702)
 shape = SubResource("CapsuleShape3D_0y6io")
 target_position = Vector3(0, 0, 0)
 collision_mask = 512
@@ -1486,7 +1490,7 @@ offset_bottom = 210.0
 grow_vertical = 2
 
 [node name="PickupSlot" type="Node3D" parent="." unique_id=1162953029]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.57703472, 0.77526815)
 
 [node name="NavComponent" parent="." unique_id=875864907 instance=ExtResource("36_ge24q")]
 
