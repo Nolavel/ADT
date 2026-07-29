@@ -29,7 +29,7 @@ mesh = SubResource("BoxMesh_5h11f")
 shape = SubResource("BoxShape3D_5h11f")
 
 [node name="DoorAnchor" type="Marker3D" parent="." unique_id=1166992580]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -0.92710876)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -0.75, -0.92710876)
 
 [node name="HoverEntryTrigger" type="Area3D" parent="." unique_id=1222824727]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.25515747, -0.92710876)

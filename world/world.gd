@@ -75,10 +75,12 @@ var WORLD_UI_SCENES: Array[PackedScene] = [
 
 const UI_CANVAS_LAYER_INDEX: int = 40
 
-## Подъём капсулы игрока над точкой спавна. Конвенция: spawn_point в данных —
-## это точка НА ПОЛУ (обычно y = 0); клиренс не даёт капсуле пересечься
-## с коллизией пола в первый тик физики.
-const SPAWN_CLEARANCE: float = 2.0
+## Player lift above the spawn point. Convention: spawn_point in data is a
+## point ON THE FLOOR (usually y = 0); this clearance keeps the capsule from
+## intersecting floor collision on the first physics tick. Player origin
+## sits at the feet, so this clearance is literally the fall height at
+## spawn, with no correction needed.
+const SPAWN_CLEARANCE: float = 1.0
 
 @onready var stream_container: Node3D = $StreamContainer
 
