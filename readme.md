@@ -81,6 +81,6 @@ files are already readable in English.
 
 ## Credits and licences
 
-Third-party fonts, meshes and textures are credited in `LICENSE.md`.
+Third-party fonts, meshes and textures are credited in `docs/CREDITS.md`.
 Anything borrowed is attributed there — please keep that file current when
 adding assets.
