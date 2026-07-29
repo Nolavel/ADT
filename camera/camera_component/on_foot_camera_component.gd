@@ -21,7 +21,8 @@ signal zoom_input_received()
 
 const MOUSE_SENSITIVITY: float = 1.0   # доп. множитель поверх InputSystems
 const TPS_DISTANCE: float = 2.6
-const TPS_HEIGHT_OFFSET: float = 0.35
+const TPS_PIVOT_HEIGHT: float = 1.45
+const TPS_OCCLUSION_HEIGHT: float = 1.5
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
 
@@ -326,8 +327,8 @@ func _update_camera_position(delta):
 
 			var shoulder := right * _shoulder.update(delta)
 
-			# Base pivot: target + height offset (shoulder level, not ground)
-			var pivot := target.global_position + Vector3(0, TPS_HEIGHT_OFFSET, 0)
+			# Base pivot: target + pivot height (shoulder level, not ground)
+			var pivot := target.global_position + Vector3(0, TPS_PIVOT_HEIGHT, 0)
 			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
 
 			camera_target_pos = pivot + offset
@@ -335,7 +336,7 @@ func _update_camera_position(delta):
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
-			var eye_pos := pivot
+			var eye_pos := target.global_position + Vector3(0, TPS_OCCLUSION_HEIGHT, 0)
 			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, (1 << 1) | (1 << 2))
 			query.collide_with_areas = false
 			var hit := space_state.intersect_ray(query)
