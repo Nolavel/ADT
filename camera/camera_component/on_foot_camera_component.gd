@@ -26,6 +26,14 @@ const TPS_OCCLUSION_HEIGHT: float = 1.5
 const TPS_PITCH_MIN: float = -50.0
 const TPS_PITCH_MAX: float = 20.0
 
+## Frustum-vs-translation split for the shoulder offset — picked visually, not
+## derived. Frustum offset keeps the look axis centered on screen (needed for
+## aiming); translation keeps some camera-plane parallax.
+const TPS_SHOULDER_FRUSTUM_RATIO: float = 0.6
+const TPS_SHOULDER_TRANSLATION_RATIO: float = 0.4
+## Sign depends on which way `right` points on screen — verify by running the game.
+const TPS_SHOULDER_H_OFFSET_SIGN: float = 1.0
+
 ## Runtime pitch accumulated from mouse look. Base tps_angle is the starting offset.
 var _tps_pitch_deg: float = -10.0
 ## Pitch offset from TpsCombatCameraState (explore sway / lock-on), added on top of _tps_pitch_deg.
@@ -325,7 +333,8 @@ func _update_camera_position(delta):
 				-sin(yaw_rad)
 			)
 
-			var shoulder := right * _shoulder.update(delta)
+			var shoulder_offset := _shoulder.update(delta)
+			var shoulder := right * (shoulder_offset * TPS_SHOULDER_TRANSLATION_RATIO)
 
 			# Base pivot: target + pivot height (shoulder level, not ground)
 			var pivot := target.global_position + Vector3(0, TPS_PIVOT_HEIGHT, 0)
@@ -333,6 +342,9 @@ func _update_camera_position(delta):
 
 			camera_target_pos = pivot + offset
 			camera_target_pitch = _tps_pitch_deg + _tps_pitch_offset_deg
+
+			var target_h_offset := shoulder_offset * TPS_SHOULDER_FRUSTUM_RATIO * TPS_SHOULDER_H_OFFSET_SIGN
+			camera.h_offset = lerp(camera.h_offset, target_h_offset, delta * 8.0)
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
