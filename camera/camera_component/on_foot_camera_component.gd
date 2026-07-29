@@ -331,7 +331,7 @@ func _update_camera_position(delta):
 			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
 
 			camera_target_pos = pivot + offset
-			camera_target_pitch = _tps_pitch_deg
+			camera_target_pitch = _tps_pitch_deg + _tps_pitch_offset_deg
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
