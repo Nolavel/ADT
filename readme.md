@@ -1,63 +1,86 @@
-# Vertical Trespass (Prok)
+# Vertical Trespass
 
 Noir open-world action prototype set in the vertical city of Blackrock.
-Нуарный опенворлд-прототип в вертикальном городе Блэкрок.
+Solo project, in active development. Not a shipping game — a prototype.
 
-**Engine:** Godot 4.7 (Forward Mobile) · GDScript
-**Target:** playable demo — October 2026
+**Engine:** Godot 4.7 · Forward+ renderer · GDScript
+**Status:** prototype. World streaming, player movement, camera and hover
+transport are implemented. Combat, AI, missions and saving are not.
+
+> Нуарный опенворлд-прототип в вертикальном городе Блэкрок.
+> Соло-проект в активной разработке.
 
 ---
 
-## Запуск / Run
+## Run
 
-Основная сцена: **`world.tscn`** — игрок, камера, системы и стриминговый
-конвейер города поднимаются автоматически (см. `world/world.gd`).
+Main scene: **`world/world.tscn`** — player, camera, game systems and the
+city streaming pipeline are brought up automatically by `world/world.gd`.
 
-Main scene: **`world.tscn`** — player, camera, systems and the city
-streaming pipeline are brought up automatically.
+There is no test framework. Verifying a change means running the project
+(F5) and reading Godot's output — the systems log their state transitions
+deliberately.
 
-## Управление / Controls
+## Controls
 
-Единственный источник истины по биндингам: **`input_map.md`**.
-Кратко / summary:
+**`input_map.md` is the single source of truth for bindings.** Summary:
 
-**Пешком / On foot (ISOMETRIC ⇄ TPS — `V`)**
-- ПКМ / RMB — идти к точке; удержание — бег (hold — run)
-- `F` — взаимодействие: предметы, кнопки, посадка в ховер
-- `Q` / `E` — шаг орбитальной камеры; `P` — следящая камера; колесо — зум
+**On foot** (`ISOMETRIC` ⇄ `TPS` — `V`)
 
-**Ховер / Hover**
-- `W A S D` — тяга и стрейф (thrust / strafe)
-- `Space` / `Ctrl` — набор и сброс высоты; отпустить — автоудержание
-  (ascend / descend; release — altitude hold)
-- `V` — камера CHASE ⇄ COCKPIT
-- `F` — выход (только при остановке / near-zero speed only)
-
-**Глобально / Global:** `Esc` — меню паузы.
-
-## Структура / Layout
-
-| Путь | Назначение / Purpose |
+| Key | Action |
 |---|---|
-| `core/` | Автолоады и системы: PlayerState, InputSystems, стриминг, транспорт |
-| `player/` | Сцена игрока и компоненты (интеракт, инвентарь, стамина) |
-| `camera/` | Камера-хост + покомпонентные режимы (on foot / hover / transit) |
-| `world/` | world.tscn, контент и силуэты кварталов и плит земли |
-| `tools/` | Редакторские инструменты, в т.ч. генератор greybox-кварталов |
-| `data/` | Ресурсы данных: `world_data.tres`, предметы (`data/items/`) |
+| RMB | move to point; hold — run |
+| `F` | interact: items, buttons, boarding a hover |
+| `Q` / `E` | orbital camera step |
+| `P` | toggle camera follow |
+| Wheel | zoom |
+| `W A S D` | direct movement (TPS only) |
 
-## Редактирование мира / World editing
+**Hover**
 
-Источник данных мира — сцена **`map_source.tscn`** (маркеры кварталов,
-точка спавна). При её запуске `world_data.tres` экспортируется заново.
-Массовая генерация greybox-застройки: `tools/block_generator/`
-(шаг A — библиотека блоков, шаг B — расстановка маркеров).
+| Key | Action |
+|---|---|
+| `W A S D` | thrust / strafe |
+| `Space` / `Ctrl` | ascend / descend; release — altitude hold |
+| `V` | camera CHASE ⇄ COCKPIT |
+| `F` | exit (near-zero speed only) |
 
-World data source — **`map_source.tscn`** (block markers, spawn point);
-running it re-exports `world_data.tres`. Greybox mass generation lives in
-`tools/block_generator/`.
+**Global:** `Esc` — pause menu. `\` — streaming debug panel.
 
-## Для коллаборантов / For collaborators
+## Layout
 
-Контекст проекта и соглашения по коду: **`CLAUDE.md`**, `input_map.md`.
-Project context and code conventions: **`CLAUDE.md`**, `input_map.md`.
+| Path | Purpose |
+|---|---|
+| `core/` | Autoloads and systems: `PlayerState`, `InputSystems`, streaming, transport |
+| `player/` | Player scene and components (interact, inventory, stamina, nav) |
+| `camera/` | Camera host + per-mode components (on foot / hover / transit) |
+| `world/` | `world.tscn`, block and ground-tile content and silhouettes |
+| `tools/` | Editor tooling, incl. the greybox block generator |
+| `data/` | Data resources: `world_data.tres`, items |
+| `docs/` | Style guide, planned scope |
+
+## World editing
+
+World data comes from **`map_source.tscn`** (block markers, spawn point).
+Running that scene re-exports `data/world_data.tres`. Mass greybox
+generation lives in `tools/block_generator/` (step A — block library,
+step B — marker placement).
+
+Markers named with the `GBX_` prefix are regenerated and **will be deleted**
+on the next generator run. Rename a marker to drop the prefix to make it
+hand-owned.
+
+## For collaborators
+
+Read **`CONTRIBUTING.md`** first, then `CLAUDE.md` (architecture and
+contracts) and `docs/GDSCRIPT_STYLE.md` (code conventions).
+
+Most code comments are currently in Russian. Translation of the load-bearing
+system headers to English is in progress; see `CONTRIBUTING.md` for which
+files are already readable in English.
+
+## Credits and licences
+
+Third-party fonts, meshes and textures are credited in `license.md`.
+Anything borrowed is attributed there — please keep that file current when
+adding assets.
