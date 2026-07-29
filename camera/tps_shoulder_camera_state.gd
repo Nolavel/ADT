@@ -39,8 +39,14 @@ enum ShoulderState {
 signal shoulder_changed(is_right: bool)
 
 
-@export var right_offset: float = 0.45
-@export var left_offset: float = -0.45
+## At TPS_DISTANCE = 2.2 and a 75-degree FOV, the frame's half-width at the
+## pivot distance is roughly 1.69m, so 0.45 put the character at ~42% of
+## screen width — nearly centered. 0.85 pushes them to roughly a third of
+## the frame, the usual framing for this camera family. This value is
+## coupled to TPS_DISTANCE and the camera's FOV — changing either moves the
+## framing and this should be re-checked.
+@export var right_offset: float = 0.85
+@export var left_offset: float = -0.85
 
 @export var transition_duration: float = 0.18
 
