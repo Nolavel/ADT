@@ -82,9 +82,11 @@ unread at the next review, they go.
 
 Named here so the absence is deliberate rather than overlooked:
 
-- **NPC and AI.** Does not exist in any form. The design documents rest
-  heavily on how the city reacts to the player; none of that reaction is
-  built. Largest gap between design and code in the project.
+- **NPC and AI.** A body and a decision-layer seam exist (`npc/npc_base.gd`,
+  `npc/controllers/`), driven by a controller that stands still and watches
+  the player. Perception exists; navigation, reactions, memory and animation
+  do not. The design documents rest heavily on how the city reacts to the
+  player; almost none of that reaction is built.
 - **Combat.** The camera has a lock-on sub-state; there is nothing to lock
   onto and nothing to fight.
 - **Missions.**
