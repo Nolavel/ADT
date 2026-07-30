@@ -1,14 +1,14 @@
 # =============================================================================
 # tps_combat_camera_state.gd
-# Под-состояние TPS-камеры внутри OnFootCameraComponent: Explore ↔ Locked.
-# НЕ Node — просто держатель состояния, вызывается из update() хоста.
+# Sub-state of the TPS camera inside OnFootCameraComponent: Explore <-> Locked.
+# NOT a Node — just a state holder, called from the host's update().
 #
-# Explore: TLOU-стиль — spring-damper lag + procedural breathing/sway.
-# Locked:  Souls-стиль — фиксация на цели, orbit вокруг weighted pivot.
+# Explore: TLOU-style — spring-damper lag + procedural breathing/sway.
+# Locked:  Souls-style — fixed on a target, orbiting a weighted pivot.
 #
-# TODO: сейчас поиск цели идёт через get_nodes_in_group("lockable") —
-# когда появится RaycastService, заменить _find_best_target() на
-# occlusion-aware версию (сейчас occlusion не проверяется вообще).
+# TODO: target search currently goes through get_nodes_in_group("lockable") —
+# once a RaycastService exists, replace _find_best_target() with an
+# occlusion-aware version (occlusion isn't checked at all right now).
 # =============================================================================
 extends RefCounted
 class_name TpsCombatCameraState
@@ -38,8 +38,8 @@ var _yaw_velocity: float = 0.0
 @export var breathing_speed: float = 0.6
 var _noise := FastNoiseLite.new()
 var _noise_time: float = 0.0
-## Внешний "уровень напряжения" 0..1 — подключишь позже к health/stamina.
-## Пока просто публичное поле, которое можно дёргать откуда угодно.
+## External "tension" level, 0..1 — wire it up to health/stamina later.
+## For now just a public field, free for anything to poke.
 var tension: float = 0.0
 
 # --- Locked: pivot weighting ---
@@ -47,7 +47,7 @@ var tension: float = 0.0
 @export var lock_distance_min: float = 4.0
 @export var lock_distance_max: float = 8.0
 @export var lock_search_radius: float = 15.0
-@export var lock_search_angle_deg: float = 70.0  # конус перед игроком
+@export var lock_search_angle_deg: float = 70.0  # cone in front of the player
 
 # --- Transition ---
 @export var transition_duration: float = 0.35
@@ -60,9 +60,9 @@ func _init() -> void:
 	_noise.frequency = breathing_speed
 
 
-## Вызывается из OnFootCameraComponent при нажатии кнопки lock-on.
-## TODO: сейчас читает Input напрямую — перенести чтение кнопки в
-## InputSystems (is_lock_on_just_pressed()), как у остальных инпутов проекта.
+## Called from OnFootCameraComponent when the lock-on button is pressed.
+## TODO: currently reads Input directly — move the button read into
+## InputSystems (is_lock_on_just_pressed()), like the rest of this project's input.
 func try_toggle_lock(player: Node3D) -> void:
 	if state == TpsState.LOCKED:
 		_clear_lock()
@@ -83,10 +83,11 @@ func _clear_lock() -> void:
 	target_lost.emit()
 
 
-## Групповой скан-заглушка. Все "лочимые" враги должны быть в группе
-## "lockable" (add_to_group в их скрипте). Скоринг: угол к центру экрана
-## важнее чистого расстояния, устойчивость к дребезгу цели не реализована —
-## это первое, что добавить, когда появятся жалобы на "прыгающий" lock.
+## Group-scan stub. Every "lockable" enemy must be in the "lockable" group
+## (add_to_group in its own script). Scoring: angle to screen center matters
+## more than raw distance; jitter resistance for target switching isn't
+## implemented yet — the first thing to add once "jumpy lock" complaints
+## come in.
 func _find_best_target(player: Node3D) -> Node3D:
 	var candidates := player.get_tree().get_nodes_in_group("lockable")
 	var forward := _get_facing_direction(player)
@@ -106,7 +107,7 @@ func _find_best_target(player: Node3D) -> Node3D:
 		if angle > lock_search_angle_deg:
 			continue
 
-		# Чем меньше угол и чем ближе — тем выше score. Угол весит больше.
+		# Smaller angle and shorter distance both raise the score; angle is weighted more.
 		var score := (1.0 - angle / lock_search_angle_deg) * 0.7 \
 				+ (1.0 - dist / lock_search_radius) * 0.3
 		if score > best_score:
@@ -199,8 +200,8 @@ func _start_transition(to_state: TpsState) -> void:
 var _pending_target_state: TpsState = TpsState.EXPLORE
 
 
-## Возвращает (yaw, pitch_override, distance_override, is_pitch_locked).
-## OnFootCameraComponent сам решает, как это применить к camera_target_*.
+## Returns (yaw, pitch_override, distance_override, is_pitch_locked).
+## OnFootCameraComponent decides on its own how to apply this to camera_target_*.
 func update(delta: float, player: Node3D, current_yaw: float) -> Dictionary:
 	match state:
 		TpsState.TRANSITION:
@@ -224,20 +225,20 @@ func update(delta: float, player: Node3D, current_yaw: float) -> Dictionary:
 func _explore_result(player: Node3D, current_yaw: float, delta: float) -> Dictionary:
 	var target_yaw := player.rotation.y + PI
 
-	# Spring-damper вместо чистого lerp — даёт вязкость, а не резину.
+	# Spring-damper instead of a plain lerp — gives viscosity, not a rubber-band snap.
 	var diff := wrapf(target_yaw - current_yaw, -PI, PI)
 	var accel := diff * explore_spring_stiffness - _yaw_velocity * explore_spring_damping
 	_yaw_velocity += accel * delta
 	var new_yaw := current_yaw + _yaw_velocity * delta
 
-	# Breathing: небольшой шум по pitch, амплитуда растёт с tension.
+	# Breathing: small noise on pitch, amplitude grows with tension.
 	_noise_time += delta
 	var sway := _noise.get_noise_1d(_noise_time * 20.0) * breathing_amplitude_deg * (0.4 + tension)
 
 	return {
 		"yaw": new_yaw,
 		"pitch_offset_deg": sway,
-		"distance_override": -1.0,  # -1 = не переопределять
+		"distance_override": -1.0,  # -1 = don't override
 	}
 
 
@@ -247,7 +248,7 @@ func _locked_result(player: Node3D, _current_yaw: float) -> Dictionary:
 	var to_pivot := pivot - player.global_position
 	var desired_yaw := atan2(to_pivot.x, to_pivot.z) + PI
 
-	# Дистанция авто-подстраивается под расстояние до цели, зажатая в диапазон.
+	# Distance auto-fits to the distance to the target, clamped to the configured range.
 	var dist_to_target := player.global_position.distance_to(locked_target.global_position)
 	var distance: float = clamp(dist_to_target * 0.8, lock_distance_min, lock_distance_max)
 
