@@ -1,10 +1,23 @@
 # =============================================================================
 # StreamDebugPanel.gd
-# Screen-space дебаг-панель конвейера стриминга. Живёт в WORLD_UI_SCENES.
+# Screen-space debug overlay, one Control living in WORLD_UI_SCENES. Started
+# as a streaming-only panel; now hosts a second, independent section
+# (lock-on) added deliberately here rather than as a fourth debug mechanism
+# — see the note below on why.
 #
-# ПРАВИЛО: панель — ЧИСТЫЙ НАБЛЮДАТЕЛЬ. Подписки на сигналы StreamingSystems /
-# WorldSystems + один read-only снапшот при старте. Ни одного вызова,
-# меняющего состояние стриминга. Не наращивать здесь управление.
+# STREAMING SECTION RULE: pure observer. Subscribes to StreamingSystems /
+# WorldSystems signals + one read-only snapshot at start. Never a call that
+# changes streaming state. Do not grow control here.
+#
+# LOCK-ON SECTION: also a pure observer — reads OnFootCameraComponent's
+# TpsCombatCameraState and calls its get_lock_on_diagnostic(), never
+# anything that decides a lock. Added here instead of a new panel + a new
+# WORLD_UI_SCENES entry because registering a new UI scene means editing
+# world.gd, which CONTRIBUTING.md lists as "do not touch without asking";
+# this file was already wired in and already is a toggleable screen-space
+# debug overlay, so extending it avoids that edit entirely. If this file
+# outgrows "a couple of independent read-only sections," it's worth
+# revisiting as two separate panels then.
 #
 # UI строится кодом в _ready() — осознанно: дебаг-инструмент, стилизация
 # в редакторе не предполагается, сцена остаётся двумя строками.
@@ -13,7 +26,8 @@
 # должна съедать клики click-to-move.
 #
 # Тоггл видимости: сигнал InputSystems.stream_debug_toggled
-# (action "toggle_stream_debug" в Input Map).
+# (action "toggle_stream_debug" в Input Map) — same toggle drives both
+# sections; no new input action was needed.
 # =============================================================================
 
 extends Control
@@ -22,6 +36,9 @@ const MAX_LOG_LINES   := 20
 const REDRAW_INTERVAL := 0.25   # сек; списки перерисовываются не чаще
 
 var _player: Node3D = null
+## For the lock-on section only. Null until on_world_ready() runs, and
+## still null if the current scene has no camera_follow (e.g. no TPS).
+var _on_foot: OnFootCameraComponent = null
 
 ## Локальная копия состояния ячеек: id -> {type, state, strata}.
 ## Обновляется ТОЛЬКО из сигналов и стартового снапшота.
@@ -31,9 +48,10 @@ var _log:   Array[String] = []
 var _dirty:        bool  = false
 var _redraw_timer: float = 0.0
 
-var _header:     Label
-var _cells_text: RichTextLabel
-var _log_text:   RichTextLabel
+var _header:       Label
+var _cells_text:   RichTextLabel
+var _log_text:     RichTextLabel
+var _lock_on_text: RichTextLabel
 
 
 func _ready() -> void:
@@ -53,6 +71,11 @@ func _ready() -> void:
 ## Вызывается world.gd (общий механизм WORLD_UI_SCENES).
 func on_world_ready(context: WorldContext) -> void:
 	_player = context.player
+	if context.camera:
+		# Same duck-typed call zoom_ruler_system.gd already makes on
+		# context.camera — camera_follow.gd extends Camera3D and exposes
+		# this itself, context.camera's static type just doesn't say so.
+		_on_foot = context.camera.get_on_foot_component()
 
 
 func _process(delta: float) -> void:
@@ -60,6 +83,7 @@ func _process(delta: float) -> void:
 		return
 
 	_update_header()
+	_update_lock_on_debug()
 
 	_redraw_timer += delta
 	if _dirty and _redraw_timer >= REDRAW_INTERVAL:
@@ -114,6 +138,50 @@ func _push_log(line: String) -> void:
 	while _log.size() > MAX_LOG_LINES:
 		_log.pop_front()
 	_dirty = true
+
+
+# ── Lock-on (read-only observer, see file header) ─────────────────────────────
+
+func _update_lock_on_debug() -> void:
+	if not _lock_on_text:
+		return
+
+	if not _on_foot:
+		_lock_on_text.text = "[color=#777777]— no camera_follow found —[/color]"
+		return
+
+	var combat := _on_foot.get_combat_state()
+	var state_name := TpsCombatCameraState.TpsState.keys()[combat.state]
+	var target_name := combat.locked_target.name \
+			if is_instance_valid(combat.locked_target) else "null"
+
+	var lines: Array[String] = []
+	lines.append("state: %s   locked_target: %s" % [state_name, target_name])
+
+	if not is_instance_valid(_player):
+		lines.append("no player reference")
+		_lock_on_text.text = "\n".join(lines)
+		return
+
+	var diag := combat.get_lock_on_diagnostic(_player)
+	lines.append("lockable in scene: %d" % diag.lockable_count)
+
+	if diag.lockable_count == 0:
+		lines.append("[color=#ff6666]no lockable candidates[/color]")
+	else:
+		var passed: bool = diag.rejected_by == ""
+		var verdict_color := "#35ff66" if passed else "#ff6666"
+		var verdict_text := "PASS" if passed else "REJECTED (%s)" % diag.rejected_by
+		lines.append("nearest: %s  dist %.1fm  angle %.0f°  [color=%s]%s[/color]" % [
+			diag.nearest_name, diag.distance, diag.angle_deg, verdict_color, verdict_text])
+		lines.append("facing %s" % _v3_str(diag.forward))
+		lines.append("to target %s" % _v3_str(diag.to_nearest))
+
+	_lock_on_text.text = "\n".join(lines)
+
+
+func _v3_str(v: Vector3) -> String:
+	return "(%.2f, %.2f, %.2f)" % [v.x, v.y, v.z]
 
 
 # ── Отрисовка ─────────────────────────────────────────────────────────────────
@@ -225,3 +293,20 @@ func _build_ui() -> void:
 	_log_text.custom_minimum_size = Vector2(340, 170)
 	_log_text.add_theme_font_size_override("normal_font_size", 11)
 	vbox.add_child(_log_text)
+
+	vbox.add_child(HSeparator.new())
+
+	var lock_on_header := Label.new()
+	lock_on_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lock_on_header.text = "LOCK-ON"
+	lock_on_header.add_theme_font_size_override("font_size", 13)
+	vbox.add_child(lock_on_header)
+
+	_lock_on_text = RichTextLabel.new()
+	_lock_on_text.bbcode_enabled = true
+	_lock_on_text.fit_content = true
+	_lock_on_text.scroll_active = false
+	_lock_on_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_lock_on_text.custom_minimum_size = Vector2(340, 0)
+	_lock_on_text.add_theme_font_size_override("normal_font_size", 12)
+	vbox.add_child(_lock_on_text)

@@ -112,6 +112,66 @@ func _find_best_target(player: Node3D) -> Node3D:
 	return best
 
 
+## Read-only diagnostic for the lock-on debug overlay
+## (ui/debug/stream_debug_panel.gd) — never call this from code that decides
+## anything. Deliberately a separate scan, not a refactor of
+## _find_best_target(): finds the single nearest "lockable" node by raw
+## distance (regardless of angle) and reports which check would reject it,
+## so the overlay can show "why" even when nothing would actually lock.
+##
+## NOTE: this intentionally uses the SAME forward vector _find_best_target()
+## uses, whatever that currently is (bug included), so the overlay reflects
+## what the real targeting code does. If that forward vector ever changes,
+## update it here too in the same commit.
+func get_lock_on_diagnostic(player: Node3D) -> Dictionary:
+	var candidates := player.get_tree().get_nodes_in_group("lockable")
+	var result := {
+		"lockable_count": candidates.size(),
+		"nearest_name": "",
+		"distance": 0.0,
+		"angle_deg": 0.0,
+		"rejected_by": "none",   # "none" = no candidates, "radius", "cone", "" = would pass
+		"forward": Vector3.ZERO,
+		"to_nearest": Vector3.ZERO,
+	}
+	if candidates.is_empty():
+		return result
+
+	var forward := -player.global_transform.basis.z
+	result.forward = forward
+
+	var nearest: Node3D = null
+	var nearest_dist := INF
+	for c in candidates:
+		if not (c is Node3D):
+			continue
+		var dist := player.global_position.distance_to(c.global_position)
+		if dist < nearest_dist:
+			nearest_dist = dist
+			nearest = c
+
+	if nearest == null:
+		return result
+
+	var to_target: Vector3 = nearest.global_position - player.global_position
+	var dir := to_target.normalized() if nearest_dist > 0.001 else Vector3.ZERO
+	var angle := rad_to_deg(forward.angle_to(dir))
+
+	result.nearest_name = nearest.name
+	result.distance = nearest_dist
+	result.angle_deg = angle
+	result.to_nearest = dir
+
+	if nearest_dist > lock_search_radius:
+		result.rejected_by = "radius"
+	elif angle > lock_search_angle_deg:
+		result.rejected_by = "cone"
+	else:
+		result.rejected_by = ""   # would pass both checks
+
+	return result
+
+
 func _start_transition(to_state: TpsState) -> void:
 	_transition_from_state = state
 	_transition_time = 0.0

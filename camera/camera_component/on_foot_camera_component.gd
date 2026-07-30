@@ -737,6 +737,13 @@ func get_current_direction_name() -> String:
 		_: return "Unknown"
 
 
+## Public getter for the lock-on debug overlay
+## (ui/debug/stream_debug_panel.gd) — same one-line passthrough pattern as
+## camera_follow.gd's get_on_foot_component().
+func get_combat_state() -> TpsCombatCameraState:
+	return _tps_combat
+
+
 ## Публичный геттер для HUD-виджета (линейка зума) — какой диапазон
 ## дистанции актуален для текущего view_mode.
 func get_current_zoom_range() -> Vector2:
