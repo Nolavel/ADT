@@ -270,7 +270,7 @@ func update(delta: float) -> void:
 			_transition_to_view(PlayerState.ViewMode.TPS)
 
 	if not orbit_rotation_animating and not follow_rotation_animating:
-		current_angle = lerp_angle(current_angle, target_angle, delta * rotation_speed)
+		current_angle = lerp_angle(current_angle, target_angle, Smoothing.damp_factor(rotation_speed, delta))
 
 	_update_camera_position(delta)
 	
@@ -455,9 +455,9 @@ func _target_horizontal_direction() -> Vector3:
 ## guarantees that. Add a new TPS state's decay line here in the same
 ## commit that introduces the state.
 func _decay_tps_state(delta: float) -> void:
-	camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
-	_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, delta * TPS_PULLBACK_SMOOTHING)
-	_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, delta * TPS_LEAD_SMOOTHING)
+	camera.h_offset = lerp(camera.h_offset, 0.0, Smoothing.damp_factor(8.0, delta))
+	_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
+	_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, Smoothing.damp_factor(TPS_LEAD_SMOOTHING, delta))
 
 
 func _update_camera_position(delta):
@@ -468,7 +468,7 @@ func _update_camera_position(delta):
 			var horizontal_direction = Vector3(sin(yaw_rad), 0, cos(yaw_rad))
 
 			var speed_ratio := _target_speed_ratio()
-			_tps_sprint_pullback = lerp(_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK, delta * TPS_PULLBACK_SMOOTHING)
+			_tps_sprint_pullback = lerp(_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
 			var effective_distance := TPS_DISTANCE + _tps_sprint_pullback
 
 			var horizontal_distance = effective_distance * cos(pitch_rad)
@@ -485,7 +485,7 @@ func _update_camera_position(delta):
 			# Lead: pivot drifts ahead of the character's movement direction,
 			# not the look direction — keeps this from fighting mouse look.
 			var move_direction := _target_horizontal_direction()
-			_tps_lead_offset = _tps_lead_offset.lerp(move_direction * speed_ratio * TPS_LEAD_DISTANCE, delta * TPS_LEAD_SMOOTHING)
+			_tps_lead_offset = _tps_lead_offset.lerp(move_direction * speed_ratio * TPS_LEAD_DISTANCE, Smoothing.damp_factor(TPS_LEAD_SMOOTHING, delta))
 
 			# Base pivot: target + pivot height (shoulder level, not ground)
 			var pivot_height := _target_metric_height(&"get_shoulder_height", TPS_PIVOT_HEIGHT_FALLBACK)
@@ -496,7 +496,7 @@ func _update_camera_position(delta):
 			camera_target_pitch = _tps_pitch_deg + _tps_pitch_offset_deg
 
 			var target_h_offset := shoulder_offset * TPS_SHOULDER_FRUSTUM_RATIO * TPS_SHOULDER_H_OFFSET_SIGN
-			camera.h_offset = lerp(camera.h_offset, target_h_offset, delta * 8.0)
+			camera.h_offset = lerp(camera.h_offset, target_h_offset, Smoothing.damp_factor(8.0, delta))
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
 			var space_state := camera.get_world_3d().direct_space_state
@@ -534,10 +534,10 @@ func _update_camera_position(delta):
 		position_follow_speed = TPS_FOLLOW_SPEED
 		rotation_follow_speed = TPS_LOOK_SMOOTHING
 
-	camera_current_pos = camera_current_pos.lerp(camera_target_pos, delta * position_follow_speed)
+	camera_current_pos = camera_current_pos.lerp(camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta))
 	if not view_mode_animating:
-		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, delta * rotation_follow_speed)
-	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, delta * rotation_follow_speed)
+		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, Smoothing.damp_factor(rotation_follow_speed, delta))
+	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, Smoothing.damp_factor(rotation_follow_speed, delta))
 
 	camera.global_position = camera_current_pos
 	camera.global_rotation = Vector3(deg_to_rad(camera_current_pitch), camera_current_yaw, 0)
