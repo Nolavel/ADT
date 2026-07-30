@@ -572,6 +572,10 @@ func _handle_view_toggle():
 				# Not at the edge yet: drive the existing zoom slider there
 				# first (reusing _start_zoom, not a new animation), then
 				# switch once _pending_tps_switch is consumed in update().
+				# The player pressed V, not the wheel, but the zoom that
+				# results is still player-initiated — the HUD ruler must
+				# show this phase like any other zoom change.
+				zoom_input_received.emit()
 				_pending_tps_switch = true
 				_start_zoom(ISOMETRIC_ZOOM_MIN - target_zoom_distance)
 		PlayerState.ViewMode.TPS:
