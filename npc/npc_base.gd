@@ -10,11 +10,13 @@
 # — body, movement and perception are meant to outlive that switch, so
 # nothing here knows or cares which controller is driving it.
 #
-# Metric getters (get_eye_height/get_shoulder_height) share names with
-# player.gd's own, computed from the same BodyMetrics ratios: the TPS
-# camera's target/lock-on code already reads these through duck typing, so
-# any node carrying them is usable wherever the player is, without the
-# reader needing to know it's an NPC.
+# Metric and facing getters (get_eye_height/get_shoulder_height/
+# get_facing_direction) share names with player.gd's own: the TPS camera's
+# target/lock-on code already reads these through duck typing, so any node
+# carrying them is usable wherever the player is, without the reader needing
+# to know it's an NPC. get_facing_direction() exists because this project's
+# rotation convention (atan2(dir.x, dir.z), +Z forward) isn't Godot's usual
+# -Z-forward — see that getter's own comment.
 #
 # No perception, navigation, reactions or animation yet — see
 # npc/controllers/idle_npc_controller.gd, which drives this body with a
@@ -74,6 +76,14 @@ func get_eye_height() -> float:
 
 func get_shoulder_height() -> float:
 	return BodyMetrics.shoulder_height(body_height)
+
+
+## Direction this character visually faces, horizontal and normalised.
+## NOTE: this project rotates characters with atan2(dir.x, dir.z), which makes
+## +Z the visual forward, not Godot's usual -Z. Read facing through this getter
+## instead of deriving it from the basis, or the sign will be wrong.
+func get_facing_direction() -> Vector3:
+	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 
 
 func _face_move_direction(delta: float) -> void:

@@ -21,6 +21,10 @@ signal target_lost()
 var state: TpsState = TpsState.EXPLORE
 var locked_target: Node3D = null
 
+## Set once _get_facing_direction() has warned about a player with no
+## get_facing_direction(), so the warning doesn't spam every frame.
+var _warned_missing_facing_direction: bool = false
+
 # --- Explore: spring-damper for yaw only, not for position — position is
 # smoothed in _update_camera_position, at TPS_FOLLOW_SPEED once settled in
 # steady-state TPS, or at view_transition_speed during the ISOMETRIC <->
@@ -85,7 +89,7 @@ func _clear_lock() -> void:
 ## это первое, что добавить, когда появятся жалобы на "прыгающий" lock.
 func _find_best_target(player: Node3D) -> Node3D:
 	var candidates := player.get_tree().get_nodes_in_group("lockable")
-	var forward := -player.global_transform.basis.z
+	var forward := _get_facing_direction(player)
 	var best_score := -INF
 	var best: Node3D = null
 
@@ -112,6 +116,22 @@ func _find_best_target(player: Node3D) -> Node3D:
 	return best
 
 
+## Reads player.get_facing_direction() via duck typing, one-time-warning
+## pattern matching OnFootCameraComponent's target-metric getters. Falls
+## back to Godot's own -Z-is-forward convention if the target doesn't
+## expose it — wrong for this project's own characters (they rotate with
+## atan2(dir.x, dir.z), +Z forward — see get_facing_direction() on
+## player.gd/npc_base.gd), but a safe default for a generic Node3D that
+## isn't one of them.
+func _get_facing_direction(player: Node3D) -> Vector3:
+	if player.has_method(&"get_facing_direction"):
+		return player.call(&"get_facing_direction") as Vector3
+	if not _warned_missing_facing_direction:
+		push_warning("TpsCombatCameraState: player '%s' has no get_facing_direction() — falling back to -basis.z" % player.name)
+		_warned_missing_facing_direction = true
+	return -player.global_transform.basis.z
+
+
 ## Read-only diagnostic for the lock-on debug overlay
 ## (ui/debug/stream_debug_panel.gd) — never call this from code that decides
 ## anything. Deliberately a separate scan, not a refactor of
@@ -119,10 +139,8 @@ func _find_best_target(player: Node3D) -> Node3D:
 ## distance (regardless of angle) and reports which check would reject it,
 ## so the overlay can show "why" even when nothing would actually lock.
 ##
-## NOTE: this intentionally uses the SAME forward vector _find_best_target()
-## uses, whatever that currently is (bug included), so the overlay reflects
-## what the real targeting code does. If that forward vector ever changes,
-## update it here too in the same commit.
+## Reads the same _get_facing_direction() as _find_best_target(), so the two
+## can't drift apart on which way "forward" means.
 func get_lock_on_diagnostic(player: Node3D) -> Dictionary:
 	var candidates := player.get_tree().get_nodes_in_group("lockable")
 	var result := {
@@ -137,7 +155,7 @@ func get_lock_on_diagnostic(player: Node3D) -> Dictionary:
 	if candidates.is_empty():
 		return result
 
-	var forward := -player.global_transform.basis.z
+	var forward := _get_facing_direction(player)
 	result.forward = forward
 
 	var nearest: Node3D = null

@@ -483,6 +483,13 @@ func get_horizontal_direction() -> Vector3:
 		return Vector3.ZERO
 	return horizontal.normalized()
 
+## Direction this character visually faces, horizontal and normalised.
+## NOTE: this project rotates characters with atan2(dir.x, dir.z), which makes
+## +Z the visual forward, not Godot's usual -Z. Read facing through this getter
+## instead of deriving it from the basis, or the sign will be wrong.
+func get_facing_direction() -> Vector3:
+	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+
 func get_current_speed() -> float:
 	return speed
 
