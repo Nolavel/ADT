@@ -34,6 +34,11 @@ const TPS_PITCH_SENSITIVITY_RATIO: float = 0.7
 ## a target moving at constant speed is roughly speed / this value.
 const TPS_FOLLOW_SPEED: float = 16.0
 
+## Rotation follow rate in steady-state TPS. Deliberately much faster than
+## TPS_FOLLOW_SPEED: position lag reads as a spring, rotation lag reads as
+## input lag. Mouse look must feel direct.
+const TPS_LOOK_SMOOTHING: float = 30.0
+
 ## Extra camera distance at full run speed, on top of TPS_DISTANCE. Explicit
 ## and tunable — the previous pull-back was an accidental by-product of the
 ## follow-lag, not a setting. At run_speed, the residual TPS_FOLLOW_SPEED lag
@@ -454,16 +459,21 @@ func _update_camera_position(delta):
 	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
 	# from view_transition_speed so steady-state follow lag and the
 	# ISOMETRIC <-> TPS transition animation can be tuned independently.
-	# During the transition animation (or in ISOMETRIC), position still
-	# rides view_transition_speed, or the transition itself would jump.
+	# Rotation follows at TPS_LOOK_SMOOTHING, much faster than position: if
+	# rotation lagged as much as position, the target would visibly leave
+	# frame on a quick mouse turn (camera body already moved, look direction
+	# hasn't caught up). During the transition animation (or in ISOMETRIC),
+	# both still ride view_transition_speed, or the transition itself would jump.
 	var position_follow_speed := view_transition_speed
+	var rotation_follow_speed := view_transition_speed
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS and not view_mode_animating:
 		position_follow_speed = TPS_FOLLOW_SPEED
+		rotation_follow_speed = TPS_LOOK_SMOOTHING
 
 	camera_current_pos = camera_current_pos.lerp(camera_target_pos, delta * position_follow_speed)
 	if not view_mode_animating:
-		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, delta * view_transition_speed)
-	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, delta * view_transition_speed)
+		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, delta * rotation_follow_speed)
+	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, delta * rotation_follow_speed)
 
 	camera.global_position = camera_current_pos
 	camera.global_rotation = Vector3(deg_to_rad(camera_current_pitch), camera_current_yaw, 0)
