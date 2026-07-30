@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://npc/npc_base.gd" id="1_base"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_npc"]
+radius = 0.388
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_npc"]
+radius = 0.388
+height = 1.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_npc_head"]
+size = Vector3(0.22, 0.22, 0.22)
+
+[node name="NPC" type="CharacterBody3D"]
+script = ExtResource("1_base")
+
+[node name="CollisionNPC" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_npc")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_npc")
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+mesh = SubResource("BoxMesh_npc_head")
