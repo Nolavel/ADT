@@ -256,7 +256,10 @@ func _handle_tps_follow(delta: float) -> void:
 	# it needs an explicit rad_to_deg() conversion — this mismatch was the bug
 	# that made vertical look nearly unresponsive.
 	var look := InputSystems.get_look_delta()
-	camera_target_yaw += look.x * look_sensitivity
+	# Mouse right -> relative.x > 0. Positive rotation.y in Godot turns the
+	# view LEFT (forward sweeps toward -X), so adding here inverted the
+	# horizontal look. Subtract so mouse right turns the camera right.
+	camera_target_yaw -= look.x * look_sensitivity
 	camera_target_yaw = wrapf(camera_target_yaw, -PI, PI)
 	_tps_pitch_deg -= rad_to_deg(look.y) * look_sensitivity * TPS_PITCH_SENSITIVITY_RATIO
 	_tps_pitch_deg = clamp(_tps_pitch_deg, TPS_PITCH_MIN, TPS_PITCH_MAX)
