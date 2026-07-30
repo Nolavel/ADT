@@ -475,6 +475,14 @@ func get_speed_ratio() -> float:
 		return 0.0
 	return clampf(speed / run_speed, 0.0, 1.0)
 
+## Horizontal movement direction, normalised, or ZERO when standing still.
+## Lets the camera lead the character without reading its internals.
+func get_horizontal_direction() -> Vector3:
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	if horizontal.length() < 0.001:
+		return Vector3.ZERO
+	return horizontal.normalized()
+
 func get_current_speed() -> float:
 	return speed
 

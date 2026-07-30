@@ -49,6 +49,13 @@ const TPS_SPRINT_PULLBACK: float = 0.4
 ## rate on purpose, so it eases in instead of snapping when the run starts.
 const TPS_PULLBACK_SMOOTHING: float = 3.0
 
+## How far ahead of the character the camera pivot leads at full run speed.
+## Reads as "I see where I'm going" instead of "I see my own back".
+const TPS_LEAD_DISTANCE: float = 0.6
+## Lead easing rate. Slower than the look rate on purpose — the lead should
+## drift in, not snap when the character starts moving.
+const TPS_LEAD_SMOOTHING: float = 2.5
+
 ## Used only if `target` doesn't expose character-metric getters (see
 ## _target_metric_height()) — a safe non-zero default instead of silently
 ## pivoting/casting at ground level.
@@ -73,11 +80,18 @@ var _warned_missing_target_metrics: bool = false
 ## Set once _target_speed_ratio() has warned about a target with no
 ## get_speed_ratio(), so the warning doesn't spam every frame.
 var _warned_missing_speed_ratio: bool = false
+## Set once _target_horizontal_direction() has warned about a target with no
+## get_horizontal_direction(), so the warning doesn't spam every frame.
+var _warned_missing_horizontal_direction: bool = false
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
 ## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING. Only updated while in TPS
 ## (see _update_camera_position) — frozen at its last value otherwise, and
 ## resumes lerping toward the current ratio when TPS is re-entered.
 var _tps_sprint_pullback: float = 0.0
+## Smoothed camera-lead offset, eased toward direction * speed_ratio *
+## TPS_LEAD_DISTANCE at TPS_LEAD_SMOOTHING. Same TPS-only update rule as
+## _tps_sprint_pullback.
+var _tps_lead_offset: Vector3 = Vector3.ZERO
 
 @export var rotation_speed: float = 8.0
 
@@ -411,6 +425,18 @@ func _target_speed_ratio() -> float:
 	return 0.0
 
 
+## Reads target.get_horizontal_direction() via duck typing, same pattern as
+## _target_speed_ratio(). Falls back to ZERO (no lead) with a one-time
+## warning if target doesn't expose it.
+func _target_horizontal_direction() -> Vector3:
+	if target.has_method(&"get_horizontal_direction"):
+		return target.call(&"get_horizontal_direction") as Vector3
+	if not _warned_missing_horizontal_direction:
+		push_warning("OnFootCameraComponent: target '%s' has no get_horizontal_direction() — camera lead disabled" % target.name)
+		_warned_missing_horizontal_direction = true
+	return Vector3.ZERO
+
+
 func _update_camera_position(delta):
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
@@ -433,9 +459,14 @@ func _update_camera_position(delta):
 			var shoulder_offset := _shoulder.update(delta)
 			var shoulder := right * (shoulder_offset * TPS_SHOULDER_TRANSLATION_RATIO)
 
+			# Lead: pivot drifts ahead of the character's movement direction,
+			# not the look direction — keeps this from fighting mouse look.
+			var move_direction := _target_horizontal_direction()
+			_tps_lead_offset = _tps_lead_offset.lerp(move_direction * speed_ratio * TPS_LEAD_DISTANCE, delta * TPS_LEAD_SMOOTHING)
+
 			# Base pivot: target + pivot height (shoulder level, not ground)
 			var pivot_height := _target_metric_height(&"get_shoulder_height", TPS_PIVOT_HEIGHT_FALLBACK)
-			var pivot := target.global_position + Vector3(0, pivot_height, 0)
+			var pivot := target.global_position + Vector3(0, pivot_height, 0) + _tps_lead_offset
 			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
 
 			camera_target_pos = pivot + offset
@@ -466,8 +497,10 @@ func _update_camera_position(delta):
 
 			# TPS shoulder framing must not leak into ISOMETRIC — decay it back to 0.
 			camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
-			# Sprint pull-back must not survive a trip through ISOMETRIC either.
+			# Sprint pull-back and camera lead must not survive a trip through
+			# ISOMETRIC either.
 			_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, delta * TPS_PULLBACK_SMOOTHING)
+			_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, delta * TPS_LEAD_SMOOTHING)
 
 	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
 	# from view_transition_speed so steady-state follow lag and the
