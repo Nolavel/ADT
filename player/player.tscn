@@ -502,8 +502,8 @@ bottom_radius = 0.15
 height = 0.66
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_0y6io"]
-radius = 2.0
-height = 5.0
+radius = 0.4
+height = 1.6
 
 [node name="Player" type="CharacterBody3D" unique_id=528747953 node_paths=PackedStringArray("player_animation_player") groups=["Player"]]
 platform_floor_layers = 3
@@ -1455,8 +1455,9 @@ script = ExtResource("37_1gbpw")
 
 [node name="PlayerFocusCast" type="ShapeCast3D" parent="InteractComponent" unique_id=1911257774]
 editor_description = "Этот шейпкаст служит для обнаружения интерактивных обьектов в фокусе перед игроком по группе \"Interactable\" и по слою \"Interactable\"
+Reach is a deliberate gameplay choice, not derived from BODY_HEIGHT: capsule spans z ~= 0.2 to 1.8 (forward reach), radius 0.4 (half a meter each side). Change these numbers on purpose, not by re-deriving from character height.
 "
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.96861199, 1.68652702)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 1.3, 1.0)
 shape = SubResource("CapsuleShape3D_0y6io")
 target_position = Vector3(0, 0, 0)
 collision_mask = 512
