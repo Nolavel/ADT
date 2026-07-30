@@ -21,8 +21,10 @@ signal target_lost()
 var state: TpsState = TpsState.EXPLORE
 var locked_target: Node3D = null
 
-# --- Explore: spring-damper для yaw (не для позиции — позицию у тебя
-# уже сглаживает view_transition_speed в _update_camera_position) ---
+# --- Explore: spring-damper for yaw only, not for position — position is
+# smoothed in _update_camera_position, at TPS_FOLLOW_SPEED once settled in
+# steady-state TPS, or at view_transition_speed during the ISOMETRIC <->
+# TPS transition animation. ---
 @export var explore_spring_stiffness: float = 10.0
 @export var explore_spring_damping: float = 6.0
 var _yaw_velocity: float = 0.0
