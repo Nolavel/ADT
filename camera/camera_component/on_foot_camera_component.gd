@@ -103,7 +103,10 @@ var _tps_sprint_pullback: float = 0.0
 ## MOUSE_MODE_CAPTURED (commit 63c26fe) — before that the cursor hit the
 ## screen edge and stopped moving the view. Don't go looking for the cause
 ## of a "sensitivity feels different now" report in this file.
-@export var look_sensitivity: float = 0.65
+@export var look_sensitivity_x: float = 0.65
+@export var look_sensitivity_y: float = 0.65
+@export var invert_look_x: bool = false
+@export var invert_look_y: bool = false
 
 
 @export_group("Follow")
@@ -259,9 +262,14 @@ func _handle_tps_follow(delta: float) -> void:
 	# Mouse right -> relative.x > 0. Positive rotation.y in Godot turns the
 	# view LEFT (forward sweeps toward -X), so adding here inverted the
 	# horizontal look. Subtract so mouse right turns the camera right.
-	camera_target_yaw -= look.x * look_sensitivity
+	var x_sign := -1.0 if invert_look_x else 1.0
+	camera_target_yaw -= look.x * look_sensitivity_x * x_sign
 	camera_target_yaw = wrapf(camera_target_yaw, -PI, PI)
-	_tps_pitch_deg -= rad_to_deg(look.y) * look_sensitivity * TPS_PITCH_SENSITIVITY_RATIO
+	# TPS_PITCH_SENSITIVITY_RATIO is an anatomical proportion (vertical feels
+	# heavier than horizontal), not a user setting — applied on top of
+	# look_sensitivity_y rather than folded into it.
+	var y_sign := -1.0 if invert_look_y else 1.0
+	_tps_pitch_deg -= rad_to_deg(look.y) * look_sensitivity_y * TPS_PITCH_SENSITIVITY_RATIO * y_sign
 	_tps_pitch_deg = clamp(_tps_pitch_deg, TPS_PITCH_MIN, TPS_PITCH_MAX)
 
 	# --- Lock-on (combat state overrides yaw only when locked) ---
