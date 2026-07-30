@@ -49,27 +49,27 @@ var movement_enabled: bool = true
 ## Set by TPSMovementSystem every physics frame.
 var _camera_yaw: float = 0.0
 
-## --- Direct movement (TPS, WASD) — кэш входных данных, пишет
-## TPSMovementSystem каждый physics-кадр через set_direct_move_input().
-## Сам velocity/анимацию/поворот считает player.gd, чтобы физика и
-## стейт-машина оставались в одном месте, как и для клик-муфа.
+## --- Direct movement (TPS, WASD) — cached input data, written by
+## TPSMovementSystem every physics frame via set_direct_move_input().
+## player.gd itself computes velocity/animation/rotation, so physics and
+## the state machine stay in one place, same as for click-to-move.
 var _direct_move_direction: Vector3 = Vector3.ZERO
 var _direct_move_want_run: bool = false
 
-## --- Sprint State (для UI курсора) ---
+## --- Sprint state (for the cursor UI) ---
 var is_running_mode: bool = false
-var wants_to_run: bool = false  # 🔥 НОВЫЙ: игрок хочет бежать (даже если не может)
+var wants_to_run: bool = false  # 🔥 NEW: the player wants to run (even if they can't)
 var sprint_blend: float = 0.0
 var sprint_blend_speed: float = 4.0
 
-## --- Animation Tree (программно собранный blend, без ручного .tres) ---
-## Blend space по скорости даёт плавный переход шаг<->бег вместо
-## резкого переключателя play(), синхронизирован с реальной speed,
-## которая и так уже плавно едет через _update_speed()/accel_time.
+## --- Animation Tree (built entirely in code, no hand-authored .tres) ---
+## A speed-driven blend space gives a smooth walk<->run transition instead
+## of an abrupt play() switch, synced to the real speed value, which is
+## already eased through _update_speed()/accel_time.
 var _anim_tree: AnimationTree
-var _moving_blend_amount: float = 0.0  # 0 = idle, 1 = локомоция
+var _moving_blend_amount: float = 0.0  # 0 = idle, 1 = locomotion
 const MOVE_BLEND_SPEED: float = 6.0
-const IDLE_ENTER_SPEED: float = 0.15  # ниже этого — считаем, что стоим
+const IDLE_ENTER_SPEED: float = 0.15  # below this we consider the character standing still
 
 ## --- Signals ---
 signal movement_started
@@ -90,9 +90,9 @@ func _ready():
 		push_warning("StaminaManager not found - stamina system will not work")
 
 ## --- Animation Tree Setup ---
-## Собирается полностью кодом: Blend2(idle <-> locomotion), где
-## locomotion — BlendSpace1D(walk@0 .. run@1). Не требует ручного
-## .tres/редакторной настройки, легко пересобрать при смене клипов.
+## Assembled entirely in code: Blend2(idle <-> locomotion), where
+## locomotion is a BlendSpace1D(walk@0 .. run@1). Needs no hand-authored
+## .tres/editor setup, easy to rebuild when clips change.
 func _setup_animation_tree() -> void:
 	var idle_node := AnimationNodeAnimation.new()
 	idle_node.animation = "new4/idle"
@@ -128,7 +128,7 @@ func _setup_animation_tree() -> void:
 ## --- Public API ---
 func move_to_position(pos: Vector3) -> void:
 	if not movement_enabled:
-		print("⚠️ Player: Движение заблокировано, игнорируем move_to_position()")
+		print("⚠️ Player: movement disabled, ignoring move_to_position()")
 		return
 	
 	if navigation_component:
@@ -140,19 +140,19 @@ func set_movement_speed(new_speed: float) -> void:
 	
 	target_speed = clamp(new_speed, 0.0, run_speed)
 	
-	# 🔥 Запоминаем, что игрок ХОЧЕТ бежать (даже если не может)
+	# 🔥 Remember that the player WANTS to run (even if they can't)
 	wants_to_run = (new_speed > walk_speed * 1.1)
-	
-	# Определяем режим бега по скорости
+
+	# Decide run mode from speed
 	is_running_mode = wants_to_run
 	
 	_update_state()
 
-## Вызывается TPSMovementSystem каждый _physics_process, пока активен TPS.
-## direction — уже посчитанный, camera-relative, сплющенный по Y вектор
-## (не обязательно нормализован — ноль-вектор значит "стоим на месте").
-## Сама физика/анимация/поворот считаются здесь же, в player.gd — так же,
-## как для клик-муфа их считает _handle_navigation.
+## Called by TPSMovementSystem every _physics_process while TPS is active.
+## direction is already computed, camera-relative, Y-flattened
+## (not necessarily normalised — a zero vector means "standing still").
+## Physics/animation/rotation are computed right here in player.gd — same
+## as _handle_navigation does for click-to-move.
 func set_direct_move_input(direction: Vector3, want_run: bool) -> void:
 	_direct_move_direction = direction
 	_direct_move_want_run = want_run
@@ -177,7 +177,7 @@ func stop_moving(smooth: bool = true) -> void:
 func is_moving() -> bool:
 	return current_state != MovementState.IDLE
 
-## СИСТЕМА БЛОКИРОВКИ ДВИЖЕНИЯ
+## MOVEMENT-LOCK SYSTEM
 func set_movement_enabled(enabled: bool):
 	movement_enabled = enabled
 	
@@ -197,16 +197,16 @@ func set_movement_enabled(enabled: bool):
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
 		
-		print("🔒 Player: Движение ЗАБЛОКИРОВАНО")
+		print("🔒 Player: movement LOCKED")
 	else:
-		print("✅ Player: Движение РАЗБЛОКИРОВАНО")
+		print("✅ Player: movement UNLOCKED")
 
 func is_movement_enabled() -> bool:
 	return movement_enabled
 
-## === МЕТОДЫ ДЛЯ КУРСОРА (совместимость с MouseCursorUI) ===
+## === CURSOR METHODS (compatibility with MouseCursorUI) ===
 
-## Проверяет, находится ли игрок в спринте (беге)
+## Checks whether the player is currently sprinting
 func is_currently_sprinting(current_velocity: Vector3) -> bool:
 	if not movement_enabled:
 		return false
@@ -214,11 +214,11 @@ func is_currently_sprinting(current_velocity: Vector3) -> bool:
 	var horizontal_speed = Vector2(current_velocity.x, current_velocity.z).length()
 	return is_running_mode and horizontal_speed > walk_speed * 1.2
 
-## Возвращает прогресс спринта (0.0 - 1.0)
+## Returns sprint progress (0.0 - 1.0)
 func get_sprint_blend() -> float:
 	return sprint_blend
 
-## Проверяет, хочет ли игрок бежать (независимо от стамины)
+## Checks whether the player wants to run (independent of stamina)
 func is_wanting_to_run() -> bool:
 	return wants_to_run
 
@@ -248,16 +248,17 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 
-## --- Sprint Blend (для плавной UI анимации) ---
+## --- Sprint blend (for smooth UI animation) ---
 func _update_sprint_blend(delta: float) -> void:
 	var target_blend = 1.0 if is_running_mode else 0.0
 	sprint_blend = lerp(sprint_blend, target_blend, sprint_blend_speed * delta)
 
-## --- Animation Blend (шаг<->бег, idle<->движение) ---
-## Позиция в BlendSpace1D берётся из РЕАЛЬНОЙ speed (уже сглаженной
-## через move_toward/accel_time в _update_speed), а не из is_running_mode —
-## так анимация физически не может обогнать саму скорость персонажа,
-## и истощение стамины визуально "садится" плавно, без рывка клипа.
+## --- Animation blend (walk<->run, idle<->moving) ---
+## The BlendSpace1D position comes from the REAL speed (already smoothed
+## through move_toward/accel_time in _update_speed), not from
+## is_running_mode — so the animation can never physically outrun the
+## character's actual speed, and stamina running out visually "settles"
+## smoothly, without a clip jump.
 func _update_animation_blend(delta: float) -> void:
 	if not _anim_tree:
 		return
@@ -271,7 +272,7 @@ func _update_animation_blend(delta: float) -> void:
 	_moving_blend_amount = move_toward(_moving_blend_amount, target_moving, delta * MOVE_BLEND_SPEED)
 	_anim_tree.set("parameters/moving_blend/blend_amount", _moving_blend_amount)
 
-## --- Stamina Consumption (расход стамины при беге) ---
+## --- Stamina consumption (drains while running) ---
 func _handle_stamina_consumption() -> void:
 	if not stamina_manager:
 		return
@@ -283,14 +284,14 @@ func _handle_stamina_consumption() -> void:
 			if not stamina_manager.is_consuming_stamina:
 				stamina_manager.start_consuming_stamina()
 		else:
-			## Стамина кончилась - принудительно переходим на ходьбу
+			## Stamina ran out - force a switch to walking
 			if stamina_manager.is_consuming_stamina:
 				stamina_manager.stop_consuming_stamina()
-			
-			## Снижаем РЕАЛЬНУЮ скорость, но НЕ сбрасываем wants_to_run
+
+			## Lower the REAL speed, but do NOT reset wants_to_run
 			target_speed = walk_speed
 			is_running_mode = false
-			print("⚠️ Стамина истощена - переход на ходьбу")
+			print("⚠️ Stamina depleted - switching to walking")
 	else:
 		if stamina_manager.is_consuming_stamina:
 			stamina_manager.stop_consuming_stamina()
@@ -314,8 +315,8 @@ func _update_speed(delta: float) -> void:
 	speed = move_toward(speed, target_speed, delta * acceleration)
 
 ## --- Direct Movement (TPS, WASD) ---
-## Считает целевую скорость ДО _update_speed(delta), чтобы бег/ходьба
-## включались в том же кадре, а не с задержкой в один физ-тик.
+## Computes the target speed BEFORE _update_speed(delta), so run/walk
+## kicks in the same frame instead of one physics tick late.
 func _update_direct_move_target_speed() -> void:
 	var is_moving_input := _direct_move_direction.length() > 0.01
 
@@ -389,20 +390,20 @@ func _handle_navigation(delta: float) -> void:
 	direction.y = 0.0
 	var distance = direction.length()
 	
-	# 🔥 ДЕМПФИРОВАНИЕ: замедляемся, когда близко к точке
-	var distance_factor = clamp(distance / 1.0, 0.0, 1.0)  # 1.0 = радиус замедления
+	# 🔥 DAMPING: slow down when close to the point
+	var distance_factor = clamp(distance / 1.0, 0.0, 1.0)  # 1.0 = slowdown radius
 	var effective_speed = speed * distance_factor
-	
-	if distance > 0.05:  # ✅ Уменьшил порог (было 0.15)
+
+	if distance > 0.05:  # ✅ Lowered the threshold (was 0.15)
 		var normalized_dir = direction / distance
-		velocity.x = normalized_dir.x * effective_speed  # ✅ Используем сниженную скорость
+		velocity.x = normalized_dir.x * effective_speed  # ✅ Use the reduced speed
 		velocity.z = normalized_dir.z * effective_speed
-		
+
 		if distance > 0.01:
 			var target_angle = atan2(normalized_dir.x, normalized_dir.z)
 			rotation.y = lerp_angle(rotation.y, target_angle, delta * 10.0)
 	else:
-		# ✅ Близко к точке - резко останавливаемся
+		# ✅ Close to the point - stop abruptly
 		velocity.x = 0.0
 		velocity.z = 0.0
 		navigation_component.advance_path()
