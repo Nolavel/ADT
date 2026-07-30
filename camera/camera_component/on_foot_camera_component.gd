@@ -449,6 +449,17 @@ func _target_horizontal_direction() -> Vector3:
 	return Vector3.ZERO
 
 
+## Every piece of TPS-only smoothed state (shoulder h_offset, sprint
+## pull-back, camera lead, ...) must decay to its rest value here so none of
+## it survives a trip through ISOMETRIC — by construction nothing else
+## guarantees that. Add a new TPS state's decay line here in the same
+## commit that introduces the state.
+func _decay_tps_state(delta: float) -> void:
+	camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
+	_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, delta * TPS_PULLBACK_SMOOTHING)
+	_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, delta * TPS_LEAD_SMOOTHING)
+
+
 func _update_camera_position(delta):
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
@@ -507,12 +518,7 @@ func _update_camera_position(delta):
 			camera_target_pitch = camera_angle
 			camera_target_yaw = current_angle
 
-			# TPS shoulder framing must not leak into ISOMETRIC — decay it back to 0.
-			camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
-			# Sprint pull-back and camera lead must not survive a trip through
-			# ISOMETRIC either.
-			_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, delta * TPS_PULLBACK_SMOOTHING)
-			_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, delta * TPS_LEAD_SMOOTHING)
+			_decay_tps_state(delta)
 
 	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
 	# from view_transition_speed so steady-state follow lag and the
