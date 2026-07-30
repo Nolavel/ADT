@@ -78,6 +78,7 @@ signal state_changed(new_state: MovementState)
 
 ## --- Initialization ---
 func _ready():
+	add_to_group("player")
 	_setup_animation_tree()
 	if navigation_component:
 		navigation_component.path_updated.connect(_on_path_updated)
