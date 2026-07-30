@@ -1,22 +1,22 @@
 # =============================================================================
 # on_foot_camera_component.gd
-# Компонент камеры для PlayerState.Mode.ON_FOOT.
+# Camera component for PlayerState.Mode.ON_FOOT.
 #
-# Логика перенесена из старого монолитного camera_follow.gd БЕЗ ИЗМЕНЕНИЙ
-# (orbital Q/E, TPS↔ISOMETRIC переключение V, follow P, zoom колесом) — по
-# ничего здесь пока не чистим и не переделываем, только переносим.
+# Logic moved here unchanged from the old monolithic camera_follow.gd
+# (orbital Q/E, TPS<->ISOMETRIC toggle via V, follow via P, wheel zoom) —
+# nothing here is being cleaned up or reworked yet, only relocated.
 #
-# Компонент не Camera3D сам по себе — он получает ссылку на реальную
-# камеру (camera) и на цель (target) от хоста и пишет прямо в
-# camera.global_position/global_rotation, когда активен.
+# The component isn't a Camera3D itself — it gets a reference to the real
+# camera (camera) and the target (target) from its host, and writes
+# directly into camera.global_position/global_rotation while active.
 # =============================================================================
 extends Node
 class_name OnFootCameraComponent
 
-## Единственный сигнал наружу про зум — HUD-виджеты (линейка) подписываются
-## сюда вместо того, чтобы сами читать Input. _handle_zoom_input() —
-## единственное законное место в проекте, где физически читается
-## zoom_in/zoom_out.
+## The only outward signal about zoom — HUD widgets (the ruler) subscribe
+## here instead of reading Input themselves. _handle_zoom_input() is the
+## only legitimate place in the project where zoom_in/zoom_out is
+## physically read.
 signal zoom_input_received()
 
 ## Not proportional to BODY_HEIGHT on purpose — camera distance is taste, not
@@ -120,7 +120,8 @@ var _tps_lock_distance: float = TPS_DISTANCE
 @export var view_transition_speed: float = 4.0
 
 @export_group("TPS View")
-## Плейсхолдер — подобрать по месту, главное сохранена логика возврата в ISOMETRIC.
+## Placeholder value — tune in place; what matters is that the
+## return-to-ISOMETRIC logic is preserved.
 @export var tps_angle: float = -10.0
 
 @export_group("Look")
@@ -143,11 +144,11 @@ var _tps_lock_distance: float = TPS_DISTANCE
 @export var follow_rotation_damping: float = 3.0
 @export var follow_rotation_delay: float = 0.2
 
-## --- Ссылки, назначаются хостом перед enter() ---
+## --- References, assigned by the host before enter() ---
 var camera: Camera3D
 var target: Node3D
 
-## --- Опциональные лейблы для дебага (назначаются хостом, могут быть null) ---
+## --- Optional debug labels (assigned by the host, may be null) ---
 var lbl_current_mode: Label
 var lbl_orbital: Label
 var lbl_follow: Label
@@ -169,8 +170,8 @@ var current_angle: float = 0.0
 var player_rotation_timer: float = 0.0
 var last_player_rotation: float = 0.0
 
-## Единственный источник истины о текущем виде — PlayerState.view_mode.
-## Никакого параллельного bool/enum здесь больше не хранится.
+## The single source of truth for the current view is PlayerState.view_mode.
+## No parallel bool/enum is kept here anymore.
 
 var camera_target_pos: Vector3
 var camera_current_pos: Vector3
@@ -180,23 +181,23 @@ var camera_target_yaw: float
 var camera_current_yaw: float
 
 # === ZOOM SYSTEM ===
-# Единый "слайдер" через цепочку TPS ↔ ISOMETRIC.
-# TOPDOWN убран (см. заметку в идейнике Miro) — на ON_FOOT остаются
-# только TPS и ISOMETRIC.
-# Внутри каждого режима — свой диапазон дистанции; переход между режимами
-# происходит через V только когда зум упёрся в соответствующий край.
+# One continuous "slider" across the TPS <-> ISOMETRIC chain.
+# TOPDOWN was removed (see the note in the Miro concept board) — ON_FOOT
+# only has TPS and ISOMETRIC left.
+# Each mode has its own distance range; switching between modes via V only
+# happens once the zoom has hit the matching edge.
 var current_zoom_distance: float = 0.0
 var target_zoom_distance: float = 0.0
 var zoom_animating: bool = false
 var zoom_anim_time: float = 0.0
 var zoom_start_distance: float = 0.0
 
-const ISOMETRIC_ZOOM_MIN: float = 10.0   # ближний край (приблизили до упора) → V → TPS
-const ISOMETRIC_ZOOM_MAX: float = 17.5   # дальний край — просто предел зума, без перехода
-const TPS_ZOOM_MIN: float = 3.0          # дальше некуда, тупик (продолжение приближения)
-const TPS_ZOOM_MAX: float = 6.0          # дальний край → V → назад в ISOMETRIC
+const ISOMETRIC_ZOOM_MIN: float = 10.0   # near edge (zoomed all the way in) -> V -> TPS
+const ISOMETRIC_ZOOM_MAX: float = 17.5   # far edge — just a zoom limit, no transition
+const TPS_ZOOM_MIN: float = 3.0          # nowhere further to go, a dead end (still lets you keep zooming in)
+const TPS_ZOOM_MAX: float = 6.0          # far edge -> V -> back to ISOMETRIC
 const ZOOM_STEP: float = 2.5
-const ZOOM_EDGE_EPSILON: float = 0.05    # допуск сравнения "упёрлись ли в край"
+const ZOOM_EDGE_EPSILON: float = 0.05    # tolerance for "did it hit the edge" comparisons
 
 # === ORBITAL ROTATION (Q/E) ===
 var orbit_rotation_animating: bool = false
@@ -227,7 +228,7 @@ var follow_target_angle: float = 0.0
 var _tps_combat := TpsCombatCameraState.new()
 var _shoulder := TpsShoulderCameraState.new()
 
-## Вызывается хостом один раз перед первым использованием (camera/target уже назначены).
+## Called once by the host before first use (camera/target are already assigned).
 func setup() -> void:
 	current_angle = POSITION_ANGLES[current_position]
 	target_angle = current_angle
@@ -243,7 +244,7 @@ func setup() -> void:
 	_tps_pitch_deg = tps_angle
 
 
-## Вызывается хостом при входе в ON_FOOT (в т.ч. при возврате из MENU).
+## Called by the host on entering ON_FOOT (including returning from MENU).
 func enter() -> void:
 	camera_current_pos = camera.global_position
 
@@ -262,8 +263,8 @@ func update(delta: float) -> void:
 	_handle_view_toggle()
 
 	if view == PlayerState.ViewMode.TPS:
-		# В TPS камера всегда позади игрока — orbit (Q/E) и toggle_follow (P)
-		# здесь не действуют, это не их зона ответственности.
+		# In TPS the camera is always behind the player — orbit (Q/E) and
+		# toggle_follow (P) don't apply here, it isn't their responsibility.
 		_handle_tps_follow(delta)
 		_handle_shoulder_toggle()
 	else:
@@ -573,7 +574,7 @@ func _update_camera_position(delta):
 
 func _handle_follow_toggle():
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		return  # в TPS слежение не переключаемо — оно всегда включено по своей природе
+		return  # follow isn't toggleable in TPS — it's inherently always on
 	if InputSystems.is_toggle_follow_just_pressed():
 		follow_player_rotation = !follow_player_rotation
 		if follow_player_rotation:
@@ -617,9 +618,10 @@ func is_equal_approx_eps(a: float, b: float) -> bool:
 	return abs(a - b) <= ZOOM_EDGE_EPSILON
 
 
-## Единая точка перехода между видами. Переход всегда срабатывает строго
-## на краю диапазона (см. _handle_view_toggle), поэтому ratio-mapping не
-## нужен — просто входим в новый вид на его граничном значении зума.
+## The single point of transition between views. The switch always fires
+## right at the edge of the range (see _handle_view_toggle), so no
+## ratio-mapping is needed — we just enter the new view at its boundary
+## zoom value.
 func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 	view_start_distance = current_zoom_distance
 	view_start_pitch = camera_current_pitch
@@ -630,7 +632,7 @@ func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 			view_target_pitch = _tps_pitch_deg
 
 		PlayerState.ViewMode.ISOMETRIC:
-			# из TPS — входим на ближнем крае ISO, лицом куда смотрел игрок
+			# coming from TPS — enter at ISO's near edge, facing where the player was looking
 			view_target_distance = ISOMETRIC_ZOOM_MIN
 			target_angle = target.rotation.y + PI
 			current_angle = target_angle
@@ -668,7 +670,7 @@ func _handle_rotation_input():
 	if follow_player_rotation:
 		return
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		return  # орбита не применима — камера жёстко позади игрока
+		return  # orbit doesn't apply — the camera is locked behind the player
 	if InputSystems.is_lean_left_just_pressed():
 		_rotate_camera_left()
 	elif InputSystems.is_lean_right_just_pressed():
@@ -772,8 +774,8 @@ func get_combat_state() -> TpsCombatCameraState:
 	return _tps_combat
 
 
-## Публичный геттер для HUD-виджета (линейка зума) — какой диапазон
-## дистанции актуален для текущего view_mode.
+## Public getter for the HUD widget (zoom ruler) — which distance range
+## is current for the active view_mode.
 func get_current_zoom_range() -> Vector2:
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
