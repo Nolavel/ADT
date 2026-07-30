@@ -15,7 +15,7 @@ Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
 methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
 reads raw `KEY_*` deliberately.
 
-Action count: **29** — 25 live, 4 reserved and unread.
+Action count: **30** — 26 live, 4 reserved and unread.
 
 ---
 
@@ -27,6 +27,7 @@ Active regardless of `PlayerState.mode`.
 |---|---|---|---|
 | `pause` | `Esc` | Open / close pause menu; owns `get_tree().paused` via `PlayerState` | Меню паузы |
 | `toggle_stream_debug` | `\` | Toggle the streaming debug panel (observer only) | Панель отладки стриминга |
+| `toggle_perception_debug` | `]` | Toggle the NPC perception debug panel (observer only) | Панель отладки восприятия NPC |
 
 ---
 

@@ -38,6 +38,8 @@ signal crafting_pressed()
 signal map_pressed()
 ## Тумблер дебаг-панели стриминга (action "toggle_stream_debug").
 signal stream_debug_toggled()
+## Тумблер дебаг-панели восприятия NPC (action "toggle_perception_debug").
+signal perception_debug_toggled()
 
 ## Тап/холд по "toggle_tabs" — тайминг нажатия это свойство физического
 ## ввода, поэтому таймер живёт здесь, а не в потребителе.
@@ -199,6 +201,8 @@ func _handle_ui_hotkeys() -> void:
 		map_pressed.emit()
 	if Input.is_action_just_pressed("toggle_stream_debug"):
 		stream_debug_toggled.emit()
+	if Input.is_action_just_pressed("toggle_perception_debug"):
+		perception_debug_toggled.emit()
 
 
 ## ============================================
