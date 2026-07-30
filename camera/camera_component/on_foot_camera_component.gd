@@ -56,6 +56,11 @@ const TPS_LEAD_DISTANCE: float = 0.6
 ## drift in, not snap when the character starts moving.
 const TPS_LEAD_SMOOTHING: float = 2.5
 
+## How fast the camera dollies to (and back from) a lock-on distance
+## override. A first guess, not tuned by ear/eye yet — the dolly needs a
+## running lock-on target to actually see.
+const TPS_LOCK_DISTANCE_SMOOTHING: float = 4.0
+
 ## Used only if `target` doesn't expose character-metric getters (see
 ## _target_metric_height()) — a safe non-zero default instead of silently
 ## pivoting/casting at ground level.
@@ -92,6 +97,17 @@ var _tps_sprint_pullback: float = 0.0
 ## TPS_LEAD_DISTANCE at TPS_LEAD_SMOOTHING. Same decay-in-both-modes rule as
 ## _tps_sprint_pullback.
 var _tps_lead_offset: Vector3 = Vector3.ZERO
+## Latest distance_override reported by TpsCombatCameraState.update(), read
+## every frame in _handle_tps_follow(). -1.0 means "don't override" (that
+## dictionary's own convention, shared by EXPLORE and any non-positive
+## LOCKED/TRANSITION value).
+var _tps_lock_distance_override: float = -1.0
+## Smoothed camera distance: eased toward TPS_DISTANCE normally, or toward
+## _tps_lock_distance_override while LOCKED/TRANSITION report a positive
+## one, so a lock-on dolly reads as a push-in, not a snap. Decayed back to
+## TPS_DISTANCE in ISOMETRIC by _decay_tps_state(), same rule as every
+## other TPS-only smoothed value.
+var _tps_lock_distance: float = TPS_DISTANCE
 
 @export var rotation_speed: float = 8.0
 
@@ -305,8 +321,8 @@ func _handle_tps_follow(delta: float) -> void:
 	var result := _tps_combat.update(delta, target, camera_target_yaw)
 	_tps_pitch_offset_deg = result.pitch_offset_deg
 	if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
-		# distance is fixed in TPS — ignore combat distance_override
 		camera_target_yaw = result.yaw
+	_tps_lock_distance_override = result.distance_override
 
 
 func _update_zoom_animation(delta: float):
@@ -458,6 +474,7 @@ func _decay_tps_state(delta: float) -> void:
 	camera.h_offset = lerp(camera.h_offset, 0.0, Smoothing.damp_factor(8.0, delta))
 	_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
 	_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, Smoothing.damp_factor(TPS_LEAD_SMOOTHING, delta))
+	_tps_lock_distance = lerp(_tps_lock_distance, TPS_DISTANCE, Smoothing.damp_factor(TPS_LOCK_DISTANCE_SMOOTHING, delta))
 
 
 func _update_camera_position(delta):
@@ -469,7 +486,18 @@ func _update_camera_position(delta):
 
 			var speed_ratio := _target_speed_ratio()
 			_tps_sprint_pullback = lerp(_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
-			var effective_distance := TPS_DISTANCE + _tps_sprint_pullback
+
+			# Lock-on dolly: base distance is TPS_DISTANCE, unless combat
+			# reports a positive distance_override while LOCKED/TRANSITION —
+			# smoothed so the push-in isn't an instant snap.
+			var combat_locking := _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED \
+					or _tps_combat.state == TpsCombatCameraState.TpsState.TRANSITION
+			var base_distance := TPS_DISTANCE
+			if combat_locking and _tps_lock_distance_override > 0.0:
+				base_distance = _tps_lock_distance_override
+			_tps_lock_distance = lerp(_tps_lock_distance, base_distance, Smoothing.damp_factor(TPS_LOCK_DISTANCE_SMOOTHING, delta))
+
+			var effective_distance := _tps_lock_distance + _tps_sprint_pullback
 
 			var horizontal_distance = effective_distance * cos(pitch_rad)
 			var vertical_distance = -effective_distance * sin(pitch_rad)
