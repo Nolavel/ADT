@@ -151,9 +151,8 @@ func _update_lock_on_debug() -> void:
 		return
 
 	var combat := _on_foot.get_combat_state()
-	var state_name := TpsCombatCameraState.TpsState.keys()[combat.state]
-	var target_name := combat.locked_target.name \
-			if is_instance_valid(combat.locked_target) else "null"
+	var state_name: String = str(TpsCombatCameraState.TpsState.keys()[combat.state])
+	var target_name: String = str(combat.locked_target.name) if is_instance_valid(combat.locked_target) else "null"
 
 	var lines: Array[String] = []
 	lines.append("state: %s   locked_target: %s" % [state_name, target_name])
