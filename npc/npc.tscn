@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://npc/npc_base.gd" id="1_base"]
 [ext_resource type="Script" path="res://npc/controllers/idle_npc_controller.gd" id="2_idle"]
+[ext_resource type="Script" path="res://npc/npc_components/perception_component/perception_component.gd" id="3_perception"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_npc"]
 radius = 0.388
@@ -34,3 +35,6 @@ mesh = SubResource("BoxMesh_npc_head")
 
 [node name="IdleNPCController" type="Node" parent="."]
 script = ExtResource("2_idle")
+
+[node name="PerceptionComponent" type="Node3D" parent="."]
+script = ExtResource("3_perception")
