@@ -84,12 +84,12 @@ var _warned_missing_speed_ratio: bool = false
 ## get_horizontal_direction(), so the warning doesn't spam every frame.
 var _warned_missing_horizontal_direction: bool = false
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
-## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING. Only updated while in TPS
-## (see _update_camera_position) — frozen at its last value otherwise, and
-## resumes lerping toward the current ratio when TPS is re-entered.
+## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING in TPS, and back toward 0
+## at the same rate in ISOMETRIC (see _update_camera_position) — never
+## frozen, so it can't leak a stale value across a mode switch either way.
 var _tps_sprint_pullback: float = 0.0
 ## Smoothed camera-lead offset, eased toward direction * speed_ratio *
-## TPS_LEAD_DISTANCE at TPS_LEAD_SMOOTHING. Same TPS-only update rule as
+## TPS_LEAD_DISTANCE at TPS_LEAD_SMOOTHING. Same decay-in-both-modes rule as
 ## _tps_sprint_pullback.
 var _tps_lead_offset: Vector3 = Vector3.ZERO
 
