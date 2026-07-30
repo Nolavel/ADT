@@ -1,6 +1,6 @@
 # InputMap
 
-> Verified against `project.godot` on **2026-07-29** · Godot 4.7 · GDScript
+> Verified against `project.godot` on **2026-07-30** · Godot 4.7 · GDScript
 
 **This document is the single source of truth for input bindings.** Update it
 in the same commit as any action added, removed or rebound in
@@ -47,9 +47,6 @@ Active regardless of `PlayerState.mode`.
 | `status` | `X` | Status | Статус |
 | `toggle_tabs` | `Tab` | Tap — notifier; hold — status camera | Тап/холд — уведомление/статус-камера |
 
-> ⚠ **`toggle_tabs` and `lock_on` are both bound to `Tab`** and both are
-> on-foot actions. Unresolved collision — see `docs/planned_scope.md`.
-
 ---
 
 ## 3. ON_FOOT — ISOMETRIC only
@@ -77,7 +74,7 @@ Direct movement. `TPSMovementSystem` feeds `player.gd` every physics frame.
 | `jump` | `Space` | Jump | Прыжок |
 | `sprint` | `Shift` | Sprint; consumes stamina | Бег |
 | `switch_shoulder` | `Z` | Swap camera shoulder (`TpsShoulderCameraState`) | Смена плеча камеры |
-| `lock_on` | `Tab` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |
+| `lock_on` | `G` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |
 
 `lock_on` searches the `lockable` group. Occlusion-aware target selection is
 a known TODO, blocked on a raycast service that does not exist yet.

@@ -78,13 +78,6 @@ unread at the next review, they go.
 
 ---
 
-## Known conflict
-
-`toggle_tabs` and `lock_on` are both bound to `Tab`, and both are on-foot
-actions. This is an unresolved collision, not a design decision.
-
----
-
 ## Not started, not stubbed
 
 Named here so the absence is deliberate rather than overlooked:
