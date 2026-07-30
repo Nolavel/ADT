@@ -455,6 +455,8 @@ func _update_camera_position(delta):
 
 			# TPS shoulder framing must not leak into ISOMETRIC — decay it back to 0.
 			camera.h_offset = lerp(camera.h_offset, 0.0, delta * 8.0)
+			# Sprint pull-back must not survive a trip through ISOMETRIC either.
+			_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, delta * TPS_PULLBACK_SMOOTHING)
 
 	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
 	# from view_transition_speed so steady-state follow lag and the
