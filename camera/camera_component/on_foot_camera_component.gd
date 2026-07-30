@@ -195,6 +195,11 @@ var view_start_distance: float = 0.0
 var view_target_distance: float = 0.0
 var view_start_pitch: float = 0.0
 var view_target_pitch: float = 0.0
+## Set when V is pressed in ISOMETRIC away from ISOMETRIC_ZOOM_MIN: drives
+## the existing zoom animation to the edge first, then switches to TPS once
+## it lands there. A second V press while that zoom is in flight clears this
+## instead of queuing another switch (see _handle_view_toggle()).
+var _pending_tps_switch: bool = false
 
 # === FOLLOW ROTATION (P) ===
 var follow_rotation_animating: bool = false
@@ -256,6 +261,13 @@ func update(delta: float) -> void:
 	_update_orbit_rotation_animation(delta)
 	_update_view_mode_animation(delta)
 	_update_follow_rotation_animation(delta)
+
+	if _pending_tps_switch and not zoom_animating:
+		_pending_tps_switch = false
+		# Re-check the edge: a wheel zoom could have retargeted the slider
+		# away from ISOMETRIC_ZOOM_MIN while this was in flight.
+		if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
+			_transition_to_view(PlayerState.ViewMode.TPS)
 
 	if not orbit_rotation_animating and not follow_rotation_animating:
 		current_angle = lerp_angle(current_angle, target_angle, delta * rotation_speed)
@@ -538,15 +550,28 @@ func _handle_follow_toggle():
 func _handle_view_toggle():
 	if not InputSystems.is_toggle_view_just_pressed():
 		return
-	if zoom_animating or view_mode_animating:
-		return
+	if view_mode_animating:
+		return  # a view-mode transition is already running; ignore V until it settles
 
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.ISOMETRIC:
+			if zoom_animating:
+				# V pressed again while auto-zooming to the edge for a pending
+				# TPS switch — cancel the intent, don't queue a second one.
+				_pending_tps_switch = false
+				return
 			if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
 				_transition_to_view(PlayerState.ViewMode.TPS)
+			else:
+				# Not at the edge yet: drive the existing zoom slider there
+				# first (reusing _start_zoom, not a new animation), then
+				# switch once _pending_tps_switch is consumed in update().
+				_pending_tps_switch = true
+				_start_zoom(ISOMETRIC_ZOOM_MIN - target_zoom_distance)
 		PlayerState.ViewMode.TPS:
 			# No zoom requirement to exit TPS — V always switches back
+			# instantly, and always wins over any pending ISO->TPS intent.
+			_pending_tps_switch = false
 			_transition_to_view(PlayerState.ViewMode.ISOMETRIC)
 
 
