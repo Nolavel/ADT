@@ -1,19 +1,19 @@
 # =============================================================================
 # InputSystems.gd — autoload, extends Node.
 #
-# Единственная ответственность: превращать физический Input Godot в сигналы.
-# НИКАКОЙ игровой логики здесь быть не должно:
-#   - не решает, что означает нажатие (это дело подписчика);
-#   - не хранит режим игрока (источник истины — PlayerState.mode/view_mode);
-#   - не делает рейкасты, не двигает игрока, не открывает UI.
+# Single responsibility: turn Godot's physical Input into signals.
+# NO game logic belongs here:
+#   - it doesn't decide what a press means (that's the subscriber's job);
+#   - it doesn't hold the player's mode (source of truth is PlayerState.mode/view_mode);
+#   - it doesn't raycast, move the player, or open UI.
 #
-# Кто на что подписывается и когда — решает сам подписчик, реагируя на
-# PlayerState.mode_changed / view_mode_changed. InputSystems эмитит сигналы
-# безусловно, всегда.
+# Who subscribes to what, and when, is decided by the subscriber itself,
+# reacting to PlayerState.mode_changed / view_mode_changed. InputSystems
+# emits its signals unconditionally, always.
 # =============================================================================
 extends Node
 
-## --- Клик мышью (сырые события, без интерпретации "что это значит") ---
+## --- Mouse click (raw events, no interpretation of "what it means") ---
 signal primary_click_pressed(screen_pos: Vector2)
 signal primary_click_released(screen_pos: Vector2)
 
@@ -24,33 +24,33 @@ signal secondary_click_released(screen_pos: Vector2)
 
 
 ## --- Interact ---
-## Прототип-эксперимент с hold-таймером на Interact убран (был не тем,
-## что нужно по факту — держать R ~1 сек как отдельный action).
-## Пока просто пробрасываем just_pressed. Hold-механику вернём отдельной
-## задачей, когда будет ясна финальная задумка.
+## The hold-timer prototype for Interact was removed (it wasn't actually
+## what was needed — holding R for ~1s as a separate action).
+## For now this just forwards just_pressed. Hold behaviour comes back as
+## its own task once the final design is settled.
 signal interact_pressed()
 
-## --- Хоткеи UI (пока без потребителей — просто транслируются) ---
+## --- UI hotkeys (no consumers yet — just relayed) ---
 signal pause_pressed()
 signal status_pressed()
 signal inventory_pressed()
 signal crafting_pressed()
 signal map_pressed()
-## Тумблер дебаг-панели стриминга (action "toggle_stream_debug").
+## Toggle for the streaming debug panel (action "toggle_stream_debug").
 signal stream_debug_toggled()
-## Тумблер дебаг-панели восприятия NPC (action "toggle_perception_debug").
+## Toggle for the NPC perception debug panel (action "toggle_perception_debug").
 signal perception_debug_toggled()
 
-## Тап/холд по "toggle_tabs" — тайминг нажатия это свойство физического
-## ввода, поэтому таймер живёт здесь, а не в потребителе.
+## Tap/hold on "toggle_tabs" — press timing is a property of the physical
+## input, so the timer lives here, not in the consumer.
 signal tabs_key_tapped()
 signal tabs_key_held()
 
-## ── Маршрутизация interact ──────────────────────────────────────────────
-## Пока claim удерживается (игрок в зоне двери ховера или на борту),
-## interact уходит владельцу claim напрямую, сигнал interact_pressed
-## НЕ излучается — InteractComponent в это время слеп. Один владелец
-## решения вместо гонки подписчиков.
+## ── Interact routing ──────────────────────────────────────────────────
+## While a claim is held (player at a hover door or aboard one), interact
+## goes straight to the claim's owner; the interact_pressed signal is NOT
+## emitted — InteractComponent is blind during that time. One owner makes
+## the decision, instead of subscribers racing each other.
 var _interact_claimant: Node = null
 
 const TABS_HOLD_TIME: float = 0.5
@@ -71,8 +71,8 @@ var _frame_look_delta: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
-	# ALWAYS — иначе после PlayerState.open_menu() (get_tree().paused = true)
-	# этот autoload перестанет получать _unhandled_input и Escape не сработает.
+	# ALWAYS — otherwise after PlayerState.open_menu() (get_tree().paused = true)
+	# this autoload stops receiving _unhandled_input and Escape stops working.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	PlayerState.mode_changed.connect(_on_player_mode_changed)
 	PlayerState.view_mode_changed.connect(_on_player_view_mode_changed)
@@ -84,9 +84,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		_mouse_look_delta += event.relative * MOUSE_SENSITIVITY
 
-## Escape ("pause") ловим отдельно от физики — работает независимо от
-## текущей паузы и режима. Само решение что делать по этому сигналу —
-## у MenuSystem, InputSystems лишь оповещает.
+## Escape ("pause") is caught separately from physics — works regardless of
+## the current pause state or mode. The decision of what to do with this
+## signal belongs to MenuSystem; InputSystems only notifies.
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		pause_pressed.emit()
@@ -145,7 +145,7 @@ func release_interact(claimant: Node) -> void:
 
 
 ## ============================================
-## КЛИКИ МЫШЬЮ
+## MOUSE CLICKS
 ## ============================================
 func _handle_primary_click() -> void:
 	if Input.is_action_just_pressed("mouse_left_button"):
@@ -171,8 +171,8 @@ func _handle_secondary_click(delta: float) -> void:
 
 
 ## ============================================
-## TABS KEY (тап = notifier, холд = status-camera) — интерпретацию тапа/
-## холда потребитель делает сам, мы просто различаем их по таймингу.
+## TABS KEY (tap = notifier, hold = status camera) — the consumer
+## interprets tap/hold itself; we just tell them apart by timing.
 ## ============================================
 func _handle_tabs_key(delta: float) -> void:
 	if Input.is_action_just_pressed("toggle_tabs"):
@@ -190,7 +190,7 @@ func _handle_tabs_key(delta: float) -> void:
 
 
 ## ============================================
-## ПРОЧИЕ UI-ХОТКЕИ
+## OTHER UI HOTKEYS
 ## ============================================
 func _handle_ui_hotkeys() -> void:
 	if Input.is_action_just_pressed("status"):
@@ -206,15 +206,15 @@ func _handle_ui_hotkeys() -> void:
 
 
 ## ============================================
-## QUERY-МЕТОДЫ — для мест, где сигнальная модель не подходит напрямую
-## (камера читает ввод в своём собственном update(delta), которым управляет
-## хост camera_follow.gd, а не физический кадр InputSystems; WASD/Shift —
-## per-frame held-состояние, а не дискретное событие). Раньше эти места
-## звали Input.* напрямую — теперь физически весь Input.* вызывается
-## только здесь, в InputSystems, а потребители зовут эти обёртки.
+## QUERY METHODS — for places where the signal model doesn't fit directly
+## (the camera reads input inside its own update(delta), driven by its host
+## camera_follow.gd, not InputSystems' physics frame; WASD/Shift are
+## per-frame held state, not a discrete event). These places used to call
+## Input.* directly — now every Input.* call physically happens only here,
+## in InputSystems, and consumers call these wrappers instead.
 ## ============================================
 
-## --- Камера (on_foot_camera_component.gd) ---
+## --- Camera (on_foot_camera_component.gd) ---
 func is_toggle_follow_just_pressed() -> bool:
 	return Input.is_action_just_pressed("toggle_follow")
 
@@ -234,7 +234,7 @@ func is_zoom_out_just_released() -> bool:
 	return Input.is_action_just_released("zoom_out")
 
 
-## --- Прыжок (player.gd + dynamic_cursor_ui.gd) ---
+## --- Jump (player.gd + dynamic_cursor_ui.gd) ---
 func is_jump_just_pressed() -> bool:
 	return Input.is_action_just_pressed("jump")
 
@@ -242,7 +242,7 @@ func is_jump_held() -> bool:
 	return Input.is_action_pressed("jump")
 
 
-## --- Движение TPS (tps_movement_system.gd) ---
+## --- TPS movement (tps_movement_system.gd) ---
 func get_move_axis() -> Vector2:
 	return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 
@@ -255,12 +255,12 @@ func is_lock_on_just_pressed() -> bool:
 func is_switch_shoulder_just_pressed() -> bool:
 	return Input.is_action_just_pressed("switch_shoulder")
 
-## Горизонтальные намерения: x = вправо, y = вперёд (+1), длина ≤ 1.
+## Horizontal intent: x = right, y = forward (+1), length <= 1.
 func get_move_vector() -> Vector2:
 	return Input.get_vector("move_left", "move_right",
 			"move_backward", "move_forward")
 
-## Вертикальная ось ховера: +1 вверх (hover_up), −1 вниз (hover_down).
+## Hover's vertical axis: +1 up (hover_up), -1 down (hover_down).
 func get_hover_vertical_axis() -> float:
 	return Input.get_axis("hover_down", "hover_up")
 	
