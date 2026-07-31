@@ -70,7 +70,7 @@ var WORLD_3D_ENTITY_SCENES: Array[PackedScene] = [
 
 ## 3) Screen-space UI сцены — instantiate(), родитель = общий CanvasLayer.
 var WORLD_UI_SCENES: Array[PackedScene] = [
-	preload("res://ui/debug/stream_debug_panel.tscn"),
+	#preload("res://ui/debug/stream_debug_panel.tscn"),
 	preload("res://ui/debug/perception_debug_panel.tscn"),
 ]
 

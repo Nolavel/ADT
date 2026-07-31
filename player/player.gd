@@ -45,6 +45,28 @@ var speed: float = 0.0
 var target_speed: float = 0.0
 var movement_enabled: bool = true
 
+## --- Procedural Head LookAt ---
+const HEAD_BONE_NAME: StringName = &"Head"
+## RU: Скорость подтяжки маркера к целевой точке.
+const HEAD_LOOK_SMOOTH: float = 8.0
+## RU: На каком удалении держится точка взгляда, м.
+const HEAD_LOOK_DISTANCE: float = 5.0
+## RU: Скорость ввода/вывода модификатора через influence, 1/сек.
+const HEAD_LOOK_FADE_SPEED: float = 4.0
+ 
+var _skeleton: Skeleton3D
+var _head_lookat: LookAtModifier3D
+var _head_look_node: Node3D
+## RU: Текущее влияние модификатора 0..1. Затухание идёт ИМ, а не подтяжкой
+##     цели к нейтрали: influence не зависит от расстояния до цели, а прошлый
+##     вариант сходился тем дольше, чем дальше смотрел персонаж.
+var _head_look_influence: float = 0.0
+ 
+## RU: Мировая точка взгляда для ISOMETRIC. Пишется снаружи через
+##     set_head_look_point(); сам player.gd камеру не знает и рейкастов не шлёт.
+var _look_point: Vector3 = Vector3.ZERO
+var _look_point_valid: bool = false
+
 ## Camera yaw reference for TLOU-style idle rotation and backpedal detection.
 ## Set by TPSMovementSystem every physics frame.
 var _camera_yaw: float = 0.0
@@ -80,6 +102,7 @@ signal state_changed(new_state: MovementState)
 func _ready():
 	add_to_group("player")
 	_setup_animation_tree()
+	_setup_head_look()
 	if navigation_component:
 		navigation_component.path_updated.connect(_on_path_updated)
 		navigation_component.destination_reached.connect(_on_destination_reached)
@@ -124,6 +147,49 @@ func _setup_animation_tree() -> void:
 	_anim_tree.anim_player = player_animation_player.get_path()
 	add_child(_anim_tree)
 	_anim_tree.active = true
+	
+func _setup_head_look() -> void:
+	_skeleton = get_node_or_null(
+		"player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton"
+	) as Skeleton3D
+	if _skeleton == null:
+		push_warning("[Player] Skeleton3D не найден — head look отключён")
+		return
+ 
+	## RU: Сначала по имени, потом перебором по типу. В прошлой версии ветка
+	##     перебора находила модификатор и тут же безусловно возвращалась,
+	##     не дойдя до настройки — из-за этого весь head look молча не работал.
+	_head_lookat = _skeleton.get_node_or_null("LookAt") as LookAtModifier3D
+	if _head_lookat == null:
+		for child in _skeleton.get_children():
+			if child is LookAtModifier3D:
+				_head_lookat = child
+				break
+	if _head_lookat == null:
+		push_warning("[Player] LookAtModifier3D не найден под Skeleton3D — head look отключён")
+		return
+ 
+	## RU: Маркер цели. Создаём до того, как отдать путь модификатору.
+	_head_look_node = Node3D.new()
+	_head_look_node.name = "HeadLookTarget"
+	add_child(_head_look_node)
+	_head_look_node.global_position = (
+		global_position + get_facing_direction() * HEAD_LOOK_DISTANCE
+		+ Vector3.UP * get_eye_height()
+	)
+ 
+	_head_lookat.bone_name = HEAD_BONE_NAME
+	## RU: Имя свойства именно use_angle_limitation. use_angle_limits не
+	##     существует, присваивание в него — runtime-ошибка.
+	_head_lookat.use_angle_limitation = true
+	_head_lookat.target_node = _head_lookat.get_path_to(_head_look_node)
+	## RU: active, а не enabled. enabled у SkeletonModifier3D нет.
+	_head_lookat.active = false
+	_head_lookat.influence = 0.0
+ 
+	## RU: Если голова смотрит вбок или вниз при верной цели — дело не в
+	##     математике, а в forward_axis: по умолчанию +Z, у импортированных
+	##     ригов «вперёд» головы часто по −Z или +Y. Правится в инспекторе.
 
 ## --- Public API ---
 func move_to_position(pos: Vector3) -> void:
@@ -239,6 +305,7 @@ func _physics_process(delta: float) -> void:
 
 	_update_speed(delta)
 	_update_animation_blend(delta)
+	_update_head_look(delta)
 
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
 		_apply_direct_movement(delta)
@@ -505,6 +572,66 @@ func get_state_name() -> String:
 		MovementState.RUNNING: return "бежит"
 		MovementState.DECELERATING: return "тормозит"
 		_: return "неизвестно"
+		
+## Head look-at: in TPS idle, head smoothly follows camera direction.
+## Disabled during movement so animation clips control the head.
+## Disabled in ISO/MENU/Hover so it doesn't fight click-to-move or cutscenes.
+func _update_head_look(delta: float) -> void:
+	if _head_lookat == null or _head_look_node == null:
+		return
+ 
+	var want: bool = false
+	var target_pos: Vector3 = Vector3.ZERO
+ 
+	if PlayerState.mode == PlayerState.Mode.ON_FOOT:
+		match PlayerState.view_mode:
+			PlayerState.ViewMode.TPS:
+				if speed < IDLE_ENTER_SPEED:
+					## RU: +PI обязателен. Камера смотрит вдоль −Z, а проект
+					##     держит визуальным «вперёд» +Z (см. комментарий к
+					##     get_facing_direction). Без +PI голова смотрит В
+					##     объектив вместо того, куда смотрит игрок.
+					var cam_angle: float = _camera_yaw + PI
+					var cam_dir := Vector3(sin(cam_angle), 0.0, cos(cam_angle))
+					target_pos = (
+						global_position + cam_dir * HEAD_LOOK_DISTANCE
+						+ Vector3.UP * get_eye_height()
+					)
+					want = true
+			_:
+				if _look_point_valid:
+					## RU: Точка приходит с пола — поднимаем на грудь, иначе
+					##     персонаж утыкается взглядом себе под ноги.
+					target_pos = _look_point + Vector3.UP * get_chest_height()
+					want = true
+ 
+	if not want:
+		target_pos = (
+			global_position + get_facing_direction() * HEAD_LOOK_DISTANCE
+			+ Vector3.UP * get_eye_height()
+		)
+ 
+	if want and _head_look_influence <= 0.001:
+		## RU: Первый кадр включения — ставим маркер сразу, без замаха от того
+		##     места, где он остался с прошлого раза.
+		_head_look_node.global_position = target_pos
+	else:
+		_head_look_node.global_position = _head_look_node.global_position.lerp(
+			target_pos, delta * HEAD_LOOK_SMOOTH
+		)
+ 
+	_head_look_influence = move_toward(
+		_head_look_influence, 1.0 if want else 0.0, delta * HEAD_LOOK_FADE_SPEED
+	)
+	_head_lookat.influence = _head_look_influence
+	_head_lookat.active = _head_look_influence > 0.001
+	
+func set_head_look_point(world_pos: Vector3) -> void:
+	_look_point = world_pos
+	_look_point_valid = true
+ 
+func clear_head_look_point() -> void:
+	_look_point_valid = false
 		
 func set_camera_yaw(yaw: float) -> void:
 	_camera_yaw = yaw

@@ -1429,6 +1429,10 @@ transform = Transform3D(-9.78012e-07, 1, -2.1539322e-06, -0.03690634, -2.22518e-
 bone_name = "LeftLowerArm"
 bone = 9
 
+[node name="LookAtModifier3D" type="LookAtModifier3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2088398475]
+bone_name = "Head"
+bone = 5
+
 [node name="DynamicCursorUI" type="Control" parent="." unique_id=1477939802]
 layout_mode = 3
 anchors_preset = 0
