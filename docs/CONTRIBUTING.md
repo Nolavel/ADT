@@ -71,6 +71,11 @@ and breaking them fails silently, not loudly.
 - **Attribute everything borrowed** — assets, references, code — in
   `CREDITS.md`, in the same commit that adds it.
 
+## A note on Claude Code
+
+CLAUDE.md isn't just documentation — it's a working brief for Claude Code, the AI tool the owner uses in the editor. If the tool pushes back on something from "Hard constraints" (renderer, autoloads, naming contracts), that's not the tool having an opinion — it's a decision the owner already made, just enforced automatically.
+If a constraint seems wrong or outdated, raise it with the owner directly rather than arguing with the tool or working around it. The tool executes decisions, it doesn't make them.
+
 ## Scope rules
 
 The project deliberately keeps the number of simultaneously live systems
