@@ -27,15 +27,6 @@
 extends CharacterBody3D
 class_name NPCBase
 
-## How fast this body turns to face its movement direction, rad/s equivalent
-## fed through Smoothing.damp_factor. Not exported — visual turn rate isn't
-## a tuning knob yet, unlike walk_speed.
-const TURN_SMOOTHING: float = 10.0
-## How fast the head turns toward its look target (and back to neutral).
-## Faster than TURN_SMOOTHING on purpose — heads snap to attention quicker
-## than the body reorients. This is a damp_factor() decay rate in "times per
-## second," not degrees or radians per second — see Smoothing.damp_factor().
-const HEAD_TURN_SMOOTHING: float = 15.0
 ## Head rotation limits relative to the body. Past these the head stops,
 ## rather than turning past what a neck can do.
 const HEAD_YAW_LIMIT_DEG: float = 70.0
@@ -45,6 +36,18 @@ const HEAD_PITCH_LIMIT_DEG: float = 30.0
 ## will vary. Landmark heights come from BodyMetrics ratios.
 @export var body_height: float = 1.8
 @export var walk_speed: float = 3.0
+
+@export_group("Turning")
+## How fast this body turns to face its movement direction or a facing
+## target, rad/s equivalent fed through Smoothing.damp_factor. A feel
+## value, tuned by eye — exported for that reason, same as walk_speed.
+@export var turn_smoothing: float = 10.0
+## How fast the head turns toward its look target (and back to neutral).
+## Faster than turn_smoothing on purpose — heads snap to attention quicker
+## than the body reorients. This is a damp_factor() decay rate in "times per
+## second," not degrees or radians per second — see Smoothing.damp_factor().
+## Exported for the same reason as turn_smoothing: a feel value, tuned by eye.
+@export var head_turn_smoothing: float = 15.0
 
 @export_group("Gravity")
 ## Same value and formula as player.gd's _apply_gravity(): one physical
@@ -169,7 +172,7 @@ func _face_move_direction(delta: float) -> void:
 		target_angle = atan2(horizontal_to_target.x, horizontal_to_target.z)
 	else:
 		return
-	rotation.y = lerp_angle(rotation.y, target_angle, Smoothing.damp_factor(TURN_SMOOTHING, delta))
+	rotation.y = lerp_angle(rotation.y, target_angle, Smoothing.damp_factor(turn_smoothing, delta))
 
 
 ## Aims _head at _look_target_point, clamped to HEAD_YAW_LIMIT_DEG/
@@ -204,7 +207,7 @@ func _update_head_look(delta: float) -> void:
 	target_yaw_deg = clampf(target_yaw_deg, -HEAD_YAW_LIMIT_DEG, HEAD_YAW_LIMIT_DEG)
 	target_pitch_deg = clampf(target_pitch_deg, -HEAD_PITCH_LIMIT_DEG, HEAD_PITCH_LIMIT_DEG)
 
-	var t := Smoothing.damp_factor(HEAD_TURN_SMOOTHING, delta)
+	var t := Smoothing.damp_factor(head_turn_smoothing, delta)
 	_head_yaw_deg = lerp(_head_yaw_deg, target_yaw_deg, t)
 	_head_pitch_deg = lerp(_head_pitch_deg, target_pitch_deg, t)
 
