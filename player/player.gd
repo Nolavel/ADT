@@ -265,18 +265,6 @@ func get_current_speed() -> float:
 	return speed
 
 
-func get_state_name() -> String:
-	if not movement_enabled:
-		return "заблокирован"
-
-	match current_state:
-		MovementState.IDLE: return "не движется"
-		MovementState.WALKING: return "идёт"
-		MovementState.RUNNING: return "бежит"
-		MovementState.DECELERATING: return "тормозит"
-		_: return "неизвестно"
-
-
 ## Reexported from PlayerAnimationComponent — see get_sprint_blend()'s
 ## comment for the contract this preserves.
 func set_head_look_point(world_pos: Vector3) -> void:

@@ -501,7 +501,7 @@ bind/1/pose = Transform3D(1.137049, 0, 0, 0, 9.157079e-17, 1.029025, 0, -1.02902
 radius = 0.4
 height = 1.6
 
-[node name="Player" type="CharacterBody3D" unique_id=528747953 node_paths=PackedStringArray("player_animation_player") groups=["Player"]]
+[node name="Player" type="CharacterBody3D" unique_id=528747953 node_paths=PackedStringArray("player_animation_player")]
 platform_floor_layers = 3
 platform_wall_layers = 3
 safe_margin = 0.03
