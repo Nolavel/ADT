@@ -60,9 +60,9 @@ func _init() -> void:
 	_noise.frequency = breathing_speed
 
 
-## Called from OnFootCameraComponent when the lock-on button is pressed.
-## TODO: currently reads Input directly — move the button read into
-## InputSystems (is_lock_on_just_pressed()), like the rest of this project's input.
+## Called from OnFootCameraComponent when the lock-on button is pressed
+## (OnFootCameraComponent reads it via InputSystems.is_lock_on_just_pressed()
+## before calling this — this method itself never touches Input).
 func try_toggle_lock(player: Node3D) -> void:
 	if state == TpsState.LOCKED:
 		_clear_lock()
@@ -200,7 +200,8 @@ func _start_transition(to_state: TpsState) -> void:
 var _pending_target_state: TpsState = TpsState.EXPLORE
 
 
-## Returns (yaw, pitch_override, distance_override, is_pitch_locked).
+## Returns a Dictionary with keys "yaw", "pitch_offset_deg" and
+## "distance_override" (-1.0 means "don't override").
 ## OnFootCameraComponent decides on its own how to apply this to camera_target_*.
 func update(delta: float, player: Node3D, current_yaw: float) -> Dictionary:
 	match state:
