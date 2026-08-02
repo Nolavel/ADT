@@ -87,6 +87,10 @@ Named here so the absence is deliberate rather than overlooked:
   the player. Perception exists; navigation, reactions, memory and animation
   do not. The design documents rest heavily on how the city reacts to the
   player; almost none of that reaction is built.
+- **Two head-turn implementations.** The player turns its head with a
+  `LookAtModifier3D` on the skeleton (bone-level, survives a model swap);
+  the NPC rotates a plain `Head` node. Justified while the NPC is a
+  rigless placeholder, but the two should converge once NPCs get a rig.
 - **Combat.** The camera has a lock-on sub-state; there is nothing to lock
   onto and nothing to fight.
 - **Missions.**
