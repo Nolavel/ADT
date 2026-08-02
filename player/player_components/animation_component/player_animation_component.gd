@@ -22,6 +22,41 @@
 extends Node
 class_name PlayerAnimationComponent
 
+## Animation clip names. MeleeLib is mounted with an empty prefix
+## (player.tscn: libraries/ = ExtResource("5_ftrmt")), so its clips are
+## addressed bare; ShooterLib is mounted as new4/. The root- prefixed
+## duplicates that exist for almost every MeleeLib clip (and for
+## ShooterLib's sneak-* clips) are not used: verified in the editor that
+## their content matches the unprefixed versions — root- is an import
+## artifact, not a distinct root-motion variant.
+##
+## PEACE gets MeleeLib's Light* set: a relaxed gait Sid never had before
+## this, since the AnimationTree used to run these three sneak-* clips
+## unconditionally regardless of stance. COMBAT gets those sneak-* clips
+## instead — a collected, low stance, which is exactly what they always
+## looked like; they just used to be playing on the wrong axis. COMBAT's
+## strafes and diagonals are drawn from Light* rather than a crouched
+## equivalent because no sneak-strafe clips exist in this project (only
+## new4/strafe-l and new4/strafe-r, with no diagonal or backward variant at
+## all) — mixing gait manners in the strafe is a deliberate compromise
+## given what's actually in the libraries, not an oversight to "fix" later.
+const ANIM_PEACE_IDLE: StringName = &"LightIdle"
+const ANIM_PEACE_WALK: StringName = &"LightWalking"
+const ANIM_PEACE_RUN: StringName = &"LightRunning"
+## Not currently wired into the blend tree — see _setup_animation_tree()'s
+## comment on why sprint doesn't fit the existing speed-blend cleanly.
+const ANIM_PEACE_SPRINT: StringName = &"Sprint"
+const ANIM_COMBAT_IDLE: StringName = &"new4/sneak-idle"
+const ANIM_COMBAT_FORWARD: StringName = &"new4/sneak-walk"
+## Not currently wired into the blend tree — see _setup_animation_tree()'s
+## comment on why COMBAT's forward point doesn't speed-blend to a run clip.
+const ANIM_COMBAT_RUN: StringName = &"new4/sneak-run-s"
+const ANIM_COMBAT_STRAFE_LEFT: StringName = &"LightStrafeLwalk"
+const ANIM_COMBAT_STRAFE_RIGHT: StringName = &"LightStrafeRwalk"
+const ANIM_COMBAT_STRAFE_45L: StringName = &"LightStrafe45L"
+const ANIM_COMBAT_STRAFE_45R: StringName = &"LightStrafe45R"
+const ANIM_COMBAT_RETREAT: StringName = &"Retreat"
+
 ## How fast the walk<->run blend space chases the real speed, and the speed
 ## below which the character counts as standing still.
 const MOVE_BLEND_SPEED: float = 6.0
