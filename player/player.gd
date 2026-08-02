@@ -35,7 +35,7 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 
 @export_group("Movement")
 @export var walk_speed: float = 5.0
-@export var run_speed: float = 10.0
+@export var run_speed: float = 15.5
 @export var accel_time: float = 0.55
 @export var decel_time: float = 0.8
 ## Movement speed multiplier while in COMBAT. Fighting stance trades speed

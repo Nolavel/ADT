@@ -41,21 +41,21 @@ class_name PlayerAnimationComponent
 ## all) — mixing gait manners in the strafe is a deliberate compromise
 ## given what's actually in the libraries, not an oversight to "fix" later.
 const ANIM_PEACE_IDLE: StringName = &"LightIdle"
-const ANIM_PEACE_WALK: StringName = &"LightWalking"
-const ANIM_PEACE_RUN: StringName = &"LightRunning"
+const ANIM_PEACE_WALK: StringName = &"new4/sneak-walk"
+const ANIM_PEACE_RUN: StringName = &"new4/sneak-run-s"
 ## Not currently wired into the blend tree — see _setup_animation_tree()'s
 ## comment on why sprint doesn't fit the existing speed-blend cleanly.
-const ANIM_PEACE_SPRINT: StringName = &"Sprint"
+const ANIM_PEACE_SPRINT: StringName = &"new4/run_067"
 const ANIM_COMBAT_IDLE: StringName = &"new4/sneak-idle"
 const ANIM_COMBAT_FORWARD: StringName = &"new4/sneak-walk"
 ## Not currently wired into the blend tree — see _setup_animation_tree()'s
 ## comment on why COMBAT's forward point doesn't speed-blend to a run clip.
 const ANIM_COMBAT_RUN: StringName = &"new4/sneak-run-s"
-const ANIM_COMBAT_STRAFE_LEFT: StringName = &"LightStrafeLwalk"
-const ANIM_COMBAT_STRAFE_RIGHT: StringName = &"LightStrafeRwalk"
+const ANIM_COMBAT_STRAFE_LEFT: StringName = &"new4/strafe-l"
+const ANIM_COMBAT_STRAFE_RIGHT: StringName = &"new4/strafe-r"
 const ANIM_COMBAT_STRAFE_45L: StringName = &"LightStrafe45L"
 const ANIM_COMBAT_STRAFE_45R: StringName = &"LightStrafe45R"
-const ANIM_COMBAT_RETREAT: StringName = &"Retreat"
+const ANIM_COMBAT_RETREAT: StringName = &"new3/legs_locomotion_run_backward_2"
 
 ## How fast the walk<->run blend space chases the real speed, and the speed
 ## below which the character counts as standing still.
