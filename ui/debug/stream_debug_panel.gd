@@ -163,7 +163,7 @@ func _update_lock_on_debug() -> void:
 		return
 
 	var diag := combat.get_lock_on_diagnostic(_player)
-	lines.append("lockable in scene: %d" % diag.lockable_count)
+	lines.append("stance: %s   lockable in scene: %d" % [diag.stance, diag.lockable_count])
 
 	if diag.lockable_count == 0:
 		lines.append("[color=#ff6666]no lockable candidates[/color]")

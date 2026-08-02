@@ -58,12 +58,17 @@ var _transition_from_state: TpsState = TpsState.EXPLORE
 func _init() -> void:
 	_noise.noise_type = FastNoiseLite.TYPE_PERLIN
 	_noise.frequency = breathing_speed
+	PlayerState.stance_changed.connect(_on_stance_changed)
 
 
 ## Called from OnFootCameraComponent when the lock-on button is pressed
 ## (OnFootCameraComponent reads it via InputSystems.is_lock_on_just_pressed()
 ## before calling this — this method itself never touches Input).
+## Lock-on only means anything in COMBAT — locking onto a passer-by while
+## PEACE is nonsense, since PEACE is a declaration of NOT being a threat.
 func try_toggle_lock(player: Node3D) -> void:
+	if PlayerState.stance != PlayerState.Stance.COMBAT:
+		return
 	if state == TpsState.LOCKED:
 		_clear_lock()
 		return
@@ -81,6 +86,19 @@ func _clear_lock() -> void:
 	locked_target = null
 	_start_transition(TpsState.EXPLORE)
 	target_lost.emit()
+
+
+## Leaving COMBAT is a withdrawal of intent, not just a speed change — an
+## active (or in-flight) lock doesn't survive it. Also catches the
+## TRANSITION-toward-LOCKED case: a transition can only have started while
+## still in COMBAT (try_toggle_lock() gates entry), so if stance flips mid-
+## transition, the lock it was heading toward needs cancelling too, not
+## just a completed LOCKED state.
+func _on_stance_changed(_old_stance: PlayerState.Stance, new_stance: PlayerState.Stance) -> void:
+	if new_stance == PlayerState.Stance.COMBAT:
+		return
+	if state == TpsState.LOCKED or (state == TpsState.TRANSITION and _pending_target_state == TpsState.LOCKED):
+		_clear_lock()
 
 
 ## Group-scan stub. Every "lockable" enemy must be in the "lockable" group
@@ -149,9 +167,10 @@ func get_lock_on_diagnostic(player: Node3D) -> Dictionary:
 		"nearest_name": "",
 		"distance": 0.0,
 		"angle_deg": 0.0,
-		"rejected_by": "none",   # "none" = no candidates, "radius", "cone", "" = would pass
+		"rejected_by": "none",   # "none" = no candidates, "radius", "cone", "stance", "" = would pass
 		"forward": Vector3.ZERO,
 		"to_nearest": Vector3.ZERO,
+		"stance": PlayerState.Stance.keys()[PlayerState.stance],
 	}
 	if candidates.is_empty():
 		return result
@@ -181,7 +200,12 @@ func get_lock_on_diagnostic(player: Node3D) -> Dictionary:
 	result.angle_deg = angle
 	result.to_nearest = dir
 
-	if nearest_dist > lock_search_radius:
+	## Stance gates lock-on ahead of range/cone — a candidate that would
+	## otherwise pass is still rejected while not in COMBAT, and that's the
+	## reason worth showing, not "radius"/"cone".
+	if PlayerState.stance != PlayerState.Stance.COMBAT:
+		result.rejected_by = "stance"
+	elif nearest_dist > lock_search_radius:
 		result.rejected_by = "radius"
 	elif angle > lock_search_angle_deg:
 		result.rejected_by = "cone"
