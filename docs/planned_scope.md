@@ -107,9 +107,7 @@ Named here so the absence is deliberate rather than overlooked:
   `PlayerState.Stance`'s own comment); NPC reaction to the player's
   stance; and the evidence system that's meant to read it too.
 - **Missions.**
-- **Animation beyond the player's own state machine**, which currently lives
-  directly in `player/player.gd`.
-- **Stair-stepping.** `StepRayHigh`/`StepRayLow` (`RayCast3D` nodes) existed
-  in `player/player.tscn`, but no line of code ever read them — no step-up
-  mechanic was ever wired to them. Removed 2026-07-30 along with the rest of
-  the character-scale rescale; the mechanic itself is not implemented.
+- **Animation beyond locomotion and stances.** `PlayerAnimationComponent`
+  drives idle/walk/run per stance and a procedural head look. There is no
+  layered upper-body blending, no hit reactions, no attack animations wired,
+  and NPCs have no animation at all.

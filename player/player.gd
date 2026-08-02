@@ -250,7 +250,7 @@ func get_chest_height() -> float:
 func get_speed_ratio() -> float:
 	if run_speed <= 0.0:
 		return 0.0
-	return clampf(speed / run_speed, 0.0, 1.0)
+	return clampf(speed / get_current_max_speed(), 0.0, 1.0)
 
 
 ## Horizontal movement direction, normalised, or ZERO when standing still.
@@ -293,7 +293,7 @@ func get_movement_vector_relative_to_facing() -> Vector2:
 	# exactly (facing.z, 0, -facing.x).
 	var right := Vector3(facing.z, 0.0, -facing.x)
 
-	var result := Vector2(horizontal.dot(right), horizontal.dot(facing)) / run_speed
+	var result := Vector2(horizontal.dot(right), horizontal.dot(facing)) / get_current_max_speed()
 	if result.length() > 1.0:
 		result = result.normalized()
 	return result
@@ -556,3 +556,12 @@ func _apply_deceleration(delta: float) -> void:
 		speed = 0.0
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
+
+## Top speed available in the current stance. COMBAT trades speed for
+## readiness, so the ceiling moves with the stance — and anything that
+## normalises speed must divide by this, not by run_speed, or it will never
+## reach 1.0 in COMBAT.
+func get_current_max_speed() -> float:
+	if PlayerState.stance == PlayerState.Stance.COMBAT:
+		return run_speed * combat_speed_multiplier
+	return run_speed
