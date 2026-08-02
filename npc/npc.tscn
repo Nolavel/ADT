@@ -15,6 +15,9 @@ height = 1.8
 [sub_resource type="BoxMesh" id="BoxMesh_npc_head"]
 size = Vector3(0.22, 0.22, 0.22)
 
+[sub_resource type="BoxMesh" id="BoxMesh_npc_nose"]
+size = Vector3(0.06, 0.06, 0.08)
+
 [node name="NPC" type="CharacterBody3D"]
 script = ExtResource("1_base")
 
@@ -32,6 +35,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0)
 [node name="HeadMesh" type="MeshInstance3D" parent="Head"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
 mesh = SubResource("BoxMesh_npc_head")
+
+[node name="HeadFacing" type="MeshInstance3D" parent="Head"]
+editor_description = "Temporary: the head cube is symmetric around its own Y axis, so yaw is otherwise visually unreadable and pitch barely reads. This nose marker exists only to make _update_head_look()'s rotation visible during development. Remove it together with the placeholder head cube once a real head asset arrives."
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0.15)
+mesh = SubResource("BoxMesh_npc_nose")
 
 [node name="IdleNPCController" type="Node" parent="."]
 script = ExtResource("2_idle")
