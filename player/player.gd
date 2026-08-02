@@ -270,6 +270,35 @@ func get_facing_direction() -> Vector3:
 	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 
 
+## Horizontal movement, relative to this character's own facing rather than
+## world space: x = lateral (positive = this character's right), y =
+## forward (positive = this character's own forward). Magnitude scales with
+## speed as a fraction of run_speed — same normalisation as
+## get_speed_ratio(), including that getter's same quirk: combat_speed_
+## multiplier caps the achievable magnitude below 1.0 in COMBAT, since this
+## reads real velocity, not intent. ZERO when standing still. Built for
+## AnimationNodeBlendSpace2D's blend_position, which reads magnitude as
+## "how far toward this direction," the same way AnimationNodeBlendSpace1D
+## reads a get_speed_ratio()-style 0..1 position.
+func get_movement_vector_relative_to_facing() -> Vector2:
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	if horizontal.length() < 0.001 or run_speed <= 0.0:
+		return Vector2.ZERO
+
+	var facing := get_facing_direction()
+	# Matches Godot's own basis.x (the standard "right" vector) for this
+	# rotation — verified algebraically, not derived from the basis
+	# directly: facing == (sin y, 0, cos y) (see get_facing_direction()),
+	# and Godot's basis.x for rotation.y == y is (cos y, 0, -sin y), i.e.
+	# exactly (facing.z, 0, -facing.x).
+	var right := Vector3(facing.z, 0.0, -facing.x)
+
+	var result := Vector2(horizontal.dot(right), horizontal.dot(facing)) / run_speed
+	if result.length() > 1.0:
+		result = result.normalized()
+	return result
+
+
 func get_current_speed() -> float:
 	return speed
 
