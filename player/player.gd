@@ -1,20 +1,7 @@
 # =============================================================================
 # player.gd — Player (CharacterBody3D).
 #
-# RU: Владеет физикой, конечным автоматом состояний движения и поворотом
-# тела напрямую (не делегирует их компонентам) для обоих режимов движения:
-# click-to-move/навигация (ISOMETRIC, через NavigationComponent,
-# _handle_navigation) и прямое WASD-движение (TPS, TPSMovementSystem кормит
-# set_direct_move_input() каждый физический кадр, _apply_direct_movement
-# считает скорость/поворот/анимацию). Какой путь выполняется — решает
-# PlayerState.view_mode внутри _physics_process().
-# Сборка AnimationTree и процедурный Head LookAt делегированы
-# PlayerAnimationComponent (player_components/animation_component/) —
-# player.gd вызывает его update_*() явно в нужном месте _physics_process()
-# и никогда не трогает его внутренние поля, только реэкспортирует часть его
-# геттеров тонкими обёртками для внешних вызывающих (dynamic_cursor_ui.gd).
-#
-# EN: Owns physics, the movement state machine and body rotation directly
+# Owns physics, the movement state machine and body rotation directly
 # (not delegated to components) for both movement modes: click-to-move/
 # navigation (ISOMETRIC, via NavigationComponent, _handle_navigation) and
 # direct WASD movement (TPS, TPSMovementSystem feeds set_direct_move_input()
@@ -38,14 +25,7 @@ signal state_changed(new_state: MovementState)
 ## --- Movement State ---
 enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 
-## RU: Высота персонажа, метры — единственная величина, которая варьируется
-## по экземпляру (NPC хранят своё поле body_height так же, см.
-## npc/npc_base.gd). Пропорции глаз/плеч/груди — общая анатомия, а не
-## особенность конкретного персонажа, поэтому вынесены в
-## core/characters/body_metrics.gd и не дублируются здесь. Origin этого
-## CharacterBody3D — у ступней, так что возвращаемая высота landmark'а — это
-## и есть его высота над полом.
-## EN: Character height, meters — the one value that varies per instance
+## Character height, meters — the one value that varies per instance
 ## (NPCs carry their own body_height field too, see npc/npc_base.gd).
 ## Eye/shoulder/chest ratios are shared anatomy, not a trait of a specific
 ## character, so they live in core/characters/body_metrics.gd instead of
@@ -307,12 +287,7 @@ func clear_head_look_point() -> void:
 	_animation_component.clear_head_look_point()
 
 
-## RU: Угол головы относительно тела, градусы. Реэкспорт из
-## PlayerAnimationComponent. Пока не используется внутри player.gd — заведён
-## впрок для порога разворота корпуса, который планируется добавить в
-## _apply_direct_movement (сейчас тело поворачивается только по направлению
-## движения/камеры, независимо от того, куда уже довёрнута голова).
-## EN: Head yaw relative to the body, degrees. Re-exported from
+## Head yaw relative to the body, degrees. Re-exported from
 ## PlayerAnimationComponent. Not consumed inside player.gd yet — added ahead
 ## of need for a body-rotation threshold planned for _apply_direct_movement
 ## (today the body turns purely from movement/camera direction, regardless
@@ -325,11 +300,7 @@ func set_camera_yaw(yaw: float) -> void:
 	_camera_yaw = yaw
 
 
-## RU: Геттер добавлен ради PlayerAnimationComponent: тот читает состояние
-## игрока только через свою ссылку _player и не лезет в приватные поля
-## напрямую (контракт компонента, см. его заголовок), а camera yaw ему нужен
-## для head look в TPS idle.
-## EN: Added for PlayerAnimationComponent: it only ever reads player state
+## Added for PlayerAnimationComponent: it only ever reads player state
 ## through its own _player reference, never reaches into private fields
 ## directly (the component's contract, see its header), and needs camera
 ## yaw for the TPS-idle head look.
