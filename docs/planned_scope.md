@@ -93,19 +93,19 @@ Named here so the absence is deliberate rather than overlooked:
   rigless placeholder, but the two should converge once NPCs get a rig.
 - **Combat.** The camera has a lock-on sub-state; there is nothing to lock
   onto and nothing to fight.
-- **Stance has state but limited consequence.** `PlayerState.Stance`
+- **Stance has state and reads through to animation.** `PlayerState.Stance`
   (PEACE/COMBAT, `core/player_state/player_state.gd`) exists and is read
-  by movement speed and TPS body rotation (`player.gd`) and by lock-on
-  gating (`camera/tps_combat_camera_state.gd`). Not done: the
-  AnimationTree still plays the same three clips regardless of stance —
-  blocked, not skipped: the intended PEACE/COMBAT clip set (LightIdle/
-  LightWalking/LightRunning/Retreat/diagonal strafes) doesn't exist under
-  those names in this project's animation libraries as of this writing,
-  see the commit history around the Stance work for what was actually
-  found there; weapon-in-hand as an orthogonal volume modifier on top of
-  the stance (the axis is deliberately boolean — see `PlayerState.Stance`'s
-  own comment); NPC reaction to the player's stance; and the evidence
-  system that's meant to read it too.
+  by movement speed and TPS body rotation (`player.gd`), lock-on gating
+  (`camera/tps_combat_camera_state.gd`), and the AnimationTree
+  (`player_animation_component.gd`: MeleeLib's Light* set for PEACE,
+  ShooterLib's sneak-* clips for COMBAT — previously running
+  unconditionally regardless of stance). Two loose ends left there:
+  sprint (PEACE) and a speed-blended run clip (COMBAT forward) are both
+  named but not wired into the blend tree, see that file's comments for
+  why. Not done: weapon-in-hand as an orthogonal volume modifier on top
+  of the stance (the axis is deliberately boolean — see
+  `PlayerState.Stance`'s own comment); NPC reaction to the player's
+  stance; and the evidence system that's meant to read it too.
 - **Missions.**
 - **Animation beyond the player's own state machine**, which currently lives
   directly in `player/player.gd`.
