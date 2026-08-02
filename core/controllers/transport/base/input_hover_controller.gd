@@ -45,6 +45,10 @@ func _physics_process(_delta: float) -> void:
 	# не шлём, ховер сам затухает по несвежему intent).
 	if PlayerState.mode != PlayerState.Mode.HOVER:
 		return
+	# get_move_axis() follows Godot's own convention (W/move_forward = -Y),
+	# but HoverBase.set_move_intent() reads move.y as +1 = forward — flip it
+	# here, at the one call site that needs it, instead of the axis method.
+	var move_axis := InputSystems.get_move_axis()
 	_hover.set_move_intent(
-			InputSystems.get_move_vector(),
+			Vector2(move_axis.x, -move_axis.y),
 			InputSystems.get_hover_vertical_axis())

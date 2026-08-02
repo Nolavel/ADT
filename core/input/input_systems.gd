@@ -242,23 +242,27 @@ func is_jump_held() -> bool:
 	return Input.is_action_pressed("jump")
 
 
-## --- TPS movement (tps_movement_system.gd) ---
+## --- Move axis (tps_movement_system.gd, input_hover_controller.gd) ---
+## Godot's own Input.get_vector() convention: x = right (+1), y follows the
+## engine's screen-space Y, so W/move_forward reads as -1, not +1. Any
+## consumer that wants "+Y = forward" (HoverBase.set_move_intent() does)
+## must flip y itself, at the call site, with a comment saying why — do not
+## add a second axis method with the sign pre-flipped. That's what used to
+## exist here (get_move_vector()) and it was a trap: two near-identical
+## methods whose only difference was an inverted y, each with exactly one
+## caller, so nothing ever exercised the mismatch until a third caller
+## picked the wrong one.
 func get_move_axis() -> Vector2:
 	return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 
 func is_sprint_held() -> bool:
 	return Input.is_action_pressed("sprint")
-	
+
 func is_lock_on_just_pressed() -> bool:
 	return Input.is_action_just_pressed("lock_on")
-	
+
 func is_switch_shoulder_just_pressed() -> bool:
 	return Input.is_action_just_pressed("switch_shoulder")
-
-## Horizontal intent: x = right, y = forward (+1), length <= 1.
-func get_move_vector() -> Vector2:
-	return Input.get_vector("move_left", "move_right",
-			"move_backward", "move_forward")
 
 ## Hover's vertical axis: +1 up (hover_up), -1 down (hover_down).
 func get_hover_vertical_axis() -> float:
