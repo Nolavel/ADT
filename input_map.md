@@ -1,6 +1,6 @@
 # InputMap
 
-> Verified against `project.godot` on **2026-07-30** · Godot 4.7 · GDScript
+> Verified against `project.godot` on **2026-08-02** · Godot 4.7 · GDScript
 
 **This document is the single source of truth for input bindings.** Update it
 in the same commit as any action added, removed or rebound in
@@ -15,7 +15,7 @@ Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
 methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
 reads raw `KEY_*` deliberately.
 
-Action count: **30** — 26 live, 4 reserved and unread.
+Action count: **31** — 27 live, 4 reserved and unread.
 
 ---
 
@@ -47,6 +47,7 @@ Active regardless of `PlayerState.mode`.
 | `map` | `M` | Map | Карта |
 | `status` | `X` | Status | Статус |
 | `toggle_tabs` | `Tab` | Tap — notifier; hold — status camera | Тап/холд — уведомление/статус-камера |
+| `toggle_stance` | `T` | Toggle `PlayerState.Stance` PEACE ⇄ COMBAT | Смена стойки |
 
 ---
 

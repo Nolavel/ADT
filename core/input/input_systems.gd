@@ -106,6 +106,7 @@ func _physics_process(delta: float) -> void:
 	_handle_secondary_click(delta)
 	_handle_tabs_key(delta)
 	_handle_ui_hotkeys()
+	_handle_stance_toggle()
 
 
 ## ============================================
@@ -206,6 +207,28 @@ func _handle_ui_hotkeys() -> void:
 
 
 ## ============================================
+## STANCE
+## Deliberate exception to this file's own "no game logic" rule: for every
+## other action here, the interpretation of what a press MEANS lives in a
+## subscriber (player.gd's jump handler, MenuSystem, the camera's lock-on
+## call, ...). A stance toggle has no branching consequence to interpret —
+## it is just "flip the one enum PlayerState already owns" — so this flips
+## it directly instead of adding a subscriber whose only job would be
+## "read this bool and toggle it." is_stance_toggle_just_pressed() is still
+## exposed below for anything else that wants to react to the press itself
+## (a UI hint, say) without re-deciding the toggle.
+## ============================================
+func _handle_stance_toggle() -> void:
+	if not is_stance_toggle_just_pressed():
+		return
+	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
+		return
+	var target_stance := PlayerState.Stance.PEACE if PlayerState.stance == PlayerState.Stance.COMBAT \
+			else PlayerState.Stance.COMBAT
+	PlayerState.set_stance(target_stance)
+
+
+## ============================================
 ## QUERY METHODS — for places where the signal model doesn't fit directly
 ## (the camera reads input inside its own update(delta), driven by its host
 ## camera_follow.gd, not InputSystems' physics frame; WASD/Shift are
@@ -263,6 +286,12 @@ func is_lock_on_just_pressed() -> bool:
 
 func is_switch_shoulder_just_pressed() -> bool:
 	return Input.is_action_just_pressed("switch_shoulder")
+
+
+## --- Stance ---
+func is_stance_toggle_just_pressed() -> bool:
+	return Input.is_action_just_pressed("toggle_stance")
+
 
 ## Hover's vertical axis: +1 up (hover_up), -1 down (hover_down).
 func get_hover_vertical_axis() -> float:
