@@ -34,6 +34,7 @@
 [ext_resource type="Texture2D" uid="uid://d34gm7xpy2app" path="res://assets/textures/pins/pin_step_sprint.png" id="33_wmpjg"]
 [ext_resource type="Script" uid="uid://dfrq4uw3iba6d" path="res://player/player_components/inventory_component/inventory_component.gd" id="35_q28gw"]
 [ext_resource type="PackedScene" uid="uid://5fn1xrmc4k84" path="res://player/player_components/nav_component/nav_component.tscn" id="36_ge24q"]
+[ext_resource type="Script" uid="uid://kw0ry1yly3cv" path="res://player/player_components/animation_component/player_animation_component.gd" id="36_pnw6m"]
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://player/player_components/interact_component/interact_component.gd" id="37_1gbpw"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
@@ -1429,7 +1430,7 @@ transform = Transform3D(-9.78012e-07, 1, -2.1539322e-06, -0.03690634, -2.22518e-
 bone_name = "LeftLowerArm"
 bone = 9
 
-[node name="LookAtModifier3D" type="LookAtModifier3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2088398475]
+[node name="LookAt" type="LookAtModifier3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2088398475]
 bone_name = "Head"
 bone = 5
 
@@ -1476,3 +1477,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5770347, 0.77526814)
 
 [node name="InventoryComponent" type="Node3D" parent="." unique_id=1888358445]
 script = ExtResource("35_q28gw")
+
+[node name="AnimationComponent" type="Node3D" parent="." unique_id=667099167]
+script = ExtResource("36_pnw6m")
