@@ -38,6 +38,10 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 @export var run_speed: float = 10.0
 @export var accel_time: float = 0.55
 @export var decel_time: float = 0.8
+## Movement speed multiplier while in COMBAT. Fighting stance trades speed
+## for readiness — and the slower pace is what makes the stance readable at
+## a glance, before any animation detail registers.
+@export var combat_speed_multiplier: float = 0.7
 
 @export_group("Jump/Gravity")
 ## Apex height = jump_force^2 / (2 * gravity). At 6.0/20.0 that's 0.9m, half
@@ -129,7 +133,7 @@ func set_movement_speed(new_speed: float) -> void:
 	if not movement_enabled:
 		return
 
-	target_speed = clamp(new_speed, 0.0, run_speed)
+	target_speed = clamp(new_speed, 0.0, run_speed * _current_speed_multiplier())
 
 	# Remember that the player WANTS to run (even if they can't)
 	wants_to_run = (new_speed > walk_speed * 1.1)
@@ -349,7 +353,7 @@ func _handle_stamina_consumption() -> void:
 				stamina_manager.stop_consuming_stamina()
 
 			## Lower the REAL speed, but do NOT reset wants_to_run
-			target_speed = walk_speed
+			target_speed = walk_speed * _current_speed_multiplier()
 			is_running_mode = false
 	else:
 		if stamina_manager.is_consuming_stamina:
@@ -377,6 +381,14 @@ func _update_speed(delta: float) -> void:
 	speed = move_toward(speed, target_speed, delta * acceleration)
 
 
+## 1.0 in PEACE, combat_speed_multiplier in COMBAT — the one place every
+## target_speed computation reads the stance slowdown from, so the call
+## sites (direct movement, click-to-move clamp, stamina-depleted forced
+## walk) can't drift out of sync with each other.
+func _current_speed_multiplier() -> float:
+	return combat_speed_multiplier if PlayerState.stance == PlayerState.Stance.COMBAT else 1.0
+
+
 ## --- Direct Movement (TPS, WASD) ---
 ## Computes the target speed BEFORE _update_speed(delta), so run/walk
 ## kicks in the same frame instead of one physics tick late.
@@ -394,7 +406,7 @@ func _update_direct_move_target_speed() -> void:
 
 	wants_to_run = _direct_move_want_run
 	is_running_mode = running
-	target_speed = run_speed if running else walk_speed
+	target_speed = (run_speed if running else walk_speed) * _current_speed_multiplier()
 
 
 func _apply_direct_movement(delta: float) -> void:
