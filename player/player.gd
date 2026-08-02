@@ -42,6 +42,11 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 ## for readiness — and the slower pace is what makes the stance readable at
 ## a glance, before any animation detail registers.
 @export var combat_speed_multiplier: float = 0.7
+## How fast the body turns to face the camera in COMBAT — deliberately much
+## faster than PEACE's backpedal-facing rate (delta * 6.0) or idle turn rate
+## (delta * 3.0): in a fight the body tracks the camera almost without lag,
+## since the camera is where the threat is. A feel value, tuned by eye.
+@export var combat_face_camera_smoothing: float = 20.0
 
 @export_group("Jump/Gravity")
 ## Apex height = jump_force^2 / (2 * gravity). At 6.0/20.0 that's 0.9m, half
@@ -409,24 +414,44 @@ func _update_direct_move_target_speed() -> void:
 	target_speed = (run_speed if running else walk_speed) * _current_speed_multiplier()
 
 
+## Turns the body to face the camera at the given rate. Factored out of
+## _apply_direct_movement() so COMBAT's always-face-camera rotation, the
+## PEACE backpedal/strafe case and the idle case all share one
+## implementation instead of three copies of the same lerp_angle call — and
+## so aim-down-sights (stage 5) can reuse it too: ADS needs the same "body
+## faces where the camera looks, while moving" behavior COMBAT strafing
+## already establishes here.
+func _face_camera(delta: float, smoothing: float) -> void:
+	rotation.y = lerp_angle(rotation.y, _camera_yaw + PI, delta * smoothing)
+
+
 func _apply_direct_movement(delta: float) -> void:
+	var in_combat := PlayerState.stance == PlayerState.Stance.COMBAT
+
 	if _direct_move_direction.length() > 0.01:
 		var dir := _direct_move_direction.normalized()
 		velocity.x = dir.x * speed
 		velocity.z = dir.z * speed
 
-		# TLOU-style rotation: face movement direction when moving forward
-		# relative to camera; face camera when backpedaling / strafing
-		var move_facing := atan2(dir.x, dir.z)
-		var cam_facing := _camera_yaw + PI   # "forward" from camera's POV
-		var angle_diff := absf(wrapf(move_facing - cam_facing, -PI, PI))
-
-		if angle_diff < PI * 0.5:
-			# Forward hemisphere: face movement direction
-			rotation.y = lerp_angle(rotation.y, move_facing, delta * 10.0)
+		if in_combat:
+			# Combat stance: the body always faces the camera — the threat —
+			# and the legs strafe under it, unconditionally, regardless of
+			# movement direction. This IS the fighting stance: corpus turned
+			# to the threat, feet just carrying it around.
+			_face_camera(delta, combat_face_camera_smoothing)
 		else:
-			# Backward hemisphere: face camera (backpedal / strafe)
-			rotation.y = lerp_angle(rotation.y, cam_facing, delta * 6.0)
+			# TLOU-style rotation: face movement direction when moving forward
+			# relative to camera; face camera when backpedaling / strafing
+			var move_facing := atan2(dir.x, dir.z)
+			var cam_facing := _camera_yaw + PI   # "forward" from camera's POV
+			var angle_diff := absf(wrapf(move_facing - cam_facing, -PI, PI))
+
+			if angle_diff < PI * 0.5:
+				# Forward hemisphere: face movement direction
+				rotation.y = lerp_angle(rotation.y, move_facing, delta * 10.0)
+			else:
+				# Backward hemisphere: face camera (backpedal / strafe)
+				_face_camera(delta, 6.0)
 
 		if current_state == MovementState.IDLE or current_state == MovementState.DECELERATING:
 			_change_state(MovementState.RUNNING if is_running_mode else MovementState.WALKING)
@@ -435,8 +460,10 @@ func _apply_direct_movement(delta: float) -> void:
 		elif not is_running_mode and current_state != MovementState.WALKING:
 			_change_state(MovementState.WALKING)
 	else:
-		# Idle: slowly turn to face camera direction
-		rotation.y = lerp_angle(rotation.y, _camera_yaw + PI, delta * 3.0)
+		# Idle: turn to face the camera — at COMBAT's faster rate while in
+		# COMBAT (same "tracks the threat without lag" statement as strafing
+		# above), at the slow PEACE rate otherwise.
+		_face_camera(delta, combat_face_camera_smoothing if in_combat else 3.0)
 
 		# Deceleration — same rate as click-to-move for consistent feel
 		if speed > 0.1:
