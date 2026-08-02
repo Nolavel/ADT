@@ -57,6 +57,13 @@ const HEAD_PITCH_LIMIT_DEG: float = 30.0
 var _move_direction: Vector3 = Vector3.ZERO
 var _move_speed_ratio: float = 0.0
 
+## World point the body turns toward when it isn't moving — set by
+## set_facing_target()/clear_facing_target(), read only by
+## _face_move_direction(). Movement always overrides this; see that
+## method's comment.
+var _has_facing_target: bool = false
+var _facing_target_point: Vector3 = Vector3.ZERO
+
 ## Whether the head currently has somewhere to look, and where — set by
 ## set_look_target()/clear_look_target(), read only by _update_head_look().
 var _has_look_target: bool = false
@@ -123,10 +130,38 @@ func clear_look_target() -> void:
 	_has_look_target = false
 
 
+## World point this character turns its body toward. Overrides
+## face-move-direction while set. The body only turns; whether anything is
+## worth turning toward is a decision, and decisions live in the controller.
+func set_facing_target(point: Vector3) -> void:
+	_has_facing_target = true
+	_facing_target_point = point
+
+
+## Returns to move-direction-only facing (the previous, only behaviour).
+func clear_facing_target() -> void:
+	_has_facing_target = false
+
+
+## Turns the body to face _move_direction while moving; otherwise turns
+## toward _facing_target_point if one is set (see set_facing_target()).
+## Movement always wins: an NPC that is walking somewhere faces where it's
+## walking, never a facing target — otherwise it would visibly walk
+## sideways or backwards while "looking" elsewhere. Not exercised yet
+## (nothing sets a facing target while _move_direction is nonzero), but the
+## priority is worth having in place before it is.
 func _face_move_direction(delta: float) -> void:
-	if _move_direction.length() < 0.01:
+	var target_angle: float
+	if _move_direction.length() > 0.01:
+		target_angle = atan2(_move_direction.x, _move_direction.z)
+	elif _has_facing_target:
+		var to_target := _facing_target_point - global_position
+		var horizontal_to_target := Vector3(to_target.x, 0.0, to_target.z)
+		if horizontal_to_target.length() < 0.01:
+			return
+		target_angle = atan2(horizontal_to_target.x, horizontal_to_target.z)
+	else:
 		return
-	var target_angle := atan2(_move_direction.x, _move_direction.z)
 	rotation.y = lerp_angle(rotation.y, target_angle, Smoothing.damp_factor(TURN_SMOOTHING, delta))
 
 
