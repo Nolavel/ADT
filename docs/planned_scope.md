@@ -93,6 +93,19 @@ Named here so the absence is deliberate rather than overlooked:
   rigless placeholder, but the two should converge once NPCs get a rig.
 - **Combat.** The camera has a lock-on sub-state; there is nothing to lock
   onto and nothing to fight.
+- **Stance has state but limited consequence.** `PlayerState.Stance`
+  (PEACE/COMBAT, `core/player_state/player_state.gd`) exists and is read
+  by movement speed and TPS body rotation (`player.gd`) and by lock-on
+  gating (`camera/tps_combat_camera_state.gd`). Not done: the
+  AnimationTree still plays the same three clips regardless of stance —
+  blocked, not skipped: the intended PEACE/COMBAT clip set (LightIdle/
+  LightWalking/LightRunning/Retreat/diagonal strafes) doesn't exist under
+  those names in this project's animation libraries as of this writing,
+  see the commit history around the Stance work for what was actually
+  found there; weapon-in-hand as an orthogonal volume modifier on top of
+  the stance (the axis is deliberately boolean — see `PlayerState.Stance`'s
+  own comment); NPC reaction to the player's stance; and the evidence
+  system that's meant to read it too.
 - **Missions.**
 - **Animation beyond the player's own state machine**, which currently lives
   directly in `player/player.gd`.
