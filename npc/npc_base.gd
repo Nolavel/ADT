@@ -143,6 +143,13 @@ func clear_facing_target() -> void:
 	_has_facing_target = false
 
 
+## Whether the body currently has a facing target — read by the perception
+## debug panel so "the body didn't turn" is distinguishable from "nothing
+## asked it to."
+func has_facing_target() -> bool:
+	return _has_facing_target
+
+
 ## Turns the body to face _move_direction while moving; otherwise turns
 ## toward _facing_target_point if one is set (see set_facing_target()).
 ## Movement always wins: an NPC that is walking somewhere faces where it's

@@ -95,7 +95,38 @@ func _describe_npc(npc: NPCBase) -> String:
 	if not observation.is_seen:
 		line += "\n  rejected by: %s" % _rejection_reason(observation, perception)
 
+	line += "\n  %s" % _describe_body_turn(npc, observation)
+
 	return line
+
+
+## Body-turn debug: how long the player has been continuously visible,
+## whether the body has actually committed to a facing target, and the
+## current body-to-player angle. Without this, "the body didn't turn" reads
+## identically to "it's broken" — the same story lock-on debugging had
+## before it got its own overlay.
+func _describe_body_turn(npc: NPCBase, observation: PlayerObservation) -> String:
+	var facing_color := "#35ff66" if npc.has_facing_target() else "#777777"
+	var facing_text := "YES" if npc.has_facing_target() else "no"
+
+	## visible_time is IdleNPCController's own bookkeeping, not NPCBase's —
+	## a future controller type may track it differently or not at all, so
+	## this degrades to "n/a" instead of assuming every NPC has one.
+	var idle_controller: IdleNPCController = null
+	for child in npc.get_children():
+		if child is IdleNPCController:
+			idle_controller = child
+			break
+
+	var visible_text: String
+	if idle_controller:
+		visible_text = "%.1fs" % idle_controller.get_visible_time()
+	else:
+		visible_text = "n/a"
+
+	return "visible %s   facing_target: [color=%s]%s[/color]   body angle %.0f°" % [
+		visible_text, facing_color, facing_text, observation.angle_deg,
+	]
 
 
 ## Derives which check would have rejected the player, purely for display —

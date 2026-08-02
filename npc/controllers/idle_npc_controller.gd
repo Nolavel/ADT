@@ -67,3 +67,8 @@ func _decide(delta: float) -> void:
 	## it already started, not as flickering at the threshold.
 	if _visible_time >= BODY_TURN_DELAY and observation.angle_deg > BODY_TURN_ANGLE_DEG:
 		_npc.set_facing_target(observation.position)
+
+
+## Read by the perception debug panel — see _visible_time's own comment.
+func get_visible_time() -> float:
+	return _visible_time
