@@ -36,8 +36,6 @@ Active regardless of `PlayerState.mode`.
 | Action | Key | Description | RU |
 |---|---|---|---|
 | `mouse_left_button` | LMB | Stop movement / cancel move target | Отменить цель движения |
-| `mouse_right_button` | RMB click | Move to clicked point | Идти в точку |
-| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
 | `interact` | `F` | Pick up / drop item, activate object, board a hover | Взаимодействие |
 | `zoom_in` | Wheel down | Zoom camera in | Приблизить |
 | `zoom_out` | Wheel up | Zoom camera out | Отдалить |
@@ -58,14 +56,23 @@ Click-to-move navigation. Handled by `NavigationComponent` and
 
 | Action | Key | Description | RU |
 |---|---|---|---|
+| `mouse_right_button` | RMB click | Move to clicked point | Идти в точку |
+| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
 | `lean_left` | `Q` | Orbital camera — discrete step left | Шаг камеры влево |
 | `lean_right` | `E` | Orbital camera — discrete step right | Шаг камеры вправо |
+
+`mouse_right_button` moved here from "shared" (2026-08-03): `ClickToMoveSystem`
+has always self-gated to ON_FOOT + ISOMETRIC, so the click-to-move meaning
+never actually applied in TPS — it just had no reader there before this
+table said otherwise. See §4 for what the same physical button now does
+in TPS.
 
 ---
 
 ## 4. ON_FOOT — TPS only
 
-Direct movement. `TPSMovementSystem` feeds `player.gd` every physics frame.
+Direct movement. `TPSMovementSystem` feeds `player.gd` every physics frame,
+and also drives `PlayerState.is_aiming` from the aim hold below.
 
 | Action | Key | Description | RU |
 |---|---|---|---|
@@ -75,8 +82,13 @@ Direct movement. `TPSMovementSystem` feeds `player.gd` every physics frame.
 | `move_right` | `D` | Strafe right | Вправо |
 | `jump` | `Space` | Jump | Прыжок |
 | `sprint` | `Shift` | Sprint; consumes stamina | Бег |
+| `mouse_right_button` | RMB hold | Aim down sights — only takes effect in `Stance.COMBAT` | Прицеливание — только в стойке COMBAT |
 | `switch_shoulder` | `Z` | Swap camera shoulder (`TpsShoulderCameraState`) | Смена плеча камеры |
 | `lock_on` | `G` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |
+
+`mouse_right_button` is unclaimed here otherwise — its ISOMETRIC meaning
+(§3) is read by a different, self-gated system, so the same physical
+button carries two unrelated meanings depending on `view_mode`.
 
 `lock_on` searches the `lockable` group. Occlusion-aware target selection is
 a known TODO, blocked on a raycast service that does not exist yet.

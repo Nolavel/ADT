@@ -70,6 +70,13 @@ func _update_active_state() -> void:
 		# При выходе из TPS сразу гасим инпут, чтобы игрок не "доехал"
 		# по инерции с зажатой клавишей в другой режим.
 		player_node.set_direct_move_input(Vector3.ZERO, false)
+		# Same reasoning for aiming: PlayerState only auto-clears is_aiming
+		# on leaving COMBAT or ON_FOOT, not on leaving TPS specifically (it
+		# is meaningless in ISOMETRIC, but not disallowed there). Without
+		# this, switching to ISOMETRIC via V while holding right-click would
+		# leave is_aiming stuck true, since nothing would call set_aiming()
+		# again to re-evaluate it.
+		PlayerState.set_aiming(false)
 
 
 func _physics_process(_delta: float) -> void:
@@ -77,6 +84,10 @@ func _physics_process(_delta: float) -> void:
 		return
 
 	player_node.set_camera_yaw(camera.global_rotation.y)
+
+	# Aim is a hold, independent of the move axis below — evaluated even
+	# while standing still, unlike the early-out on zero input further down.
+	PlayerState.set_aiming(InputSystems.is_aim_pressed())
 
 	var input_vec := InputSystems.get_move_axis()
 	var want_run := InputSystems.is_sprint_held()

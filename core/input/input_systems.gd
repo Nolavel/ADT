@@ -288,6 +288,17 @@ func is_switch_shoulder_just_pressed() -> bool:
 	return Input.is_action_just_pressed("switch_shoulder")
 
 
+## --- Aim (TPSMovementSystem) ---
+## mouse_right_button is otherwise unclaimed in TPS: ClickToMoveSystem reads
+## the same action for click-to-move, but self-gates to ON_FOOT + ISOMETRIC,
+## so it never reacts to it here. A raw held query, not a signal, since
+## aiming is a hold like sprint — PlayerState.set_aiming() decides what the
+## press means (and clamps it to Stance.COMBAT + Mode.ON_FOOT) exactly the
+## way is_sprint_held()'s caller decides what sprint means.
+func is_aim_pressed() -> bool:
+	return Input.is_action_pressed("mouse_right_button")
+
+
 ## --- Stance ---
 func is_stance_toggle_just_pressed() -> bool:
 	return Input.is_action_just_pressed("toggle_stance")
