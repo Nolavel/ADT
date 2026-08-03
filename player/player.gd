@@ -138,7 +138,7 @@ func set_movement_speed(new_speed: float) -> void:
 	if not movement_enabled:
 		return
 
-	target_speed = clamp(new_speed, 0.0, run_speed * _current_speed_multiplier())
+	target_speed = clamp(new_speed, 0.0, run_speed * get_speed_multiplier())
 
 	# Remember that the player WANTS to run (even if they can't)
 	wants_to_run = (new_speed > walk_speed * 1.1)
@@ -387,7 +387,7 @@ func _handle_stamina_consumption() -> void:
 				stamina_manager.stop_consuming_stamina()
 
 			## Lower the REAL speed, but do NOT reset wants_to_run
-			target_speed = walk_speed * _current_speed_multiplier()
+			target_speed = walk_speed * get_speed_multiplier()
 			is_running_mode = false
 	else:
 		if stamina_manager.is_consuming_stamina:
@@ -418,8 +418,11 @@ func _update_speed(delta: float) -> void:
 ## 1.0 in PEACE, combat_speed_multiplier in COMBAT — the one place every
 ## target_speed computation reads the stance slowdown from, so the call
 ## sites (direct movement, click-to-move clamp, stamina-depleted forced
-## walk) can't drift out of sync with each other.
-func _current_speed_multiplier() -> float:
+## walk) can't drift out of sync with each other. Public because
+## PlayerAnimationComponent also needs it, to normalise its blend-space
+## position against the current stance's speed ceiling rather than the raw
+## walk_speed/run_speed exports — same reason get_current_max_speed() exists.
+func get_speed_multiplier() -> float:
 	return combat_speed_multiplier if PlayerState.stance == PlayerState.Stance.COMBAT else 1.0
 
 
@@ -440,7 +443,7 @@ func _update_direct_move_target_speed() -> void:
 
 	wants_to_run = _direct_move_want_run
 	is_running_mode = running
-	target_speed = (run_speed if running else walk_speed) * _current_speed_multiplier()
+	target_speed = (run_speed if running else walk_speed) * get_speed_multiplier()
 
 
 ## Turns the body to face the camera at the given rate. Factored out of
