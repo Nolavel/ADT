@@ -15,6 +15,10 @@ enum Stance { PEACE, COMBAT }
 var mode: Mode = Mode.ON_FOOT   # менять ТОЛЬКО через set_mode()/open_menu()/close_menu()
 var view_mode: ViewMode = ViewMode.ISOMETRIC
 var stance: Stance = Stance.PEACE   # change ONLY through set_stance()
+## Aiming down sights. A modifier on COMBAT, not a stance of its own: it
+## deepens a commitment already declared, rather than declaring a new one.
+## Only meaningful while stance == COMBAT and mode == ON_FOOT.
+var is_aiming: bool = false   # change ONLY through set_aiming()
 
 ## Персистентный под-режим камеры ховера (HoverCameraComponent.HoverView):
 ## переживает выход-вход в транспорт. 0 = CHASE, 1 = COCKPIT.
@@ -30,6 +34,7 @@ var _mode_before_menu: Mode = Mode.ON_FOOT
 signal mode_changed(old_mode: Mode, new_mode: Mode)
 signal view_mode_changed(old_view: ViewMode, new_view: ViewMode)
 signal stance_changed(old_stance: Stance, new_stance: Stance)
+signal aiming_changed(is_aiming: bool)
 
 
 ## Смена любого режима, КРОМЕ MENU. MENU управляется исключительно
@@ -46,6 +51,8 @@ func set_mode(new_mode: Mode) -> void:
 
 	var old_mode := mode
 	mode = new_mode
+	if mode != Mode.ON_FOOT:
+		set_aiming(false)
 	mode_changed.emit(old_mode, new_mode)
 	print("[PlayerState] Mode: %s → %s" % [Mode.keys()[old_mode], Mode.keys()[new_mode]])
 
@@ -57,6 +64,7 @@ func open_menu() -> void:
 	_mode_before_menu = mode
 	var old_mode := mode
 	mode = Mode.MENU
+	set_aiming(false)
 	get_tree().paused = true # пауза выставляется ДО сигнала
 	mode_changed.emit(old_mode, Mode.MENU)
 	print("[PlayerState] Mode: %s → MENU (paused)" % Mode.keys()[old_mode])
@@ -89,7 +97,21 @@ func set_stance(new_stance: Stance) -> void:
 		return
 	var old_stance := stance
 	stance = new_stance
+	if stance != Stance.COMBAT:
+		set_aiming(false)
 	stance_changed.emit(old_stance, new_stance)
+
+
+## Deepens COMBAT rather than declaring a separate stance — see is_aiming's
+## own comment. Silently clamped to false outside Stance.COMBAT/Mode.ON_FOOT
+## rather than erroring: a held aim button crossing a stance or mode change
+## mid-press is ordinary input, not a caller mistake.
+func set_aiming(new_aiming: bool) -> void:
+	var effective := new_aiming and stance == Stance.COMBAT and mode == Mode.ON_FOOT
+	if effective == is_aiming:
+		return
+	is_aiming = effective
+	aiming_changed.emit(is_aiming)
 
 
 ## Удобный геттер для проверки "можно ли сейчас двигаться игроку ногами"
