@@ -137,12 +137,20 @@ func update_animation_blend(delta: float) -> void:
 	if not _anim_tree:
 		return
 
+	## Divide by the current stance's speed ceiling, not the raw walk_speed/
+	## run_speed exports: in COMBAT those exports overstate the actual
+	## reachable speed by 1/combat_speed_multiplier, so locomotion_pos would
+	## never reach 1.0 while combat-slowed. Same fix already applied to
+	## get_speed_ratio() and get_movement_vector_relative_to_facing() in
+	## player.gd (see get_current_max_speed()) — this blend position was the
+	## one place that still divided by the raw exports.
+	var multiplier := _player.get_speed_multiplier()
+	var walk_ceiling := _player.walk_speed * multiplier
+	var run_ceiling := _player.run_speed * multiplier
 	var locomotion_pos: float = 0.0
-	if _player.run_speed > _player.walk_speed:
+	if run_ceiling > walk_ceiling:
 		locomotion_pos = clamp(
-			(_player.speed - _player.walk_speed) / (_player.run_speed - _player.walk_speed),
-			0.0,
-			1.0
+			(_player.speed - walk_ceiling) / (run_ceiling - walk_ceiling), 0.0, 1.0
 		)
 	_anim_tree.set("parameters/peace_locomotion/blend_position", locomotion_pos)
 
