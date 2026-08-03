@@ -42,6 +42,10 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 ## for readiness — and the slower pace is what makes the stance readable at
 ## a glance, before any animation detail registers.
 @export var combat_speed_multiplier: float = 0.7
+## Speed multiplier while aiming, applied on top of the COMBAT multiplier.
+## Aiming is a deeper commitment than standing ready: you give up more
+## mobility for it.
+@export var aim_speed_multiplier: float = 0.5
 ## How fast the body turns to face the camera in COMBAT — deliberately much
 ## faster than PEACE's backpedal-facing rate (delta * 6.0) or idle turn rate
 ## (delta * 3.0): in a fight the body tracks the camera almost without lag,
@@ -344,25 +348,32 @@ func get_camera_yaw() -> float:
 	return _camera_yaw
 
 
-## 1.0 in PEACE, combat_speed_multiplier in COMBAT — the one place every
-## target_speed computation reads the stance slowdown from, so the call
-## sites (direct movement, click-to-move clamp, stamina-depleted forced
-## walk) can't drift out of sync with each other. Public because
-## PlayerAnimationComponent also needs it, to normalise its blend-space
-## position against the current stance's speed ceiling rather than the raw
-## walk_speed/run_speed exports — same reason get_current_max_speed() exists.
+## 1.0 in PEACE, combat_speed_multiplier in COMBAT, further scaled by
+## aim_speed_multiplier while aiming — the one place every target_speed
+## computation reads the stance/aim slowdown from, so the call sites (direct
+## movement, click-to-move clamp, stamina-depleted forced walk) can't drift
+## out of sync with each other. Public because PlayerAnimationComponent also
+## needs it, to normalise its blend-space position against the current
+## stance's speed ceiling rather than the raw walk_speed/run_speed exports —
+## same reason get_current_max_speed() exists.
 func get_speed_multiplier() -> float:
-	return combat_speed_multiplier if PlayerState.stance == PlayerState.Stance.COMBAT else 1.0
+	if PlayerState.stance != PlayerState.Stance.COMBAT:
+		return 1.0
+	var multiplier := combat_speed_multiplier
+	if PlayerState.is_aiming:
+		multiplier *= aim_speed_multiplier
+	return multiplier
 
 
-## Top speed available in the current stance. COMBAT trades speed for
-## readiness, so the ceiling moves with the stance — and anything that
-## normalises speed must divide by this, not by run_speed, or it will never
-## reach 1.0 in COMBAT.
+## Top speed available in the current stance/aim state. Derived from
+## get_speed_multiplier() rather than re-checking stance/is_aiming here too
+## — two independent copies of the same condition is exactly how this drifted
+## out of sync before (get_current_max_speed() didn't know about COMBAT
+## until it was added deliberately; aiming would have repeated that mistake
+## silently). Anything that normalises speed must divide by this, not by
+## run_speed, or it will never reach 1.0 while slowed.
 func get_current_max_speed() -> float:
-	if PlayerState.stance == PlayerState.Stance.COMBAT:
-		return run_speed * combat_speed_multiplier
-	return run_speed
+	return run_speed * get_speed_multiplier()
 
 
 ## --- State Management ---
@@ -470,9 +481,10 @@ func _update_direct_move_target_speed() -> void:
 ## _apply_direct_movement() so COMBAT's always-face-camera rotation, the
 ## PEACE backpedal/strafe case and the idle case all share one
 ## implementation instead of three copies of the same lerp_angle call — and
-## so aim-down-sights (stage 5) can reuse it too: ADS needs the same "body
-## faces where the camera looks, while moving" behavior COMBAT strafing
-## already establishes here.
+## aim-down-sights reuses it unchanged: aiming only exists inside COMBAT
+## (PlayerState.set_aiming()'s own invariant), and COMBAT already faces the
+## camera at combat_face_camera_smoothing in every branch below, moving or
+## idle, so there is nothing ADS-specific to add here.
 func _face_camera(delta: float, smoothing: float) -> void:
 	rotation.y = lerp_angle(rotation.y, _camera_yaw + PI, delta * smoothing)
 
@@ -489,7 +501,9 @@ func _apply_direct_movement(delta: float) -> void:
 			# Combat stance: the body always faces the camera — the threat —
 			# and the legs strafe under it, unconditionally, regardless of
 			# movement direction. This IS the fighting stance: corpus turned
-			# to the threat, feet just carrying it around.
+			# to the threat, feet just carrying it around. Also covers aiming
+			# (a COMBAT-only modifier, see PlayerState.is_aiming): no extra
+			# branch needed, the rate is already the combat one.
 			_face_camera(delta, combat_face_camera_smoothing)
 		else:
 			# Prototype: PEACE also always faces the camera now, same as
