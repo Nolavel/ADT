@@ -334,6 +334,27 @@ func get_camera_yaw() -> float:
 	return _camera_yaw
 
 
+## 1.0 in PEACE, combat_speed_multiplier in COMBAT — the one place every
+## target_speed computation reads the stance slowdown from, so the call
+## sites (direct movement, click-to-move clamp, stamina-depleted forced
+## walk) can't drift out of sync with each other. Public because
+## PlayerAnimationComponent also needs it, to normalise its blend-space
+## position against the current stance's speed ceiling rather than the raw
+## walk_speed/run_speed exports — same reason get_current_max_speed() exists.
+func get_speed_multiplier() -> float:
+	return combat_speed_multiplier if PlayerState.stance == PlayerState.Stance.COMBAT else 1.0
+
+
+## Top speed available in the current stance. COMBAT trades speed for
+## readiness, so the ceiling moves with the stance — and anything that
+## normalises speed must divide by this, not by run_speed, or it will never
+## reach 1.0 in COMBAT.
+func get_current_max_speed() -> float:
+	if PlayerState.stance == PlayerState.Stance.COMBAT:
+		return run_speed * combat_speed_multiplier
+	return run_speed
+
+
 ## --- State Management ---
 func _update_state() -> void:
 	var new_state: MovementState
@@ -413,17 +434,6 @@ func _apply_gravity(delta: float) -> void:
 func _update_speed(delta: float) -> void:
 	var acceleration: float = (run_speed - walk_speed) / accel_time
 	speed = move_toward(speed, target_speed, delta * acceleration)
-
-
-## 1.0 in PEACE, combat_speed_multiplier in COMBAT — the one place every
-## target_speed computation reads the stance slowdown from, so the call
-## sites (direct movement, click-to-move clamp, stamina-depleted forced
-## walk) can't drift out of sync with each other. Public because
-## PlayerAnimationComponent also needs it, to normalise its blend-space
-## position against the current stance's speed ceiling rather than the raw
-## walk_speed/run_speed exports — same reason get_current_max_speed() exists.
-func get_speed_multiplier() -> float:
-	return combat_speed_multiplier if PlayerState.stance == PlayerState.Stance.COMBAT else 1.0
 
 
 ## --- Direct Movement (TPS, WASD) ---
@@ -554,12 +564,3 @@ func _apply_deceleration(delta: float) -> void:
 		speed = 0.0
 		if current_state != MovementState.IDLE:
 			_change_state(MovementState.IDLE)
-
-## Top speed available in the current stance. COMBAT trades speed for
-## readiness, so the ceiling moves with the stance — and anything that
-## normalises speed must divide by this, not by run_speed, or it will never
-## reach 1.0 in COMBAT.
-func get_current_max_speed() -> float:
-	if PlayerState.stance == PlayerState.Stance.COMBAT:
-		return run_speed * combat_speed_multiplier
-	return run_speed

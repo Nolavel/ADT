@@ -13,9 +13,39 @@ touched, and — where relevant — which parallel track it came from.
 ---
 
 ## 2026-08-03 — Animation blending concept
-Early concept work on animation blending.
-*Концепт блендинга анимаций.*
+Early concept work on animation blending, then two follow-up fixes once the tree
+was actually exercised.
+*Концепт блендинга анимаций и два последующих исправления после первых прогонов.*
 - `player/player_components/` (animation)
+
+**PEACE always faces the camera; strafe restored.** `_apply_direct_movement()` gave
+PEACE a forward/backward hemisphere check that faced movement direction while walking
+forward — so a pure-strafe input (e.g. the D key) just turned the body toward it and
+walked forward; lateral movement never happened. Dropped the hemisphere branch: both
+stances now always face the camera while moving, differing only in turn rate. PEACE's
+animation branch was rebuilt to match — an `AnimationNodeBlendSpace2D` with the same
+seven-point geometry COMBAT already had (only the center/idle clip differs), replacing
+the old `Blend2(idle, BlendSpace1D(walk, run))` shape, which could only ever play
+forward locomotion regardless of strafe input. `get_speed_multiplier()` (was
+`_current_speed_multiplier()`, made public for the animation component) and a
+stance-ceiling normalisation fix landed alongside it.
+*PEACE теперь всегда разворачивается к камере, как COMBAT — раньше страйф не работал
+физически. Ветка анимации PEACE перестроена в BlendSpace2D по образцу COMBAT.*
+- `player/player.gd`, `player/player_components/animation_component/player_animation_component.gd`
+
+**Run clip wired into both branches.** Both PEACE and COMBAT's forward point played
+`new4/sneak-walk` at every speed from `walk_speed` to `run_speed` — the character
+visibly walked while covering ground up to `run_speed / walk_speed` times faster than
+the clip implies. Pre-dated the rebuild above; `ANIM_COMBAT_RUN` had been flagged
+unwired twice. Split the forward axis into two points (walk at the new
+`walk_blend_radius` export, run at the outer edge) instead of nesting a second blend
+space, since the blend vector's length already carries speed. Left a comment flagging
+that idle/walk/run now sit exactly collinear on the blend space's x=0 axis — an
+unverified `auto_triangles` risk that needs checking the next time this runs in the
+editor.
+*Бег наконец подключён в обеих ветках — раньше при любой скорости играл клип шага.
+Дистанция ходьбы разнесена по радиусу, а не вложенным блендспейсом.*
+- `player/player_components/animation_component/player_animation_component.gd`
 
 ---
 
