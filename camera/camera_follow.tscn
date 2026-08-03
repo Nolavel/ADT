@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://6dopa316y1fc"]
 
 [ext_resource type="Script" uid="uid://b1eul5hgx5mk6" path="res://camera/camera_follow.gd" id="1_rynbu"]
+[ext_resource type="Script" uid="uid://chn2gbavhnffy" path="res://camera/isometric_camera_debug_overlay.gd" id="2_isodbg"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_rynbu"]
 font_color = Color(0, 0, 0, 1)
@@ -61,3 +62,11 @@ text = "Follow"
 label_settings = SubResource("LabelSettings_nsx0a")
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="IsoCameraDebug" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+script = ExtResource("2_isodbg")

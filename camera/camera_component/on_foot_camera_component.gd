@@ -528,11 +528,22 @@ func _build_iso_frame() -> IsometricCameraState.Frame:
 	var viewport_size := camera.get_viewport().get_visible_rect().size
 	f.viewport_size = viewport_size
 
-	# Visible world height at the character's distance, divided by
-	# viewport height. Uses the zoom distance rather than a measured
-	# distance because the character sits at the orbit centre.
-	var fov := camera.fov if camera else ISO_FOV_FALLBACK
-	var visible_height := 2.0 * current_zoom_distance * tan(deg_to_rad(fov) * 0.5)
+	# Visible world height at the character's distance, divided by viewport
+	# height. This is what lets the dead zone keep its apparent screen size
+	# as the player zooms.
+	#
+	# The two projections need different math: a perspective camera's
+	# visible height grows with distance, an orthogonal camera's is fixed
+	# at camera.size. Branching here rather than assuming perspective —
+	# camera_follow.tscn stores an orthogonal camera and camera_follow.gd
+	# overrides it to perspective at _ready(), so the assumption is one
+	# edit away from being wrong.
+	var visible_height: float
+	if camera and camera.projection == Camera3D.PROJECTION_ORTHOGONAL:
+		visible_height = camera.size
+	else:
+		var fov := camera.fov if camera else ISO_FOV_FALLBACK
+		visible_height = 2.0 * current_zoom_distance * tan(deg_to_rad(fov) * 0.5)
 	f.world_per_pixel = visible_height / maxf(viewport_size.y, 1.0)
 
 	return f

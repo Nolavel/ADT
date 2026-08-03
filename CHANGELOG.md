@@ -70,6 +70,32 @@ click-to-move destination rather than reconstructing it from velocity.
 - `camera/camera_component/on_foot_camera_component.gd`, `camera/isometric_camera_state.gd`, `camera/isometric_camera_debug_overlay.gd`
 - `player/player.gd`, `player/player_components/nav_component/navigation_component.gd`
 
+**Isometric debug overlay wired up; dead-zone math made projection-aware.**
+`OnFootCameraComponent.iso_debug_overlay` was declared and read from
+`_push_iso_debug()` but nothing ever created or assigned it, so it could never
+turn on. Added an `IsoCameraDebug` node (the overlay script, hidden by
+default) to `camera_follow.tscn`, and a `camera_follow.gd` export
+(`iso_debug_enabled`, own "Debug" group) that gates its visibility every
+physics frame — on only while `PlayerState.mode == ON_FOOT` and
+`view_mode == ISOMETRIC`, so it is structurally impossible for the overlay to
+show during TPS. No key toggle: the earlier attempt at one read `Input`
+directly outside `InputSystems`, which this project does not allow outside
+`map_source/`/`map_camera/`; no such handler was present in this checkout, so
+there was nothing to remove, but the export replaces that approach on
+principle. Also fixed `_build_iso_frame()`'s `world_per_pixel`: it assumed a
+perspective camera, but `camera_follow.tscn` stores an orthogonal camera
+(`projection = 1`, `size = 20.0`) that `camera_follow.gd` currently overrides
+to perspective at `_ready()` — correct today only because the code wins over
+the scene. Branched on `camera.projection` so the dead zone stays correct if
+that override is ever removed.
+*Дебаг-оверлей мёртвой зоны наконец подключён — раньше он существовал, но
+никто его не создавал и не назначал. Показывается только в ON_FOOT +
+ISOMETRIC, управляется экспортом, а не клавишей (чтение Input вне
+InputSystems здесь запрещено). world_per_pixel теперь учитывает тип проекции
+камеры, а не только перспективную.*
+- `camera/camera_follow.tscn`, `camera/camera_follow.gd`
+- `camera/camera_component/on_foot_camera_component.gd`
+
 ---
 
 ## 2026-08-02 — Stance system, NPC body language, animation component
