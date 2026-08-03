@@ -61,6 +61,12 @@ const TPS_LEAD_SMOOTHING: float = 2.5
 ## running lock-on target to actually see.
 const TPS_LOCK_DISTANCE_SMOOTHING: float = 4.0
 
+## Camera distance while aiming. Closer than TPS_DISTANCE — the shot needs a
+## tighter frame than movement does.
+const TPS_AIM_DISTANCE: float = 1.5
+## How fast the camera dollies in and out of the aim distance.
+const TPS_AIM_DISTANCE_SMOOTHING: float = 8.0
+
 ## Used only if `target` doesn't expose character-metric getters (see
 ## _target_metric_height()) — a safe non-zero default instead of silently
 ## pivoting/casting at ground level.
@@ -107,11 +113,12 @@ var _tps_lead_offset: Vector3 = Vector3.ZERO
 ## dictionary's own convention, shared by EXPLORE and any non-positive
 ## LOCKED/TRANSITION value).
 var _tps_lock_distance_override: float = -1.0
-## Smoothed camera distance: eased toward TPS_DISTANCE normally, or toward
-## _tps_lock_distance_override while LOCKED/TRANSITION report a positive
-## one, so a lock-on dolly reads as a push-in, not a snap. Decayed back to
-## TPS_DISTANCE in ISOMETRIC by _decay_tps_state(), same rule as every
-## other TPS-only smoothed value.
+## Smoothed camera distance. Despite the name (kept from when lock-on was
+## the only override) it now eases toward whichever of three sources
+## _select_tps_distance_source() picks — see that function for the
+## priority — not just the lock-on one. Decayed back to TPS_DISTANCE in
+## ISOMETRIC by _decay_tps_state(), same rule as every other TPS-only
+## smoothed value.
 var _tps_lock_distance: float = TPS_DISTANCE
 
 @export var rotation_speed: float = 8.0
@@ -149,6 +156,12 @@ var _tps_lock_distance: float = TPS_DISTANCE
 @export var follow_rotation_damping: float = 3.0
 @export var follow_rotation_delay: float = 0.2
 
+@export_group("Aim")
+## Multiplier on the shoulder h_offset while aiming. Grown, not shrunk: the
+## sight needs to clear the character's silhouette, not sit centered on it,
+## so the shot reads against open frame instead of against Sid's own back.
+@export var aim_shoulder_offset_multiplier: float = 1.4
+
 ## --- References, assigned by the host before enter() ---
 var camera: Camera3D
 var target: Node3D
@@ -170,6 +183,21 @@ const POSITION_ANGLES = {
 	OrbitalPosition.WEST: 3 * PI / 2
 }
 var current_position: OrbitalPosition = OrbitalPosition.NORTH
+
+## Which of three sources _tps_lock_distance should ease toward this frame,
+## picked by _select_tps_distance_source(). A single decision point instead
+## of three independent conditions, so the priority between them can't
+## drift out of sync with whichever smoothing rate the caller applies for
+## the winner:
+##   1. AIM — PlayerState.is_aiming. Wins even over an active lock: aiming
+##      AT a locked target should still pull the camera in tight for the
+##      shot, not stay at lock-on's wider situational-awareness framing.
+##   2. LOCK_ON — _tps_combat reports a positive distance_override while
+##      LOCKED/TRANSITION. An ambient framing aid, not a deliberate choice
+##      at this instant, so it yields to aim.
+##   3. REST — TPS_DISTANCE, neither aiming nor locked.
+enum TpsDistanceSource { REST, LOCK_ON, AIM }
+
 var target_angle: float = 0.0
 var current_angle: float = 0.0
 var player_rotation_timer: float = 0.0
@@ -488,11 +516,29 @@ func _target_horizontal_direction() -> Vector3:
 	return Vector3.ZERO
 
 
+func _select_tps_distance_source() -> TpsDistanceSource:
+	if PlayerState.is_aiming:
+		return TpsDistanceSource.AIM
+
+	var combat_locking := _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED \
+			or _tps_combat.state == TpsCombatCameraState.TpsState.TRANSITION
+	if combat_locking and _tps_lock_distance_override > 0.0:
+		return TpsDistanceSource.LOCK_ON
+
+	return TpsDistanceSource.REST
+
+
 ## Every piece of TPS-only smoothed state (shoulder h_offset, sprint
 ## pull-back, camera lead, ...) must decay to its rest value here so none of
 ## it survives a trip through ISOMETRIC — by construction nothing else
 ## guarantees that. Add a new TPS state's decay line here in the same
 ## commit that introduces the state.
+##
+## Aiming introduces no new line of its own: it only ever affects
+## _tps_lock_distance (already decayed below, toward TPS_DISTANCE, the
+## correct rest value regardless of source) and camera.h_offset's target
+## magnitude (already decayed below too) — both channels this function
+## already owned before aiming existed.
 func _decay_tps_state(delta: float) -> void:
 	camera.h_offset = lerp(camera.h_offset, 0.0, Smoothing.damp_factor(8.0, delta))
 	_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
@@ -597,15 +643,21 @@ func _update_camera_position(delta):
 			var speed_ratio := _target_speed_ratio()
 			_tps_sprint_pullback = lerp(_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
 
-			# Lock-on dolly: base distance is TPS_DISTANCE, unless combat
-			# reports a positive distance_override while LOCKED/TRANSITION —
-			# smoothed so the push-in isn't an instant snap.
-			var combat_locking := _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED \
-					or _tps_combat.state == TpsCombatCameraState.TpsState.TRANSITION
+			# Dolly: base distance is TPS_DISTANCE, unless aim or lock-on
+			# wants a different one — see TpsDistanceSource's comment for
+			# the priority between them. Smoothed at whichever rate goes
+			# with the winning source, so a push-in never reads as a snap.
 			var base_distance := TPS_DISTANCE
-			if combat_locking and _tps_lock_distance_override > 0.0:
-				base_distance = _tps_lock_distance_override
-			_tps_lock_distance = lerp(_tps_lock_distance, base_distance, Smoothing.damp_factor(TPS_LOCK_DISTANCE_SMOOTHING, delta))
+			var distance_smoothing := TPS_LOCK_DISTANCE_SMOOTHING
+			match _select_tps_distance_source():
+				TpsDistanceSource.AIM:
+					base_distance = TPS_AIM_DISTANCE
+					distance_smoothing = TPS_AIM_DISTANCE_SMOOTHING
+				TpsDistanceSource.LOCK_ON:
+					base_distance = _tps_lock_distance_override
+				TpsDistanceSource.REST:
+					pass
+			_tps_lock_distance = lerp(_tps_lock_distance, base_distance, Smoothing.damp_factor(distance_smoothing, delta))
 
 			var effective_distance := _tps_lock_distance + _tps_sprint_pullback
 
@@ -633,7 +685,8 @@ func _update_camera_position(delta):
 			camera_target_pos = pivot + offset
 			camera_target_pitch = _tps_pitch_deg + _tps_pitch_offset_deg
 
-			var target_h_offset := shoulder_offset * TPS_SHOULDER_FRUSTUM_RATIO * TPS_SHOULDER_H_OFFSET_SIGN
+			var aim_offset_scale := aim_shoulder_offset_multiplier if PlayerState.is_aiming else 1.0
+			var target_h_offset := shoulder_offset * TPS_SHOULDER_FRUSTUM_RATIO * TPS_SHOULDER_H_OFFSET_SIGN * aim_offset_scale
 			camera.h_offset = lerp(camera.h_offset, target_h_offset, Smoothing.damp_factor(8.0, delta))
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
