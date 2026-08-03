@@ -72,6 +72,7 @@ var WORLD_3D_ENTITY_SCENES: Array[PackedScene] = [
 var WORLD_UI_SCENES: Array[PackedScene] = [
 	#preload("res://ui/debug/stream_debug_panel.tscn"),
 	preload("res://ui/debug/perception_debug_panel.tscn"),
+	preload("res://ui/hud/aim_reticle/aim_reticle.tscn"),
 ]
 
 const UI_CANVAS_LAYER_INDEX: int = 40
