@@ -62,12 +62,18 @@ func _decide(delta: float) -> void:
 	_npc.set_look_target(observation.position)
 	_visible_time += delta
 
-	## Once the body starts turning, observation.angle_deg trends toward 0
-	## as the NPC's facing catches up with the player — so this condition
+	## COMBAT is already a statement (see PlayerState.Stance's own comment)
+	## — a raised weapon doesn't earn the same benefit of the doubt as
+	## someone walking past, so it skips the glance/turn gate entirely and
+	## commits the body immediately. PEACE keeps the original behaviour:
+	## once the body starts turning, observation.angle_deg trends toward 0
+	## as the NPC's facing catches up with the player — so that condition
 	## naturally stops re-triggering mid-turn without needing a separate
 	## "committed" flag. That is deliberate: it reads as finishing the turn
 	## it already started, not as flickering at the threshold.
-	if _visible_time >= body_turn_delay and observation.angle_deg > body_turn_angle_deg:
+	if observation.stance == PlayerState.Stance.COMBAT:
+		_npc.set_facing_target(observation.position)
+	elif _visible_time >= body_turn_delay and observation.angle_deg > body_turn_angle_deg:
 		_npc.set_facing_target(observation.position)
 
 

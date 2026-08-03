@@ -22,6 +22,7 @@ menu_pause_pitch_deg = null
 menu_pause_transition_duration = null
 shake_enabled_in_game_only = null
 shake_area = null
+iso_debug_enabled = true
 
 [node name="CameraSettings" type="Control" parent="." unique_id=811898119]
 layout_mode = 3
@@ -63,10 +64,11 @@ label_settings = SubResource("LabelSettings_nsx0a")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="IsoCameraDebug" type="Control" parent="."]
+[node name="IsoCameraDebug" type="Control" parent="." unique_id=1376920396]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-visible = false
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("2_isodbg")

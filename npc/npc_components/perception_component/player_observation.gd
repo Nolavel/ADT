@@ -13,12 +13,12 @@
 # errors, and a Dictionary would drag Variant into every consumer that reads
 # a field off it.
 #
-# Fields are exactly what perception measures TODAY. No stance field, no
-# held-item field — those systems don't exist yet, and an empty field here
-# would read as a promise the same way an empty placeholder file does (see
-# CONTRIBUTING.md). This class is itself the extension point: a new field
-# is an additive change, never a break for existing consumers, which is
-# exactly why this isn't a tuple.
+# Fields are exactly what perception measures TODAY. No held-item field —
+# that system doesn't exist yet, and an empty field here would read as a
+# promise the same way an empty placeholder file does (see CONTRIBUTING.md).
+# This class is itself the extension point: a new field is an additive
+# change, never a break for existing consumers, which is exactly why this
+# isn't a tuple. `stance` (below) is the first field added this way.
 # =============================================================================
 extends RefCounted
 class_name PlayerObservation
@@ -34,3 +34,8 @@ var distance: float = INF
 var angle_deg: float = 180.0
 ## Where the player was when this observation was taken.
 var position: Vector3 = Vector3.ZERO
+## Player's declared stance, as observed. Only meaningful when is_seen —
+## unlike distance, stance is read visually (raised fists / weapon in hand),
+## not knowable through walls or at range. Defaults to PEACE, the least
+## alarming assumption, whenever the player hasn't actually been seen.
+var stance: PlayerState.Stance = PlayerState.Stance.PEACE

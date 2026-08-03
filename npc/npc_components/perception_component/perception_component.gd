@@ -80,6 +80,11 @@ func observe_player() -> PlayerObservation:
 		return observation   # floor/wall geometry blocks the view
 
 	observation.is_seen = true
+	# Stance is a visual read (raised fists / weapon), same as the sight
+	# check just passed — set it here, not earlier, so an occluded or
+	# out-of-range player leaves stance at its PEACE default rather than
+	# reporting something the NPC couldn't actually have seen.
+	observation.stance = PlayerState.stance
 	return observation
 
 
