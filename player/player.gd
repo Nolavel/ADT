@@ -472,18 +472,13 @@ func _apply_direct_movement(delta: float) -> void:
 			# to the threat, feet just carrying it around.
 			_face_camera(delta, combat_face_camera_smoothing)
 		else:
-			# TLOU-style rotation: face movement direction when moving forward
-			# relative to camera; face camera when backpedaling / strafing
-			var move_facing := atan2(dir.x, dir.z)
-			var cam_facing := _camera_yaw + PI   # "forward" from camera's POV
-			var angle_diff := absf(wrapf(move_facing - cam_facing, -PI, PI))
-
-			if angle_diff < PI * 0.5:
-				# Forward hemisphere: face movement direction
-				rotation.y = lerp_angle(rotation.y, move_facing, delta * 10.0)
-			else:
-				# Backward hemisphere: face camera (backpedal / strafe)
-				_face_camera(delta, 6.0)
+			# Prototype: PEACE also always faces the camera now, same as
+			# COMBAT, just softer (6.0 vs combat_face_camera_smoothing) — the
+			# body no longer turns to face movement direction here. Today the
+			# two stances are told apart by idle pose and this turn rate, not
+			# by a distinct movement manner; giving PEACE its own facing
+			# behavior back is future work, not something forgotten here.
+			_face_camera(delta, 6.0)
 
 		if current_state == MovementState.IDLE or current_state == MovementState.DECELERATING:
 			_change_state(MovementState.RUNNING if is_running_mode else MovementState.WALKING)
