@@ -75,6 +75,11 @@ const TPS_SHOULDER_TRANSLATION_RATIO: float = 0.4
 ## Sign depends on which way `right` points on screen — verify by running the game.
 const TPS_SHOULDER_H_OFFSET_SIGN: float = 1.0
 
+## Vertical FOV assumed when converting screen fractions to world units
+## for the isometric dead zone. Read from the camera at runtime; this is
+## only the fallback if the camera is missing.
+const ISO_FOV_FALLBACK: float = 75.0
+
 ## Runtime pitch accumulated from mouse look. Base tps_angle is the starting offset.
 var _tps_pitch_deg: float = -10.0
 ## Pitch offset from TpsCombatCameraState (explore sway / lock-on), added on top of _tps_pitch_deg.
@@ -228,6 +233,16 @@ var follow_target_angle: float = 0.0
 var _tps_combat := TpsCombatCameraState.new()
 var _shoulder := TpsShoulderCameraState.new()
 
+var _iso := IsometricCameraState.new()
+
+## Reused every frame so the isometric state does not allocate a
+## Frame per tick. Never handed out — the host is its only writer.
+var _iso_frame := IsometricCameraState.Frame.new()
+
+## Optional, assigned by the host like the debug labels. Null in a
+## normal build; when present, draws the dead-zone rectangles.
+var iso_debug_overlay: IsometricCameraDebugOverlay
+
 ## Called once by the host before first use (camera/target are already assigned).
 func setup() -> void:
 	current_angle = POSITION_ANGLES[current_position]
@@ -247,6 +262,13 @@ func setup() -> void:
 ## Called by the host on entering ON_FOOT (including returning from MENU).
 func enter() -> void:
 	camera_current_pos = camera.global_position
+
+	# The follow point must not ease in from wherever ISOMETRIC left it
+	# before the last mode switch — place it on the character instead.
+	if target:
+		_iso.reset(target.global_position)
+	else:
+		_iso.request_reset()
 
 
 func exit() -> void:
@@ -478,6 +500,82 @@ func _decay_tps_state(delta: float) -> void:
 	_tps_lock_distance = lerp(_tps_lock_distance, TPS_DISTANCE, Smoothing.damp_factor(TPS_LOCK_DISTANCE_SMOOTHING, delta))
 
 
+## Fills the reusable Frame for IsometricCameraState.
+##
+## Character data is read through optional getters, the same convention
+## _target_metric_height() already uses, so a target missing them
+## degrades instead of erroring.
+##
+## world_per_pixel is derived here rather than in the state because it
+## depends on the camera and the zoom slider, both of which belong to
+## the host. Deriving it from the CURRENT zoom is what makes the dead
+## zone keep its apparent size as the player zooms.
+func _build_iso_frame() -> IsometricCameraState.Frame:
+	var f := _iso_frame
+
+	f.target_position = target.global_position
+	f.speed_ratio = _target_speed_ratio()
+	f.on_floor = _target_on_floor()
+	f.move_target = _target_move_target()
+	f.combat = PlayerState.stance == PlayerState.Stance.COMBAT
+
+	# Horizontal camera-plane basis from the orbit angle. cam_forward is
+	# the direction the camera looks along the ground; cam_right is 90
+	# degrees clockwise from it.
+	f.cam_forward = Vector3(-sin(current_angle), 0.0, -cos(current_angle))
+	f.cam_right = Vector3(cos(current_angle), 0.0, -sin(current_angle))
+
+	var viewport_size := camera.get_viewport().get_visible_rect().size
+	f.viewport_size = viewport_size
+
+	# Visible world height at the character's distance, divided by
+	# viewport height. Uses the zoom distance rather than a measured
+	# distance because the character sits at the orbit centre.
+	var fov := camera.fov if camera else ISO_FOV_FALLBACK
+	var visible_height := 2.0 * current_zoom_distance * tan(deg_to_rad(fov) * 0.5)
+	f.world_per_pixel = visible_height / maxf(viewport_size.y, 1.0)
+
+	return f
+
+
+## Whether the target is standing on something. Optional getter, like
+## the metric getters — a target without it is treated as grounded,
+## which keeps the vertical channel following instead of freezing.
+func _target_on_floor() -> bool:
+	if target and target.has_method(&"is_on_floor"):
+		return target.is_on_floor()
+	return true
+
+
+## Current click-to-move destination, or ZERO when there is none.
+##
+## Read from the target rather than from ClickToMoveSystem: the camera
+## has no reference to that system and should not acquire one just to
+## know where the character is headed.
+func _target_move_target() -> Vector3:
+	if target and target.has_method(&"get_move_target"):
+		return target.get_move_target()
+	return Vector3.ZERO
+
+
+## Feeds the debug overlay, if one is attached. Projection happens here
+## rather than in the state so the state stays free of Camera3D.
+##
+## Both points are projected with the camera as it stood at the END of
+## the previous frame — this runs before camera.global_position is
+## written. The one-frame lag is accepted: it is far below every damping
+## time constant in IsometricCameraState and cannot be seen.
+func _push_iso_debug(follow_point: Vector3) -> void:
+	if not iso_debug_overlay or not iso_debug_overlay.visible:
+		return
+
+	iso_debug_overlay.push(
+		camera.unproject_position(follow_point),
+		camera.unproject_position(target.global_position),
+		_iso
+	)
+
+
 func _update_camera_position(delta):
 	match PlayerState.view_mode:
 		PlayerState.ViewMode.TPS:
@@ -537,17 +635,35 @@ func _update_camera_position(delta):
 			if hit:
 				camera_target_pos = hit.position + hit.normal * 0.25
 
+			# Mirror of _decay_tps_state: every ISOMETRIC-only value returns
+			# to rest while TPS is active, so neither view can hand a stale
+			# offset to the other across a switch.
+			_iso.decay(delta)
+
 		_:  # ISOMETRIC
 			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))
 			var pitch_rad = deg_to_rad(camera_angle)
 			var horizontal_distance = current_zoom_distance * cos(pitch_rad)
 			var vertical_distance = -current_zoom_distance * sin(pitch_rad)
 			var orbit_offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0)
-			camera_target_pos = target.global_position + orbit_offset
+
+			# The camera orbits a follow point that lags, leads and holds
+			# height on its own — not the character's position directly.
+			# While the view-mode transition is animating the follow point
+			# is bypassed: the transition already animates position, and a
+			# dead zone fighting it reads as a stutter.
+			var follow_point := target.global_position
+			if view_mode_animating:
+				_iso.request_reset()
+			else:
+				follow_point = _iso.update(delta, _build_iso_frame())
+
+			camera_target_pos = follow_point + orbit_offset
 			camera_target_pitch = camera_angle
 			camera_target_yaw = current_angle
 
 			_decay_tps_state(delta)
+			_push_iso_debug(follow_point)
 
 	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
 	# from view_transition_speed so steady-state follow lag and the

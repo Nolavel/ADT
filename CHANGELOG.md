@@ -47,6 +47,29 @@ editor.
 Дистанция ходьбы разнесена по радиусу, а не вложенным блендспейсом.*
 - `player/player_components/animation_component/player_animation_component.gd`
 
+**Isometric camera follow state wired into `OnFootCameraComponent`.** The
+ISOMETRIC arm used to orbit the character's raw position; it now orbits a new
+`IsometricCameraState` follow point instead — a dead zone (the character can
+drift inside a screen-space rectangle before the camera reacts at all, tighter
+in COMBAT), lead toward the click-to-move destination rather than extrapolated
+velocity, a vertical channel that tracks ground height instead of body height
+(holds still on a jump, chases once a fall outlasts a grace period), and
+asymmetric damping (slow catch-up while moving, fast settle once stopped).
+`IsometricCameraDebugOverlay` draws the three zones plus the follow/character
+markers when attached, fed by the host so it never recomputes what the state
+already decided. Every ISOMETRIC-only value decays back to rest while TPS is
+active (`_iso.decay(delta)`, called from the TPS arm) — the mirror image of
+`_decay_tps_state()`, so neither view can hand the other a stale offset across
+a `V` switch. Two small getters back this: `player.gd`'s `get_move_target()`
+and `NavigationComponent`'s `get_final_target()`, both reading the current
+click-to-move destination rather than reconstructing it from velocity.
+*Состояние следования камеры в ISOMETRIC вынесено в `IsometricCameraState`:
+мёртвая зона, упреждение к цели клика, отдельный вертикальный канал,
+асимметричное демпфирование. Дебаг-оверлей рисует зоны. Состояние затухает
+в TPS зеркально `_decay_tps_state()`.*
+- `camera/camera_component/on_foot_camera_component.gd`, `camera/isometric_camera_state.gd`, `camera/isometric_camera_debug_overlay.gd`
+- `player/player.gd`, `player/player_components/nav_component/navigation_component.gd`
+
 ---
 
 ## 2026-08-02 — Stance system, NPC body language, animation component

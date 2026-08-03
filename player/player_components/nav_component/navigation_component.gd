@@ -117,6 +117,12 @@ func get_path_progress() -> float:
 	
 	return float(current_path_index) / float(navigation_path.size() - 1)
 
+## Final point of the current path, or ZERO when there is no path.
+func get_final_target() -> Vector3:
+	if navigation_path.is_empty():
+		return Vector3.ZERO
+	return navigation_path[navigation_path.size() - 1]
+
 # --- Debug Helpers ---
 func get_full_path() -> PackedVector3Array:
 	return navigation_path

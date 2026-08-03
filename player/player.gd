@@ -270,6 +270,16 @@ func get_facing_direction() -> Vector3:
 	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 
 
+## Current click-to-move destination, or ZERO when the character is not
+## heading anywhere. Lets the camera lead toward a known destination
+## instead of extrapolating from velocity — with click-to-move the
+## destination is known before the first step is taken.
+func get_move_target() -> Vector3:
+	if not navigation_component:
+		return Vector3.ZERO
+	return navigation_component.get_final_target()
+
+
 ## Horizontal movement, relative to this character's own facing rather than
 ## world space: x = lateral (positive = this character's right), y =
 ## forward (positive = this character's own forward). Magnitude scales with

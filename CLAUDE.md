@@ -67,14 +67,14 @@ Any node/scene in these lists can implement `on_world_ready(context: WorldContex
 ### Player (`player/player.gd` + `player/player_components/`)
 
 `player.gd` (on `CharacterBody3D`) owns physics, animation state machine, and rotation directly (not delegated to components) for both movement modes it supports:
-- **Click-to-move / navigation** (`ISOMETRIC` view mode) — driven by `NavigationComponent`, path following in `_handle_navigation`.
+- **Click-to-move / navigation** (`ISOMETRIC` view mode) — driven by `NavigationComponent`, path following in `_handle_navigation`. Currently a straight-line stub: `nav_component.tscn` leaves `navigation_region_path` unset, so `_initialize_navigation()` finds no `NavigationRegion3D` and forces `use_navigation` to `false` at runtime — `set_target_position()` then just emits a single-point path straight to the destination. No obstacle avoidance and no path validation yet.
 - **Direct WASD movement** (`TPS` view mode) — `TPSMovementSystem` (a `WORLD_SYSTEM_SCRIPTS` entry) feeds `set_direct_move_input()` every physics frame; `player.gd` does the actual velocity/rotation/animation in `_apply_direct_movement`.
 
 Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `player_components/` contains three implemented components: `nav_component`, `stamina_component`, `interact_component`. Empty placeholder directories for unstarted components (health, hunger, sleep, wallet, progression, equipment, crafting, save) were removed on 2026-07-29; that scope is recorded in `docs/planned_scope.md`.
 
 ### Camera (`camera/`)
 
-`camera_follow.gd` is the host; per-mode behavior lives in `camera_component/`: `on_foot_camera_component` (ISOMETRIC orbital + TPS, with two sub-state helpers — `TpsShoulderCameraState` for left/right shoulder offset and `TpsCombatCameraState` for Explore↔Locked lock-on), `hover_camera_component` (renamed from `vehicle_hover_camera_component`; `HoverView` = CHASE/COCKPIT), `tube_transit_camera_component` (stub, freelook only), `camera_shake_component` (additive-only, pure getter — cannot leave a residual offset by construction). `camera_follow.gd` also owns an internal `CameraState{GAME, MENU_PAUSE}` for the menu tween, separate from `PlayerState.Mode`. Reads input exclusively through `InputSystems` query methods, not `Input.*` directly.
+`camera_follow.gd` is the host; per-mode behavior lives in `camera_component/`: `on_foot_camera_component` (ISOMETRIC orbital + TPS, with three sub-state helpers — `TpsShoulderCameraState` for left/right shoulder offset, `TpsCombatCameraState` for Explore↔Locked lock-on, and `IsometricCameraState` for the ISOMETRIC follow point: dead zone, lead toward the click-to-move destination, a separate vertical channel, asymmetric damping; `IsometricCameraDebugOverlay` visualizes it when attached), `hover_camera_component` (renamed from `vehicle_hover_camera_component`; `HoverView` = CHASE/COCKPIT), `tube_transit_camera_component` (stub, freelook only), `camera_shake_component` (additive-only, pure getter — cannot leave a residual offset by construction). `camera_follow.gd` also owns an internal `CameraState{GAME, MENU_PAUSE}` for the menu tween, separate from `PlayerState.Mode`. Reads input exclusively through `InputSystems` query methods, not `Input.*` directly.
 
 ### Transport (`core/controllers/transport/`)
 
