@@ -42,13 +42,12 @@ class_name PlayerAnimationComponent
 ## face-camera turn rate (see _apply_direct_movement() in player.gd) are,
 ## today, the only things telling the stances apart while moving.
 const ANIM_PEACE_IDLE: StringName = &"LightIdle"
-## Not currently wired into the blend tree — see _setup_animation_tree()'s
-## comment on why sprint doesn't fit the existing blend-space geometry.
+## Still not wired into the blend tree: no third speed tier exists past
+## run_speed to justify a point beyond the outer radius — see
+## _setup_animation_tree()'s comment.
 const ANIM_PEACE_SPRINT: StringName = &"new4/run_067"
 const ANIM_COMBAT_IDLE: StringName = &"new4/sneak-idle"
 const ANIM_COMBAT_FORWARD: StringName = &"new4/sneak-walk"
-## Not currently wired into the blend tree — see _setup_animation_tree()'s
-## comment on why COMBAT's forward point doesn't speed-blend to a run clip.
 const ANIM_COMBAT_RUN: StringName = &"new4/sneak-run-s"
 const ANIM_COMBAT_STRAFE_LEFT: StringName = &"new4/strafe-l"
 const ANIM_COMBAT_STRAFE_RIGHT: StringName = &"new4/strafe-r"
@@ -73,6 +72,14 @@ const HEAD_LOOK_FADE_SPEED: float = 4.0
 ## How long the crossfade between the PEACE and COMBAT branches takes. A
 ## feel value, tuned by eye — start at 0.2s.
 @export var stance_transition_time: float = 0.2
+## Radius at which the walk clip sits in the movement blend space (see
+## _setup_animation_tree()'s comment on the walk/run split). The blend
+## vector's length carries speed, so walk and run are separated by
+## distance from the centre rather than by nesting a speed blend space
+## inside the forward point. A feel value, not derived exactly from
+## walk_speed/run_speed — tuned by eye, only needs to sit noticeably
+## closer to the centre than run (radius 1.0).
+@export var walk_blend_radius: float = 0.45
 
 @export_group("Head Look Limits")
 ## LookAtModifier3D's clamp angles and the smoothing time when the target
@@ -133,7 +140,7 @@ func update_animation_blend(delta: float) -> void:
 	## one is currently mixed in — set both parameters unconditionally, same
 	## as combat's was already set regardless of stance, so the crossfade has
 	## a correct position on both sides mid-transition.
-	var movement_blend_position := _player.get_movement_vector_relative_to_facing()
+	var movement_blend_position: Vector2 = _player.get_movement_vector_relative_to_facing()
 	_anim_tree.set("parameters/peace/blend_position", movement_blend_position)
 	_anim_tree.set("parameters/combat/blend_position", movement_blend_position)
 
@@ -244,31 +251,52 @@ func _on_stance_changed(_old_stance: PlayerState.Stance, new_stance: PlayerState
 
 
 ## Two branches, crossfaded by stance (see stance_blend below), each an
-## AnimationNodeBlendSpace2D with identical geometry — a center (idle) point
-## plus six directional points (forward/retreat/strafe-left/strafe-right/two
-## 45° diagonals) — blended by movement direction relative to the
-## character's own facing (player.gd's get_movement_vector_relative_to_
-## facing(), not world space). The center point already IS idle, so each
-## space's own geometry gives a smooth idle<->moving crossfade for free, no
-## separate Blend2 idle/locomotion wrapper needed on either side. PEACE used
-## to be shaped differently here (Blend2(idle, BlendSpace1D(walk, run)) by
-## speed) — replaced because a 1D speed blend can't produce strafe: PEACE's
-## body now always faces the camera while moving too (see
-## _apply_direct_movement() in player.gd), so it needs the same
-## direction-blended geometry COMBAT already has, or the legs would walk
-## forward while the body strafes sideways under them.
+## AnimationNodeBlendSpace2D with identical geometry — a center (idle)
+## point plus seven directional points, blended by movement direction
+## relative to the character's own facing (player.gd's
+## get_movement_vector_relative_to_facing(), not world space). The center
+## point already IS idle, so each space's own geometry gives a smooth
+## idle<->moving crossfade for free, no separate Blend2 idle/locomotion
+## wrapper needed on either side. PEACE used to be shaped differently here
+## (Blend2(idle, BlendSpace1D(walk, run)) by speed) — replaced because a 1D
+## speed blend can't produce strafe: PEACE's body now always faces the
+## camera while moving too (see _apply_direct_movement() in player.gd), so
+## it needs the same direction-blended geometry COMBAT already has, or the
+## legs would walk forward while the body strafes sideways under them.
+##
+## Forward is two points on the same axis rather than one: walk sits at
+## walk_blend_radius (@export, Stance group), run at the outer edge (radius
+## 1.0). This works because the blend vector's length already carries
+## speed — get_movement_vector_relative_to_facing() divides by the
+## stance's own get_current_max_speed() — so walk and run separate by
+## distance from the centre. Nesting a BlendSpace1D inside the forward
+## point would be the tidier structure, but it needs a nested parameter
+## path that cannot be verified without running the project, and a wrong
+## path fails silently (stuck at whatever default position, never actually
+## blending).
+##
+## Retreat/strafe-left/strafe-right/two 45° diagonals stay at radius 1.0,
+## i.e. run pace, even sideways: there is no walk-strafe clip in this
+## project (only new4/strafe-l and new4/strafe-r, no diagonal or backward
+## variant either) to put at a closer radius. Not an oversight — there is
+## nothing else in the libraries to draw on.
 ##
 ## The two branches differ only in their center point (ANIM_PEACE_IDLE vs
-## ANIM_COMBAT_IDLE) — every directional point is the same
+## ANIM_COMBAT_IDLE) — every directional point, including run, is the same
 ## AnimationNodeAnimation clip reused on both sides; see the clip-constants
-## comment above for why.
+## comment above for why. ANIM_PEACE_SPRINT is still not wired to either
+## space: there is no third speed tier past run_speed to justify a point
+## beyond the outer radius — target_speed only ever settles on walk_speed
+## or run_speed (see player.gd's _update_direct_move_target_speed()). Left
+## for whoever adds one.
 ##
-## ANIM_PEACE_SPRINT and ANIM_COMBAT_RUN are defined but not wired to either
-## space: this project's movement model has no third speed tier to justify a
-## point past the outer radius (player.gd's get_current_max_speed(), i.e.
-## run_speed adjusted for stance) — target_speed only ever settles on
-## walk_speed or run_speed (see player.gd's _update_direct_move_target_
-## speed()). Left for whoever adds one.
+## auto_triangles (Godot's default for AnimationNodeBlendSpace2D, left on
+## here) triangulates the point set automatically. idle/walk/run sit
+## exactly collinear on the x=0 axis — unverified whether Godot's Delaunay
+## triangulation handles three collinear points cleanly or drops/misweights
+## the walk point; this project cannot run the editor from here to check.
+## Watch for it (a step that visually skips straight from idle to run, or a
+## triangulation warning in the output panel) the next time this runs.
 ##
 ## Both branches assembled entirely in code, no hand-authored .tres/editor
 ## setup — easy to rebuild when clips change.
@@ -279,6 +307,8 @@ func _setup_animation_tree() -> void:
 	peace_idle.animation = ANIM_PEACE_IDLE
 	var peace_forward := AnimationNodeAnimation.new()
 	peace_forward.animation = ANIM_COMBAT_FORWARD
+	var peace_run := AnimationNodeAnimation.new()
+	peace_run.animation = ANIM_COMBAT_RUN
 	var peace_retreat := AnimationNodeAnimation.new()
 	peace_retreat.animation = ANIM_COMBAT_RETREAT
 	var peace_strafe_left := AnimationNodeAnimation.new()
@@ -294,7 +324,8 @@ func _setup_animation_tree() -> void:
 	peace.min_space = Vector2(-1.0, -1.0)
 	peace.max_space = Vector2(1.0, 1.0)
 	peace.add_blend_point(peace_idle, Vector2(0.0, 0.0))
-	peace.add_blend_point(peace_forward, Vector2(0.0, 1.0))
+	peace.add_blend_point(peace_forward, Vector2(0.0, walk_blend_radius))
+	peace.add_blend_point(peace_run, Vector2(0.0, 1.0))
 	peace.add_blend_point(peace_retreat, Vector2(0.0, -1.0))
 	peace.add_blend_point(peace_strafe_left, Vector2(-1.0, 0.0))
 	peace.add_blend_point(peace_strafe_right, Vector2(1.0, 0.0))
@@ -306,6 +337,8 @@ func _setup_animation_tree() -> void:
 	combat_idle.animation = ANIM_COMBAT_IDLE
 	var combat_forward := AnimationNodeAnimation.new()
 	combat_forward.animation = ANIM_COMBAT_FORWARD
+	var combat_run := AnimationNodeAnimation.new()
+	combat_run.animation = ANIM_COMBAT_RUN
 	var combat_retreat := AnimationNodeAnimation.new()
 	combat_retreat.animation = ANIM_COMBAT_RETREAT
 	var combat_strafe_left := AnimationNodeAnimation.new()
@@ -321,7 +354,8 @@ func _setup_animation_tree() -> void:
 	combat.min_space = Vector2(-1.0, -1.0)
 	combat.max_space = Vector2(1.0, 1.0)
 	combat.add_blend_point(combat_idle, Vector2(0.0, 0.0))
-	combat.add_blend_point(combat_forward, Vector2(0.0, 1.0))
+	combat.add_blend_point(combat_forward, Vector2(0.0, walk_blend_radius))
+	combat.add_blend_point(combat_run, Vector2(0.0, 1.0))
 	combat.add_blend_point(combat_retreat, Vector2(0.0, -1.0))
 	combat.add_blend_point(combat_strafe_left, Vector2(-1.0, 0.0))
 	combat.add_blend_point(combat_strafe_right, Vector2(1.0, 0.0))
