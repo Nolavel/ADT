@@ -1,9 +1,11 @@
 # =============================================================================
-# perception_component.gd — PerceptionComponent: what this NPC can sense
+# perception_component.gd — PerceptionComponent: what this actor can sense
 # about the player right now.
 #
-# Child of the NPC node (same shape as npc/controllers/*: resolves its
-# NPCBase parent once in _ready(), loudly disables itself on a mismatch).
+# Child of the actor node (same shape as npc/controllers/*: resolves its
+# ActorBase parent once in _ready(), loudly disables itself on a mismatch —
+# not NPC-only, DroneBase (world/police_drone/) hosts one too, same
+# component, wider vision_range/vision_angle_deg exports).
 # observe_player() reports a plain PlayerObservation — see that file's
 # banner for why this component never decides what the fact means, only
 # measures it. Vision only; hearing is out of scope for this pass.
@@ -26,7 +28,7 @@ const LINE_OF_SIGHT_MASK: int = (1 << 1) | (1 << 2)
 ## BODY_HEIGHT 1.8), it just isn't computed from a live character.
 const RAY_TARGET_HEIGHT_FALLBACK: float = 1.3
 
-var _npc: NPCBase = null
+var _npc: ActorBase = null
 ## Set once _target_chest_height() has warned about a player with no
 ## get_chest_height(), so the warning doesn't spam every call.
 var _warned_missing_chest_height: bool = false
@@ -34,13 +36,13 @@ var _warned_missing_chest_height: bool = false
 
 func _ready() -> void:
 	var parent := get_parent()
-	if not (parent is NPCBase):
-		push_error("PerceptionComponent: parent '%s' is not an NPCBase — component disabled" % parent.name)
+	if not (parent is ActorBase):
+		push_error("PerceptionComponent: parent '%s' is not an ActorBase — component disabled" % parent.name)
 		return
 	_npc = parent
 
 
-## What this NPC can sense about the player right now. Returns a plain
+## What this actor can sense about the player right now. Returns a plain
 ## observation — never an interpretation of it.
 func observe_player() -> PlayerObservation:
 	var observation := PlayerObservation.new()

@@ -25,6 +25,12 @@ class_name IdleNPCController
 ## feel value, tuned by eye.
 @export var body_turn_angle_deg: float = 40.0
 
+## NPCControllerBase resolves _actor as ActorBase (shared with
+## PatrolDroneController/DroneBase); this controller only ever drives an
+## NPCBase and uses NPC-only facing-target methods ActorBase doesn't
+## declare, hence its own narrower reference, cast once in _ready().
+var _npc: NPCBase = null
+
 ## Resolved once in _ready(), alongside _npc — sibling node, child of the
 ## same NPC. Null if the NPC has no PerceptionComponent (not every NPC will
 ## necessarily have one forever, e.g. background crowd fillers later).
@@ -38,6 +44,7 @@ var _visible_time: float = 0.0
 
 func _ready() -> void:
 	super._ready()
+	_npc = _actor as NPCBase
 	if not _npc:
 		return
 	for child in _npc.get_children():

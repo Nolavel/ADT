@@ -10,13 +10,20 @@
 # — body, movement and perception are meant to outlive that switch, so
 # nothing here knows or cares which controller is driving it.
 #
+# Extends ActorBase (core/characters/actor_base.gd), the contract
+# NPCControllerBase and PerceptionComponent actually type-check against —
+# DroneBase (world/police_drone/drone_base.gd) extends the same base and
+# reuses both. get_facing_direction() is inherited unmodified: NPCBase's
+# root really does turn to face (_face_move_direction() below), which is
+# exactly what ActorBase's default assumes.
+#
 # Metric and facing getters (get_eye_height/get_shoulder_height/
 # get_facing_direction) share names with player.gd's own: the TPS camera's
 # target/lock-on code already reads these through duck typing, so any node
 # carrying them is usable wherever the player is, without the reader needing
 # to know it's an NPC. get_facing_direction() exists because this project's
 # rotation convention (atan2(dir.x, dir.z), +Z forward) isn't Godot's usual
-# -Z-forward — see that getter's own comment.
+# -Z-forward — see ActorBase's own comment on that getter.
 #
 # Perception exists now (npc_components/perception_component/), and this
 # body can aim its Head at a world point via set_look_target()/
@@ -24,7 +31,7 @@
 # decision lives in the controller (idle_npc_controller.gd today), same as
 # movement intent. No navigation, reactions or animation yet.
 # =============================================================================
-extends CharacterBody3D
+extends ActorBase
 class_name NPCBase
 
 ## Head rotation limits relative to the body. Past these the head stops,
@@ -81,6 +88,7 @@ var _head_pitch_deg: float = 0.0
 
 
 func _ready() -> void:
+	super._ready()
 	add_to_group("lockable")
 
 
@@ -112,12 +120,8 @@ func get_shoulder_height() -> float:
 	return BodyMetrics.shoulder_height(body_height)
 
 
-## Direction this character visually faces, horizontal and normalised.
-## NOTE: this project rotates characters with atan2(dir.x, dir.z), which makes
-## +Z the visual forward, not Godot's usual -Z. Read facing through this getter
-## instead of deriving it from the basis, or the sign will be wrong.
-func get_facing_direction() -> Vector3:
-	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+func get_debug_type_label() -> String:
+	return "NPC"
 
 
 ## Point this character's head turns toward, in world space. The body only
