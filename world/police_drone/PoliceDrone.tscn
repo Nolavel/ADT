@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://d20xtrkue3841"]
 
-[ext_resource type="Script" uid="uid://b45bmac6ngxmt" path="res://world/police_drone/police_drone.gd" id="1_q3ath"]
+[ext_resource type="Script" path="res://world/police_drone/drone_base.gd" id="1_drone"]
+[ext_resource type="Script" path="res://world/police_drone/controllers/patrol_drone_controller.gd" id="2_patrol"]
+[ext_resource type="Script" path="res://npc/npc_components/perception_component/perception_component.gd" id="3_perception"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bx8n8"]
 albedo_color = Color(0, 0, 0, 1)
@@ -10,17 +12,10 @@ material = SubResource("StandardMaterial3D_bx8n8")
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_5h11f"]
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_bx8n8"]
-radius = 100.0
-
-[node name="PoliceDrone" type="RigidBody3D" unique_id=826820068]
+[node name="PoliceDrone" type="CharacterBody3D" unique_id=826820068]
 collision_layer = 256
 collision_mask = 7
-axis_lock_linear_y = true
-axis_lock_angular_x = true
-axis_lock_angular_y = true
-axis_lock_angular_z = true
-script = ExtResource("1_q3ath")
+script = ExtResource("1_drone")
 
 [node name="DroneMesh" type="MeshInstance3D" parent="." unique_id=382597592]
 mesh = SubResource("SphereMesh_5h11f")
@@ -32,11 +27,15 @@ shape = SubResource("SphereShape3D_5h11f")
 target_position = Vector3(0, -20, 0)
 collision_mask = 3
 
-[node name="DetectionZone" type="Area3D" parent="." unique_id=421253093]
-collision_mask = 0
+[node name="StatusLight" type="OmniLight3D" parent="."]
+light_color = Color(0.4, 0.7, 1.0, 1.0)
+light_energy = 2.0
+omni_range = 15.0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionZone" unique_id=671805503]
-shape = SubResource("SphereShape3D_bx8n8")
+[node name="PatrolDroneController" type="Node" parent="."]
+script = ExtResource("2_patrol")
 
-[connection signal="body_entered" from="DetectionZone" to="." method="_on_detection_zone_body_entered"]
-[connection signal="body_exited" from="DetectionZone" to="." method="_on_detection_zone_body_exited"]
+[node name="PerceptionComponent" type="Node3D" parent="."]
+script = ExtResource("3_perception")
+vision_range = 45.0
+vision_angle_deg = 150.0
