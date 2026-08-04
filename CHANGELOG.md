@@ -12,6 +12,121 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-04 — Police drone moved onto the NPC/AI architecture; NPCs get the player's rig
+
+`world/police_drone/police_drone.gd` was a working concept written before `npc/`'s
+NPCBase/NPCControllerBase/PerceptionComponent split existed — a `RigidBody3D` fighting
+its own physics engine, an `Area3D` proximity trigger duplicating `PerceptionComponent`,
+and a dead `is_in_group("Player")` check (capitalized group, removed from the project).
+Rebuilt onto the same architecture NPCs already use, plus NPCs themselves finally got a
+real mesh, skeleton and animation instead of a capsule and a cube head. Ten commits;
+grouped here by theme, not by commit.
+
+**`ActorBase` (`core/characters/actor_base.gd`), extracted first.**
+`NPCControllerBase`/`PerceptionComponent` both hard-checked `parent is NPCBase`, which
+would have blocked the drone from reusing either — a non-humanoid flying body is not an
+`NPCBase`. Extracted the slice both actually need (`set_move_intent()`,
+`set_look_target()`/`clear_look_target()`, `get_eye_height()`, `get_facing_direction()`,
+every method a stub) into `ActorBase extends CharacterBody3D`; `NPCBase` now extends it
+instead of `CharacterBody3D` directly. Added a `perceived_actor` group for debug-tooling
+enumeration, deliberately separate from `NPCBase`'s own `lockable` (the TPS combat
+camera's lock-on pool, `tps_combat_camera_state.gd`) — a drone is not a lock-on target,
+and widening `lockable` would have made it one by accident.
+*ActorBase — общий контракт для NPCControllerBase/PerceptionComponent, чтобы дрон мог
+их переиспользовать без ручной проверки типа. Группа perceived_actor отдельно от
+lockable (цели захвата боевой камеры) — дрон не должен становиться целью захвата.*
+- `core/characters/actor_base.gd`, `npc/npc_base.gd`, `npc/controllers/npc_controller_base.gd`, `npc/controllers/idle_npc_controller.gd`, `npc/npc_components/perception_component/perception_component.gd`
+
+**`DroneBase`, `CharacterBody3D` pseudo-physics instead of a fought `RigidBody3D`.**
+Ground-following altitude hold via `HeightRayCast` (re-sampled every frame, unlike
+`HoverBase`'s fixed held-Y — this drone patrols over uneven terrain) and horizontal
+inertia both reuse `HoverBase`'s approach: one `Smoothing.damp_factor()` rate chosen by
+whether there's movement intent this frame, not a per-frame current/target speed
+comparison (see `hover_base.gd`'s own note on the bang-bang jitter that comparison
+produces at top speed). The body's own `rotation.y` never turns — only `DroneMesh`
+does, toward `set_look_target()`, same `Transform3D.interpolate_with()` technique the
+old script used — so `get_facing_direction()` is overridden rather than inherited from
+`ActorBase`'s atan2-on-rotation.y default.
+*DroneBase на CharacterBody3D: удержание высоты рейкастом и горизонтальная инерция
+переиспользуют подход HoverBase. Корпус не поворачивается, только меш — через
+set_look_target().*
+- `world/police_drone/drone_base.gd`
+
+**`PatrolDroneController` (extends `NPCControllerBase`) — PATROL/ALERT, not PATROL/CHASE.**
+Patrol logic (random point in a local square rotated to start yaw, same square the old
+script used) ported as-is. ALERT triggers on a visible player in
+`PlayerState.Stance.COMBAT` — the same declared-intent read `idle_npc_controller.gd`
+already used to skip its own glance/turn gate — replacing the old `Area3D`
+"anyone who walked in" trigger. `alert_memory_time` (3s default) holds ALERT for a few
+seconds after the player leaves COMBAT or sight. In ALERT the drone closes to
+`alert_hover_distance` and holds — observation, not pursuit; vertical separation isn't
+computed separately, `DroneBase`'s own ground-following hold already puts it
+`hover_height` above whatever ground the player is standing on. A `StatusLight`
+(`OmniLight3D`) eases red in ALERT via `Smoothing.damp_factor()`, not an instant switch.
+`PerceptionComponent` itself needed no changes — the drone's instance just sets a wider
+`vision_range`/`vision_angle_deg` than the pedestrian NPC default.
+*PatrolDroneController: ALERT реагирует на боевую стойку игрока (не на присутствие),
+с задержкой памяти 3с. В ALERT дрон держит дистанцию и высоту, а не таранит игрока.
+Статус-light плавно краснеет.*
+- `world/police_drone/controllers/patrol_drone_controller.gd`, `world/police_drone/PoliceDrone.tscn`
+
+`police_drone.gd` deleted — fully migrated. `PoliceDrone.tscn`'s root is now
+`CharacterBody3D` running `drone_base.gd`; `DetectionZone` (`Area3D`) and its signal
+connections are gone along with the 100m `SphereShape3D` only it referenced.
+
+**NPCs get the player's mesh, skeleton and animation.** `player.tscn` bakes its mesh and
+skeleton (`player_base_mesh` → `GeneralSkeleton` → `RetargetModifier3D` →
+`OriginalSkeleton`, five `MeshInstance3D`s) as inline sub-resources, not an instanceable
+`PackedScene` — reuse from `npc.tscn` meant a literal copy (every `ArrayMesh`/`Skin`
+sub-resource transitively, cross-checked against dangling/orphaned references), not a
+shared file; `player.tscn` itself is untouched. Grey dummy, not reskinned: each
+`MeshInstance3D`'s texture-heavy `material_override` (and the ~18 texture
+`ExtResource`s behind it) was dropped in favour of the flat, textureless material
+already baked into each mesh's own surface data. `BoneAttachment3D`/
+`ModifierBoneTarget3D` (weapon-hand IK, a head attachment point) were left out — player-
+only plumbing with no NPC consumer. `NPCAnimationComponent` (new,
+`npc_components/animation_component/`) drives a single `AnimationNodeBlendSpace1D`
+(idle to walk, no run tier — NPCs have no speed tier past `walk_speed`) from
+`NPCBase.get_move_speed_ratio()` (new getter), plus a `LookAtModifier3D` head look —
+the same technique `player_animation_component.gd` uses, called explicitly from
+`npc_base.gd._physics_process()`. Replaces `NPCBase`'s old hand-rotated `Head` node
+entirely; `set_look_target()`/`clear_look_target()` are unchanged as the public
+contract, only the implementation moved (two new getters,
+`has_look_target()`/`get_look_target_point()`, let the component read that state
+without reaching across the node boundary).
+*NPC получили копию меша/скелета/AnimationPlayer игрока (без текстур — серая болванка),
+т.к. они вшиты в player.tscn как суб-ресурсы, а не отдельная сцена. Анимация —
+BlendSpace1D idle/walk + LookAtModifier3D для поворота головы вместо ручного
+поворота узла Head.*
+- `npc/npc.tscn`, `npc/npc_base.gd`, `npc/npc_components/animation_component/npc_animation_component.gd`
+
+**Idle NPCs wander instead of standing still.** `IdleNPCController` now picks a random
+point within `wander_radius` of where it started (a disk, not the drone's rotated
+square — nothing here needs an orientation to preserve), walks to it at
+`wander_speed_ratio`, pauses `wander_pause_time`, picks another. No navigation: a
+`RayCast3D` created in code (parented to the NPC body, not a scene edit) retargets
+immediately on an obstacle, the same immediate-retarget response the drone's patrol
+uses on arrival — no pause, that's reserved for reaching an actual destination. The
+existing gaze/body-turn logic is unchanged in substance, just no longer gated behind a
+permanently-zero move intent: seeing the player now freezes movement outright instead
+of it always having been zero.
+*IdleNPCController теперь бродит: случайная точка в радиусе, пауза между переходами,
+рейкаст вперёд вместо навигации. При виде игрока движение останавливается.*
+- `npc/controllers/idle_npc_controller.gd`
+
+**Perception debug panel lists drones alongside NPCs.** One shared list
+(`ActorBase.GROUP_PERCEIVED_ACTOR`), each row tagged by `get_debug_type_label()`
+("NPC"/"Drone") rather than a second panel — they share the same perception. Added: a
+`PlayerState.stance` header line (the reason anything reacts now), and a per-
+controller-type state line (`IdleNPCController`'s existing visible-time/facing-target/
+body-angle description, or `PatrolDroneController`'s PATROL/ALERT state plus seconds
+left before ALERT lapses from memory).
+*Дебаг-панель восприятия: дроны и NPC в одном списке с пометкой типа, стойка игрока в
+заголовке, состояние контроллера и обратный отсчёт ALERT для дрона.*
+- `ui/debug/perception_debug_panel.gd`
+
+---
+
 ## 2026-08-03 — Animation blending concept
 Early concept work on animation blending, then two follow-up fixes once the tree
 was actually exercised.
@@ -95,6 +210,29 @@ InputSystems здесь запрещено). world_per_pixel теперь учи
 камеры, а не только перспективную.*
 - `camera/camera_follow.tscn`, `camera/camera_follow.gd`
 - `camera/camera_component/on_foot_camera_component.gd`
+
+**Aim-down-sights, as a COMBAT modifier, not a third stance.** `PlayerState.is_aiming`
+deepens a commitment already declared by COMBAT rather than declaring a new one —
+`set_aiming()` silently clamps to `false` outside `Stance.COMBAT`/`Mode.ON_FOOT` (a
+held aim button crossing a stance change mid-press is ordinary input, not a caller
+mistake), mirroring `set_stance()`'s own never-assign-directly rule.
+`InputSystems.is_aim_pressed()` reads `mouse_right_button` as a raw held query, not a
+signal — the same reasoning `is_sprint_held()` uses, the caller decides what the hold
+means. `player.gd`'s `aim_speed_multiplier` stacks on top of the COMBAT speed
+multiplier inside `get_speed_multiplier()`, so every `target_speed` computation
+already reads the aim slowdown from one place. `on_foot_camera_component.gd` dollies
+TPS distance to `TPS_AIM_DISTANCE` (closer than `TPS_DISTANCE`, framing the shot) and
+widens the shoulder offset by `aim_shoulder_offset_multiplier` — AIM wins the distance
+priority even over an active lock-on. `AimReticle` (`ui/hud/aim_reticle/`) is a
+debug-grade screen-centre cross visible only while `PlayerState.is_aiming`, confirming
+ADS reads on screen — not the final aiming interface.
+*ADS как модификатор COMBAT, а не третья стойка — is_aiming усиливает уже объявленное
+намерение. Скорость замедляется множителем поверх COMBAT, камера приближается и
+смещает плечо, крестик-заглушка подтверждает состояние на экране.*
+- `core/player_state/player_state.gd`, `core/input/input_systems.gd`
+- `player/player.gd`
+- `camera/camera_component/on_foot_camera_component.gd`
+- `ui/hud/aim_reticle/`
 
 ---
 

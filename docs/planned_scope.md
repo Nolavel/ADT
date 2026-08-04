@@ -11,7 +11,7 @@ Nothing here is a commitment. Items are built only when an existing system
 demonstrably cannot carry the weight, and only when the item serves at least
 two systems that already exist.
 
-Last reviewed: 2026-07-29
+Last reviewed: 2026-08-04
 
 ---
 
@@ -82,15 +82,19 @@ unread at the next review, they go.
 
 Named here so the absence is deliberate rather than overlooked:
 
-- **NPC and AI.** A body and a decision-layer seam exist (`npc/npc_base.gd`,
-  `npc/controllers/`), driven by a controller that stands still and watches
-  the player. Perception exists; navigation, reactions, memory and animation
-  do not. The design documents rest heavily on how the city reacts to the
-  player; almost none of that reaction is built.
-- **Two head-turn implementations.** The player turns its head with a
-  `LookAtModifier3D` on the skeleton (bone-level, survives a model swap);
-  the NPC rotates a plain `Head` node. Justified while the NPC is a
-  rigless placeholder, but the two should converge once NPCs get a rig.
+- **NPC and AI.** A body, decision-layer seam, perception, animation and a
+  stance-triggered reaction now exist (`npc/npc_base.gd`, `npc/controllers/`,
+  `core/characters/actor_base.gd` — the shared contract the police drone
+  also drives through, `world/police_drone/`). `IdleNPCController` wanders
+  near its spawn point and freezes/turns toward a visible player;
+  `PatrolDroneController` goes ALERT on a player seen in COMBAT stance,
+  holds for a few seconds of memory, then reverts. What's still missing:
+  real navigation (both controllers substitute a single forward raycast for
+  obstacle avoidance, not a navmesh — an obstacle just means "pick another
+  point," not "route around it"), any memory beyond that one ALERT timer,
+  and reaction that spreads (one NPC or drone noticing does not alert
+  anything else). The design documents rest heavily on how the city reacts
+  to the player; this is a first slice of that, not the reaction.
 - **Combat.** The camera has a lock-on sub-state; there is nothing to lock
   onto and nothing to fight.
 - **Stance has state and reads through to animation.** `PlayerState.Stance`
@@ -104,10 +108,17 @@ Named here so the absence is deliberate rather than overlooked:
   named but not wired into the blend tree, see that file's comments for
   why. Not done: weapon-in-hand as an orthogonal volume modifier on top
   of the stance (the axis is deliberately boolean — see
-  `PlayerState.Stance`'s own comment); NPC reaction to the player's
-  stance; and the evidence system that's meant to read it too.
+  `PlayerState.Stance`'s own comment); and the evidence system that's
+  meant to read it too. NPC/drone reaction to the player's stance is
+  done — see NPC and AI, above.
 - **Missions.**
 - **Animation beyond locomotion and stances.** `PlayerAnimationComponent`
-  drives idle/walk/run per stance and a procedural head look. There is no
-  layered upper-body blending, no hit reactions, no attack animations wired,
-  and NPCs have no animation at all.
+  drives idle/walk/run per stance and a procedural head look; NPCs now have
+  a simpler idle/walk `NPCAnimationComponent` and their own
+  `LookAtModifier3D` head look (`npc_components/animation_component/`).
+  Still missing: layered upper-body blending, hit reactions, and attack
+  animations wired for the player. `player/animations/new_libs/Weapons.res`
+  is mounted on `AnimationPlayer` as `new5` but is effectively empty (407
+  bytes) — real aim-down-sights animation data lives in
+  `player/animations/libs/rifle_aim.res` and `rifle_aim_1.res` instead;
+  don't assume `new5/` has content because it's mounted.
