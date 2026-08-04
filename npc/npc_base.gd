@@ -26,18 +26,21 @@
 # -Z-forward — see ActorBase's own comment on that getter.
 #
 # Perception exists now (npc_components/perception_component/), and this
-# body can aim its Head at a world point via set_look_target()/
+# body can aim its head at a world point via set_look_target()/
 # clear_look_target() — but it still never decides WHAT to look at. That
 # decision lives in the controller (idle_npc_controller.gd today), same as
-# movement intent. No navigation, reactions or animation yet.
+# movement intent.
+#
+# set_look_target()/clear_look_target() are state only — NPCAnimationComponent
+# (npc_components/animation_component/) is what actually turns the head, via
+# a LookAtModifier3D on the skeleton, read through has_look_target()/
+# get_look_target_point() below. This body used to rotate a placeholder Head
+# node by hand; that node is gone along with the capsule mesh once the real
+# rig landed (see the npc.tscn commit) — the public contract didn't change,
+# only where the turning happens.
 # =============================================================================
 extends ActorBase
 class_name NPCBase
-
-## Head rotation limits relative to the body. Past these the head stops,
-## rather than turning past what a neck can do.
-const HEAD_YAW_LIMIT_DEG: float = 70.0
-const HEAD_PITCH_LIMIT_DEG: float = 30.0
 
 ## Total height of this character. Per-instance data, not a constant: NPCs
 ## will vary. Landmark heights come from BodyMetrics ratios.
@@ -49,12 +52,6 @@ const HEAD_PITCH_LIMIT_DEG: float = 30.0
 ## target, rad/s equivalent fed through Smoothing.damp_factor. A feel
 ## value, tuned by eye — exported for that reason, same as walk_speed.
 @export var turn_smoothing: float = 10.0
-## How fast the head turns toward its look target (and back to neutral).
-## Faster than turn_smoothing on purpose — heads snap to attention quicker
-## than the body reorients. This is a damp_factor() decay rate in "times per
-## second," not degrees or radians per second — see Smoothing.damp_factor().
-## Exported for the same reason as turn_smoothing: a feel value, tuned by eye.
-@export var head_turn_smoothing: float = 15.0
 
 @export_group("Gravity")
 ## Same value and formula as player.gd's _apply_gravity(): one physical
@@ -75,16 +72,15 @@ var _has_facing_target: bool = false
 var _facing_target_point: Vector3 = Vector3.ZERO
 
 ## Whether the head currently has somewhere to look, and where — set by
-## set_look_target()/clear_look_target(), read only by _update_head_look().
+## set_look_target()/clear_look_target(), read by NPCAnimationComponent
+## through the getters below (has_look_target()/get_look_target_point()).
 var _has_look_target: bool = false
 var _look_target_point: Vector3 = Vector3.ZERO
-## Smoothed head yaw/pitch relative to the body, in degrees. Yaw follows
-## this project's atan2(x, z) convention, same as body rotation; pitch is
-## positive when the head tilts to look up.
-var _head_yaw_deg: float = 0.0
-var _head_pitch_deg: float = 0.0
 
-@onready var _head: Node3D = $Head
+## Resolved once via @onready. Null (and silently skipped by
+## _physics_process()) if the scene has no AnimationComponent — same
+## defensive pattern the old $Head lookup used to have.
+@onready var _animation: NPCAnimationComponent = get_node_or_null("AnimationComponent")
 
 
 func _ready() -> void:
@@ -99,7 +95,9 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= gravity * delta
 	move_and_slide()
 	_face_move_direction(delta)
-	_update_head_look(delta)
+	if _animation:
+		_animation.update_animation_blend(delta)
+		_animation.update_head_look(delta)
 
 
 ## Movement intent for this frame, written by whatever controller drives this
@@ -108,6 +106,12 @@ func _physics_process(delta: float) -> void:
 func set_move_intent(direction: Vector3, speed_ratio: float) -> void:
 	_move_direction = direction
 	_move_speed_ratio = clampf(speed_ratio, 0.0, 1.0)
+
+
+## Read by NPCAnimationComponent to drive the idle<->walk blend — the same
+## 0..1 fraction of walk_speed set_move_intent() was given.
+func get_move_speed_ratio() -> float:
+	return _move_speed_ratio
 
 
 ## Character metric getters — same names as player.gd, so callers that duck
@@ -135,6 +139,17 @@ func set_look_target(point: Vector3) -> void:
 ## Returns the head to neutral (facing the same way as the body).
 func clear_look_target() -> void:
 	_has_look_target = false
+
+
+## Read by NPCAnimationComponent (and the perception debug panel) — same
+## has_facing_target()-style pattern, a public getter instead of reaching
+## into a private var across a node boundary.
+func has_look_target() -> bool:
+	return _has_look_target
+
+
+func get_look_target_point() -> Vector3:
+	return _look_target_point
 
 
 ## World point this character turns its body toward. Overrides
@@ -177,42 +192,3 @@ func _face_move_direction(delta: float) -> void:
 	else:
 		return
 	rotation.y = lerp_angle(rotation.y, target_angle, Smoothing.damp_factor(turn_smoothing, delta))
-
-
-## Aims _head at _look_target_point, clamped to HEAD_YAW_LIMIT_DEG/
-## HEAD_PITCH_LIMIT_DEG relative to the body, or eases back to neutral
-## (0, 0) when there is no look target. Head.rotation.y follows this
-## project's atan2(x, z) yaw convention, composed with the body's own
-## rotation.y (Head is a child of this node, so its world yaw is the sum of
-## the two). Head.rotation.x is written assuming the head's own local +Z is
-## its "forward", matching the body's convention rather than Godot's usual
-## -Z, so a future asymmetric head asset stays consistent with the rest of
-## the rig — unverifiable against today's symmetric placeholder cube.
-func _update_head_look(delta: float) -> void:
-	if not _head:
-		return
-
-	var target_yaw_deg := 0.0
-	var target_pitch_deg := 0.0
-
-	if _has_look_target:
-		var eye_pos := global_position + Vector3(0, get_eye_height(), 0)
-		var to_target := _look_target_point - eye_pos
-		var horizontal_to_target := Vector3(to_target.x, 0.0, to_target.z)
-		var horizontal_dist := horizontal_to_target.length()
-
-		if horizontal_dist > 0.01:
-			var facing := get_facing_direction()
-			var body_yaw := atan2(facing.x, facing.z)
-			var target_world_yaw := atan2(horizontal_to_target.x, horizontal_to_target.z)
-			target_yaw_deg = rad_to_deg(wrapf(target_world_yaw - body_yaw, -PI, PI))
-			target_pitch_deg = -rad_to_deg(atan2(to_target.y, horizontal_dist))
-
-	target_yaw_deg = clampf(target_yaw_deg, -HEAD_YAW_LIMIT_DEG, HEAD_YAW_LIMIT_DEG)
-	target_pitch_deg = clampf(target_pitch_deg, -HEAD_PITCH_LIMIT_DEG, HEAD_PITCH_LIMIT_DEG)
-
-	var t := Smoothing.damp_factor(head_turn_smoothing, delta)
-	_head_yaw_deg = lerp(_head_yaw_deg, target_yaw_deg, t)
-	_head_pitch_deg = lerp(_head_pitch_deg, target_pitch_deg, t)
-
-	_head.rotation = Vector3(deg_to_rad(_head_pitch_deg), deg_to_rad(_head_yaw_deg), 0.0)

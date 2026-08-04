@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://npc/npc_base.gd" id="1_base"]
 [ext_resource type="Script" path="res://npc/controllers/idle_npc_controller.gd" id="2_idle"]
 [ext_resource type="Script" path="res://npc/npc_components/perception_component/perception_component.gd" id="3_perception"]
+[ext_resource type="Script" path="res://npc/npc_components/animation_component/npc_animation_component.gd" id="10_animation"]
 [ext_resource type="AnimationLibrary" uid="uid://crc6xg1wx7fld" path="res://player/animations/new_libs/Base.res" id="4_dssci"]
 [ext_resource type="AnimationLibrary" uid="uid://d3h8qu2uqwwdf" path="res://player/animations/libs/MeleeLib.res" id="5_ftrmt"]
 [ext_resource type="AnimationLibrary" uid="uid://diosg18k2l5gw" path="res://player/animations/new_libs/Motions.res" id="6_fp3m1"]
@@ -1344,3 +1345,6 @@ script = ExtResource("2_idle")
 
 [node name="PerceptionComponent" type="Node3D" parent="."]
 script = ExtResource("3_perception")
+
+[node name="AnimationComponent" type="Node" parent="."]
+script = ExtResource("10_animation")
