@@ -3,15 +3,21 @@
 # Screen-space debug overlay, one Control living in WORLD_UI_SCENES — split
 # out of stream_debug_panel.gd's lock-on section rather than added to it,
 # per that file's own note that a third unrelated section should become its
-# own panel. This one is about NPCs, not the camera.
+# own panel. This one is about perceived actors, not the camera.
 #
-# Pure observer: for every NPCBase in the scene, calls its
+# Pure observer: for every ActorBase in the scene (NPCs and police drones
+# alike, one shared list tagged by type — they share the same perception,
+# a second panel would just be the same rows twice) calls its
 # PerceptionComponent.observe_player() (a plain fact, see
 # player_observation.gd) and, ONLY for display, works out which check would
 # have rejected the player — range, cone or line-of-sight — from that fact
 # plus the component's own public vision_range/vision_angle_deg. This is
 # still not perception deciding anything: the component itself never
 # reports "why", the panel derives it purely for a human to read.
+#
+# Enumerates ActorBase.GROUP_PERCEIVED_ACTOR, not the "lockable" group
+# NPCBase also joins — "lockable" is the combat camera's lock-on pool and
+# does not include drones by design; see actor_base.gd's own comment.
 #
 # UI built in _ready() by code, same convention as stream_debug_panel.gd —
 # a debug tool, not something styled in the editor.
@@ -52,41 +58,49 @@ func _process(delta: float) -> void:
 
 
 func _redraw() -> void:
-	var npcs: Array[NPCBase] = []
-	for candidate in get_tree().get_nodes_in_group("lockable"):
-		if candidate is NPCBase:
-			npcs.append(candidate)
+	var actors: Array[ActorBase] = []
+	for candidate in get_tree().get_nodes_in_group(ActorBase.GROUP_PERCEIVED_ACTOR):
+		if candidate is ActorBase:
+			actors.append(candidate)
 
-	if npcs.is_empty():
-		_text.text = "[color=#777777]— no NPCs in scene —[/color]"
+	## Global, not per-row — same value for every actor's observation.stance
+	## — but worth its own line: stance is the reason anything reacts at
+	## all now (idle_npc_controller.gd's glance/turn gate,
+	## patrol_drone_controller.gd's ALERT trigger).
+	var header := "player stance: %s" % PlayerState.Stance.keys()[PlayerState.stance]
+
+	if actors.is_empty():
+		_text.text = header + "\n\n[color=#777777]— no NPCs or drones in scene —[/color]"
 		return
 
 	var lines: Array[String] = []
-	for npc in npcs:
-		lines.append(_describe_npc(npc))
+	for actor in actors:
+		lines.append(_describe_actor(actor))
 
-	_text.text = "\n\n".join(lines)
+	_text.text = header + "\n\n" + "\n\n".join(lines)
 
 
-func _describe_npc(npc: NPCBase) -> String:
+func _describe_actor(actor: ActorBase) -> String:
 	var perception: PerceptionComponent = null
-	for child in npc.get_children():
+	for child in actor.get_children():
 		if child is PerceptionComponent:
 			perception = child
 			break
 
+	var type_label := actor.get_debug_type_label()
+
 	if not perception:
-		return "%s: [color=#ff6666]no PerceptionComponent[/color]" % npc.name
+		return "[%s] %s: [color=#ff6666]no PerceptionComponent[/color]" % [type_label, actor.name]
 
 	var observation := perception.observe_player()
 	if observation.distance == INF:
-		return "%s: [color=#777777]no player in scene[/color]" % npc.name
+		return "[%s] %s: [color=#777777]no player in scene[/color]" % [type_label, actor.name]
 
 	var seen_color := "#35ff66" if observation.is_seen else "#ff6666"
 	var seen_text := "YES" if observation.is_seen else "no"
 
-	var line := "%s   dist %.1fm / %.1fm   angle %.0f° / %.0f°   is_seen: [color=%s]%s[/color]" % [
-		npc.name,
+	var line := "[%s] %s   dist %.1fm / %.1fm   angle %.0f° / %.0f°   is_seen: [color=%s]%s[/color]" % [
+		type_label, actor.name,
 		observation.distance, perception.vision_range,
 		observation.angle_deg, perception.vision_angle_deg * 0.5,
 		seen_color, seen_text,
@@ -95,38 +109,56 @@ func _describe_npc(npc: NPCBase) -> String:
 	if not observation.is_seen:
 		line += "\n  rejected by: %s" % _rejection_reason(observation, perception)
 
-	line += "\n  %s" % _describe_body_turn(npc, observation)
+	line += "\n  %s" % _describe_controller_state(actor, observation)
 
 	return line
+
+
+## Dispatches on whichever controller type the actor actually has —
+## IdleNPCController and PatrolDroneController expose incompatible extra
+## state (facing_target vs. ALERT memory), so there is no single shared
+## description, only a shared slot for one.
+func _describe_controller_state(actor: ActorBase, observation: PlayerObservation) -> String:
+	var idle_controller: IdleNPCController = null
+	var drone_controller: PatrolDroneController = null
+	for child in actor.get_children():
+		if child is IdleNPCController:
+			idle_controller = child
+		elif child is PatrolDroneController:
+			drone_controller = child
+
+	if idle_controller:
+		return _describe_idle_controller(actor, idle_controller, observation)
+	if drone_controller:
+		return _describe_drone_controller(drone_controller)
+	return "controller: n/a"
 
 
 ## Body-turn debug: how long the player has been continuously visible,
 ## whether the body has actually committed to a facing target, and the
 ## current body-to-player angle. Without this, "the body didn't turn" reads
 ## identically to "it's broken" — the same story lock-on debugging had
-## before it got its own overlay.
-func _describe_body_turn(npc: NPCBase, observation: PlayerObservation) -> String:
-	var facing_color := "#35ff66" if npc.has_facing_target() else "#777777"
-	var facing_text := "YES" if npc.has_facing_target() else "no"
+## before it got its own overlay. has_facing_target() is NPCBase-only (not
+## on ActorBase — DroneBase orients its mesh via look target alone, there
+## is no separate facing-target concept), hence the cast.
+func _describe_idle_controller(
+	actor: ActorBase, controller: IdleNPCController, observation: PlayerObservation
+) -> String:
+	var npc := actor as NPCBase
+	var has_facing := npc != null and npc.has_facing_target()
+	var facing_color := "#35ff66" if has_facing else "#777777"
+	var facing_text := "YES" if has_facing else "no"
 
-	## visible_time is IdleNPCController's own bookkeeping, not NPCBase's —
-	## a future controller type may track it differently or not at all, so
-	## this degrades to "n/a" instead of assuming every NPC has one.
-	var idle_controller: IdleNPCController = null
-	for child in npc.get_children():
-		if child is IdleNPCController:
-			idle_controller = child
-			break
-
-	var visible_text: String
-	if idle_controller:
-		visible_text = "%.1fs" % idle_controller.get_visible_time()
-	else:
-		visible_text = "n/a"
-
-	return "visible %s   facing_target: [color=%s]%s[/color]   body angle %.0f°" % [
-		visible_text, facing_color, facing_text, observation.angle_deg,
+	return "state: %s   visible %.1fs   facing_target: [color=%s]%s[/color]   body angle %.0f°" % [
+		controller.get_state_name(), controller.get_visible_time(),
+		facing_color, facing_text, observation.angle_deg,
 	]
+
+
+func _describe_drone_controller(controller: PatrolDroneController) -> String:
+	var remaining := controller.get_alert_memory_remaining()
+	var remaining_text := "%.1fs" % remaining if remaining >= 0.0 else "n/a"
+	return "state: %s   alert memory: %s" % [controller.get_state_name(), remaining_text]
 
 
 ## Derives which check would have rejected the player, purely for display —
