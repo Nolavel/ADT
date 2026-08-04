@@ -11,11 +11,19 @@
 # exported vision_range/vision_angle_deg differ per-instance in the scene,
 # not a second component.
 #
-# States are PATROL and ALERT, not PATROL/CHASE: what ALERT means and how it
-# is triggered lands in the next commit — this one only ports the old
-# police_drone.gd's local-square patrol pattern (unchanged: a random point
-# inside a square centred on the drone's start position, rotated to its
-# start yaw) onto the new DroneBase/PerceptionComponent split.
+# States are PATROL and ALERT, not PATROL/CHASE. The old police_drone.gd's
+# local-square patrol pattern (a random point inside a square centred on the
+# drone's start position, rotated to its start yaw) is unchanged, ported
+# onto DroneBase/PerceptionComponent.
+#
+# The drone does not care that someone is there — the city is full of
+# people. It cares that someone has declared intent. A raised stance is a
+# statement, and the drone is what answers it: ALERT triggers on a visible
+# player in PlayerState.Stance.COMBAT, the same declared-intent read
+# idle_npc_controller.gd already uses to skip its own glance/turn gate. It
+# does not un-trigger the instant the player lowers their stance or steps
+# out of view — alert_memory_time holds the state for a few seconds, so the
+# drone doesn't look like it forgot mid-blink.
 # =============================================================================
 extends NPCControllerBase
 class_name PatrolDroneController
@@ -35,14 +43,50 @@ enum State { PATROL, ALERT }
 ## retuned on the body independently.
 @export var patrol_speed: float = 5.0
 
+@export_group("Alert")
+## Desired speed while closing in to observation distance in ALERT, m/s —
+## same conversion as patrol_speed. Matches the old police_drone.gd's
+## chase_speed value, repurposed: this is how fast it closes the gap, not a
+## pursuit top speed.
+@export var alert_speed: float = 12.0
+## Horizontal distance from the player the drone holds once in ALERT —
+## closes to this and stops, never all the way to the player. Vertical
+## separation is not a separate parameter; see _decide_alert()'s comment.
+@export var alert_hover_distance: float = 6.0
+## Seconds ALERT persists after the player leaves COMBAT stance or sight,
+## before lapsing back to PATROL. Not zero: an NPC — or a drone — that
+## forgets the instant a fist is lowered reads as glitching, not calming
+## down. A feel value, tuned by eye — start at 3s per spec.
+@export var alert_memory_time: float = 3.0
+
+@export_group("Alert Signal")
+## Status light this drone flashes red in ALERT. Relative to this
+## controller node (a child of DroneBase, sibling of the light) — default
+## matches the node PoliceDrone.tscn adds.
+@export var light_path: NodePath = ^"../StatusLight"
+@export var patrol_light_color: Color = Color(0.4, 0.7, 1.0)
+@export var alert_light_color: Color = Color(1.0, 0.05, 0.05)
+## Smoothing.damp_factor() rate for the color transition. Not instant —
+## see the file header on why ALERT reads as an escalation, not a switch
+## flip; the light follows the same logic as the state itself.
+@export var light_color_smoothing: float = 3.0
+
 ## Resolved once in _ready() — NPCControllerBase's _actor narrowed to the
 ## drone-specific type this controller actually drives.
 var _drone: DroneBase = null
 ## Sibling PerceptionComponent, same resolution pattern as
 ## IdleNPCController's own _perception.
 var _perception: PerceptionComponent = null
+## Resolved once in _ready() via light_path. Null (and silently skipped by
+## _update_light()) if the scene has no status light yet.
+var _light: OmniLight3D = null
 
 var _state: State = State.PATROL
+## Seconds since the player was last seen in COMBAT stance — reset to 0 on
+## every provoking sighting, only ever counted up while in ALERT. Compared
+## against alert_memory_time to decide when ALERT lapses.
+var _alert_memory_timer: float = 0.0
+var _current_light_color: Color = Color(0.4, 0.7, 1.0)
 
 ## Captured once in _ready() — the patrol square's centre and rotation, same
 ## convention as the old police_drone.gd (a local square anchored to where
@@ -66,21 +110,95 @@ func _ready() -> void:
 	_start_yaw = _drone.global_rotation.y
 	_pick_new_patrol_point()
 
+	if light_path != NodePath():
+		_light = get_node_or_null(light_path) as OmniLight3D
+	_current_light_color = patrol_light_color
+
 
 func _decide(delta: float) -> void:
 	if not _drone:
 		return
 
+	var observation: PlayerObservation = null
+	if _perception:
+		observation = _perception.observe_player()
+		_update_alert_state(observation, delta)
+
 	match _state:
 		State.PATROL:
 			_decide_patrol(delta)
-		# State.ALERT is wired in the next commit — unreachable until then.
+		State.ALERT:
+			_decide_alert(observation)
+
+	_update_light(delta)
 
 
 ## Human-readable state for debug tooling (perception_debug_panel.gd), same
 ## convention as IdleNPCController.get_visible_time().
 func get_state_name() -> String:
 	return State.keys()[_state]
+
+
+## Seconds left before ALERT lapses back to PATROL from memory alone, or
+## -1.0 outside ALERT ("n/a") — read by the perception debug panel.
+func get_alert_memory_remaining() -> float:
+	if _state != State.ALERT:
+		return -1.0
+	return maxf(0.0, alert_memory_time - _alert_memory_timer)
+
+
+## The drone does not care that someone is there — the city is full of
+## people. It cares that someone has declared intent. A raised stance is a
+## statement, and the drone is what answers it.
+func _update_alert_state(observation: PlayerObservation, delta: float) -> void:
+	var provoked := observation.is_seen and observation.stance == PlayerState.Stance.COMBAT
+
+	if provoked:
+		_alert_memory_timer = 0.0
+		_state = State.ALERT
+		return
+
+	if _state != State.ALERT:
+		return
+
+	_alert_memory_timer += delta
+	if _alert_memory_timer >= alert_memory_time:
+		_state = State.PATROL
+		_pick_new_patrol_point()
+
+
+## Observation, not pursuit: closes to alert_hover_distance and holds,
+## never all the way to the player. Vertical separation is not computed
+## here — it comes free from DroneBase's own ground-following altitude
+## hold (see that file's header): hovering near the player, who stands on
+## the same local ground, already puts the drone hover_height above them.
+func _decide_alert(observation: PlayerObservation) -> void:
+	if observation == null or not observation.is_seen:
+		## Out of sight but still inside the memory window — hold position
+		## rather than steer at a stale sighting. The next observation, or
+		## the memory timeout in _update_alert_state(), decides what's next.
+		_drone.set_move_intent(Vector3.ZERO, 0.0)
+		return
+
+	var player_pos := observation.position
+	var drone_pos := _drone.global_position
+	var to_player := Vector3(player_pos.x - drone_pos.x, 0.0, player_pos.z - drone_pos.z)
+	var dist := to_player.length()
+
+	if dist > alert_hover_distance:
+		_drone.set_move_intent(to_player.normalized(), _speed_ratio(alert_speed))
+	else:
+		_drone.set_move_intent(Vector3.ZERO, 0.0)
+
+	_drone.set_look_target(player_pos)
+
+
+func _update_light(delta: float) -> void:
+	if not _light:
+		return
+	var target := alert_light_color if _state == State.ALERT else patrol_light_color
+	_current_light_color = _current_light_color.lerp(target, Smoothing.damp_factor(light_color_smoothing, delta))
+	_light.light_color = _current_light_color
 
 
 func _decide_patrol(_delta: float) -> void:
