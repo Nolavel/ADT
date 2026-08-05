@@ -17,6 +17,25 @@ height = 1.8
 
 [sub_resource type="SkeletonProfileHumanoid" id="SkeletonProfileHumanoid_2052k"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ulsjd"]
+resource_name = "Material #6"
+vertex_color_use_as_albedo = true
+roughness = 0.0
+emission_enabled = true
+emission = Color(0, 0, 0, 0)
+
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gr6au"]
+
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c417p"]
+
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_by01a"]
+
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r3gsm"]
+
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_jaepv"]
 resource_name = "Low Poly Jumpsuit"
@@ -415,26 +434,6 @@ bind/0/pose = Transform3D(1.137049, 0, 0, 0, 9.157079e-17, 1.029025, 0, -1.02902
 bind/1/name = &"Head"
 bind/1/bone = -1
 bind/1/pose = Transform3D(1.137049, 0, 0, 0, 9.157079e-17, 1.029025, 0, -1.029025, 9.157079e-17, -0.002210427, 0.2569126, 0.09252719)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ulsjd"]
-resource_name = "Material #6"
-vertex_color_use_as_albedo = true
-roughness = 0.0
-emission_enabled = true
-emission = Color(0, 0, 0, 0)
-
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gr6au"]
-
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c417p"]
-
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_by01a"]
-
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r3gsm"]
-
 
 [node name="NPC" type="CharacterBody3D"]
 script = ExtResource("1_base")
