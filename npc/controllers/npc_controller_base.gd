@@ -35,5 +35,5 @@ func _physics_process(delta: float) -> void:
 ## The only layer that changes when the AI approach changes. Everything else
 ## — body, movement, perception — survives a switch from a hand-written state
 ## machine to a behaviour tree. Keep decisions here and nothing else.
-func _decide(delta: float) -> void:
+func _decide(_delta: float) -> void:
 	pass
