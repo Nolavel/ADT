@@ -101,10 +101,10 @@ func _ready() -> void:
 
 	_wander_origin = _npc.global_position
 	_obstacle_ray = RayCast3D.new()
-	_obstacle_ray.position = Vector3(0.0, OBSTACLE_RAY_HEIGHT, 0.0)
-	_obstacle_ray.target_position = Vector3(0.0, 0.0, OBSTACLE_CHECK_DISTANCE)
-	_obstacle_ray.collision_mask = OBSTACLE_MASK
-	_npc.add_child(_obstacle_ray)
+	_obstacle_ray.position = Vector3(0.0, 0.9, 0.0)
+	_obstacle_ray.target_position = Vector3(0.0, 0.0, 1.5)
+	_obstacle_ray.collision_mask = 3
+	#_npc.add_child(_obstacle_ray)
 
 	_wander_state = State.IDLE
 	_pause_timer = wander_pause_time

@@ -13,8 +13,8 @@
 extends Node3D
 class_name PerceptionComponent
 
-@export var vision_range: float = 25.0
-@export var vision_angle_deg: float = 110.0
+@export var vision_range: float = 90.0
+@export var vision_angle_deg: float = 180.0
 
 ## Layers this component's line-of-sight raycast collides with: floor (2)
 ## and wall (3) — the exact same mask the camera's own occlusion raycast

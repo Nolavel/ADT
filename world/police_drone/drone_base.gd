@@ -52,15 +52,15 @@ class_name DroneBase
 ## Height this drone holds above the ground directly beneath it, sampled by
 ## HeightRayCast every frame. Not a fixed world Y — the ground moves as the
 ## drone patrols over uneven city terrain.
-@export var hover_height: float = 10.0
+@export var hover_height: float = 7.0
 ## Top horizontal speed, m/s. Movement intent's speed_ratio scales this.
-@export var max_speed: float = 12.0
+@export var max_speed: float = 15.0
 ## Horizontal acceleration responsiveness — a Smoothing.damp_factor() rate,
 ## not m/s²; see the file header for why this is HoverBase's approach.
-@export var acceleration: float = 3.0
+@export var acceleration: float = 5.0
 ## Horizontal braking responsiveness, no movement intent this frame. Higher
 ## than acceleration on purpose, same feel convention as HoverBase.
-@export var braking: float = 4.0
+@export var braking: float = 5.0
 ## Vertical altitude-hold stiffness (1/s) — higher snaps back to
 ## hover_height above ground more sharply. Same formula as HoverBase's
 ## altitude_hold_stiffness.
@@ -99,6 +99,7 @@ func _physics_process(delta: float) -> void:
 	_process_altitude(delta)
 	move_and_slide()
 	_update_mesh_look(delta)
+
 
 
 ## Movement intent for this frame, written by whatever controller drives this

@@ -42,7 +42,7 @@ signal night_started(day_number: int)
 const REAL_MINUTES_PER_GAME_DAY: float = 48.0
 
 ## Стартовое время — вечер: неон и ночная атмосфера в кадре с первого запуска.
-const START_HOUR: float = 10.0
+const START_HOUR: float = 16.0
 
 ## Границы игрового «дня» (для day_started / night_started / is_day_time()).
 const DAY_START_HOUR: float = 6.0
