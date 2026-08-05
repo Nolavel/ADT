@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene load_steps=28 format=4]
 
 [ext_resource type="Script" path="res://npc/npc_base.gd" id="1_base"]
 [ext_resource type="Script" path="res://npc/controllers/idle_npc_controller.gd" id="2_idle"]
