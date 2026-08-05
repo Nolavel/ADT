@@ -34,19 +34,19 @@ static func draw_dashed_rect(
 ## RU: Уголки. length подрезается, чтобы не сомкнуться на узкой цели.
 static func draw_corners(ci: CanvasItem, r: Rect2, col: Color, width: float, length: float) -> void:
 	var l: float = minf(length, minf(r.size.x, r.size.y) * 0.45)
-	var tl: Vector2 = r.position
-	var tr: Vector2 = r.position + Vector2(r.size.x, 0.0)
-	var br: Vector2 = r.position + r.size
-	var bl: Vector2 = r.position + Vector2(0.0, r.size.y)
+	var top_left: Vector2 = r.position
+	var top_right: Vector2 = r.position + Vector2(r.size.x, 0.0)
+	var bottom_right: Vector2 = r.position + r.size
+	var bottom_left: Vector2 = r.position + Vector2(0.0, r.size.y)
 
-	ci.draw_line(tl, tl + Vector2(l, 0.0), col, width)
-	ci.draw_line(tl, tl + Vector2(0.0, l), col, width)
-	ci.draw_line(tr, tr - Vector2(l, 0.0), col, width)
-	ci.draw_line(tr, tr + Vector2(0.0, l), col, width)
-	ci.draw_line(br, br - Vector2(l, 0.0), col, width)
-	ci.draw_line(br, br - Vector2(0.0, l), col, width)
-	ci.draw_line(bl, bl + Vector2(l, 0.0), col, width)
-	ci.draw_line(bl, bl - Vector2(0.0, l), col, width)
+	ci.draw_line(top_left, top_left + Vector2(l, 0.0), col, width)
+	ci.draw_line(top_left, top_left + Vector2(0.0, l), col, width)
+	ci.draw_line(top_right, top_right - Vector2(l, 0.0), col, width)
+	ci.draw_line(top_right, top_right + Vector2(0.0, l), col, width)
+	ci.draw_line(bottom_right, bottom_right - Vector2(l, 0.0), col, width)
+	ci.draw_line(bottom_right, bottom_right - Vector2(0.0, l), col, width)
+	ci.draw_line(bottom_left, bottom_left + Vector2(l, 0.0), col, width)
+	ci.draw_line(bottom_left, bottom_left - Vector2(0.0, l), col, width)
 
 
 ## RU: Сплошная рамка с лёгкой заливкой — состояние «попали».
