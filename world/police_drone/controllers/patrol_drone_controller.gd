@@ -37,6 +37,28 @@
 # in_group(), the exact pattern PerceptionComponent already uses to find the
 # player from anywhere in the tree, not a new lookup convention.
 #
+# That lookup CANNOT be a one-shot call in _ready(), and originally was one
+# — a real bug, not a hypothetical: Godot calls _ready() bottom-up as a
+# scene enters the tree, so every static PoliceDrone under StreamContainer
+# (four of them in world.tscn today) gets _ready() — and this lookup —
+# called before World's own _ready() even runs, let alone before
+# _init_world() creates IncidentRegistry (World._ready() additionally
+# awaits a process frame first). The group is provably empty at that point.
+# _try_resolve_incident_registry() is called again every _decide() until it
+# succeeds — cheap once resolved (an early-out), and self-healing regardless
+# of bootstrap order. A single push_warning fires if incident_registry_
+# search_timeout passes with nothing found, once per instance, not every
+# frame — silence here would mean a drone that never reacts to anything,
+# with nothing in the log to explain why.
+#
+# The more thorough fix would be architectural — world.gd creating systems
+# before the static scene tree's own _ready() pass, or a "world ready"
+# signal static instances could await — but every static instance in
+# world.tscn today (npc.tscn's own too) is explicitly documented as
+# temporary test scaffolding ("remove once real spawning exists"), so
+# building permanent bootstrap-ordering infrastructure for it isn't worth it
+# yet. Worth revisiting once these become real spawned content.
+#
 # Planned: a drawn weapon in COMBAT is itself a statement of intent — a
 # blade or a firearm in hand should draw the drone's attention on its own,
 # without an incident having happened yet. Not built: the player has no
@@ -122,6 +144,15 @@ enum State { PATROL, ALERT }
 ## land on the same phase by drift. A feel value, tuned by eye.
 @export var light_bar_period: float = 0.5
 
+@export_group("Incident Registry")
+## Seconds to keep retrying the group lookup before giving up and warning
+## once — see the file header on why this can't be a single _ready() call.
+## world.gd's IncidentRegistry should exist within the first couple of
+## frames after startup; a wait this long past that means something is
+## actually wrong (no IncidentRegistry in the scene at all), not a startup
+## race.
+@export var incident_registry_search_timeout: float = 5.0
+
 ## Resolved once in _ready() — NPCControllerBase's _actor narrowed to the
 ## drone-specific type this controller actually drives.
 var _drone: DroneBase = null
@@ -138,12 +169,16 @@ var _light_bar_red: OmniLight3D = null
 ## Seconds into the current blink cycle, 0..light_bar_period — the one
 ## accumulator both lights read; see light_bar_period's own comment.
 var _light_bar_phase: float = 0.0
-## Resolved once in _ready() via a group lookup — see the file header on why
-## this drone can't reach it through WorldContext. Null (and ALERT then
-## never triggers, silently — same defensive shape as _spotlight) if no
-## IncidentRegistry exists in the scene, which should only happen in an
-## isolated test scene, not the real game.
+## Resolved lazily via a group lookup, retried from _decide() until it
+## succeeds — see the file header on why this can't be a single _ready()
+## call. Null until then.
 var _incident_registry: IncidentRegistry = null
+## Seconds spent so far retrying the lookup — compared against
+## incident_registry_search_timeout to decide when to warn.
+var _incident_registry_search_time: float = 0.0
+## Set once the timeout warning has fired, so it fires exactly once per
+## instance instead of every frame the registry stays unresolved.
+var _warned_missing_incident_registry: bool = false
 
 var _state: State = State.PATROL
 ## Seconds since the last incident that put this drone into ALERT — reset to
@@ -191,16 +226,28 @@ func _ready() -> void:
 		_spotlight.spot_range = spotlight_range
 		_spotlight.light_energy = spotlight_energy
 
-	_incident_registry = get_tree().get_first_node_in_group(
-		IncidentRegistry.GROUP_INCIDENT_REGISTRY
-	) as IncidentRegistry
-	if _incident_registry:
-		_incident_registry.incident_reported.connect(_on_incident_reported)
+	## Very likely to fail here (see the file header) — kept anyway, harmless,
+	## and resolves immediately in the rare case ordering ever does favour
+	## this instance. _decide() is what actually guarantees resolution.
+	_try_resolve_incident_registry()
 
 
 func _decide(delta: float) -> void:
 	if not _drone:
 		return
+
+	if not _incident_registry:
+		_try_resolve_incident_registry()
+	if not _incident_registry:
+		_incident_registry_search_time += delta
+		if not _warned_missing_incident_registry \
+				and _incident_registry_search_time >= incident_registry_search_timeout:
+			_warned_missing_incident_registry = true
+			push_warning(
+				"[PatrolDroneController] %s: IncidentRegistry not found after %.1fs — "
+				% [_drone.name, _incident_registry_search_time]
+				+ "this drone's ALERT will never trigger on an incident"
+			)
 
 	var observation: PlayerObservation = null
 	if _perception:
@@ -236,6 +283,31 @@ func get_alert_memory_remaining() -> float:
 ## _spotlight directly, same encapsulation as get_alert_memory_remaining().
 func is_spotlight_active() -> bool:
 	return _spotlight != null and _spotlight.visible
+
+
+## Read by the perception debug panel — whether ALERT is even reachable for
+## this drone right now. False here (past the first frame or two) is exactly
+## the silent-failure state this file's header describes; the panel is
+## where a human actually notices it without waiting for the timeout
+## warning.
+func is_incident_registry_resolved() -> bool:
+	return _incident_registry != null
+
+
+## Retried from _decide() until it succeeds — see the file header on why a
+## single _ready() call isn't enough. Idempotent past the first success: an
+## already-resolved _incident_registry is left alone, and the signal is only
+## ever connected once (on the call that finds it).
+func _try_resolve_incident_registry() -> void:
+	if _incident_registry:
+		return
+	var found := get_tree().get_first_node_in_group(
+		IncidentRegistry.GROUP_INCIDENT_REGISTRY
+	) as IncidentRegistry
+	if not found:
+		return
+	_incident_registry = found
+	_incident_registry.incident_reported.connect(_on_incident_reported)
 
 
 ## The drone does not care that someone is there — the city is full of
