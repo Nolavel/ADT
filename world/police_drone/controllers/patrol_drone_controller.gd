@@ -232,6 +232,12 @@ func get_alert_memory_remaining() -> float:
 	return maxf(0.0, alert_memory_time - _alert_memory_timer)
 
 
+## Read by the perception debug panel — a getter instead of exposing
+## _spotlight directly, same encapsulation as get_alert_memory_remaining().
+func is_spotlight_active() -> bool:
+	return _spotlight != null and _spotlight.visible
+
+
 ## The drone does not care that someone is there — the city is full of
 ## people. It cares that a fact is on record. See the file header on why
 ## this is IncidentRegistry.incident_reported now, not a raised stance.

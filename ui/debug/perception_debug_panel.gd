@@ -27,6 +27,12 @@
 #
 # Toggle: InputSystems.perception_debug_toggled (action
 # "toggle_perception_debug" in Input Map).
+#
+# Also reports what perception alone can't: the last IncidentRegistry entry
+# (global, resolved via on_world_ready() — a WORLD_UI_SCENES entry gets one,
+# unlike PatrolDroneController), each NPCBase's knocked-down state, and per
+# drone, why it's in ALERT (incident memory, never a raised stance anymore)
+# and whether its spotlight is lit.
 # =============================================================================
 extends Control
 
@@ -34,11 +40,20 @@ const REDRAW_INTERVAL := 0.25
 
 var _redraw_timer: float = 0.0
 var _text: RichTextLabel
+## Resolved via WorldContext (WORLD_UI_SCENES entries get on_world_ready(),
+## unlike PatrolDroneController — see that file's own comment on why it has
+## to fall back to a group lookup instead). Null (and the last-incident line
+## silently skipped) only in an isolated test scene without one.
+var _incident_registry: IncidentRegistry = null
 
 
 func _ready() -> void:
 	_build_ui()
 	InputSystems.perception_debug_toggled.connect(_on_toggle)
+
+
+func on_world_ready(context: WorldContext) -> void:
+	_incident_registry = context.get_system(IncidentRegistry) as IncidentRegistry
 
 
 func _on_toggle() -> void:
@@ -64,10 +79,11 @@ func _redraw() -> void:
 			actors.append(candidate)
 
 	## Global, not per-row — same value for every actor's observation.stance
-	## — but worth its own line: stance is the reason anything reacts at
-	## all now (idle_npc_controller.gd's glance/turn gate,
-	## patrol_drone_controller.gd's ALERT trigger).
+	## — but worth its own line: stance is still what idle_npc_controller.gd's
+	## own glance/turn gate reacts to, even though it no longer triggers a
+	## drone's ALERT on its own (see patrol_drone_controller.gd's header).
 	var header := "player stance: %s" % PlayerState.Stance.keys()[PlayerState.stance]
+	header += "\n" + _describe_last_incident()
 
 	if actors.is_empty():
 		_text.text = header + "\n\n[color=#777777]— no NPCs or drones in scene —[/color]"
@@ -78,6 +94,22 @@ func _redraw() -> void:
 		lines.append(_describe_actor(actor))
 
 	_text.text = header + "\n\n" + "\n\n".join(lines)
+
+
+## "last incident: ASSAULT 3.2s ago" or "no incidents recorded" — global,
+## same reasoning as the stance line above. Uses the same real-seconds clock
+## IncidentRegistry itself stamps timestamps with (Time.get_ticks_msec()),
+## not GameClockSystem — see that file's header for why.
+func _describe_last_incident() -> String:
+	if not _incident_registry:
+		return "last incident: [color=#777777]no IncidentRegistry in scene[/color]"
+
+	var incident := _incident_registry.get_latest_incident()
+	if incident == null:
+		return "last incident: [color=#777777]none recorded[/color]"
+
+	var age := Time.get_ticks_msec() / 1000.0 - incident.timestamp
+	return "last incident: %s   %.1fs ago" % [Incident.Kind.keys()[incident.kind], age]
 
 
 func _describe_actor(actor: ActorBase) -> String:
@@ -110,6 +142,14 @@ func _describe_actor(actor: ActorBase) -> String:
 		line += "\n  rejected by: %s" % _rejection_reason(observation, perception)
 
 	line += "\n  %s" % _describe_controller_state(actor, observation)
+
+	## NPCBase-only — take_hit()/is_knocked_down() isn't on ActorBase, see
+	## that file's own header on why (no drone equivalent exists).
+	if actor is NPCBase:
+		var npc: NPCBase = actor
+		var down := npc.is_knocked_down()
+		var down_color := "#ff6666" if down else "#777777"
+		line += "\n  knocked down: [color=%s]%s[/color]" % [down_color, "YES" if down else "no"]
 
 	return line
 
@@ -155,10 +195,20 @@ func _describe_idle_controller(
 	]
 
 
+## ALERT is always held by incident memory now, never a raised stance — see
+## patrol_drone_controller.gd's own header — so "what holds ALERT" is
+## answered plainly rather than as a fake incident-vs-memory binary: it was
+## triggered by an incident, and alert memory is how much longer before it
+## lapses. Spotlight state is read through a getter, not the private
+## _spotlight field, same encapsulation as get_alert_memory_remaining().
 func _describe_drone_controller(controller: PatrolDroneController) -> String:
 	var remaining := controller.get_alert_memory_remaining()
 	var remaining_text := "%.1fs" % remaining if remaining >= 0.0 else "n/a"
-	return "state: %s   alert memory: %s" % [controller.get_state_name(), remaining_text]
+	var spot_color := "#35ff66" if controller.is_spotlight_active() else "#777777"
+	var spot_text := "YES" if controller.is_spotlight_active() else "no"
+	return "state: %s   held by incident memory: %s   spotlight: [color=%s]%s[/color]" % [
+		controller.get_state_name(), remaining_text, spot_color, spot_text,
+	]
 
 
 ## Derives which check would have rejected the player, purely for display —
