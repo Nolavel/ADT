@@ -11,24 +11,32 @@
 # exported vision_range/vision_angle_deg differ per-instance in the scene,
 # not a second component.
 #
-# States are PATROL and ALERT, not PATROL/CHASE. The old police_drone.gd's
-# local-square patrol pattern (a random point inside a square centred on the
-# drone's start position, rotated to its start yaw) is unchanged, ported
-# onto DroneBase/PerceptionComponent.
+# States are PATROL, OBSERVE and ALERT, not PATROL/CHASE. The old
+# police_drone.gd's local-square patrol pattern (a random point inside a
+# square centred on the drone's start position, rotated to its start yaw) is
+# unchanged, ported onto DroneBase/PerceptionComponent.
 #
-# The drone does not react to a raised stance anymore — a fist in the air on
-# an empty street used to be enough to summon a patrol, which reads as the
-# city watching a pose rather than an event. The hierarchy now has two
-# rungs: a raised stance (PlayerObservation.stance == COMBAT) is a reason to
-# look closer, nothing this controller currently acts on beyond what
-# idle_npc_controller.gd's own glance/turn gate already does elsewhere —
-# ALERT is reserved for a fixed fact on record. It triggers on
-# IncidentRegistry.incident_reported (core/world/incident_registry/), when
-# the incident happened within alert_incident_radius of the drone — the
-# same registry player.gd's punch reports to. It does not un-trigger the
-# instant the incident ages past the registry's own window — alert_memory_
-# time holds the state for a few seconds on its own clock, so the drone
-# doesn't look like it forgot mid-blink.
+# Two rungs of reaction, not one switch: a raised stance
+# (PlayerObservation.stance == COMBAT, player actually seen) is a reason to
+# look closer — OBSERVE holds distance and follows with its gaze, lights
+# off, the same declared-intent read idle_npc_controller.gd's own glance/
+# turn gate uses. A fist in the air on an empty street is not, on its own,
+# a reason to summon a patrol — that used to be ALERT's own trigger, and it
+# read as the city watching a pose rather than an event. ALERT is reserved
+# for a fixed fact on record: it triggers on IncidentRegistry.
+# incident_reported (core/world/incident_registry/), when the incident
+# happened within alert_incident_radius of the drone — the same registry
+# player.gd's punch reports to — and always wins over OBSERVE regardless of
+# what the live stance/visibility read says that frame.
+#
+# Both rungs hold on the same memory shape (alert_memory_time), not two
+# independent timers: ALERT doesn't un-trigger the instant the incident
+# ages past the registry's own window, and OBSERVE doesn't un-trigger the
+# instant the player lowers their stance or looks away — a drone that
+# forgets mid-blink reads as glitching, not calming down. Losing ALERT's
+# memory falls back to OBSERVE if the player is still seen and in COMBAT
+# that frame, otherwise PATROL — the same live read OBSERVE's own entry
+# uses, not a separate "was I provoked recently" flag.
 #
 # IncidentRegistry is a WORLD_SYSTEM_SCRIPTS entry (world.gd), not an
 # autoload, and this drone is a static test instance placed directly in
@@ -62,8 +70,10 @@
 # Planned: a drawn weapon in COMBAT is itself a statement of intent — a
 # blade or a firearm in hand should draw the drone's attention on its own,
 # without an incident having happened yet. Not built: the player has no
-# weapon to hold. When equipment lands, this belongs next to the incident
-# check, as a weaker trigger.
+# weapon to hold. When equipment lands, this belongs next to the stance
+# check as a second way into OBSERVE, not a second way into ALERT — a drawn
+# weapon is still not a fact on record, only a stronger reason to look
+# closer.
 #
 # ALERT is now also readable, not just tracked in state: a SpotLight3D
 # (Spotlight, child of DroneMesh) switches on while ALERT and the player is
@@ -85,7 +95,7 @@ class_name PatrolDroneController
 ## Matches the old police_drone.gd's hand-tuned value.
 const PATROL_ARRIVAL_RADIUS: float = 2.5
 
-enum State { PATROL, ALERT }
+enum State { PATROL, OBSERVE, ALERT }
 
 @export_group("Patrol")
 ## Half-width of the local patrol square, metres — same "±100m, 200x200
@@ -95,6 +105,15 @@ enum State { PATROL, ALERT }
 ## its own max_speed every frame, so this stays meaningful if max_speed is
 ## retuned on the body independently.
 @export var patrol_speed: float = 5.0
+
+@export_group("Observe")
+## Horizontal distance from the player this drone holds while OBSERVE —
+## deliberately further than alert_hover_distance: watching from a
+## respectful distance, not closing in the way an actual response does.
+@export var observe_hover_distance: float = 10.0
+## Desired speed while closing to observe_hover_distance, m/s — unhurried,
+## closer to patrol_speed than to alert_speed: OBSERVE isn't urgency.
+@export var observe_speed: float = 5.0
 
 @export_group("Alert")
 ## Desired speed while closing in to observation distance in ALERT, m/s —
@@ -113,9 +132,12 @@ enum State { PATROL, ALERT }
 ## notices, not so wide every drone in the district converges on one punch.
 @export var alert_incident_radius: float = 60.0
 ## Seconds ALERT persists after the triggering incident ages out of memory,
-## before lapsing back to PATROL. Not zero: a drone that forgets the instant
-## the fact is old reads as glitching, not calming down. A feel value, tuned
-## by eye — start at 3s per spec.
+## before lapsing back to OBSERVE-or-PATROL — and, reused (see the file
+## header on why it's one shared shape, not two timers), seconds OBSERVE
+## persists after the player lowers their stance or is lost from sight.
+## Not zero either way: a drone that forgets the instant the fact is old,
+## or the instant a fist is lowered, reads as glitching, not calming down.
+## A feel value, tuned by eye — start at 3s per spec.
 @export var alert_memory_time: float = 3.0
 
 @export_group("Spotlight")
@@ -186,6 +208,11 @@ var _state: State = State.PATROL
 ## up while in ALERT. Compared against alert_memory_time to decide when
 ## ALERT lapses.
 var _alert_memory_timer: float = 0.0
+## Seconds since the player last provoked OBSERVE (seen and in COMBAT) —
+## reset to 0 by _update_state() every frame that's still true, only ever
+## counted up while in OBSERVE. Compared against alert_memory_time, same
+## shared shape as _alert_memory_timer — see that export's own comment.
+var _observe_memory_timer: float = 0.0
 
 ## Captured once in _ready() — the patrol square's centre and rotation, same
 ## convention as the old police_drone.gd (a local square anchored to where
@@ -253,11 +280,13 @@ func _decide(delta: float) -> void:
 	if _perception:
 		observation = _perception.observe_player()
 
-	_update_alert_memory(delta)
+	_update_state(observation, delta)
 
 	match _state:
 		State.PATROL:
 			_decide_patrol(delta)
+		State.OBSERVE:
+			_decide_observe(observation)
 		State.ALERT:
 			_decide_alert(observation)
 
@@ -271,8 +300,9 @@ func get_state_name() -> String:
 	return State.keys()[_state]
 
 
-## Seconds left before ALERT lapses back to PATROL from memory alone, or
-## -1.0 outside ALERT ("n/a") — read by the perception debug panel.
+## Seconds left before ALERT lapses back to OBSERVE-or-PATROL from memory
+## alone, or -1.0 outside ALERT ("n/a") — read by the perception debug
+## panel.
 func get_alert_memory_remaining() -> float:
 	if _state != State.ALERT:
 		return -1.0
@@ -313,37 +343,82 @@ func _try_resolve_incident_registry() -> void:
 ## The drone does not care that someone is there — the city is full of
 ## people. It cares that a fact is on record. See the file header on why
 ## this is IncidentRegistry.incident_reported now, not a raised stance.
+## Always wins over whatever _update_state() left _state at — set directly,
+## not gated on current state, since ALERT outranks both PATROL and OBSERVE
+## unconditionally.
 func _on_incident_reported(incident: Incident) -> void:
 	if not _drone:
 		return
 	if incident.position.distance_to(_drone.global_position) > alert_incident_radius:
 		return
 	_alert_memory_timer = 0.0
-	_state = State.ALERT
+	_enter_state(State.ALERT)
 
 
-## Counts ALERT down toward PATROL on its own clock — the trigger itself is
-## _on_incident_reported() now, event-driven, not polled here.
-func _update_alert_memory(delta: float) -> void:
-	if _state != State.ALERT:
+## Resolves PATROL/OBSERVE every frame from the live stance/visibility read,
+## and counts ALERT's own memory down when that's the current state — one
+## method, not two, because falling out of ALERT needs the same "is the
+## player still provoking OBSERVE right now" read OBSERVE's own entry uses.
+## ALERT's own entry is _on_incident_reported(), event-driven, and always
+## wins regardless of what this method would otherwise resolve to that
+## frame — this method never sets ALERT itself.
+func _update_state(observation: PlayerObservation, delta: float) -> void:
+	var provoking_observe := observation != null and observation.is_seen \
+			and observation.stance == PlayerState.Stance.COMBAT
+
+	if _state == State.ALERT:
+		_alert_memory_timer += delta
+		if _alert_memory_timer < alert_memory_time:
+			return
+		_enter_state(State.OBSERVE if provoking_observe else State.PATROL)
 		return
 
-	_alert_memory_timer += delta
-	if _alert_memory_timer >= alert_memory_time:
-		_state = State.PATROL
+	if provoking_observe:
+		_observe_memory_timer = 0.0
+		if _state != State.OBSERVE:
+			_enter_state(State.OBSERVE)
+		return
+
+	if _state == State.OBSERVE:
+		_observe_memory_timer += delta
+		if _observe_memory_timer >= alert_memory_time:
+			_enter_state(State.PATROL)
+
+
+## Single place _state is actually assigned — PATROL needs a fresh patrol
+## point on entry (the old one may be stale after however long OBSERVE/
+## ALERT held); OBSERVE/ALERT need no equivalent setup, both read the
+## current observation fresh every frame instead of capturing anything at
+## entry.
+func _enter_state(new_state: State) -> void:
+	_state = new_state
+	if new_state == State.PATROL:
 		_pick_new_patrol_point()
 
 
-## Observation, not pursuit: closes to alert_hover_distance and holds,
-## never all the way to the player. Vertical separation is not computed
-## here — it comes free from DroneBase's own ground-following altitude
-## hold (see that file's header): hovering near the player, who stands on
-## the same local ground, already puts the drone hover_height above them.
+## OBSERVE: watches from observe_hover_distance, unhurried. See the shared
+## _decide_hold_and_watch() below for what "watches" means mechanically.
+func _decide_observe(observation: PlayerObservation) -> void:
+	_decide_hold_and_watch(observation, observe_hover_distance, observe_speed)
+
+
+## ALERT: the same watching behaviour, closer and faster to close the gap.
 func _decide_alert(observation: PlayerObservation) -> void:
+	_decide_hold_and_watch(observation, alert_hover_distance, alert_speed)
+
+
+## Shared movement for OBSERVE and ALERT: closes to hover_distance and
+## holds, never all the way to the player, aiming the mesh (and therefore
+## the spotlight, in ALERT — see _update_spotlight()) at them throughout.
+## Vertical separation is not computed here — it comes free from DroneBase's
+## own ground-following altitude hold (see that file's header): hovering
+## near the player, who stands on the same local ground, already puts the
+## drone hover_height above them.
+func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: float, speed: float) -> void:
 	if observation == null or not observation.is_seen:
 		## Out of sight but still inside the memory window — hold position
 		## rather than steer at a stale sighting. The next observation, or
-		## the memory timeout in _update_alert_memory(), decides what's next.
+		## the memory timeout in _update_state(), decides what's next.
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
 		return
 
@@ -352,8 +427,8 @@ func _decide_alert(observation: PlayerObservation) -> void:
 	var to_player := Vector3(player_pos.x - drone_pos.x, 0.0, player_pos.z - drone_pos.z)
 	var dist := to_player.length()
 
-	if dist > alert_hover_distance:
-		_drone.set_move_intent(to_player.normalized(), _speed_ratio(alert_speed))
+	if dist > hover_distance:
+		_drone.set_move_intent(to_player.normalized(), _speed_ratio(speed))
 	else:
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
 
