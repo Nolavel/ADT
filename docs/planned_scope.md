@@ -11,7 +11,7 @@ Nothing here is a commitment. Items are built only when an existing system
 demonstrably cannot carry the weight, and only when the item serves at least
 two systems that already exist.
 
-Last reviewed: 2026-08-04
+Last reviewed: 2026-08-06
 
 ---
 
@@ -83,42 +83,64 @@ unread at the next review, they go.
 Named here so the absence is deliberate rather than overlooked:
 
 - **NPC and AI.** A body, decision-layer seam, perception, animation and a
-  stance-triggered reaction now exist (`npc/npc_base.gd`, `npc/controllers/`,
+  reaction to a fixed fact now exist (`npc/npc_base.gd`, `npc/controllers/`,
   `core/characters/actor_base.gd` — the shared contract the police drone
   also drives through, `world/police_drone/`). `IdleNPCController` wanders
-  near its spawn point and freezes/turns toward a visible player;
-  `PatrolDroneController` goes ALERT on a player seen in COMBAT stance,
-  holds for a few seconds of memory, then reverts. What's still missing:
-  real navigation (both controllers substitute a single forward raycast for
-  obstacle avoidance, not a navmesh — an obstacle just means "pick another
-  point," not "route around it"), any memory beyond that one ALERT timer,
-  and reaction that spreads (one NPC or drone noticing does not alert
-  anything else). The design documents rest heavily on how the city reacts
-  to the player; this is a first slice of that, not the reaction.
-- **Combat.** The camera has a lock-on sub-state; there is nothing to lock
-  onto and nothing to fight.
+  near its spawn point and freezes/turns toward a visible player, still
+  reading a raised stance for its own glance/turn gate;
+  `PatrolDroneController` goes ALERT on an `IncidentRegistry` incident
+  (`core/world/incident_registry/`) reported within `alert_incident_radius`
+  of it — no longer on a raised stance, which read as the city watching a
+  pose rather than an event — holds for a few seconds of memory, then
+  reverts. What's still missing: real navigation (both controllers
+  substitute a single forward raycast for obstacle avoidance, not a
+  navmesh — an obstacle just means "pick another point," not "route around
+  it"), any memory beyond that one ALERT timer, and reaction that spreads
+  beyond one drone's own radius (one drone noticing does not alert
+  another). The design documents rest heavily on how the city reacts to the
+  player; this is a fuller slice of that now — a hit is legible (NPCs fall
+  and get up, `take_hit()`/`is_knocked_down()` on `NPCBase`) and recorded
+  (`IncidentRegistry`) — but still not the whole reaction: nothing beyond
+  one drone's radius hears about it, and there's no witness system yet
+  (NPCs don't report what they see, only the player's own punch does).
+- **Combat.** A punch exists (`COMBAT`-only, `mouse_left_button`,
+  `player.gd`) and knocks a hit NPC down for a few seconds — see NPC and AI,
+  above. What doesn't: health, damage numbers, death, a weapon to swing, and
+  anything for the camera's lock-on sub-state to actually lock onto besides
+  the existing `lockable` NPCs (nothing currently forces a lock-on
+  encounter). This is "the player can hit something," not combat.
 - **Stance has state and reads through to animation.** `PlayerState.Stance`
   (PEACE/COMBAT, `core/player_state/player_state.gd`) exists and is read
   by movement speed and TPS body rotation (`player.gd`), lock-on gating
   (`camera/tps_combat_camera_state.gd`), and the AnimationTree
   (`player_animation_component.gd`: MeleeLib's Light* set for PEACE,
   ShooterLib's sneak-* clips for COMBAT — previously running
-  unconditionally regardless of stance). Two loose ends left there:
-  sprint (PEACE) and a speed-blended run clip (COMBAT forward) are both
-  named but not wired into the blend tree, see that file's comments for
-  why. Not done: weapon-in-hand as an orthogonal volume modifier on top
-  of the stance (the axis is deliberately boolean — see
-  `PlayerState.Stance`'s own comment); and the evidence system that's
-  meant to read it too. NPC/drone reaction to the player's stance is
-  done — see NPC and AI, above.
+  unconditionally regardless of stance — plus a punch, `new4/punch1`,
+  layered over whichever branch is mixed in via `AnimationNodeOneShot`).
+  One loose end left there: sprint (PEACE) is still named
+  (`ANIM_PEACE_SPRINT`) but not wired into the blend tree, see that file's
+  comments for why — the run clip itself (COMBAT forward, outer blend
+  point) is wired and was not actually a second loose end. Not done:
+  weapon-in-hand as an orthogonal volume modifier on top of the stance (the
+  axis is deliberately boolean — see `PlayerState.Stance`'s own comment) —
+  once it lands, a drawn weapon in COMBAT is meant to be a second, weaker
+  trigger for a drone's ALERT alongside `IncidentRegistry`, see
+  `patrol_drone_controller.gd`'s own header; and the evidence system that's
+  meant to read stance too. NPC reaction to the player's stance is done (the
+  glance/turn gate); drone reaction to it is not — see Combat and NPC/AI,
+  above, for what replaced it.
 - **Missions.**
 - **Animation beyond locomotion and stances.** `PlayerAnimationComponent`
-  drives idle/walk/run per stance and a procedural head look; NPCs now have
-  a simpler idle/walk `NPCAnimationComponent` and their own
-  `LookAtModifier3D` head look (`npc_components/animation_component/`).
-  Still missing: layered upper-body blending, hit reactions, and attack
-  animations wired for the player. `player/animations/new_libs/Weapons.res`
-  is mounted on `AnimationPlayer` as `new5` but is effectively empty (407
-  bytes) — real aim-down-sights animation data lives in
-  `player/animations/libs/rifle_aim.res` and `rifle_aim_1.res` instead;
-  don't assume `new5/` has content because it's mounted.
+  drives idle/walk/run per stance and a procedural head look, plus one
+  attack (the COMBAT punch, layered via `AnimationNodeOneShot`); NPCs now
+  have a simpler idle/walk `NPCAnimationComponent`, their own
+  `LookAtModifier3D` head look, and the same `AnimationNodeOneShot`
+  layering for knockdown/getup (`npc_components/animation_component/`).
+  Still missing: layered upper-body blending (a punch or a knockdown
+  currently plays full-body, briefly overriding locomotion entirely, rather
+  than blending over just the upper body) and any attack beyond the one
+  punch. `player/animations/new_libs/Weapons.res` is mounted on
+  `AnimationPlayer` as `new5` but is effectively empty (407 bytes) — real
+  aim-down-sights animation data lives in `player/animations/libs/
+  rifle_aim.res` and `rifle_aim_1.res` instead; don't assume `new5/` has
+  content because it's mounted.

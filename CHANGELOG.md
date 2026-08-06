@@ -12,6 +12,92 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-06 — First full incident chain: player hits, NPC falls, city records, drone responds
+
+Nine commits closing the loop the drone/NPC work left open: the drone reacted to a
+raised stance, which meant the player could summon a patrol on an empty street by
+posing. Now the drone reacts to a fixed fact — a punch that actually landed — and
+stance goes back to being what it was designed as: a declared intent the city can
+choose not to answer.
+
+**`IncidentRegistry`** (`core/world/incident_registry/`), a new `WORLD_SYSTEM_SCRIPTS`
+entry. What the city has on record — actors report, they do not remember, so a
+reaction can outlive the block being unloaded around the actor that caused it. Two
+calls: `report(perpetrator, kind, position)`, `has_recent_incident_by(perpetrator,
+within_seconds)`. `Incident` is a `RefCounted`, not a `Dictionary` (warnings-as-errors).
+Timestamps are real seconds (`Time.get_ticks_msec()`), not `GameClockSystem`'s
+game-hours — see that file's own header for why the two don't compose safely. First
+slice of the roadmap's `WitnessSystem`: `Kind` has one value (`ASSAULT`) because
+nothing produces a second yet.
+*IncidentRegistry — реестр зафиксированных фактов, а не памяти конкретного актора:
+это то, что позволяет реакции пережить выгрузку квартала.*
+- `core/world/incident_registry/incident.gd`, `core/world/incident_registry/incident_registry.gd`, `world/world.gd`
+
+**Player punch, `COMBAT`-only, on `mouse_left_button`.** That button was free in TPS —
+`ClickToMoveSystem` has always self-gated to `ON_FOOT` + `ISOMETRIC`. Animation is
+`new4/punch1` (ShooterLib), not MeleeLib — MeleeLib turned out to have no unarmed
+punch clip at all (it's a sword/shield kit). Layered over whichever stance branch is
+mixed in via `AnimationNodeOneShot` (no upper-body-only blending exists yet), for the
+same span `set_movement_enabled(false)` already locks movement. Hit detection is a
+cone check against `ActorBase.GROUP_PERCEIVED_ACTOR` filtered to `NPCBase` — not a
+reused `PlayerFocusCast`, which is scoped to the Interactables physics layer for
+`InteractComponent`'s own purpose. A landed punch calls `take_hit()` on the target and
+emits `punch_landed`, which `IncidentRegistry` listens for via its own
+`on_world_ready()` — `player.gd` never learns the registry exists.
+*Удар игрока в стойке COMBAT — ЛКМ была свободна в TPS. Анимация оказалась не там, где
+предполагалось (ShooterLib, не MeleeLib).*
+- `player/player.gd`, `player/player_components/animation_component/player_animation_component.gd`
+
+**NPC knockdown/getup, `take_hit()` on `NPCBase`, not `ActorBase`.** Knocks the body
+down, plays `new4/knockdown`, then after `knockdown_duration` (export, 1s) plays
+`new4/ko-getup` and waits for that clip to actually finish (polled — no animation-event
+system exists to hook "clip finished" to) before returning control.
+`idle_npc_controller.gd` stops deciding outright while its NPC is down. `DroneBase` has
+no equivalent — no animation component for a fall/getup clip, and a flying body
+knocked from the sky is a separate, unbuilt feature — so a punch that reaches a drone
+just doesn't connect.
+*NPC падает и встаёт по take_hit() — контракт добавлен на NPCBase, не на ActorBase:
+у дрона нет анимации для этого и падение с неба — отдельная нерешённая задача.*
+- `npc/npc_base.gd`, `npc/npc_components/animation_component/npc_animation_component.gd`, `npc/controllers/idle_npc_controller.gd`
+
+**`PatrolDroneController`'s ALERT: incident, not stance.** Subscribes to
+`IncidentRegistry.incident_reported`, goes ALERT when the incident falls within
+`alert_incident_radius` of the drone's current position. `alert_memory_time` still
+holds the state afterward, same as before, just driven by the last provoking report.
+The drone is a static test instance placed directly in `world.tscn` and never receives
+a `WorldContext`, so it resolves the registry via a group lookup
+(`IncidentRegistry.GROUP_INCIDENT_REGISTRY`) — the same pattern `PerceptionComponent`
+already uses to find the player. Documents, without building, the next rung: a drawn
+weapon in `COMBAT` as a weaker trigger, once the player has something to hold.
+*ALERT дрона теперь по зафиксированному инциденту, а не по стойке — стойка осталась
+поводом присмотреться (idle_npc_controller.gd), но не поводом вызвать патруль.*
+- `world/police_drone/controllers/patrol_drone_controller.gd`, `core/world/incident_registry/incident_registry.gd`
+
+**Drone light reaction: `SpotLight3D` addressed at the player, plus a blinking light
+bar.** The old `StatusLight` (a single `OmniLight3D` lerping color) was a sphere,
+addressed to no one, and barely legible in the greybox. `Spotlight` (child of
+`DroneMesh`) switches on only while ALERT and the player is actually seen, and tracks
+automatically — it's a plain child at `DroneMesh`'s identity transform, so it rides
+along with the mesh's own existing `looking_at()` turn, no second aim mechanism.
+`StatusLight` itself is replaced by `LightBarBlue`/`LightBarRed`, two small
+`OmniLight3D`s blinking in antiphase off one shared timer (not two, which could drift
+into both being on, or off, at once) — the ambient "a drone nearby is in ALERT" signal
+`StatusLight` used to carry.
+*Прожектор — адресный сигнал (дрон смотрит именно на игрока); мигалка (синий/красный
+OmniLight3D в противофазе) — амбиентный сигнал, что дрон вообще в ALERT.*
+- `world/police_drone/PoliceDrone.tscn`, `world/police_drone/controllers/patrol_drone_controller.gd`
+
+**Perception debug panel: incidents, knockdown, drone alert reason.** Reports the last
+`IncidentRegistry` entry (type, age), each `NPCBase`'s knocked-down state, and per
+drone, that ALERT is held by incident memory plus whether the spotlight is lit.
+Resolves `IncidentRegistry` via `on_world_ready()` — this panel is a `WORLD_UI_SCENES`
+entry and gets one, unlike the drone controller.
+*Панель отладки восприятия: последний инцидент, состояние падения NPC, причина ALERT
+у дрона.*
+- `ui/debug/perception_debug_panel.gd`
+
+---
+
 ## 2026-08-04 — Police drone moved onto the NPC/AI architecture; NPCs get the player's rig
 
 `world/police_drone/police_drone.gd` was a working concept written before `npc/`'s

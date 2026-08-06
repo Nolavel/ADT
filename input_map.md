@@ -1,6 +1,6 @@
 # InputMap
 
-> Verified against `project.godot` on **2026-08-02** · Godot 4.7 · GDScript
+> Verified against `project.godot` on **2026-08-06** · Godot 4.7 · GDScript
 
 **This document is the single source of truth for input bindings.** Update it
 in the same commit as any action added, removed or rebound in
@@ -35,7 +35,6 @@ Active regardless of `PlayerState.mode`.
 
 | Action | Key | Description | RU |
 |---|---|---|---|
-| `mouse_left_button` | LMB | Stop movement / cancel move target | Отменить цель движения |
 | `interact` | `F` | Pick up / drop item, activate object, board a hover | Взаимодействие |
 | `zoom_in` | Wheel down | Zoom camera in | Приблизить |
 | `zoom_out` | Wheel up | Zoom camera out | Отдалить |
@@ -56,6 +55,7 @@ Click-to-move navigation. Handled by `NavigationComponent` and
 
 | Action | Key | Description | RU |
 |---|---|---|---|
+| `mouse_left_button` | LMB | Stop movement / cancel move target | Отменить цель движения |
 | `mouse_right_button` | RMB click | Move to clicked point | Идти в точку |
 | `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
 | `lean_left` | `Q` | Orbital camera — discrete step left | Шаг камеры влево |
@@ -66,6 +66,11 @@ has always self-gated to ON_FOOT + ISOMETRIC, so the click-to-move meaning
 never actually applied in TPS — it just had no reader there before this
 table said otherwise. See §4 for what the same physical button now does
 in TPS.
+
+`mouse_left_button` moved here from "shared" (2026-08-06), same reason:
+`ClickToMoveSystem`'s stop-movement handler is gated the same way as its
+move-to-point one, so it never actually fired in TPS either. See §4 for
+what the same physical button does there now.
 
 ---
 
@@ -82,13 +87,14 @@ and also drives `PlayerState.is_aiming` from the aim hold below.
 | `move_right` | `D` | Strafe right | Вправо |
 | `jump` | `Space` | Jump | Прыжок |
 | `sprint` | `Shift` | Sprint; consumes stamina | Бег |
+| `mouse_left_button` | LMB | Punch — only takes effect in `Stance.COMBAT` (`player.gd`) | Удар — только в стойке COMBAT |
 | `mouse_right_button` | RMB hold | Aim down sights — only takes effect in `Stance.COMBAT` | Прицеливание — только в стойке COMBAT |
 | `switch_shoulder` | `Z` | Swap camera shoulder (`TpsShoulderCameraState`) | Смена плеча камеры |
 | `lock_on` | `G` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |
 
-`mouse_right_button` is unclaimed here otherwise — its ISOMETRIC meaning
-(§3) is read by a different, self-gated system, so the same physical
-button carries two unrelated meanings depending on `view_mode`.
+`mouse_left_button`/`mouse_right_button` are otherwise unclaimed here — their
+ISOMETRIC meanings (§3) are read by a different, self-gated system, so each
+physical button carries two unrelated meanings depending on `view_mode`.
 
 `lock_on` searches the `lockable` group. Occlusion-aware target selection is
 a known TODO, blocked on a raycast service that does not exist yet.
