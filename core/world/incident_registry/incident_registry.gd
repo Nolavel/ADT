@@ -34,6 +34,15 @@
 extends Node
 class_name IncidentRegistry
 
+## Lookup group for consumers that can't reach this through WorldContext —
+## PatrolDroneController is the first: it's a static test instance placed
+## directly in world.tscn, not a WORLD_SYSTEM_SCRIPTS/3D_ENTITY_SCENES/
+## UI_SCENES entry, so it never receives on_world_ready(). Resolved via
+## get_tree().get_first_node_in_group(), the same pattern
+## PerceptionComponent already uses to find the player from anywhere in the
+## tree — not a new lookup convention.
+const GROUP_INCIDENT_REGISTRY: StringName = &"incident_registry"
+
 signal incident_reported(incident: Incident)
 
 ## Oldest incidents are dropped past this age, regardless of count — a feel/
@@ -50,6 +59,10 @@ var _incidents: Array[Incident] = []
 ## need to know player.gd's type, only that whatever WorldContext hands it
 ## as the player carries a punch_landed(position: Vector3) signal.
 var _player: Node3D = null
+
+
+func _ready() -> void:
+	add_to_group(GROUP_INCIDENT_REGISTRY)
 
 
 ## WORLD_SYSTEM_SCRIPTS' optional lifecycle hook (world.gd) — same pattern

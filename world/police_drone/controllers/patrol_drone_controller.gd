@@ -16,14 +16,32 @@
 # drone's start position, rotated to its start yaw) is unchanged, ported
 # onto DroneBase/PerceptionComponent.
 #
-# The drone does not care that someone is there — the city is full of
-# people. It cares that someone has declared intent. A raised stance is a
-# statement, and the drone is what answers it: ALERT triggers on a visible
-# player in PlayerState.Stance.COMBAT, the same declared-intent read
-# idle_npc_controller.gd already uses to skip its own glance/turn gate. It
-# does not un-trigger the instant the player lowers their stance or steps
-# out of view — alert_memory_time holds the state for a few seconds, so the
-# drone doesn't look like it forgot mid-blink.
+# The drone does not react to a raised stance anymore — a fist in the air on
+# an empty street used to be enough to summon a patrol, which reads as the
+# city watching a pose rather than an event. The hierarchy now has two
+# rungs: a raised stance (PlayerObservation.stance == COMBAT) is a reason to
+# look closer, nothing this controller currently acts on beyond what
+# idle_npc_controller.gd's own glance/turn gate already does elsewhere —
+# ALERT is reserved for a fixed fact on record. It triggers on
+# IncidentRegistry.incident_reported (core/world/incident_registry/), when
+# the incident happened within alert_incident_radius of the drone — the
+# same registry player.gd's punch reports to. It does not un-trigger the
+# instant the incident ages past the registry's own window — alert_memory_
+# time holds the state for a few seconds on its own clock, so the drone
+# doesn't look like it forgot mid-blink.
+#
+# IncidentRegistry is a WORLD_SYSTEM_SCRIPTS entry (world.gd), not an
+# autoload, and this drone is a static test instance placed directly in
+# world.tscn — it never receives a WorldContext the way ClickToMoveSystem
+# does (on_world_ready()). Resolved instead via get_tree().get_first_node_
+# in_group(), the exact pattern PerceptionComponent already uses to find the
+# player from anywhere in the tree, not a new lookup convention.
+#
+# Planned: a drawn weapon in COMBAT is itself a statement of intent — a
+# blade or a firearm in hand should draw the drone's attention on its own,
+# without an incident having happened yet. Not built: the player has no
+# weapon to hold. When equipment lands, this belongs next to the incident
+# check, as a weaker trigger.
 # =============================================================================
 extends NPCControllerBase
 class_name PatrolDroneController
@@ -53,10 +71,16 @@ enum State { PATROL, ALERT }
 ## closes to this and stops, never all the way to the player. Vertical
 ## separation is not a separate parameter; see _decide_alert()'s comment.
 @export var alert_hover_distance: float = 6.0
-## Seconds ALERT persists after the player leaves COMBAT stance or sight,
-## before lapsing back to PATROL. Not zero: an NPC — or a drone — that
-## forgets the instant a fist is lowered reads as glitching, not calming
-## down. A feel value, tuned by eye — start at 3s per spec.
+## Radius, metres, an incident must fall within (measured from the drone's
+## current position, not its patrol origin) to trigger ALERT — see the file
+## header on why an incident is the trigger now, not a raised stance. A
+## feel/scale value: wide enough that a drone patrolling nearby plausibly
+## notices, not so wide every drone in the district converges on one punch.
+@export var alert_incident_radius: float = 60.0
+## Seconds ALERT persists after the triggering incident ages out of memory,
+## before lapsing back to PATROL. Not zero: a drone that forgets the instant
+## the fact is old reads as glitching, not calming down. A feel value, tuned
+## by eye — start at 3s per spec.
 @export var alert_memory_time: float = 3.0
 
 @export_group("Alert Signal")
@@ -80,11 +104,18 @@ var _perception: PerceptionComponent = null
 ## Resolved once in _ready() via light_path. Null (and silently skipped by
 ## _update_light()) if the scene has no status light yet.
 var _light: OmniLight3D = null
+## Resolved once in _ready() via a group lookup — see the file header on why
+## this drone can't reach it through WorldContext. Null (and ALERT then
+## never triggers, silently — same defensive shape as _light) if no
+## IncidentRegistry exists in the scene, which should only happen in an
+## isolated test scene, not the real game.
+var _incident_registry: IncidentRegistry = null
 
 var _state: State = State.PATROL
-## Seconds since the player was last seen in COMBAT stance — reset to 0 on
-## every provoking sighting, only ever counted up while in ALERT. Compared
-## against alert_memory_time to decide when ALERT lapses.
+## Seconds since the last incident that put this drone into ALERT — reset to
+## 0 by _on_incident_reported() on every provoking report, only ever counted
+## up while in ALERT. Compared against alert_memory_time to decide when
+## ALERT lapses.
 var _alert_memory_timer: float = 0.0
 var _current_light_color: Color = Color(0.4, 0.7, 1.0)
 
@@ -114,6 +145,12 @@ func _ready() -> void:
 		_light = get_node_or_null(light_path) as OmniLight3D
 	_current_light_color = patrol_light_color
 
+	_incident_registry = get_tree().get_first_node_in_group(
+		IncidentRegistry.GROUP_INCIDENT_REGISTRY
+	) as IncidentRegistry
+	if _incident_registry:
+		_incident_registry.incident_reported.connect(_on_incident_reported)
+
 
 func _decide(delta: float) -> void:
 	if not _drone:
@@ -122,7 +159,8 @@ func _decide(delta: float) -> void:
 	var observation: PlayerObservation = null
 	if _perception:
 		observation = _perception.observe_player()
-		_update_alert_state(observation, delta)
+
+	_update_alert_memory(delta)
 
 	match _state:
 		State.PATROL:
@@ -148,16 +186,20 @@ func get_alert_memory_remaining() -> float:
 
 
 ## The drone does not care that someone is there — the city is full of
-## people. It cares that someone has declared intent. A raised stance is a
-## statement, and the drone is what answers it.
-func _update_alert_state(observation: PlayerObservation, delta: float) -> void:
-	var provoked := observation.is_seen and observation.stance == PlayerState.Stance.COMBAT
-
-	if provoked:
-		_alert_memory_timer = 0.0
-		_state = State.ALERT
+## people. It cares that a fact is on record. See the file header on why
+## this is IncidentRegistry.incident_reported now, not a raised stance.
+func _on_incident_reported(incident: Incident) -> void:
+	if not _drone:
 		return
+	if incident.position.distance_to(_drone.global_position) > alert_incident_radius:
+		return
+	_alert_memory_timer = 0.0
+	_state = State.ALERT
 
+
+## Counts ALERT down toward PATROL on its own clock — the trigger itself is
+## _on_incident_reported() now, event-driven, not polled here.
+func _update_alert_memory(delta: float) -> void:
 	if _state != State.ALERT:
 		return
 
@@ -176,7 +218,7 @@ func _decide_alert(observation: PlayerObservation) -> void:
 	if observation == null or not observation.is_seen:
 		## Out of sight but still inside the memory window — hold position
 		## rather than steer at a stale sighting. The next observation, or
-		## the memory timeout in _update_alert_state(), decides what's next.
+		## the memory timeout in _update_alert_memory(), decides what's next.
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
 		return
 
