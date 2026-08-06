@@ -20,6 +20,12 @@ script = ExtResource("1_drone")
 [node name="DroneMesh" type="MeshInstance3D" parent="." unique_id=382597592]
 mesh = SubResource("SphereMesh_5h11f")
 
+[node name="Spotlight" type="SpotLight3D" parent="DroneMesh" unique_id=918273645]
+visible = false
+light_energy = 8.0
+spot_range = 25.0
+spot_angle = 20.0
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1631837865]
 shape = SubResource("SphereShape3D_5h11f")
 

@@ -42,6 +42,14 @@
 # without an incident having happened yet. Not built: the player has no
 # weapon to hold. When equipment lands, this belongs next to the incident
 # check, as a weaker trigger.
+#
+# ALERT is now also readable, not just tracked in state: a SpotLight3D
+# (Spotlight, child of DroneMesh) switches on while ALERT and the player is
+# actually seen, addressed at them specifically — see _update_spotlight()'s
+# own comment on why this replaces StatusLight's OmniLight3D color swap
+# (unaddressed, barely legible in the greybox) as the thing a player
+# actually notices. StatusLight itself is removed in the next commit, once
+# the light-bar takes over its "drone is in ALERT" signal too.
 # =============================================================================
 extends NPCControllerBase
 class_name PatrolDroneController
@@ -83,6 +91,17 @@ enum State { PATROL, ALERT }
 ## by eye — start at 3s per spec.
 @export var alert_memory_time: float = 3.0
 
+@export_group("Spotlight")
+## Relative to this controller node, same convention as light_path below.
+## Default matches the Spotlight node PoliceDrone.tscn adds under DroneMesh.
+@export var spotlight_path: NodePath = ^"../DroneMesh/Spotlight"
+## Full beam width, degrees (SpotLight3D.spot_angle). A feel value, tuned by
+## eye — applied once in _ready(), not tweened.
+@export var spotlight_angle_deg: float = 20.0
+## Beam reach, metres (SpotLight3D.spot_range).
+@export var spotlight_range: float = 25.0
+@export var spotlight_energy: float = 8.0
+
 @export_group("Alert Signal")
 ## Status light this drone flashes red in ALERT. Relative to this
 ## controller node (a child of DroneBase, sibling of the light) — default
@@ -104,6 +123,9 @@ var _perception: PerceptionComponent = null
 ## Resolved once in _ready() via light_path. Null (and silently skipped by
 ## _update_light()) if the scene has no status light yet.
 var _light: OmniLight3D = null
+## Resolved once in _ready() via spotlight_path. Null (and silently skipped
+## by _update_spotlight()) if the scene has no spotlight yet.
+var _spotlight: SpotLight3D = null
 ## Resolved once in _ready() via a group lookup — see the file header on why
 ## this drone can't reach it through WorldContext. Null (and ALERT then
 ## never triggers, silently — same defensive shape as _light) if no
@@ -145,6 +167,13 @@ func _ready() -> void:
 		_light = get_node_or_null(light_path) as OmniLight3D
 	_current_light_color = patrol_light_color
 
+	if spotlight_path != NodePath():
+		_spotlight = get_node_or_null(spotlight_path) as SpotLight3D
+	if _spotlight:
+		_spotlight.spot_angle = spotlight_angle_deg
+		_spotlight.spot_range = spotlight_range
+		_spotlight.light_energy = spotlight_energy
+
 	_incident_registry = get_tree().get_first_node_in_group(
 		IncidentRegistry.GROUP_INCIDENT_REGISTRY
 	) as IncidentRegistry
@@ -169,6 +198,7 @@ func _decide(delta: float) -> void:
 			_decide_alert(observation)
 
 	_update_light(delta)
+	_update_spotlight(observation)
 
 
 ## Human-readable state for debug tooling (perception_debug_panel.gd), same
@@ -233,6 +263,20 @@ func _decide_alert(observation: PlayerObservation) -> void:
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
 
 	_drone.set_look_target(player_pos)
+
+
+## On only in ALERT while the player is actually seen — loses sight, loses
+## the beam, rather than pinning a stale sighting. Aiming is not a separate
+## mechanism: Spotlight is a plain child of DroneMesh (identity local
+## transform, shining down its own -Z, same convention DroneMesh's own
+## looking_at() turn already produces), so it tracks wherever
+## _decide_alert()'s set_look_target() already points the mesh, at
+## DroneBase's own mesh_turn_smoothing rate — no second "aim speed" export
+## to keep in sync with that one.
+func _update_spotlight(observation: PlayerObservation) -> void:
+	if not _spotlight:
+		return
+	_spotlight.visible = _state == State.ALERT and observation != null and observation.is_seen
 
 
 func _update_light(delta: float) -> void:
