@@ -33,10 +33,19 @@ shape = SubResource("SphereShape3D_5h11f")
 target_position = Vector3(0, -20, 0)
 collision_mask = 3
 
-[node name="StatusLight" type="OmniLight3D" parent="." unique_id=756205304]
-light_color = Color(0.4, 0.7, 1, 1)
-light_energy = 5.0
-omni_range = 20.0
+[node name="LightBarBlue" type="OmniLight3D" parent="." unique_id=756205304]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.5, 0)
+visible = false
+light_color = Color(0.15, 0.4, 1, 1)
+light_energy = 4.0
+omni_range = 5.0
+
+[node name="LightBarRed" type="OmniLight3D" parent="." unique_id=756205305]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.5, 0)
+visible = false
+light_color = Color(1, 0.05, 0.05, 1)
+light_energy = 4.0
+omni_range = 5.0
 
 [node name="PatrolDroneController" type="Node" parent="." unique_id=704427789]
 script = ExtResource("2_patrol")

@@ -48,8 +48,13 @@
 # actually seen, addressed at them specifically — see _update_spotlight()'s
 # own comment on why this replaces StatusLight's OmniLight3D color swap
 # (unaddressed, barely legible in the greybox) as the thing a player
-# actually notices. StatusLight itself is removed in the next commit, once
-# the light-bar takes over its "drone is in ALERT" signal too.
+# actually notices.
+#
+# StatusLight is gone — replaced by two small OmniLight3Ds (LightBarBlue/
+# LightBarRed) blinking in antiphase while ALERT, the ambient "there is a
+# drone in ALERT nearby" signal StatusLight used to carry with an instant
+# colour lerp. The spotlight is the addressed signal (who it's looking at);
+# the light bar is the ambient one (that it's looking at all).
 # =============================================================================
 extends NPCControllerBase
 class_name PatrolDroneController
@@ -92,8 +97,9 @@ enum State { PATROL, ALERT }
 @export var alert_memory_time: float = 3.0
 
 @export_group("Spotlight")
-## Relative to this controller node, same convention as light_path below.
-## Default matches the Spotlight node PoliceDrone.tscn adds under DroneMesh.
+## Relative to this controller node, same convention as the light bar paths
+## below. Default matches the Spotlight node PoliceDrone.tscn adds under
+## DroneMesh.
 @export var spotlight_path: NodePath = ^"../DroneMesh/Spotlight"
 ## Full beam width, degrees (SpotLight3D.spot_angle). A feel value, tuned by
 ## eye — applied once in _ready(), not tweened.
@@ -102,17 +108,19 @@ enum State { PATROL, ALERT }
 @export var spotlight_range: float = 25.0
 @export var spotlight_energy: float = 8.0
 
-@export_group("Alert Signal")
-## Status light this drone flashes red in ALERT. Relative to this
-## controller node (a child of DroneBase, sibling of the light) — default
-## matches the node PoliceDrone.tscn adds.
-@export var light_path: NodePath = ^"../StatusLight"
-@export var patrol_light_color: Color = Color(0.4, 0.7, 1.0)
-@export var alert_light_color: Color = Color(1.0, 0.05, 0.05)
-## Smoothing.damp_factor() rate for the color transition. Not instant —
-## see the file header on why ALERT reads as an escalation, not a switch
-## flip; the light follows the same logic as the state itself.
-@export var light_color_smoothing: float = 3.0
+@export_group("Light Bar")
+## Relative to this controller node, same convention as spotlight_path
+## above. Defaults match the LightBarBlue/LightBarRed nodes PoliceDrone.tscn
+## adds — StatusLight's replacement, see the file header.
+@export var light_bar_blue_path: NodePath = ^"../LightBarBlue"
+@export var light_bar_red_path: NodePath = ^"../LightBarRed"
+@export var light_bar_energy: float = 4.0
+@export var light_bar_range: float = 5.0
+## Full blink cycle, seconds — blue for the first half, red for the second.
+## One shared phase accumulator drives both lights in antiphase (see
+## _update_light_bar()), not two independent timers, so they can never both
+## land on the same phase by drift. A feel value, tuned by eye.
+@export var light_bar_period: float = 0.5
 
 ## Resolved once in _ready() — NPCControllerBase's _actor narrowed to the
 ## drone-specific type this controller actually drives.
@@ -120,15 +128,19 @@ var _drone: DroneBase = null
 ## Sibling PerceptionComponent, same resolution pattern as
 ## IdleNPCController's own _perception.
 var _perception: PerceptionComponent = null
-## Resolved once in _ready() via light_path. Null (and silently skipped by
-## _update_light()) if the scene has no status light yet.
-var _light: OmniLight3D = null
 ## Resolved once in _ready() via spotlight_path. Null (and silently skipped
 ## by _update_spotlight()) if the scene has no spotlight yet.
 var _spotlight: SpotLight3D = null
+## Resolved once in _ready() via their paths above. Null (and silently
+## skipped by _update_light_bar()) if the scene has no light bar yet.
+var _light_bar_blue: OmniLight3D = null
+var _light_bar_red: OmniLight3D = null
+## Seconds into the current blink cycle, 0..light_bar_period — the one
+## accumulator both lights read; see light_bar_period's own comment.
+var _light_bar_phase: float = 0.0
 ## Resolved once in _ready() via a group lookup — see the file header on why
 ## this drone can't reach it through WorldContext. Null (and ALERT then
-## never triggers, silently — same defensive shape as _light) if no
+## never triggers, silently — same defensive shape as _spotlight) if no
 ## IncidentRegistry exists in the scene, which should only happen in an
 ## isolated test scene, not the real game.
 var _incident_registry: IncidentRegistry = null
@@ -139,7 +151,6 @@ var _state: State = State.PATROL
 ## up while in ALERT. Compared against alert_memory_time to decide when
 ## ALERT lapses.
 var _alert_memory_timer: float = 0.0
-var _current_light_color: Color = Color(0.4, 0.7, 1.0)
 
 ## Captured once in _ready() — the patrol square's centre and rotation, same
 ## convention as the old police_drone.gd (a local square anchored to where
@@ -163,9 +174,15 @@ func _ready() -> void:
 	_start_yaw = _drone.global_rotation.y
 	_pick_new_patrol_point()
 
-	if light_path != NodePath():
-		_light = get_node_or_null(light_path) as OmniLight3D
-	_current_light_color = patrol_light_color
+	if light_bar_blue_path != NodePath():
+		_light_bar_blue = get_node_or_null(light_bar_blue_path) as OmniLight3D
+	if light_bar_red_path != NodePath():
+		_light_bar_red = get_node_or_null(light_bar_red_path) as OmniLight3D
+	for bar_light in [_light_bar_blue, _light_bar_red]:
+		if bar_light:
+			bar_light.light_energy = light_bar_energy
+			bar_light.omni_range = light_bar_range
+			bar_light.visible = false
 
 	if spotlight_path != NodePath():
 		_spotlight = get_node_or_null(spotlight_path) as SpotLight3D
@@ -197,7 +214,7 @@ func _decide(delta: float) -> void:
 		State.ALERT:
 			_decide_alert(observation)
 
-	_update_light(delta)
+	_update_light_bar(delta)
 	_update_spotlight(observation)
 
 
@@ -279,12 +296,26 @@ func _update_spotlight(observation: PlayerObservation) -> void:
 	_spotlight.visible = _state == State.ALERT and observation != null and observation.is_seen
 
 
-func _update_light(delta: float) -> void:
-	if not _light:
+## Off outside ALERT (and the phase resets, so the next ALERT always starts
+## on blue rather than wherever the phase happened to be left). In ALERT,
+## one accumulator (_light_bar_phase) drives both lights in antiphase —
+## blue for the first half of light_bar_period, red for the second — rather
+## than two independent timers that could drift into both being on, or both
+## off, at once.
+func _update_light_bar(delta: float) -> void:
+	if not _light_bar_blue or not _light_bar_red:
 		return
-	var target := alert_light_color if _state == State.ALERT else patrol_light_color
-	_current_light_color = _current_light_color.lerp(target, Smoothing.damp_factor(light_color_smoothing, delta))
-	_light.light_color = _current_light_color
+
+	if _state != State.ALERT:
+		_light_bar_phase = 0.0
+		_light_bar_blue.visible = false
+		_light_bar_red.visible = false
+		return
+
+	_light_bar_phase = fmod(_light_bar_phase + delta, light_bar_period)
+	var blue_on := _light_bar_phase < light_bar_period * 0.5
+	_light_bar_blue.visible = blue_on
+	_light_bar_red.visible = not blue_on
 
 
 func _decide_patrol(_delta: float) -> void:
