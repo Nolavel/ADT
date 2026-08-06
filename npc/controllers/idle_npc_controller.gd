@@ -114,6 +114,14 @@ func _decide(delta: float) -> void:
 	if not _npc:
 		return
 
+	## A knocked-down body isn't deciding anything — it can't move, and
+	## NPCBase already ignores movement intent while down (see its own
+	## _physics_process()). Calling into set_move_intent()/set_look_target()
+	## regardless would just be noise; skipping outright is what "the
+	## controller stops deciding" (npc_base.gd's take_hit() comment) means.
+	if _npc.is_knocked_down():
+		return
+
 	if not _perception:
 		_decide_wander(delta)
 		return

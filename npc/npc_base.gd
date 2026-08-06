@@ -38,6 +38,13 @@
 # node by hand; that node is gone along with the capsule mesh once the real
 # rig landed (see the npc.tscn commit) — the public contract didn't change,
 # only where the turning happens.
+#
+# take_hit()/is_knocked_down() are a new contract, NPCBase-only rather than
+# on ActorBase: DroneBase has no animation component to play a fall/getup
+# clip on, and a flying body being knocked to the ground is a bigger,
+# separate feature (real falling physics, a "crashed" state) this doesn't
+# build. A punch that reaches a drone in flight just doesn't connect — see
+# player.gd's own hit-detection comment.
 # =============================================================================
 extends ActorBase
 class_name NPCBase
@@ -58,11 +65,30 @@ class_name NPCBase
 ## world, one gravity convention — not a second source to keep in sync.
 @export var gravity: float = 20.0
 
+@export_group("Knockdown")
+## Seconds the knockdown pose holds before the getup clip fires — a fixed
+## timer, not the knockdown clip's own length: this project has no
+## animation event/marker system to hook "clip finished" to. Getting back up
+## is driven differently (see _update_knockdown()): that transition waits
+## for the getup clip itself to finish playing, since there's nothing else
+## to time it against.
+@export var knockdown_duration: float = 1.0
+
 ## Movement intent for this frame, written by whatever controller drives
 ## this NPC. direction is expected normalised and horizontal (Y ignored);
 ## speed_ratio is 0..1, a fraction of walk_speed.
 var _move_direction: Vector3 = Vector3.ZERO
 var _move_speed_ratio: float = 0.0
+
+## Knocked down by a hit — see take_hit()'s own comment. While true, this
+## body ignores movement intent outright (_physics_process branches on it
+## directly, not by refusing set_move_intent() calls) and the controller is
+## expected to have stopped calling set_move_intent()/set_look_target() at
+## all (see is_knocked_down()). _getting_up distinguishes the two phases
+## (lying still vs. playing the getup clip) for _update_knockdown().
+var _knocked_down: bool = false
+var _getting_up: bool = false
+var _knockdown_timer: float = 0.0
 
 ## World point the body turns toward when it isn't moving — set by
 ## set_facing_target()/clear_facing_target(), read only by
@@ -89,12 +115,19 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	velocity.x = _move_direction.x * walk_speed * _move_speed_ratio
-	velocity.z = _move_direction.z * walk_speed * _move_speed_ratio
+	if _knocked_down:
+		velocity.x = 0.0
+		velocity.z = 0.0
+	else:
+		velocity.x = _move_direction.x * walk_speed * _move_speed_ratio
+		velocity.z = _move_direction.z * walk_speed * _move_speed_ratio
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	move_and_slide()
-	_face_move_direction(delta)
+	if _knocked_down:
+		_update_knockdown(delta)
+	else:
+		_face_move_direction(delta)
 	if _animation:
 		_animation.update_animation_blend(delta)
 		_animation.update_head_look(delta)
@@ -112,6 +145,57 @@ func set_move_intent(direction: Vector3, speed_ratio: float) -> void:
 ## 0..1 fraction of walk_speed set_move_intent() was given.
 func get_move_speed_ratio() -> float:
 	return _move_speed_ratio
+
+
+## Knocked down by a hit. Not damage — this project has no health yet. The
+## fall is what makes the hit legible to the player and to anything
+## watching.
+##
+## Ignored while already knocked down (a second hit mid-fall doesn't restart
+## the timer — there is no stacking/combo concept here). Clears any facing/
+## look target and zeroes movement intent outright, since a knocked-down
+## body no longer has a controller deciding either — see is_knocked_down().
+func take_hit(_from_position: Vector3) -> void:
+	if _knocked_down:
+		return
+	_knocked_down = true
+	_getting_up = false
+	_knockdown_timer = 0.0
+	_move_direction = Vector3.ZERO
+	_move_speed_ratio = 0.0
+	clear_look_target()
+	clear_facing_target()
+	if _animation:
+		_animation.play_knockdown()
+
+
+## Read by the controller (idle_npc_controller.gd's _decide()) to stop
+## deciding outright while this body is down — the body itself already
+## refuses to move regardless (see _physics_process()), this is what lets
+## the controller stop calling set_move_intent()/set_look_target() at all
+## rather than calling them into a body that's ignoring them.
+func is_knocked_down() -> bool:
+	return _knocked_down
+
+
+## Runs instead of _face_move_direction() while _knocked_down. Two phases:
+## lying still for knockdown_duration, then playing the getup clip and
+## waiting for IT to finish (polled via NPCAnimationComponent.
+## is_action_playing(), there being no fixed duration to time getup
+## against) before handing control back.
+func _update_knockdown(delta: float) -> void:
+	if not _getting_up:
+		_knockdown_timer += delta
+		if _knockdown_timer < knockdown_duration:
+			return
+		_getting_up = true
+		if _animation:
+			_animation.play_getup()
+		return
+
+	if _animation == null or not _animation.is_action_playing():
+		_knocked_down = false
+		_getting_up = false
 
 
 ## Character metric getters — same names as player.gd, so callers that duck

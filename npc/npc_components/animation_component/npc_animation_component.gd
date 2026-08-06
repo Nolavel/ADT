@@ -35,6 +35,15 @@ class_name NPCAnimationComponent
 const ANIM_IDLE: StringName = &"LightIdle"
 const ANIM_WALK: StringName = &"new4/sneak-walk"
 
+## Knockdown/getup clips, ShooterLib (new4/) — "knockdown" and "ko-getup",
+## not the root-prefixed "root-knockdown"/"ko-root-getup" duplicates: this
+## project's established convention (see player_animation_component.gd's own
+## note on MeleeLib/ShooterLib root- clips) is that the root- prefix marks an
+## unused import artifact, not a distinct root-motion variant. Unverified for
+## these two specifically without running the editor — confirm by eye.
+const ANIM_KNOCKDOWN: StringName = &"new4/knockdown"
+const ANIM_GETUP: StringName = &"new4/ko-getup"
+
 ## Head bone name for the procedural LookAt — same bone player.gd's own
 ## rig uses.
 const HEAD_BONE_NAME: StringName = &"Head"
@@ -64,6 +73,10 @@ const HEAD_LOOK_SMOOTH: float = 8.0
 
 var _anim_tree: AnimationTree
 var _blend_position: float = 0.0
+## The oneshot's "shot" input — a single AnimationNodeAnimation whose
+## .animation is swapped between ANIM_KNOCKDOWN and ANIM_GETUP and re-fired,
+## rather than two separate oneshot nodes. See play_knockdown()/play_getup().
+var _action_clip: AnimationNodeAnimation
 
 var _skeleton: Skeleton3D
 var _head_lookat: LookAtModifier3D
@@ -126,10 +139,42 @@ func update_head_look(delta: float) -> void:
 	_head_lookat.active = _head_look_influence > 0.001
 
 
-## Single BlendSpace1D, idle at 0 to walk at 1 — see ANIM_WALK's own
-## comment on why there is no third (run) point. Assembled in code, same
-## convention as player_animation_component.gd's tree (no hand-authored
-## .tres), easy to rebuild if clips change.
+## Fires the knockdown clip via the shared action_oneshot layer — see
+## _action_clip's own comment. Called by NPCBase.take_hit().
+func play_knockdown() -> void:
+	if not _anim_tree:
+		return
+	_action_clip.animation = ANIM_KNOCKDOWN
+	_anim_tree.set("parameters/action_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Fires the getup clip the same way — called by NPCBase once its knockdown
+## timer elapses.
+func play_getup() -> void:
+	if not _anim_tree:
+		return
+	_action_clip.animation = ANIM_GETUP
+	_anim_tree.set("parameters/action_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## True while the knockdown/getup oneshot is still playing — NPCBase polls
+## this after firing getup to know when to hand the controller back, instead
+## of guessing the clip's length.
+func is_action_playing() -> bool:
+	if not _anim_tree:
+		return false
+	return bool(_anim_tree.get("parameters/action_oneshot/active"))
+
+
+## Locomotion (idle<->walk BlendSpace1D, see ANIM_WALK's own comment on why
+## there is no third/run point) with knockdown/getup layered on top via
+## AnimationNodeOneShot, same technique and reason as
+## player_animation_component.gd's punch_oneshot: this project has no
+## upper-body-only blending yet, so a knocked-down NPC briefly plays a
+## full-body clip instead of locomotion, which is fine because NPCBase stops
+## driving movement for the same duration (see its is_knocked_down()).
+## Assembled in code, same convention as player_animation_component.gd's
+## tree (no hand-authored .tres), easy to rebuild if clips change.
 func _setup_animation_tree() -> void:
 	var anim_player := _npc.get_node_or_null("player_base_mesh/AnimationPlayer") as AnimationPlayer
 	if anim_player == null:
@@ -147,9 +192,19 @@ func _setup_animation_tree() -> void:
 	locomotion.add_blend_point(idle, 0.0)
 	locomotion.add_blend_point(walk, 1.0)
 
+	## Placeholder clip at setup time — never played until play_knockdown()/
+	## play_getup() assigns and fires it.
+	_action_clip = AnimationNodeAnimation.new()
+	_action_clip.animation = ANIM_KNOCKDOWN
+	var action_oneshot := AnimationNodeOneShot.new()
+
 	var tree_root := AnimationNodeBlendTree.new()
 	tree_root.add_node("locomotion", locomotion)
-	tree_root.connect_node("output", 0, "locomotion")
+	tree_root.add_node("action_clip", _action_clip)
+	tree_root.add_node("action_oneshot", action_oneshot)
+	tree_root.connect_node("action_oneshot", 0, "locomotion")
+	tree_root.connect_node("action_oneshot", 1, "action_clip")
+	tree_root.connect_node("output", 0, "action_oneshot")
 
 	_anim_tree = AnimationTree.new()
 	_anim_tree.tree_root = tree_root
