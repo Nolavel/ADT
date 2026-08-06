@@ -45,6 +45,24 @@
 # separate feature (real falling physics, a "crashed" state) this doesn't
 # build. A punch that reaches a drone in flight just doesn't connect — see
 # player.gd's own hit-detection comment.
+#
+# The knockdown sequence is three fixed-duration phases (FALLING/LYING/
+# GETTING_UP, see KnockdownPhase and _update_knockdown()), not two with a
+# poll on animation completion — an earlier version fired the knockdown
+# clip once and then just waited out knockdown_duration before firing
+# getup, which glitched: AnimationNodeOneShot goes inactive — and the
+# locomotion tree underneath shows straight through, an idle pop mid-fall —
+# the instant its CURRENT clip finishes playing, regardless of how long the
+# controller wants to hold the pose for. A non-looping clip finishes on its
+# own schedule, not the controller's. The fix is the LYING phase playing a
+# looping clip (new4/ko-idle-loop, not the non-looping "ko-idle" also in the
+# library — see npc_animation_component.gd's own comment on ANIM_LIE): a
+# loop never finishes on its own, so it holds exactly as long as
+# knockdown_hold_time says. FALLING/GETTING_UP still use non-looping clips
+# and are still nominally at risk of the same gap if their own exported
+# durations are tuned LONGER than the real clip lengths — tune them at or
+# under, never over, and the phase transition (which always fires an
+# explicit re-request, cutting the old clip off) preempts the gap entirely.
 # =============================================================================
 extends ActorBase
 class_name NPCBase
@@ -66,13 +84,19 @@ class_name NPCBase
 @export var gravity: float = 20.0
 
 @export_group("Knockdown")
-## Seconds the knockdown pose holds before the getup clip fires — a fixed
-## timer, not the knockdown clip's own length: this project has no
-## animation event/marker system to hook "clip finished" to. Getting back up
-## is driven differently (see _update_knockdown()): that transition waits
-## for the getup clip itself to finish playing, since there's nothing else
-## to time it against.
-@export var knockdown_duration: float = 1.0
+## Seconds the fall clip (new4/knockdown) plays before the lying phase takes
+## over. Tune at or under the real clip's own length — see the file header
+## on why longer reopens the gap this fix closes.
+@export var knockdown_fall_time: float = 0.6
+## Seconds the body holds the lying-idle loop (new4/ko-idle-loop) before
+## getting up — the bulk of the sequence, and the one phase immune to being
+## tuned "too long" (a looping clip never ends on its own). This is what
+## reads as "down."
+@export var knockdown_hold_time: float = 2.0
+## Seconds the getup clip (new4/ko-getup) plays before control returns to
+## the controller. Same tuning caveat as knockdown_fall_time — at or under
+## the real clip length, not over.
+@export var knockdown_getup_time: float = 1.0
 
 ## Movement intent for this frame, written by whatever controller drives
 ## this NPC. direction is expected normalised and horizontal (Y ignored);
@@ -80,15 +104,24 @@ class_name NPCBase
 var _move_direction: Vector3 = Vector3.ZERO
 var _move_speed_ratio: float = 0.0
 
+## FALLING plays the knockdown clip, LYING holds the looping idle clip,
+## GETTING_UP plays the getup clip — see _update_knockdown() for the
+## fixed-duration timing of each and the file header for why fixed
+## durations, not animation-completion polling, is what fixed the pop.
+enum KnockdownPhase { FALLING, LYING, GETTING_UP }
+
 ## Knocked down by a hit — see take_hit()'s own comment. While true, this
 ## body ignores movement intent outright (_physics_process branches on it
 ## directly, not by refusing set_move_intent() calls) and the controller is
 ## expected to have stopped calling set_move_intent()/set_look_target() at
-## all (see is_knocked_down()). _getting_up distinguishes the two phases
-## (lying still vs. playing the getup clip) for _update_knockdown().
+## all (see is_knocked_down()).
 var _knocked_down: bool = false
-var _getting_up: bool = false
-var _knockdown_timer: float = 0.0
+## Which of the three phases is currently playing — see KnockdownPhase.
+var _knockdown_phase: KnockdownPhase = KnockdownPhase.FALLING
+## Seconds spent in the CURRENT phase — reset to 0 on every phase change,
+## compared against that phase's own exported duration.
+var _knockdown_phase_timer: float = 0.0
+
 
 ## World point the body turns toward when it isn't moving — set by
 ## set_facing_target()/clear_facing_target(), read only by
@@ -159,8 +192,8 @@ func take_hit(_from_position: Vector3) -> void:
 	if _knocked_down:
 		return
 	_knocked_down = true
-	_getting_up = false
-	_knockdown_timer = 0.0
+	_knockdown_phase = KnockdownPhase.FALLING
+	_knockdown_phase_timer = 0.0
 	_move_direction = Vector3.ZERO
 	_move_speed_ratio = 0.0
 	clear_look_target()
@@ -178,24 +211,51 @@ func is_knocked_down() -> bool:
 	return _knocked_down
 
 
-## Runs instead of _face_move_direction() while _knocked_down. Two phases:
-## lying still for knockdown_duration, then playing the getup clip and
-## waiting for IT to finish (polled via NPCAnimationComponent.
-## is_action_playing(), there being no fixed duration to time getup
-## against) before handing control back.
+## Advances the fixed-duration knockdown state machine.
+##
+## Every phase owns its own timer and animation:
+##
+## FALLING
+##     Plays the non-looping fall animation.
+##
+## LYING
+##     Holds the looping lying animation for exactly
+##     knockdown_hold_time seconds.
+##
+## GETTING_UP
+##     Plays the non-looping getup animation before
+##     handing control back to the controller.
 func _update_knockdown(delta: float) -> void:
-	if not _getting_up:
-		_knockdown_timer += delta
-		if _knockdown_timer < knockdown_duration:
-			return
-		_getting_up = true
-		if _animation:
-			_animation.play_getup()
-		return
+	_knockdown_phase_timer += delta
 
-	if _animation == null or not _animation.is_action_playing():
-		_knocked_down = false
-		_getting_up = false
+	match _knockdown_phase:
+
+		KnockdownPhase.FALLING:
+			if _knockdown_phase_timer < knockdown_fall_time:
+				return
+
+			_knockdown_phase = KnockdownPhase.LYING
+			_knockdown_phase_timer = 0.0
+
+			if _animation:
+				_animation.play_lying()
+
+		KnockdownPhase.LYING:
+			if _knockdown_phase_timer < knockdown_hold_time:
+				return
+
+			_knockdown_phase = KnockdownPhase.GETTING_UP
+			_knockdown_phase_timer = 0.0
+
+			if _animation:
+				_animation.play_getup()
+
+		KnockdownPhase.GETTING_UP:
+			if _knockdown_phase_timer < knockdown_getup_time:
+				return
+
+			_knocked_down = false
+			_knockdown_phase_timer = 0.0
 
 
 ## Character metric getters — same names as player.gd, so callers that duck

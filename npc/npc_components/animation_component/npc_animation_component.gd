@@ -35,13 +35,23 @@ class_name NPCAnimationComponent
 const ANIM_IDLE: StringName = &"LightIdle"
 const ANIM_WALK: StringName = &"new4/sneak-walk"
 
-## Knockdown/getup clips, ShooterLib (new4/) — "knockdown" and "ko-getup",
-## not the root-prefixed "root-knockdown"/"ko-root-getup" duplicates: this
-## project's established convention (see player_animation_component.gd's own
-## note on MeleeLib/ShooterLib root- clips) is that the root- prefix marks an
-## unused import artifact, not a distinct root-motion variant. Unverified for
-## these two specifically without running the editor — confirm by eye.
+## Knockdown/lie/getup clips, ShooterLib (new4/) — "knockdown", "ko-idle-
+## loop" and "ko-getup", not the root-prefixed "root-knockdown"/"ko-root-
+## getup" duplicates: this project's established convention (see
+## player_animation_component.gd's own note on MeleeLib/ShooterLib root-
+## clips) is that the root- prefix marks an unused import artifact, not a
+## distinct root-motion variant. Unverified for these specifically without
+## running the editor — confirm by eye.
 const ANIM_KNOCKDOWN: StringName = &"new4/knockdown"
+## The LOOPING lying-idle clip, not plain "ko-idle" (a non-looping variant
+## also present in the library). This distinction is why NPCBase's held
+## phase doesn't glitch: AnimationNodeOneShot goes inactive — and the
+## locomotion tree underneath shows through — the instant its current clip
+## finishes playing, regardless of how long the controller wants to hold it
+## for. A non-looping clip finishes on its own, whatever
+## knockdown_hold_time says; a looping one never does, so the hold phase
+## can run exactly as long as NPCBase's own timer says, not the clip's.
+const ANIM_LIE: StringName = &"new4/ko-idle"
 const ANIM_GETUP: StringName = &"new4/ko-getup"
 
 ## Head bone name for the procedural LookAt — same bone player.gd's own
@@ -139,8 +149,8 @@ func update_head_look(delta: float) -> void:
 	_head_lookat.active = _head_look_influence > 0.001
 
 
-## Fires the knockdown clip via the shared action_oneshot layer — see
-## _action_clip's own comment. Called by NPCBase.take_hit().
+## Fires the knockdown (falling) clip via the shared action_oneshot layer —
+## see _action_clip's own comment. Called by NPCBase.take_hit().
 func play_knockdown() -> void:
 	if not _anim_tree:
 		return
@@ -148,8 +158,21 @@ func play_knockdown() -> void:
 	_anim_tree.set("parameters/action_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
-## Fires the getup clip the same way — called by NPCBase once its knockdown
-## timer elapses.
+## Fires the looping lying-idle clip — see ANIM_LIE's own comment on why it
+## has to be the loop variant. Called by NPCBase once its fall timer
+## elapses, cutting the fall clip short if it hadn't already finished on its
+## own (re-firing an active oneshot restarts it on whatever clip
+## _action_clip now points at, immediately — no gap where the old clip's
+## own end would otherwise let locomotion show through).
+func play_lying() -> void:
+	if not _anim_tree:
+		return
+	_action_clip.animation = ANIM_LIE
+	_anim_tree.set("parameters/action_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Fires the getup clip the same way — called by NPCBase once its hold timer
+## elapses, cutting the (looping) lying clip off immediately.
 func play_getup() -> void:
 	if not _anim_tree:
 		return
@@ -157,9 +180,12 @@ func play_getup() -> void:
 	_anim_tree.set("parameters/action_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
-## True while the knockdown/getup oneshot is still playing — NPCBase polls
-## this after firing getup to know when to hand the controller back, instead
-## of guessing the clip's length.
+## True while the knockdown/lying/getup oneshot is still playing. Not
+## load-bearing for NPCBase's own knockdown sequencing anymore (that's
+## fixed-duration per phase now — see npc_base.gd's own header on why
+## polling this for completion was the original bug), kept as a general
+## introspection getter for anything that wants to know whether a one-shot
+## action is currently overriding locomotion.
 func is_action_playing() -> bool:
 	if not _anim_tree:
 		return false
@@ -167,8 +193,8 @@ func is_action_playing() -> bool:
 
 
 ## Locomotion (idle<->walk BlendSpace1D, see ANIM_WALK's own comment on why
-## there is no third/run point) with knockdown/getup layered on top via
-## AnimationNodeOneShot, same technique and reason as
+## there is no third/run point) with the fall/lie/getup sequence layered on
+## top via AnimationNodeOneShot, same technique and reason as
 ## player_animation_component.gd's punch_oneshot: this project has no
 ## upper-body-only blending yet, so a knocked-down NPC briefly plays a
 ## full-body clip instead of locomotion, which is fine because NPCBase stops
@@ -193,7 +219,7 @@ func _setup_animation_tree() -> void:
 	locomotion.add_blend_point(walk, 1.0)
 
 	## Placeholder clip at setup time — never played until play_knockdown()/
-	## play_getup() assigns and fires it.
+	## play_lying()/play_getup() assigns and fires it.
 	_action_clip = AnimationNodeAnimation.new()
 	_action_clip.animation = ANIM_KNOCKDOWN
 	var action_oneshot := AnimationNodeOneShot.new()

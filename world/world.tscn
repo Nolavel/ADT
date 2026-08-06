@@ -34,6 +34,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 10, -200)
 hover_height = 5.0
 max_speed = 14.0
 
+[node name="PoliceDrone2" parent="StreamContainer" unique_id=3598177 instance=ExtResource("4_sc4t8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 10, -200)
+hover_height = 5.0
+max_speed = 14.0
+
+[node name="PoliceDrone3" parent="StreamContainer" unique_id=525569952 instance=ExtResource("4_sc4t8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 10, -200)
+hover_height = 5.0
+max_speed = 14.0
+
+[node name="PoliceDrone4" parent="StreamContainer" unique_id=804213026 instance=ExtResource("4_sc4t8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 10, -200)
+hover_height = 5.0
+max_speed = 14.0
+
 [node name="StatsDisplay" parent="." unique_id=1462911267 instance=ExtResource("2_h5o24")]
 print_log = false
 

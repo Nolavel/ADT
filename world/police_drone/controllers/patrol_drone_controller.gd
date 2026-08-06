@@ -367,10 +367,16 @@ func _update_state(observation: PlayerObservation, delta: float) -> void:
 			and observation.stance == PlayerState.Stance.COMBAT
 
 	if _state == State.ALERT:
-		_alert_memory_timer += delta
-		if _alert_memory_timer < alert_memory_time:
-			return
-		_enter_state(State.OBSERVE if provoking_observe else State.PATROL)
+		#_alert_memory_timer += delta
+		#if _alert_memory_timer < alert_memory_time:
+			#return
+		#_enter_state(State.OBSERVE if provoking_observe else State.PATROL)
+		## Temporary behaviour.
+		##
+		## Once an incident has escalated to ALERT, stay there indefinitely until
+		## a proper resolution/de-escalation system exists. This keeps the
+		## spotlight and light bar active instead of dropping back to PATROL after
+		## alert_memory_time expires.
 		return
 
 	if provoking_observe:
