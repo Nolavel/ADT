@@ -60,7 +60,8 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	MenuSystem,
 	ZoomRulerSystem,
 	WorldBorderDebugSystem,
-	WorldBorderGuardSystem
+	WorldBorderGuardSystem,
+	IncidentRegistry             # ← what the city has on record; actors report, don't remember
 ]
 
 ## 2) Самостоятельные 3D-сцены — instantiate(), родитель = stream_container.
