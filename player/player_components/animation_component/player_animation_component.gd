@@ -55,6 +55,16 @@ const ANIM_COMBAT_STRAFE_45L: StringName = &"LightStrafe45L"
 const ANIM_COMBAT_STRAFE_45R: StringName = &"LightStrafe45R"
 const ANIM_COMBAT_RETREAT: StringName = &"new3/legs_locomotion_run_backward_2"
 
+## Punch clip, ShooterLib (new4/), not MeleeLib — MeleeLib is a sword/shield
+## kit (Slash1-3, Heavy1-2, ShieldBash, Stab1, ThrowL/R) and has no unarmed
+## punch clip at all. ShooterLib has three candidates (punch1, punchleft,
+## punchright); punch1 is the one with a root- duplicate (root-punch1,
+## unused per this file's own note on root- being an import artifact, not a
+## distinct clip), matching the pattern of a primary single-strike clip in
+## this rig — punchleft/punchright read as a combo pair instead. Confirm by
+## eye against the actual swing the next time this runs.
+const ANIM_COMBAT_PUNCH: StringName = &"new4/punch1"
+
 ## Speed below which the character counts as standing still (gates the TPS
 ## idle head-look in update_head_look()).
 const IDLE_ENTER_SPEED: float = 0.15
@@ -208,6 +218,25 @@ func update_head_look(delta: float) -> void:
 	)
 	_head_lookat.influence = _head_look_influence
 	_head_lookat.active = _head_look_influence > 0.001
+
+
+## Fires the punch one-shot layered over whichever stance branch is
+## currently mixed in (see _setup_animation_tree()'s punch_oneshot comment).
+## Re-firing while already active restarts it from the top — player.gd
+## already gates this behind "not already punching", so in practice this
+## only ever fires on a fresh press.
+func play_punch() -> void:
+	if not _anim_tree:
+		return
+	_anim_tree.set("parameters/punch_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## True while the punch one-shot is still playing — player.gd polls this to
+## know when to hand movement back, instead of guessing the clip's length.
+func is_punch_active() -> bool:
+	if not _anim_tree:
+		return false
+	return bool(_anim_tree.get("parameters/punch_oneshot/active"))
 
 
 func get_sprint_blend() -> float:
@@ -369,7 +398,22 @@ func _setup_animation_tree() -> void:
 	tree_root.add_node("stance_blend", stance_blend)
 	tree_root.connect_node("stance_blend", 0, "peace")
 	tree_root.connect_node("stance_blend", 1, "combat")
-	tree_root.connect_node("output", 0, "stance_blend")
+
+	## Punch layered on top of the stance crossfade via AnimationNodeOneShot,
+	## not a second Blend2 or a state machine: layered blending (upper body
+	## only) isn't built in this project yet (see the ADS report), so a punch
+	## plays full-body, briefly overriding stance_blend entirely for its
+	## duration — exactly what OneShot is for. player.gd locks movement for
+	## the same duration (set_movement_enabled(false)), so there is no
+	## locomotion for the punch to visually fight with underneath.
+	var punch_clip := AnimationNodeAnimation.new()
+	punch_clip.animation = ANIM_COMBAT_PUNCH
+	var punch_oneshot := AnimationNodeOneShot.new()
+	tree_root.add_node("punch_clip", punch_clip)
+	tree_root.add_node("punch_oneshot", punch_oneshot)
+	tree_root.connect_node("punch_oneshot", 0, "stance_blend")
+	tree_root.connect_node("punch_oneshot", 1, "punch_clip")
+	tree_root.connect_node("output", 0, "punch_oneshot")
 
 	_anim_tree = AnimationTree.new()
 	_anim_tree.tree_root = tree_root

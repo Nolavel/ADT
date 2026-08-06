@@ -44,6 +44,23 @@ signal incident_reported(incident: Incident)
 @export var max_incidents: int = 32
 
 var _incidents: Array[Incident] = []
+## Captured in on_world_ready() — the one producer this registry knows about
+## today. Duck-typed (connect by StringName, not a cast to a Player type
+## that doesn't exist — player.gd has no class_name) so this file doesn't
+## need to know player.gd's type, only that whatever WorldContext hands it
+## as the player carries a punch_landed(position: Vector3) signal.
+var _player: Node3D = null
+
+
+## WORLD_SYSTEM_SCRIPTS' optional lifecycle hook (world.gd) — same pattern
+## ClickToMoveSystem uses to learn about the player. The only wiring this
+## registry does today: listen for the player's own punches. A future
+## witness (NPC-reported incidents) would connect here the same way, not by
+## widening report()'s signature.
+func on_world_ready(context: WorldContext) -> void:
+	_player = context.player
+	if _player and _player.has_signal(&"punch_landed"):
+		_player.connect(&"punch_landed", _on_punch_landed)
 
 
 ## Records a fact: perpetrator did kind at position, now. Prunes aged-out and
@@ -76,6 +93,10 @@ func get_latest_incident() -> Incident:
 	if _incidents.is_empty():
 		return null
 	return _incidents[-1]
+
+
+func _on_punch_landed(position: Vector3) -> void:
+	report(_player, Incident.Kind.ASSAULT, position)
 
 
 func _now() -> float:

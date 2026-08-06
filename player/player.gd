@@ -21,6 +21,11 @@ extends CharacterBody3D
 signal movement_started
 signal movement_stopped
 signal state_changed(new_state: MovementState)
+## Emitted once per punch that actually connects with an NPC, after
+## take_hit() has already been called on the target — IncidentRegistry is
+## the only subscriber today (see its on_world_ready()), listening without
+## player.gd needing to know it exists.
+signal punch_landed(position: Vector3)
 
 ## --- Movement State ---
 enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
@@ -52,6 +57,23 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 ## since the camera is where the threat is. A feel value, tuned by eye.
 @export var combat_face_camera_smoothing: float = 20.0
 
+@export_group("Combat")
+## Delay from throwing the punch to it registering a hit, seconds — a feel
+## value standing in for a real impact frame: this project has no animation
+## event/marker system, so the swing and the hit-check are tied together by
+## a timer instead of a clip event. Confirm against the actual clip's impact
+## frame in editor and retune.
+@export var punch_hit_delay: float = 0.15
+## Forward reach of the punch's hit check, metres. Not derived from
+## PlayerFocusCast (InteractComponent's own reach volume, gated to the
+## Interactables physics layer — NPCs aren't on it, and widening that mask
+## would mix combat detection into interact-target selection) — a separate,
+## independently tuned value instead, loosely informed by that cast's own
+## ~1.8m forward reach.
+@export var punch_reach: float = 1.8
+## Full angular width of the punch's hit check, degrees, centred on facing.
+@export var punch_angle_deg: float = 60.0
+
 @export_group("Jump/Gravity")
 ## Apex height = jump_force^2 / (2 * gravity). At 6.0/20.0 that's 0.9m, half
 ## of body_height — a deliberate game-balance choice, not a value derived
@@ -71,6 +93,11 @@ var movement_enabled: bool = true
 ## --- Sprint state (for the cursor UI) ---
 var is_running_mode: bool = false
 var wants_to_run: bool = false  # the player wants to run (even if they can't)
+
+## --- Punch state (COMBAT only) ---
+var _is_punching: bool = false
+var _punch_timer: float = 0.0
+var _punch_hit_resolved: bool = false
 
 ## --- Direct movement (TPS, WASD) — cached input data, written by
 ## TPSMovementSystem every physics frame via set_direct_move_input().
@@ -102,9 +129,23 @@ func _ready() -> void:
 	if stamina_manager == null:
 		push_warning("StaminaManager not found - stamina system will not work")
 
+	## Reuses InputSystems' existing primary_click_pressed signal instead of
+	## adding a new one — LMB has no other TPS meaning (ClickToMoveSystem,
+	## the signal's only other subscriber, self-gates to ON_FOOT + ISOMETRIC
+	## and never sees it in TPS). The gate on what a press MEANS lives here,
+	## same as every other InputSystems subscriber.
+	InputSystems.primary_click_pressed.connect(_on_primary_click_pressed)
+
 
 ## --- Physics Update ---
 func _physics_process(delta: float) -> void:
+	## Runs even while movement is locked (a punch locks it via
+	## set_movement_enabled(false)) — everything below this needs the lock
+	## to actually stop the body, but the punch's own timer/completion check
+	## must keep running or it would never unlock itself.
+	if _is_punching:
+		_update_punch(delta)
+
 	if not movement_enabled:
 		return
 
@@ -410,6 +451,95 @@ func _on_path_updated() -> void:
 
 func _on_destination_reached() -> void:
 	stop_moving(true)
+
+
+## --- Punch (COMBAT only) ---
+## Only a raised-fists stance earns a punch — this is the action the stance
+## exists for. mouse_left_button is otherwise unclaimed in TPS (see the
+## connection comment in _ready()).
+func _on_primary_click_pressed(_screen_pos: Vector2) -> void:
+	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
+		return
+	if PlayerState.view_mode != PlayerState.ViewMode.TPS:
+		return
+	if PlayerState.stance != PlayerState.Stance.COMBAT:
+		return
+	if _is_punching or not movement_enabled:
+		return
+	_start_punch()
+
+
+func _start_punch() -> void:
+	_is_punching = true
+	_punch_timer = 0.0
+	_punch_hit_resolved = false
+	set_movement_enabled(false)
+	_animation_component.play_punch()
+
+
+## Called from _physics_process() even while movement is locked — see that
+## function's own comment on why.
+func _update_punch(delta: float) -> void:
+	## True only on the very first call after _start_punch() — used below to
+	## skip the completion check for one frame, see that branch's comment.
+	var is_first_frame := _punch_timer <= 0.0
+	_punch_timer += delta
+
+	if not _punch_hit_resolved and _punch_timer >= punch_hit_delay:
+		_punch_hit_resolved = true
+		_resolve_punch_hit()
+
+	if is_first_frame:
+		## AnimationTree processes the fire request on its own cadence, not
+		## synchronously with play_punch() — checking is_punch_active() the
+		## same frame it was requested can still read the pre-fire "not
+		## active" state and end the punch before it visibly started.
+		return
+
+	if not _animation_component.is_punch_active():
+		_is_punching = false
+		set_movement_enabled(true)
+
+
+## Cone check against perceived NPCs (ActorBase.GROUP_PERCEIVED_ACTOR,
+## filtered to NPCBase) rather than reusing PlayerFocusCast — see
+## punch_reach's own comment for why that cast doesn't fit. Drones are in
+## the same group but excluded here: they have no take_hit() (see
+## npc_base.gd's own header on why that contract is NPC-only, not
+## ActorBase-wide).
+func _resolve_punch_hit() -> void:
+	var target := _find_punch_target()
+	if target == null:
+		return
+	target.take_hit(global_position)
+	punch_landed.emit(target.global_position)
+
+
+func _find_punch_target() -> NPCBase:
+	var facing := get_facing_direction()
+	var best: NPCBase = null
+	var best_dist := INF
+
+	for candidate in get_tree().get_nodes_in_group(ActorBase.GROUP_PERCEIVED_ACTOR):
+		if not (candidate is NPCBase):
+			continue
+		var npc: NPCBase = candidate
+
+		var to_target := npc.global_position - global_position
+		to_target.y = 0.0
+		var dist := to_target.length()
+		if dist > punch_reach or dist < 0.001:
+			continue
+
+		var angle := rad_to_deg(facing.angle_to(to_target.normalized()))
+		if angle > punch_angle_deg * 0.5:
+			continue
+
+		if dist < best_dist:
+			best_dist = dist
+			best = npc
+
+	return best
 
 
 ## --- Stamina consumption (drains while running) ---
