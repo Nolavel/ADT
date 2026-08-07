@@ -11,7 +11,11 @@ Nothing here is a commitment. Items are built only when an existing system
 demonstrably cannot carry the weight, and only when the item serves at least
 two systems that already exist.
 
-Last reviewed: 2026-08-06
+Design specifications for things on this page, where they exist, live
+beside it: the city's reaction to the player is specified in
+`npc_reactions.md`.
+
+Last reviewed: 2026-08-07
 
 ---
 
@@ -58,8 +62,83 @@ Implemented components — `nav_component`, `stamina_component`,
 | Health | Needed once damage exists. Damage does not exist. |
 | Hunger, sleep | Physiology. Deliberately not surfaced as permanent on-screen bars; state is shown at threshold crossings, on request, or when it blocks an action. |
 | Wallet, progression | Economy is tied to identity, which is a core theme rather than a numbers system. Design not settled. |
-| Equipment, crafting | Not designed. The `crafting` input action exists but is unbound and unread — see below. |
-| Save | **This is the gap that matters.** Saving is a load-bearing system and the only one not started. It cannot be delegated (it touches everything) and gets more expensive with every system added. |
+| Save | **This is the gap that matters.** See its own section below. |
+
+---
+
+## Save
+
+Saving is load-bearing, not started, and cannot be delegated — it touches
+every system that owns mutable state. It gets more expensive with every
+system added, so the decisions below are recorded now even though the
+system is not being built now.
+
+### What the design already gives us for free
+
+Sleep is the only save point. That is a design decision, not a technical
+one, and it is worth more than any implementation detail: at the moment of
+sleep the world is by definition quiet. Nobody is knocked down, no drone is
+in ALERT, no incident is in flight, the player is indoors and stationary.
+
+So transient state is **not saved at all**. Not drone states, not
+`is_knocked_down()`, not streaming cell states, not the incident buffer,
+not camera or animation state. All of it is either derivable from the
+player's position on load or genuinely gone. This is the difference between
+a save system that is hard and one that is small.
+
+### Conventions to hold to
+
+- **Save data, not scenes.** No `PackedScene`, no `ResourceSaver` of live
+  nodes. A dictionary of primitives that the world is rebuilt from. Scene
+  serialisation breaks on any structural edit and drags resource references
+  along with it.
+- **Version the format from the first write.** A `save_version: int` at the
+  root. Adding a key later without it breaks every existing save, and that
+  is the one save mistake that cannot be repaired afterwards.
+- **Nothing durable holds a `Node` reference.** Node identity does not
+  survive a load. Anything that must outlive sleep needs a stable id.
+- **Game time, not engine uptime, for anything durable.**
+  `Time.get_ticks_msec()` resets on launch, which is correct for a
+  responsiveness window and wrong for a fact that ages across sessions.
+  `GameClockSystem` is the source of truth for the latter.
+- **The crowd is disposable; consequences are not.** Ambient NPCs and drones
+  stream in and out and are never saved. What they caused is.
+
+### Proposed contract
+
+`WORLD_SYSTEM_SCRIPTS` entries already opt into an optional lifecycle hook,
+`on_world_ready(context)`. Saving should extend the same pattern with two
+more optional methods rather than introduce a new mechanism:
+
+```
+func save_state() -> Dictionary
+func load_state(state: Dictionary) -> void
+```
+
+Systems implement them when they have something durable to say; `world.gd`
+collects and distributes. No new autoload: `IncidentRegistry` demonstrated
+that a world system does not need one.
+
+Today this contract would be implemented by two things — `GameClockSystem`
+(game time and day) and the player (position and, once they exist,
+physiology and wallet). That small payload is the argument for establishing
+the convention now rather than later: it is cheap to adopt while there are
+two participants and expensive to retrofit when there are twenty.
+
+### Open questions
+
+- Whether story flags (Jay missions, irreversible world events) live in
+  their own durable store or as a section of the save payload. They must
+  outlive world teardown either way.
+- Whether the durable wanted record is `IncidentRegistry` or a separate
+  object — see `npc_reactions.md` §8. The registry today is a short-lived
+  sensor buffer holding node references and engine-uptime timestamps, both
+  of which are correct for what it does and wrong for a fact that survives
+  sleep.
+- Event orchestration — sequencing story events and injecting behaviour into
+  the world — is a *system*, and belongs with the other world systems. The
+  flags it reads and writes are *data*, and belong in the save. These are
+  two different things and should not be one class.
 
 ---
 
@@ -75,6 +154,16 @@ Present in `project.godot`, read by nothing:
 They are documented in `input_map.md` as reserved. They are kept because
 removing and re-adding an action churns `project.godot`; if they are still
 unread at the next review, they go.
+
+---
+
+## Known defects
+
+Not scope — things that are wrong in what exists.
+
+- **The punch is bound in TPS view only.** `COMBAT` stance in ISOMETRIC has
+  no attack. Stance is a `PlayerState` axis and must not depend on the
+  camera view. `player.gd`.
 
 ---
 
@@ -102,13 +191,17 @@ Named here so the absence is deliberate rather than overlooked:
   and get up, `take_hit()`/`is_knocked_down()` on `NPCBase`) and recorded
   (`IncidentRegistry`) — but still not the whole reaction: nothing beyond
   one drone's radius hears about it, and there's no witness system yet
-  (NPCs don't report what they see, only the player's own punch does).
+  (NPCs don't report what they see, only the player's own punch does). The
+  design this is built against is `npc_reactions.md`.
 - **Combat.** A punch exists (`COMBAT`-only, `mouse_left_button`,
   `player.gd`) and knocks a hit NPC down for a few seconds — see NPC and AI,
   above. What doesn't: health, damage numbers, death, a weapon to swing, and
   anything for the camera's lock-on sub-state to actually lock onto besides
   the existing `lockable` NPCs (nothing currently forces a lock-on
-  encounter). This is "the player can hit something," not combat.
+  encounter). This is "the player can hit something," not combat. Note that
+  the consequence system is currently ahead of the combat it measures:
+  incidents are recorded for a punch, while nothing worse than a punch is
+  possible.
 - **Stance has state and reads through to animation.** `PlayerState.Stance`
   (PEACE/COMBAT, `core/player_state/player_state.gd`) exists and is read
   by movement speed and TPS body rotation (`player.gd`), lock-on gating
@@ -122,13 +215,14 @@ Named here so the absence is deliberate rather than overlooked:
   comments for why — the run clip itself (COMBAT forward, outer blend
   point) is wired and was not actually a second loose end. Not done:
   weapon-in-hand as an orthogonal volume modifier on top of the stance (the
-  axis is deliberately boolean — see `PlayerState.Stance`'s own comment) —
-  once it lands, a drawn weapon in COMBAT is meant to be a second, weaker
-  trigger for a drone's ALERT alongside `IncidentRegistry`, see
-  `patrol_drone_controller.gd`'s own header; and the evidence system that's
-  meant to read stance too. NPC reaction to the player's stance is done (the
-  glance/turn gate); drone reaction to it is not — see Combat and NPC/AI,
-  above, for what replaced it.
+  axis is deliberately boolean — see `PlayerState.Stance`'s own comment).
+  Once it lands, a drawn weapon in COMBAT is meant to put a drone into
+  OBSERVE — attention on *intent*, released when the player returns to
+  PEACE, distinct from the ALERT that a reported fact causes; see
+  `npc_reactions.md` §4a and `patrol_drone_controller.gd`'s own header. The
+  evidence system is meant to read stance too. NPC reaction to the player's
+  stance is done (the glance/turn gate); drone reaction to it is not — see
+  Combat and NPC/AI, above, for what replaced it.
 - **Missions.**
 - **Animation beyond locomotion and stances.** `PlayerAnimationComponent`
   drives idle/walk/run per stance and a procedural head look, plus one
