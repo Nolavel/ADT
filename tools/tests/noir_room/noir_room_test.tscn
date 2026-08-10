@@ -1,5 +1,7 @@
 [gd_scene format=4 uid="uid://dgjilcroiq6gv"]
 
+[ext_resource type="Script" uid="uid://ct25m02djk5ai" path="res://tools/tests/noir_room/debug_controller.gd" id="1_om7o1"]
+
 [sub_resource type="Environment" id="Environment_mapln"]
 background_mode = 1
 background_color = Color(0.019607844, 0.02745098, 0.047058824, 1)
@@ -369,3 +371,6 @@ fov = 55.0
 
 [node name="LightmapGI" type="LightmapGI" parent="." unique_id=2144774662]
 quality = 2
+
+[node name="debug_controller" type="Node" parent="." unique_id=536138658]
+script = ExtResource("1_om7o1")
