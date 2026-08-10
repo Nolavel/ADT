@@ -55,9 +55,9 @@ Click-to-move navigation. Handled by `NavigationComponent` and
 
 | Action | Key | Description | RU |
 |---|---|---|---|
-| `mouse_left_button` | LMB | `PEACE`: stop movement / cancel move target. `COMBAT`: punch instead — see §4, same action as TPS | `PEACE`: отменить цель движения. `COMBAT`: удар |
-| `mouse_right_button` | RMB click | Move to clicked point. `PEACE` only — unclaimed in `COMBAT`, see note below | Идти в точку |
-| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target. `PEACE` only, same reason | Бег к цели |
+| `mouse_left_button` | LMB | `PEACE`: stop movement / cancel move target. `COMBAT`: punch instead — see §4, same action as TPS, standing still only | `PEACE`: отменить цель движения. `COMBAT`: удар (только с места) |
+| `mouse_right_button` | RMB click | Move to clicked point — regardless of `Stance` | Идти в точку |
+| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
 | `lean_left` | `Q` | Orbital camera — discrete step left | Шаг камеры влево |
 | `lean_right` | `E` | Orbital camera — discrete step right | Шаг камеры вправо |
 
@@ -72,16 +72,12 @@ in TPS.
 move-to-point one, so it never actually fired in TPS either. See §4 for
 what the same physical button does there now.
 
-ISOMETRIC gains a `Stance` gate (2026-08-10): `ClickToMoveSystem` now
-self-gates off for the whole of `Stance.COMBAT`, not just `mouse_left_button`
-— raising fists suspends click-to-move entirely for as long as the stance is
-held, same as it already suspends the walk/run speed. Practically: in
-`COMBAT`, `mouse_left_button` is the punch (§4, same action as TPS) and
-`mouse_right_button` is unclaimed (ISOMETRIC has no aim-down-sights to hand
-it to, unlike TPS's `COMBAT` row below). Returning to `PEACE` returns both
-buttons to their click-to-move meanings; an in-progress path is stopped, not
-resumed, on entering `COMBAT` — see `click_to_move_system.gd`'s
-`_on_stance_changed()`.
+`mouse_left_button` splits by `Stance` within ISOMETRIC (2026-08-10):
+`ClickToMoveSystem`'s own handler for it (stop/cancel) is unconditional on
+`Stance` — it is `player.gd`'s punch handler that only acts in `COMBAT`, on
+the same signal. The two never conflict: click-to-move itself, including
+`mouse_right_button`, is unaffected by `Stance` and keeps working the same
+in `COMBAT` as in `PEACE`.
 
 ---
 
@@ -98,7 +94,7 @@ and also drives `PlayerState.is_aiming` from the aim hold below.
 | `move_right` | `D` | Strafe right | Вправо |
 | `jump` | `Space` | Jump | Прыжок |
 | `sprint` | `Shift` | Sprint; consumes stamina | Бег |
-| `mouse_left_button` | LMB | Punch — only takes effect in `Stance.COMBAT` (`player.gd`) | Удар — только в стойке COMBAT |
+| `mouse_left_button` | LMB | Punch — only takes effect in `Stance.COMBAT`, standing still (`player.gd`, `punch_max_speed`) | Удар — только в стойке COMBAT и с места |
 | `mouse_right_button` | RMB hold | Aim down sights — only takes effect in `Stance.COMBAT` | Прицеливание — только в стойке COMBAT |
 | `switch_shoulder` | `Z` | Swap camera shoulder (`TpsShoulderCameraState`) | Смена плеча камеры |
 | `lock_on` | `G` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |

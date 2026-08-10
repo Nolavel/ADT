@@ -38,9 +38,12 @@ camera view. In `COMBAT` it throws the punch, in both `TPS` and `ISOMETRIC`;
 in `PEACE` it is click-to-move's stop/cancel button in `ISOMETRIC` (unclaimed
 in TPS). Raising fists is the same statement regardless of which camera the
 player happens to be using, so the stance axis — not the view — is what
-gates the action. `ClickToMoveSystem` self-gates off for the duration of
-`COMBAT` so the two subscribers of the shared click signal never race each
-other for the same click.
+gates the action. Click-to-move itself (`ClickToMoveSystem`, both mouse
+buttons) is unaffected by `Stance` and keeps working the same in `COMBAT` as
+in `PEACE` — the player can still walk with fists raised, they just can't
+throw a punch while doing it: the punch additionally requires standing
+still, since this project has no animation layering to blend it over
+locomotion.
 
 ---
 

@@ -12,26 +12,18 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
-## 2026-08-10 — Punch works in ISOMETRIC, click-to-move yields to COMBAT
+## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
 
-Two commits fixing the defect recorded in `docs/NPC_REACTIONS.md`: the punch
-only fired in TPS view, because `player.gd` gated it on `view_mode == TPS`
-directly. Stance is a `PlayerState` axis and should not depend on which
-camera the player is using — the gate was checking the wrong thing.
+Four commits fixing the defect recorded in `docs/NPC_REACTIONS.md` (the punch
+only fired in TPS view) and then correcting an overreach made while fixing
+it. Stance is a `PlayerState` axis and should not depend on which camera the
+player is using — the original gate was checking the wrong thing.
 
-**Split `mouse_left_button` by `Stance`, not by view.** `ClickToMoveSystem`
-now self-gates off for the whole of `Stance.COMBAT` (on top of its existing
-`ON_FOOT` + `ISOMETRIC` gate), not just its click-to-move handler — raising
-fists suspends click-to-move entirely, including `mouse_right_button`
-move-to-point, for as long as the stance is held. A new `stance_changed`
-handler stops any path already in progress on entering `COMBAT`, since
-`player.gd`'s navigation branch is keyed on `view_mode` alone and would
-otherwise keep advancing a stale path regardless of `ClickToMoveSystem`'s own
-active flag. `player.gd`'s punch handler drops its `view_mode != TPS` check
-accordingly — the punch now fires from the same stance check in both views.
-*ЛКМ теперь делится по стойке, а не по виду камеры — боевая стойка
-приостанавливает click-to-move целиком, а не только отменяет клик.*
-- `core/movement/click_to_move_system.gd`, `player/player.gd`
+**Punch fires on `mouse_left_button` in COMBAT, in both view modes.**
+`player.gd`'s punch handler drops its `view_mode != TPS` check — the same
+`Stance.COMBAT` check now applies regardless of view.
+*Удар теперь срабатывает в COMBAT в обоих видах, не только в TPS.*
+- `player/player.gd`
 
 **Face the punch target by click point in ISOMETRIC.** TPS's body already
 faces the camera every frame, so the punch lands where the player is
@@ -48,6 +40,33 @@ move-order raycast, rather than a second raycast from the camera —
 *Разворот к точке клика перед ударом в изометрии — иначе удар летел туда,
 куда персонаж случайно стоял.*
 - `core/movement/click_to_move_system.gd`, `player/player.gd`
+
+**Revert: `ClickToMoveSystem` gating off for all of `Stance.COMBAT`.** The
+initial fix, worried about `mouse_left_button` contention between the punch
+and click-to-move's stop/cancel handler, self-gated the whole system off for
+`Stance.COMBAT` — but `mouse_left_button` and `mouse_right_button` are
+different buttons, so there was never a conflict to guard against. The
+actual effect was disabling `mouse_right_button` move-to-point too, leaving
+the player unable to move at all while COMBAT was raised — worse than the
+original defect. `ClickToMoveSystem` gates on `mode` + `view_mode` only
+again; the `stance_changed` subscription and its handler (which existed only
+to stop an in-progress path on entering `COMBAT`) are gone with it.
+`raycast_ground_point()`/`_cast_ground_ray()` and the `player.gd` injection
+via `register_player()` were correct additions and stay.
+*Откат: гейтинг ClickToMoveSystem по стойке отключал и движение — конфликта
+кнопок не было, ЛКМ и ПКМ разные.*
+- `core/movement/click_to_move_system.gd`
+
+**Punch requires standing still.** A punch played over locomotion has
+nothing to blend with — this project has no layered upper-body animation
+mixing, so `AnimationNodeOneShot` replaces locomotion outright while the
+punch plays, reading as sliding on a moving body. New `punch_max_speed`
+export (0.5), checked against `player.gd`'s actual `speed`, not movement
+input intent, in both view modes. A click while moving is silently ignored
+— no feedback system exists in this project to explain the miss.
+*Удар теперь только с места — на ходу нечем показать удар, анимация просто
+наложилась бы на бег.*
+- `player/player.gd`
 
 ---
 
