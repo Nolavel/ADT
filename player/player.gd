@@ -99,6 +99,14 @@ var _is_punching: bool = false
 var _punch_timer: float = 0.0
 var _punch_hit_resolved: bool = false
 
+## Injected by ClickToMoveSystem.register_player() at world-init time (see
+## that file's on_world_ready()) — player.gd is not part of world.gd's
+## on_world_ready() sweep itself, so this is the only route it has to a
+## ClickToMoveSystem reference. Used only to reuse its ground raycast for
+## facing the COMBAT punch toward the click point in ISOMETRIC, see
+## _face_punch_target().
+var _click_to_move_system: ClickToMoveSystem = null
+
 ## --- Direct movement (TPS, WASD) — cached input data, written by
 ## TPSMovementSystem every physics frame via set_direct_move_input().
 ## player.gd itself computes velocity/animation/rotation, so physics and
@@ -204,6 +212,13 @@ func set_movement_speed(new_speed: float) -> void:
 func set_direct_move_input(direction: Vector3, want_run: bool) -> void:
 	_direct_move_direction = direction
 	_direct_move_want_run = want_run
+
+
+## Called once by ClickToMoveSystem.register_player() at world-init time.
+## See _click_to_move_system's own comment for why player.gd needs this at
+## all instead of reaching ClickToMoveSystem some other way.
+func set_click_to_move_system(system: ClickToMoveSystem) -> void:
+	_click_to_move_system = system
 
 
 func stop_moving(smooth: bool = true) -> void:
@@ -461,15 +476,46 @@ func _on_destination_reached() -> void:
 ## unclaimed outside COMBAT (see the connection comment in _ready()), and in
 ## ISOMETRIC, COMBAT now takes the same button away from ClickToMoveSystem
 ## (see that file's stance gating in _update_active_state()) instead of a
-## click meaning "walk there."
-func _on_primary_click_pressed(_screen_pos: Vector2) -> void:
+## click meaning "walk there." ISOMETRIC additionally faces the body to the
+## click point first — TPS never needs this, _apply_direct_movement()
+## already faces the camera every frame, camera and threat being the same
+## direction there.
+func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 	if PlayerState.stance != PlayerState.Stance.COMBAT:
 		return
 	if _is_punching or not movement_enabled:
 		return
+	if PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC:
+		_face_punch_target(screen_pos)
 	_start_punch()
+
+
+## ISOMETRIC has no camera-driven facing to fall back on (unlike TPS, see
+## _on_primary_click_pressed()'s comment), so without this the punch would
+## fire in whatever direction the body last happened to face. Turns
+## instantly rather than smoothed: punch_hit_delay already buffers the swing
+## before _resolve_punch_hit() reads get_facing_direction(), and an instant
+## turn guarantees that read matches the click, where a smoothed one could
+## still be catching up at resolve time. Reuses ClickToMoveSystem's ground
+## raycast (via _click_to_move_system, see that var's comment) instead of a
+## second raycast from the camera.
+func _face_punch_target(screen_pos: Vector2) -> void:
+	if _click_to_move_system == null:
+		return
+	var point: Variant = _click_to_move_system.raycast_ground_point(screen_pos)
+	if point == null:
+		return
+
+	var to_point: Vector3 = (point as Vector3) - global_position
+	to_point.y = 0.0
+	if to_point.length() < 0.001:
+		return
+
+	# Same convention as _handle_navigation()'s target_angle and
+	# get_facing_direction(): atan2(x, z), +Z forward, not Godot's usual -Z.
+	rotation.y = atan2(to_point.x, to_point.z)
 
 
 func _start_punch() -> void:

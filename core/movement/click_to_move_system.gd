@@ -77,6 +77,14 @@ func register_player(p: CharacterBody3D) -> void:
 		push_error("ClickToMoveSystem.register_player: передан null!")
 		return
 	player_node.movement_stopped.connect(_on_movement_stopped)
+	## Gives player.gd a way back to raycast_ground_point() below (see that
+	## method's own comment) — player.gd isn't in world.gd's on_world_ready()
+	## sweep, so this is the only route it has to a ClickToMoveSystem
+	## reference. Duck-typed the same way _handle_invalid_click() already
+	## calls player_node.stop_moving(), since player_node is typed
+	## CharacterBody3D here, not Player.
+	if player_node.has_method("set_click_to_move_system"):
+		player_node.set_click_to_move_system(self)
 	player_registered.emit(player_node)
 
 
@@ -171,19 +179,34 @@ func _on_movement_stopped() -> void:
 ## ============================================
 ## РЕЙКАСТ
 ## ============================================
-func _raycast_and_move() -> void:
-	if not camera or not player_node:
-		return
 
-	var mouse_pos := camera.get_viewport().get_mouse_position()
-	var ray_origin := camera.project_ray_origin(mouse_pos)
-	var ray_direction := camera.project_ray_normal(mouse_pos)
+## Raw ground-layer raycast shared by _raycast_and_move() and
+## raycast_ground_point() below — pulled out so the second one is a real
+## reuse of the same physics test, not a duplicate raycast against the
+## camera. Returns Godot's raw intersect_ray() result: an empty Dictionary
+## on no hit, a Dictionary with "position"/"collider"/etc. on a hit — the
+## caller still decides what a hit that isn't in the "floor" group means, so
+## this stays a plain wrapper rather than baking group-membership into it.
+func _cast_ground_ray(screen_pos: Vector2) -> Dictionary:
+	if not camera:
+		return {}
+
+	var ray_origin := camera.project_ray_origin(screen_pos)
+	var ray_direction := camera.project_ray_normal(screen_pos)
 	var ray_end := ray_origin + ray_direction * 1000.0
 
 	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
 	query.collision_mask = 1 << (GROUND_LAYER - 1)
 
-	var result := camera.get_world_3d().direct_space_state.intersect_ray(query)
+	return camera.get_world_3d().direct_space_state.intersect_ray(query)
+
+
+func _raycast_and_move() -> void:
+	if not camera or not player_node:
+		return
+
+	var mouse_pos := camera.get_viewport().get_mouse_position()
+	var result := _cast_ground_ray(mouse_pos)
 
 	if result:
 		var collider = result.collider
@@ -194,6 +217,20 @@ func _raycast_and_move() -> void:
 			_handle_invalid_click(result.position, collider, "не в группе 'floor'")
 	else:
 		_handle_invalid_click(Vector3.ZERO, null, "не является ground")
+
+
+## Ground-point lookup for callers outside click-to-move that need the same
+## world point a move order would use, without issuing one — today just
+## player.gd's COMBAT punch facing in ISOMETRIC (_face_punch_target()),
+## reusing this instead of a second raycast from the camera. Same hit test
+## as a move order (GROUND_LAYER, "floor" group); returns null instead of a
+## Vector3 when nothing valid was hit, since Vector3 has no "no point" value
+## of its own.
+func raycast_ground_point(screen_pos: Vector2) -> Variant:
+	var result := _cast_ground_ray(screen_pos)
+	if result and result.collider.is_in_group("floor"):
+		return result.position
+	return null
 
 
 func _handle_invalid_click(pos: Vector3, collider, reason: String) -> void:
