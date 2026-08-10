@@ -95,6 +95,12 @@ class_name PatrolDroneController
 ## Distance the drone must arrive within before picking a new patrol point.
 ## Matches the old police_drone.gd's hand-tuned value.
 const PATROL_ARRIVAL_RADIUS: float = 2.5
+## Spotlight aim target height when the player node has no get_chest_height()
+## — see _target_chest_height(). Same order-of-magnitude reasoning as
+## PerceptionComponent's own RAY_TARGET_HEIGHT_FALLBACK, kept as this
+## controller's own constant rather than reached into that unrelated file's,
+## so the two don't have to be retuned together by coincidence.
+const SPOTLIGHT_TARGET_HEIGHT_FALLBACK: float = 1.3
 
 enum State { PATROL, OBSERVE, ALERT }
 
@@ -161,6 +167,11 @@ enum State { PATROL, OBSERVE, ALERT }
 ## is deliberate: being caught is abrupt, losing you is reluctant.
 @export var spotlight_open_speed: float = 4.0
 @export var spotlight_close_speed: float = 2.0
+## How fast the beam settles onto the player, a Smoothing.damp_factor() rate
+## — same idiom as DroneBase's own mesh_turn_smoothing. Deliberately not
+## instant: a beam that lands exactly on the target every frame reads as
+## glued to a rail, not as a drone tracking a moving person.
+@export var spotlight_aim_smoothing: float = 6.0
 
 @export_group("Light Bar")
 ## Relative to this controller node, same convention as spotlight_path
@@ -200,6 +211,9 @@ var _spotlight: SpotLight3D = null
 ## independently. See that method's own comment for why one value, not
 ## three.
 var _spotlight_open: float = 0.0
+## Set once _target_chest_height() has warned about a player with no
+## get_chest_height(), so the warning doesn't spam every call.
+var _warned_missing_chest_height: bool = false
 ## Resolved once in _ready() via their paths above. Null (and silently
 ## skipped by _update_light_bar()) if the scene has no light bar yet.
 var _light_bar_blue: OmniLight3D = null
@@ -439,10 +453,11 @@ func _decide_alert(observation: PlayerObservation) -> void:
 
 
 ## Shared movement for OBSERVE and ALERT: closes to hover_distance and
-## holds, never all the way to the player, aiming the mesh (and therefore
-## the spotlight, in ALERT — see _update_spotlight()) at them throughout.
-## Vertical separation is not computed here — it comes free from DroneBase's
-## own ground-following altitude hold (see that file's header): hovering
+## holds, never all the way to the player, aiming the mesh at them
+## throughout (the spotlight, in ALERT, aims independently — see
+## _aim_spotlight()). Vertical separation is not computed here — it comes
+## free from DroneBase's own ground-following altitude hold (see that
+## file's header): hovering
 ## near the player, who stands on the same local ground, already puts the
 ## drone hover_height above them.
 func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: float, speed: float) -> void:
@@ -478,7 +493,10 @@ func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: floa
 ## the growing cone, not any one property alone, that reads as the drone
 ## finding you. visible tracks _spotlight_open > 0 rather than the raw
 ## targeted condition, so a fully-closed beam (a point, zero energy) is not
-## still counted by the engine as an active light.
+## still counted by the engine as an active light. Aiming (_aim_spotlight())
+## runs whenever there is any beam to aim, not only while targeted, so a
+## still-collapsing beam keeps whatever direction it last had rather than
+## snapping to rest.
 func _update_spotlight(observation: PlayerObservation, delta: float) -> void:
 	if not _spotlight:
 		return
@@ -491,6 +509,59 @@ func _update_spotlight(observation: PlayerObservation, delta: float) -> void:
 	_spotlight.spot_range = lerpf(spotlight_range_closed, spotlight_range, _spotlight_open)
 	_spotlight.light_energy = spotlight_energy * _spotlight_open
 	_spotlight.visible = _spotlight_open > 0.0
+
+	if _spotlight_open > 0.0:
+		_aim_spotlight(observation, delta)
+
+
+## DroneMesh's own turn (drone_base.gd's _update_mesh_look()) is yaw-only by
+## design — it flattens its look target to the mesh's own height before
+## calling looking_at(), so the mesh, and by inheritance Spotlight (its
+## plain identity-transform child), only ever faces the player's compass
+## direction and never pitches down at them. From hover_height above the
+## ground that leaves a beam that just tracked DroneMesh's rotation level,
+## sailing over the player's head rather than landing on them — so this sets
+## Spotlight's own global rotation directly instead, independent of
+## DroneMesh's, the same Transform3D.looking_at() + interpolate_with() +
+## Smoothing.damp_factor() idiom _update_mesh_look() itself uses. SpotLight3D
+## shines along its local -Z — the node's own convention, unrelated to this
+## project's +Z character-facing convention (see player.gd's
+## get_facing_direction()) — so looking_at() needs no correction for it.
+## Holds the last aim rather than steering at a stale sighting when the
+## player isn't currently seen, same reasoning _decide_hold_and_watch() uses
+## for movement — there is nothing fresh to aim at once sight is lost, even
+## while the beam is still visibly collapsing.
+func _aim_spotlight(observation: PlayerObservation, delta: float) -> void:
+	if observation == null or not observation.is_seen:
+		return
+
+	var target_point := observation.position + Vector3(0.0, _target_chest_height(), 0.0)
+	if _spotlight.global_position.distance_to(target_point) < 0.05:
+		return
+
+	var target_transform := _spotlight.global_transform.looking_at(target_point, Vector3.UP)
+	var t := Smoothing.damp_factor(spotlight_aim_smoothing, delta)
+	_spotlight.global_transform = _spotlight.global_transform.interpolate_with(target_transform, t)
+
+
+## Reads player.get_chest_height() via duck typing, same one-time-warning
+## pattern PerceptionComponent._target_chest_height() and
+## OnFootCameraComponent._target_metric_height() already use elsewhere in
+## this project. The player node isn't threaded through PlayerObservation
+## (a plain fact record with no node reference, by design — see that file's
+## header), so this does its own group lookup, the same one
+## PerceptionComponent.observe_player() already does to find the player.
+func _target_chest_height() -> float:
+	var player_node := get_tree().get_first_node_in_group("player")
+	if player_node and player_node.has_method(&"get_chest_height"):
+		return float(player_node.call(&"get_chest_height"))
+	if not _warned_missing_chest_height:
+		push_warning(
+			"[PatrolDroneController] player has no get_chest_height() — "
+			+ "spotlight aims at fallback height %.2f" % SPOTLIGHT_TARGET_HEIGHT_FALLBACK
+		)
+		_warned_missing_chest_height = true
+	return SPOTLIGHT_TARGET_HEIGHT_FALLBACK
 
 
 ## Off outside ALERT (and the phase resets, so the next ALERT always starts
