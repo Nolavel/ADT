@@ -76,11 +76,12 @@
 # closer.
 #
 # ALERT is now also readable, not just tracked in state: a SpotLight3D
-# (Spotlight, child of DroneMesh) switches on while ALERT and the player is
-# actually seen, addressed at them specifically — see _update_spotlight()'s
-# own comment on why this replaces StatusLight's OmniLight3D color swap
-# (unaddressed, barely legible in the greybox) as the thing a player
-# actually notices.
+# (Spotlight, child of DroneMesh) opens onto the player while ALERT and they
+# are actually seen, addressed at them specifically — see
+# _update_spotlight()'s own comment on why this replaces StatusLight's
+# OmniLight3D color swap (unaddressed, barely legible in the greybox) as the
+# thing a player actually notices, and why it opens/closes rather than
+# switching instantly.
 #
 # StatusLight is gone — replaced by two small OmniLight3Ds (LightBarBlue/
 # LightBarRed) blinking in antiphase while ALERT, the ambient "there is a
@@ -145,12 +146,21 @@ enum State { PATROL, OBSERVE, ALERT }
 ## below. Default matches the Spotlight node PoliceDrone.tscn adds under
 ## DroneMesh.
 @export var spotlight_path: NodePath = ^"../DroneMesh/Spotlight"
-## Full beam width, degrees (SpotLight3D.spot_angle). A feel value, tuned by
-## eye — applied once in _ready(), not tweened.
+## Full beam width, degrees (SpotLight3D.spot_angle) once fully open. A feel
+## value, tuned by eye.
 @export var spotlight_angle_deg: float = 20.0
-## Beam reach, metres (SpotLight3D.spot_range).
+## Beam reach, metres (SpotLight3D.spot_range) once fully open.
 @export var spotlight_range: float = 25.0
 @export var spotlight_energy: float = 8.0
+## Spotlight geometry at the moment it comes on: a point, not a pool. The
+## beam opening up onto the target is what reads as being found — a light
+## that simply appears at full width reads as a switch being flipped.
+@export var spotlight_angle_closed_deg: float = 1.5
+@export var spotlight_range_closed: float = 4.0
+## How fast the beam opens and closes. Opening slightly faster than closing
+## is deliberate: being caught is abrupt, losing you is reluctant.
+@export var spotlight_open_speed: float = 4.0
+@export var spotlight_close_speed: float = 2.0
 
 @export_group("Light Bar")
 ## Relative to this controller node, same convention as spotlight_path
@@ -184,6 +194,12 @@ var _perception: PerceptionComponent = null
 ## Resolved once in _ready() via spotlight_path. Null (and silently skipped
 ## by _update_spotlight()) if the scene has no spotlight yet.
 var _spotlight: SpotLight3D = null
+## Reveal factor, 0 (closed: a point, no light) .. 1 (fully open) — the one
+## value _update_spotlight() eases toward its target and then derives
+## spot_angle/spot_range/light_energy from, instead of easing those three
+## independently. See that method's own comment for why one value, not
+## three.
+var _spotlight_open: float = 0.0
 ## Resolved once in _ready() via their paths above. Null (and silently
 ## skipped by _update_light_bar()) if the scene has no light bar yet.
 var _light_bar_blue: OmniLight3D = null
@@ -249,9 +265,12 @@ func _ready() -> void:
 	if spotlight_path != NodePath():
 		_spotlight = get_node_or_null(spotlight_path) as SpotLight3D
 	if _spotlight:
-		_spotlight.spot_angle = spotlight_angle_deg
-		_spotlight.spot_range = spotlight_range
-		_spotlight.light_energy = spotlight_energy
+		## Starts fully closed — _update_spotlight() drives it open from here,
+		## it does not just apply the open values once.
+		_spotlight.spot_angle = spotlight_angle_closed_deg
+		_spotlight.spot_range = spotlight_range_closed
+		_spotlight.light_energy = 0.0
+		_spotlight.visible = false
 
 	## Very likely to fail here (see the file header) — kept anyway, harmless,
 	## and resolves immediately in the rare case ordering ever does favour
@@ -291,7 +310,7 @@ func _decide(delta: float) -> void:
 			_decide_alert(observation)
 
 	_update_light_bar(delta)
-	_update_spotlight(observation)
+	_update_spotlight(observation, delta)
 
 
 ## Human-readable state for debug tooling (perception_debug_panel.gd), same
@@ -311,6 +330,12 @@ func get_alert_memory_remaining() -> float:
 
 ## Read by the perception debug panel — a getter instead of exposing
 ## _spotlight directly, same encapsulation as get_alert_memory_remaining().
+## Reports whether a beam is actually rendered right now (_spotlight_open >
+## 0), not the instantaneous ALERT+is_seen targeting condition
+## _update_spotlight() checks each frame: that condition can flip false a
+## full spotlight_close_speed's worth of seconds before the beam visually
+## finishes collapsing, and this exists to tell a human what they'd actually
+## see, not the logic behind it.
 func is_spotlight_active() -> bool:
 	return _spotlight != null and _spotlight.visible
 
@@ -441,18 +466,31 @@ func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: floa
 	_drone.set_look_target(player_pos)
 
 
-## On only in ALERT while the player is actually seen — loses sight, loses
-## the beam, rather than pinning a stale sighting. Aiming is not a separate
-## mechanism: Spotlight is a plain child of DroneMesh (identity local
-## transform, shining down its own -Z, same convention DroneMesh's own
-## looking_at() turn already produces), so it tracks wherever
-## _decide_alert()'s set_look_target() already points the mesh, at
-## DroneBase's own mesh_turn_smoothing rate — no second "aim speed" export
-## to keep in sync with that one.
-func _update_spotlight(observation: PlayerObservation) -> void:
+## Targeted only in ALERT while the player is actually seen — loses sight,
+## loses the beam, rather than pinning a stale sighting. _spotlight_open is
+## a single 0..1 reveal factor, eased toward 1 (targeted) or 0 (not) via
+## Smoothing.damp_factor() at spotlight_open_speed/spotlight_close_speed —
+## opening faster than it closes, same asymmetric-rate idea DroneBase's own
+## acceleration/braking uses. spot_angle/spot_range/light_energy are all
+## derived from that one value rather than eased independently: three
+## separate smooths at the same nominal rate still drift apart frame to
+## frame, and the beam opening up would stop reading as one motion — it is
+## the growing cone, not any one property alone, that reads as the drone
+## finding you. visible tracks _spotlight_open > 0 rather than the raw
+## targeted condition, so a fully-closed beam (a point, zero energy) is not
+## still counted by the engine as an active light.
+func _update_spotlight(observation: PlayerObservation, delta: float) -> void:
 	if not _spotlight:
 		return
-	_spotlight.visible = _state == State.ALERT and observation != null and observation.is_seen
+
+	var targeted := _state == State.ALERT and observation != null and observation.is_seen
+	var open_rate := spotlight_open_speed if targeted else spotlight_close_speed
+	_spotlight_open = lerpf(_spotlight_open, 1.0 if targeted else 0.0, Smoothing.damp_factor(open_rate, delta))
+
+	_spotlight.spot_angle = lerpf(spotlight_angle_closed_deg, spotlight_angle_deg, _spotlight_open)
+	_spotlight.spot_range = lerpf(spotlight_range_closed, spotlight_range, _spotlight_open)
+	_spotlight.light_energy = spotlight_energy * _spotlight_open
+	_spotlight.visible = _spotlight_open > 0.0
 
 
 ## Off outside ALERT (and the phase resets, so the next ALERT always starts
