@@ -55,9 +55,9 @@ Click-to-move navigation. Handled by `NavigationComponent` and
 
 | Action | Key | Description | RU |
 |---|---|---|---|
-| `mouse_left_button` | LMB | Stop movement / cancel move target | Отменить цель движения |
-| `mouse_right_button` | RMB click | Move to clicked point | Идти в точку |
-| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
+| `mouse_left_button` | LMB | `PEACE`: stop movement / cancel move target. `COMBAT`: punch instead — see §4, same action as TPS | `PEACE`: отменить цель движения. `COMBAT`: удар |
+| `mouse_right_button` | RMB click | Move to clicked point. `PEACE` only — unclaimed in `COMBAT`, see note below | Идти в точку |
+| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target. `PEACE` only, same reason | Бег к цели |
 | `lean_left` | `Q` | Orbital camera — discrete step left | Шаг камеры влево |
 | `lean_right` | `E` | Orbital camera — discrete step right | Шаг камеры вправо |
 
@@ -71,6 +71,17 @@ in TPS.
 `ClickToMoveSystem`'s stop-movement handler is gated the same way as its
 move-to-point one, so it never actually fired in TPS either. See §4 for
 what the same physical button does there now.
+
+ISOMETRIC gains a `Stance` gate (2026-08-10): `ClickToMoveSystem` now
+self-gates off for the whole of `Stance.COMBAT`, not just `mouse_left_button`
+— raising fists suspends click-to-move entirely for as long as the stance is
+held, same as it already suspends the walk/run speed. Practically: in
+`COMBAT`, `mouse_left_button` is the punch (§4, same action as TPS) and
+`mouse_right_button` is unclaimed (ISOMETRIC has no aim-down-sights to hand
+it to, unlike TPS's `COMBAT` row below). Returning to `PEACE` returns both
+buttons to their click-to-move meanings; an in-progress path is stopped, not
+resumed, on entering `COMBAT` — see `click_to_move_system.gd`'s
+`_on_stance_changed()`.
 
 ---
 

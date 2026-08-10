@@ -9,7 +9,7 @@ unbuilt; section 4 is partly built. See Status below for the split.
 
 Read `CONTRIBUTING.md` before picking any of it up.
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-10
 
 ---
 
@@ -33,9 +33,14 @@ Not built: navigation (both controllers substitute a single forward raycast
 for a navmesh), memory beyond one ALERT timer, reaction spreading past one
 drone's radius, the witness flag, and everything in sections 2, 3, 5, 6, 7.
 
-Known defect: the punch fires in TPS view only. `COMBAT` stance in ISOMETRIC
-has no attack bound. The stance is a `PlayerState` axis and should not
-depend on the camera view — see `player.gd`.
+Design rule: `mouse_left_button` splits by `PlayerState.Stance`, not by
+camera view. In `COMBAT` it throws the punch, in both `TPS` and `ISOMETRIC`;
+in `PEACE` it is click-to-move's stop/cancel button in `ISOMETRIC` (unclaimed
+in TPS). Raising fists is the same statement regardless of which camera the
+player happens to be using, so the stance axis — not the view — is what
+gates the action. `ClickToMoveSystem` self-gates off for the duration of
+`COMBAT` so the two subscribers of the shared click signal never race each
+other for the same click.
 
 ---
 

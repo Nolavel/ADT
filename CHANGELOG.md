@@ -12,6 +12,45 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-10 — Punch works in ISOMETRIC, click-to-move yields to COMBAT
+
+Two commits fixing the defect recorded in `docs/NPC_REACTIONS.md`: the punch
+only fired in TPS view, because `player.gd` gated it on `view_mode == TPS`
+directly. Stance is a `PlayerState` axis and should not depend on which
+camera the player is using — the gate was checking the wrong thing.
+
+**Split `mouse_left_button` by `Stance`, not by view.** `ClickToMoveSystem`
+now self-gates off for the whole of `Stance.COMBAT` (on top of its existing
+`ON_FOOT` + `ISOMETRIC` gate), not just its click-to-move handler — raising
+fists suspends click-to-move entirely, including `mouse_right_button`
+move-to-point, for as long as the stance is held. A new `stance_changed`
+handler stops any path already in progress on entering `COMBAT`, since
+`player.gd`'s navigation branch is keyed on `view_mode` alone and would
+otherwise keep advancing a stale path regardless of `ClickToMoveSystem`'s own
+active flag. `player.gd`'s punch handler drops its `view_mode != TPS` check
+accordingly — the punch now fires from the same stance check in both views.
+*ЛКМ теперь делится по стойке, а не по виду камеры — боевая стойка
+приостанавливает click-to-move целиком, а не только отменяет клик.*
+- `core/movement/click_to_move_system.gd`, `player/player.gd`
+
+**Face the punch target by click point in ISOMETRIC.** TPS's body already
+faces the camera every frame, so the punch lands where the player is
+looking; ISOMETRIC has no equivalent, so a punch would otherwise fire in
+whatever direction the character happened to be standing. Turns the body
+toward the clicked ground point before starting the punch (instant, not
+smoothed — `punch_hit_delay` already buffers the swing before the hit check
+reads facing). The ground point comes from a new
+`ClickToMoveSystem.raycast_ground_point()`, factored out of the existing
+move-order raycast, rather than a second raycast from the camera —
+`ClickToMoveSystem` hands `player.gd` a reference to itself in
+`register_player()`, since the player scene isn't part of `world.gd`'s
+`on_world_ready()` sweep.
+*Разворот к точке клика перед ударом в изометрии — иначе удар летел туда,
+куда персонаж случайно стоял.*
+- `core/movement/click_to_move_system.gd`, `player/player.gd`
+
+---
+
 ## 2026-08-06 — First full incident chain: player hits, NPC falls, city records, drone responds
 
 Nine commits closing the loop the drone/NPC work left open: the drone reacted to a
