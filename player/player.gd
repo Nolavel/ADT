@@ -73,6 +73,12 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 @export var punch_reach: float = 1.8
 ## Full angular width of the punch's hit check, degrees, centred on facing.
 @export var punch_angle_deg: float = 60.0
+## Speed below which the character counts as standing still for the purpose
+## of throwing a punch. Not a balance number — a punch played over
+## locomotion has nothing to blend with (no layered upper-body mixing in
+## this project yet), so it reads as sliding. Standing still is also what
+## makes the attack a decision rather than a click spam.
+@export var punch_max_speed: float = 0.5
 
 @export_group("Jump/Gravity")
 ## Apex height = jump_force^2 / (2 * gravity). At 6.0/20.0 that's 0.9m, half
@@ -474,18 +480,25 @@ func _on_destination_reached() -> void:
 ## Only a raised-fists stance earns a punch — this is the action the stance
 ## exists for, in both view modes: TPS's mouse_left_button was already
 ## unclaimed outside COMBAT (see the connection comment in _ready()), and in
-## ISOMETRIC, COMBAT now takes the same button away from ClickToMoveSystem
-## (see that file's stance gating in _update_active_state()) instead of a
-## click meaning "walk there." ISOMETRIC additionally faces the body to the
-## click point first — TPS never needs this, _apply_direct_movement()
-## already faces the camera every frame, camera and threat being the same
-## direction there.
+## ISOMETRIC, ClickToMoveSystem's own click handler reacts to the same
+## signal but never conflicts (see that file's header). ISOMETRIC
+## additionally faces the body to the click point first — TPS never needs
+## this, _apply_direct_movement() already faces the camera every frame,
+## camera and threat being the same direction there.
+## Also requires standing still (speed <= punch_max_speed, checked against
+## actual speed, not input intent): a punch played over locomotion has
+## nothing to blend with (no layered upper-body mixing in this project yet)
+## and reads as sliding. A moving click is ignored silently — there is no
+## feedback system in this project to tell the player why, and this isn't
+## the place to invent one.
 func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 	if PlayerState.stance != PlayerState.Stance.COMBAT:
 		return
 	if _is_punching or not movement_enabled:
+		return
+	if speed > punch_max_speed:
 		return
 	if PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC:
 		_face_punch_target(screen_pos)
