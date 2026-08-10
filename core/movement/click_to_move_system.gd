@@ -15,6 +15,12 @@
 # Активен ТОЛЬКО когда PlayerState.mode == ON_FOOT и
 # view_mode == ISOMETRIC — сам себя гейтит через
 # PlayerState.mode_changed / view_mode_changed, никто снаружи это не решает.
+#
+# Also gated off during Stance.COMBAT (subscribes to PlayerState.stance_
+# changed too): in COMBAT, mouse_left_button throws a punch instead (see
+# player.gd's _on_primary_click_pressed()) — this system yields the whole
+# button rather than the punch handler and this one racing to interpret the
+# same click differently.
 # =============================================================================
 extends Node
 class_name ClickToMoveSystem
@@ -39,6 +45,7 @@ var _is_active: bool = false
 func _ready() -> void:
 	PlayerState.mode_changed.connect(_on_player_state_changed)
 	PlayerState.view_mode_changed.connect(_on_player_state_changed)
+	PlayerState.stance_changed.connect(_on_stance_changed)
 
 	InputSystems.primary_click_pressed.connect(_on_primary_click_pressed)
 	InputSystems.secondary_click_pressed.connect(_on_secondary_click_pressed)
@@ -100,9 +107,25 @@ func _on_player_state_changed(_old, _new) -> void:
 	_update_active_state()
 
 
+## Handled separately from _on_player_state_changed() because a stance flip
+## into COMBAT also needs to stop a path already in progress, not just
+## deactivate: player.gd's navigation branch is keyed on view_mode alone
+## (see its _physics_process()), so it keeps advancing an active path
+## regardless of this system's _is_active — unlike a mode/view_mode change,
+## which always also flips the navigation branch itself. _is_active is
+## checked before _update_active_state() below recomputes it, so it still
+## reflects whether a path could have been running under the stance that is
+## ending.
+func _on_stance_changed(_old_stance: PlayerState.Stance, new_stance: PlayerState.Stance) -> void:
+	if new_stance == PlayerState.Stance.COMBAT and _is_active and player_node:
+		player_node.stop_moving(true)
+	_update_active_state()
+
+
 func _update_active_state() -> void:
 	_is_active = PlayerState.mode == PlayerState.Mode.ON_FOOT \
-		and PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC
+		and PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC \
+		and PlayerState.stance == PlayerState.Stance.PEACE
 
 	if not _is_active:
 		_is_running = false

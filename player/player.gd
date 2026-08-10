@@ -130,10 +130,12 @@ func _ready() -> void:
 		push_warning("StaminaManager not found - stamina system will not work")
 
 	## Reuses InputSystems' existing primary_click_pressed signal instead of
-	## adding a new one — LMB has no other TPS meaning (ClickToMoveSystem,
-	## the signal's only other subscriber, self-gates to ON_FOOT + ISOMETRIC
-	## and never sees it in TPS). The gate on what a press MEANS lives here,
-	## same as every other InputSystems subscriber.
+	## adding a new one. ClickToMoveSystem, the signal's other subscriber, is
+	## now self-gated to Stance.PEACE too (on top of ON_FOOT + ISOMETRIC), so
+	## the two subscribers never both react to the same click: in COMBAT this
+	## handler is the only one listening, in either view mode. The gate on
+	## what a press MEANS still lives here, same as every other InputSystems
+	## subscriber.
 	InputSystems.primary_click_pressed.connect(_on_primary_click_pressed)
 
 
@@ -455,12 +457,13 @@ func _on_destination_reached() -> void:
 
 ## --- Punch (COMBAT only) ---
 ## Only a raised-fists stance earns a punch — this is the action the stance
-## exists for. mouse_left_button is otherwise unclaimed in TPS (see the
-## connection comment in _ready()).
+## exists for, in both view modes: TPS's mouse_left_button was already
+## unclaimed outside COMBAT (see the connection comment in _ready()), and in
+## ISOMETRIC, COMBAT now takes the same button away from ClickToMoveSystem
+## (see that file's stance gating in _update_active_state()) instead of a
+## click meaning "walk there."
 func _on_primary_click_pressed(_screen_pos: Vector2) -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
-		return
-	if PlayerState.view_mode != PlayerState.ViewMode.TPS:
 		return
 	if PlayerState.stance != PlayerState.Stance.COMBAT:
 		return
