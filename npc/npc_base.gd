@@ -69,6 +69,11 @@
 extends ActorBase
 class_name NPCBase
 
+## Clearance above BodyMetrics' head-top landmark for DebugHealthLabel — an
+## interface offset, not a body measurement, so it lives here rather than as
+## another BodyMetrics ratio.
+const DEBUG_LABEL_CLEARANCE: float = 0.25
+
 ## Total height of this character. Per-instance data, not a constant: NPCs
 ## will vary. Landmark heights come from BodyMetrics ratios.
 @export var body_height: float = 1.8
@@ -171,11 +176,7 @@ func _ready() -> void:
 	if _health == null:
 		push_warning("[NPCBase] HealthComponent not found - knockdowns will loop forever, no terminal DOWN phase")
 	if _debug_health_label:
-		# TODO(health): BodyMetrics has no "above the head" ratio, only eye/
-		# shoulder/chest — eye_height is the closest existing landmark, used
-		# here rather than inventing a new offset. Revisit if BodyMetrics
-		# gains a dedicated ratio for this.
-		_debug_health_label.position.y = get_eye_height()
+		_debug_health_label.position.y = get_head_top_height() + DEBUG_LABEL_CLEARANCE
 
 
 func _physics_process(delta: float) -> void:
@@ -359,6 +360,10 @@ func get_eye_height() -> float:
 
 func get_shoulder_height() -> float:
 	return BodyMetrics.shoulder_height(body_height)
+
+
+func get_head_top_height() -> float:
+	return BodyMetrics.get_head_top_height(body_height)
 
 
 func get_debug_type_label() -> String:

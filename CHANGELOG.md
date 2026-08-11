@@ -113,6 +113,15 @@ which had been using `eye_height()` as a stand-in for lack of a dedicated ratio.
 ступнях, поэтому это весь рост целиком.*
 - `core/characters/body_metrics.gd`
 
+**NPC debug health label moved to the head-top landmark.** `DebugHealthLabel`'s
+placement now uses a new `get_head_top_height()` wrapper (mirroring `get_eye_height()`/
+`get_shoulder_height()`) plus a new local `DEBUG_LABEL_CLEARANCE` (0.25) on top — an
+interface offset, not a body measurement, so it stays in `npc_base.gd` rather than
+becoming another `BodyMetrics` ratio. Was sitting at eye level as a stand-in; closes the
+`TODO(health)` left there.
+*Отладочная подпись NPC теперь над макушкой, а не на уровне глаз — TODO(health) закрыт.*
+- `npc/npc_base.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
