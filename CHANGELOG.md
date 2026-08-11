@@ -122,6 +122,21 @@ becoming another `BodyMetrics` ratio. Was sitting at eye level as a stand-in; cl
 *Отладочная подпись NPC теперь над макушкой, а не на уровне глаз — TODO(health) закрыт.*
 - `npc/npc_base.gd`
 
+**Stale-comment pass: `on_world_ready`, `take_hit()`, `PlayerState` enums.** Comment
+text only, no code changes. `player.gd`'s `_click_to_move_system` comment claimed
+player.gd wasn't part of `world.gd`'s `on_world_ready()` sweep — it has been since the
+previous session; rewritten to explain why the separate `ClickToMoveSystem` injection
+still exists instead (that `WorldContext` has no dedicated `ClickToMoveSystem` field,
+and the injection predates it). `CLAUDE.md`'s `take_hit()` paragraph didn't mention
+`HealthComponent`, damage, or the terminal `KnockdownPhase.DOWN` phase — updated to
+match the current contract. Checked `CLAUDE.md`'s `PlayerState` paragraph for the
+`VEHICLE_HOVER`/`TOPDOWN` staleness this task also flagged: it already reads `HOVER`
+and already documents `TOPDOWN` as removed, matching `player_state.gd`'s actual enum —
+no change needed there.
+*Правка устаревших комментариев (без изменения кода): on_world_ready в player.gd,
+контракт take_hit() в CLAUDE.md; перечисление PlayerState в CLAUDE.md уже верно.*
+- `player/player.gd`, `CLAUDE.md`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

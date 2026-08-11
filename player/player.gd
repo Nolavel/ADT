@@ -106,9 +106,11 @@ var _punch_timer: float = 0.0
 var _punch_hit_resolved: bool = false
 
 ## Injected by ClickToMoveSystem.register_player() at world-init time (see
-## that file's on_world_ready()) — player.gd is not part of world.gd's
-## on_world_ready() sweep itself, so this is the only route it has to a
-## ClickToMoveSystem reference. Used only to reuse its ground raycast for
+## that file's on_world_ready()) — a separate route from the WorldContext
+## player.gd's own on_world_ready() now also receives (see that method):
+## that context has no dedicated ClickToMoveSystem field, and this
+## injection predates it, so it was left in place rather than rerouted
+## through context.get_system(). Used only to reuse its ground raycast for
 ## facing the COMBAT punch toward the click point in ISOMETRIC, see
 ## _face_punch_target().
 var _click_to_move_system: ClickToMoveSystem = null
