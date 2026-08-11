@@ -24,7 +24,7 @@
 # suspend_conditions() before skipping and resume_conditions() after.
 # =============================================================================
 class_name HealthComponent
-extends Node3D
+extends Node
 
 ## Coarse state of the bar, three equal thirds. Consumers use this instead of
 ## comparing raw numbers, so the thresholds live in exactly one place.
