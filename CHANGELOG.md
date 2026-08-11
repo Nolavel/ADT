@@ -137,6 +137,19 @@ no change needed there.
 контракт take_hit() в CLAUDE.md; перечисление PlayerState в CLAUDE.md уже верно.*
 - `player/player.gd`, `CLAUDE.md`
 
+**New `StatusBarWidget`: a reusable three-segment status gauge.** Draws one ratio as
+three separate bars in a shared frame via `_draw()` (same reason `aim_reticle.gd` does:
+exact pixel control, zero art assets), draining right to left, no numbers on screen —
+colour and remaining fill are the whole readout. Knows nothing about health: takes a
+ratio and a list of cause labels through `set_ratio()`/`set_labels()`, so hunger and
+rest (data not wired up yet) are meant to be further instances of the same scene,
+stacked underneath with their own colours — why thresholds/colours are exported rather
+than hard-coded. `status_bar_widget.tscn` is a single `Control` root with the script
+attached, all exports left at their defaults.
+*Новый переиспользуемый виджет статус-бара — три сегмента одной полосы, ничего не знает
+про здоровье конкретно, только ratio и подписи.*
+- `ui/hud/status_bar/status_bar_widget.gd`, `ui/hud/status_bar/status_bar_widget.tscn`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
