@@ -176,6 +176,18 @@ entities), which are already fully ready by the time it's called.
 у UI-сцен (world.gd добавляет их через call_deferred), _health_bar был ещё null.*
 - `ui/hud/player_hud/player_hud.gd`
 
+**Fix: `HealthComponent`'s `extends` line never matched its node type.** An earlier
+commit changed `player.tscn`'s `HealthComponent` node type from `Node3D` to `Node`, but
+never updated the script's own `extends Node3D` to match — a load-breaking mismatch that
+sat committed until a local, uncommitted editor fix surfaced it. Now `extends Node`,
+matching both `player.tscn`'s and `npc.tscn`'s already-correct node types. Also folds in
+a harmless leftover `npc.tscn` diff: `max_health`/`enable_conditions` dropped from the
+`HealthComponent` node (Godot's editor strips exported values equal to the script's own
+defaults on save — same 100.0/false either way).
+*Фикс: extends-строка HealthComponent не совпадала с типом узла в сценах — исправлено на
+extends Node.*
+- `core/components/health_component/health_component.gd`, `npc/npc.tscn`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
