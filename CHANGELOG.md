@@ -103,6 +103,16 @@ invented offset; see the `TODO(health)` left in `_ready()`.
 per-instance через debug_show_health.*
 - `npc/npc.tscn`, `npc/npc_base.gd`
 
+**`BodyMetrics` gains a head-top landmark.** New `HEAD_TOP_RATIO` (1.0) and
+`get_head_top_height()`, same shape as `EYE_RATIO`/`eye_height()`. A character's origin
+sits at the feet, so the top of the head is the full `body_height`, not a fraction of
+it — the constant exists for uniformity with the other landmarks, not because 1.0 is a
+number anyone could get wrong. Closes the `TODO(health)` left on the NPC debug label,
+which had been using `eye_height()` as a stand-in for lack of a dedicated ratio.
+*BodyMetrics получил ориентир «макушка» — HEAD_TOP_RATIO = 1.0, начало координат в
+ступнях, поэтому это весь рост целиком.*
+- `core/characters/body_metrics.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

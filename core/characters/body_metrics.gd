@@ -18,6 +18,11 @@ class_name BodyMetrics
 const EYE_RATIO: float = 0.94
 const SHOULDER_RATIO: float = 0.82
 const CHEST_RATIO: float = 0.72
+## A character's origin sits at the feet, so the top of the head is exactly
+## total height, not a fraction of it. Kept as a named ratio anyway, for the
+## same reason the other landmarks are: uniformity with eye/shoulder/chest,
+## not because 1.0 is a non-obvious number.
+const HEAD_TOP_RATIO: float = 1.0
 
 
 static func eye_height(body_height: float) -> float:
@@ -30,3 +35,7 @@ static func shoulder_height(body_height: float) -> float:
 
 static func chest_height(body_height: float) -> float:
 	return body_height * CHEST_RATIO
+
+
+static func get_head_top_height(body_height: float) -> float:
+	return body_height * HEAD_TOP_RATIO
