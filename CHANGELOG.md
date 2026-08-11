@@ -188,6 +188,28 @@ defaults on save — same 100.0/false either way).
 extends Node.*
 - `core/components/health_component/health_component.gd`, `npc/npc.tscn`
 
+**Fall damage on hard landings.** New `player.gd` export group `fall_damage_min_speed`
+(8.0), `fall_damage_lethal_speed` (20.0), `fall_fracture_damage` (20.0). Landing is
+detected by the not-on-floor → on-floor transition (`is_on_floor()` before/after
+`move_and_slide()`), not a height threshold — a height check breaks on slopes, ledges
+and moving platforms, but the vertical speed at the instant of impact does not.
+`velocity.y` has to be cached immediately before `move_and_slide()` each frame, since
+`is_on_floor()` only reflects the current frame's real collision result *after*
+`move_and_slide()` resolves it, by which point the actual impact speed is already gone
+from `velocity.y` itself. Damage grows quadratically between the two thresholds (a
+normalised ratio, squared, times `HealthComponent.max_health`), so an eight-metre fall
+barely registers while the last few metres before the lethal threshold read as
+dramatically worse. A landing that deals at least `fall_fracture_damage` also calls
+`add_condition(HealthComponent.Condition.FRACTURE)`. Verified analytically (not by
+running the editor) that an ordinary jump can't hurt itself: `jump_force` (6.0) and
+`gravity` (20.0) mean a standing jump lands at exactly `jump_force` = 6 m/s by energy
+conservation, safely under `fall_damage_min_speed` (8.0) — no constants needed tuning to
+make that hold.
+*Урон от падения по скорости приземления, не по высоте; квадратичная кривая между двумя
+порогами; перелом при достаточно тяжёлом ударе. Обычный прыжок проверен аналитически —
+не ранит.*
+- `player/player.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

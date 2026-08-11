@@ -87,6 +87,15 @@ enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 @export var jump_force: float = 6.0
 @export var gravity: float = 20.0
 
+@export_group("Fall Damage")
+## Impact speed below which a landing costs nothing. Roughly a 3 m drop.
+@export var fall_damage_min_speed: float = 8.0
+## Impact speed that is always fatal. Roughly a 20 m drop — real-world lethality
+## crosses fifty percent well below this, so nothing survives it here.
+@export var fall_damage_lethal_speed: float = 20.0
+## Damage above which the landing also breaks something.
+@export var fall_fracture_damage: float = 20.0
+
 @export_group("Animation")
 @export var player_animation_player: AnimationPlayer
 
@@ -125,6 +134,18 @@ var _direct_move_want_run: bool = false
 ## Camera yaw reference for TLOU-style idle rotation and backpedal detection.
 ## Set by TPSMovementSystem every physics frame.
 var _camera_yaw: float = 0.0
+
+## --- Fall damage tracking ---
+## is_on_floor() as of the end of the PREVIOUS physics frame's
+## move_and_slide() — compared against the current frame's to detect the
+## not-on-floor -> on-floor transition that means "just landed."
+var _was_on_floor: bool = false
+## velocity.y cached immediately before move_and_slide(), while it is still
+## this frame's pre-collision value. is_on_floor() only reflects reality
+## AFTER move_and_slide() resolves collisions, so by the moment a landing is
+## actually detected the real impact speed is already gone from velocity.y
+## itself — it has to be captured a step ahead of time.
+var _pre_move_vertical_speed: float = 0.0
 
 ## --- Components ---
 @onready var navigation_component: NavigationComponent = $NavComponent
@@ -188,7 +209,9 @@ func _physics_process(delta: float) -> void:
 		_handle_navigation(delta)
 		_apply_deceleration(delta)
 
+	_pre_move_vertical_speed = velocity.y
 	move_and_slide()
+	_check_fall_damage()
 
 
 ## --- Public API ---
@@ -663,6 +686,40 @@ func _handle_jump() -> void:
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
+
+
+## --- Fall damage ---
+## Checked every physics frame right after move_and_slide(), the only point
+## where is_on_floor() reflects this frame's actual collision result.
+## Landing is the not-on-floor -> on-floor transition, not a height
+## threshold: height is unreliable across slopes, ledges and moving
+## platforms, but the vertical speed at the moment of impact is not.
+func _check_fall_damage() -> void:
+	var landed: bool = not _was_on_floor and is_on_floor()
+	_was_on_floor = is_on_floor()
+	if landed:
+		_apply_fall_damage(-_pre_move_vertical_speed)
+
+
+## impact_speed is the downward speed at the moment of landing, already
+## flipped positive. Damage grows quadratically between the two thresholds
+## (a normalised [0,1] ratio, squared, times max_health) rather than
+## linearly: an eight-metre fall should barely register, while the gap
+## between fifteen and twenty metres should read as dramatically worse —
+## matching how real fall lethality curves, not a straight line.
+func _apply_fall_damage(impact_speed: float) -> void:
+	if impact_speed < fall_damage_min_speed:
+		return
+
+	var ratio: float = clampf(
+		(impact_speed - fall_damage_min_speed)
+				/ (fall_damage_lethal_speed - fall_damage_min_speed),
+		0.0, 1.0
+	)
+	var damage: float = ratio * ratio * _health.max_health
+	var taken: float = _health.apply_damage(damage)
+	if taken >= fall_fracture_damage:
+		_health.add_condition(HealthComponent.Condition.FRACTURE)
 
 
 ## --- Speed Interpolation ---
