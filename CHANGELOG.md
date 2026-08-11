@@ -59,6 +59,16 @@ for this change.
 анимация смерти не подключена, клип не подтверждён.*
 - `player/player.gd`
 
+**`HealthComponent` added to `npc.tscn`.** Plain `Node`, `max_health = 100.0`,
+`enable_conditions = false` (NPCs take plain hit-point damage — no bleeding, no
+fractures), `debug_log = true` for the duration of the debug pass below. `setup()` is
+not called: NPCs are streamed in/out by `StreamingSystems` and never see a
+`WorldContext`, and with `enable_conditions` off the component has nothing that needs
+`GameClockSystem` anyway.
+*HealthComponent добавлен в npc.tscn — только очки здоровья, без кровотечений/переломов
+и без setup(), NPC не видят WorldContext.*
+- `npc/npc.tscn`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

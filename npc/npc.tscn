@@ -10,6 +10,7 @@
 [ext_resource type="AnimationLibrary" uid="uid://bjercfk2njb1t" path="res://player/animations/new_libs/Weapons.res" id="8_r6nix"]
 [ext_resource type="AnimationLibrary" uid="uid://gc8ocf8k7gwj" path="res://player/animations/libs/rifle_locomotion_pack.res" id="9_1gbpw"]
 [ext_resource type="Script" uid="uid://ck368mdcknxol" path="res://npc/npc_components/animation_component/npc_animation_component.gd" id="10_animation"]
+[ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://core/components/health_component/health_component.gd" id="11_health"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_npc"]
 radius = 0.388
@@ -1332,3 +1333,9 @@ script = ExtResource("3_perception")
 
 [node name="AnimationComponent" type="Node" parent="." unique_id=1282459396]
 script = ExtResource("10_animation")
+
+[node name="HealthComponent" type="Node" parent="." unique_id=1900000001]
+script = ExtResource("11_health")
+max_health = 100.0
+enable_conditions = false
+debug_log = true
