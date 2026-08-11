@@ -247,6 +247,16 @@ func on_world_ready(context: WorldContext) -> void:
 	var clock := context.get_system(GameClockSystem) as GameClockSystem
 	_health.setup(clock)
 
+	## HealthComponent and StaminaComponent know nothing about each other —
+	## player.gd owns both, so it's the only place the tie belongs. See
+	## _on_health_band_changed()'s own comment for why.
+	_health.band_changed.connect(_on_health_band_changed)
+	## Same reason player_hud.gd fires its own initial paint: HealthComponent
+	## already reached full health in its own _ready(), before this
+	## subscription existed, so the first signal would otherwise only arrive
+	## on the first point of damage.
+	_on_health_band_changed(_health.get_band())
+
 
 func move_to_position(pos: Vector3) -> void:
 	if not movement_enabled:
@@ -548,6 +558,23 @@ func _on_died() -> void:
 	_animation_component.play_death()
 	set_movement_enabled(false)
 	_is_dead = true
+
+
+## Cuts the stamina CEILING in CRITICAL rather than blocking running
+## outright: a player who has lost the ability to run at all is caught in a
+## spiral — weakened, unable to get away, weakened further. A quarter of the
+## tank is enough for a short burst, not enough to sprint away clean.
+## Sprinting is still refused separately (set_sprint_blocked) — the lowered
+## ceiling on its own doesn't stop is_running_mode from reading as a sprint.
+func _on_health_band_changed(band: HealthComponent.Band) -> void:
+	if not stamina_manager:
+		return
+	if band == HealthComponent.Band.CRITICAL:
+		stamina_manager.set_capacity_ratio(stamina_manager.critical_capacity_ratio)
+		stamina_manager.set_sprint_blocked(true)
+	else:
+		stamina_manager.set_capacity_ratio(1.0)
+		stamina_manager.set_sprint_blocked(false)
 
 
 ## --- Punch (COMBAT only) ---

@@ -287,6 +287,25 @@ commit) is the only thing that knows why the ceiling ever moves.
 не знает, откуда взялся коэффициент, это дело player.gd.*
 - `player/player_components/stamina_component/stamina_component.gd`
 
+**`player.gd` ties health to the stamina ceiling.** New `_on_health_band_changed(band)`,
+subscribed to `HealthComponent.band_changed` in `on_world_ready()` — the same place
+`HealthComponent.setup()` already runs, since `player.gd` is the only thing that owns
+both `HealthComponent` and `StaminaComponent`; neither component knows the other
+exists. In `CRITICAL`: `stamina_manager.set_capacity_ratio(stamina_manager.
+critical_capacity_ratio)` and `set_sprint_blocked(true)`; every other band: ratio back
+to `1.0`, sprint block lifted. Fired once immediately after subscribing, with the
+current band — same reason `player_hud.gd` already fires its own initial paint:
+`HealthComponent` reaches full health in its own `_ready()`, before any subscription
+exists, so the first signal would otherwise only arrive on the first point of damage.
+The ceiling, not an outright block, is the deliberate choice: a player who can't run at
+all is caught in a spiral — weakened, unable to get away, weakened further. A quarter
+of the tank is enough for a short burst, not enough to sprint away clean; sprinting
+itself is still refused separately, since the lowered ceiling alone doesn't stop
+`is_running_mode` from reading as a sprint.
+*player.gd связывает здоровье и стамину — в CRITICAL режется потолок (не отключается
+бег целиком, чтобы не запустить спираль ослабления), спринт запрещается отдельно.*
+- `player/player.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
