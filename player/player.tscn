@@ -36,6 +36,7 @@
 [ext_resource type="PackedScene" uid="uid://5fn1xrmc4k84" path="res://player/player_components/nav_component/nav_component.tscn" id="36_ge24q"]
 [ext_resource type="Script" uid="uid://kw0ry1yly3cv" path="res://player/player_components/animation_component/player_animation_component.gd" id="36_pnw6m"]
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://player/player_components/interact_component/interact_component.gd" id="37_1gbpw"]
+[ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://player/player_components/health_component/health_component.gd" id="37_pnw6m"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
 radius = 0.38763407
@@ -1480,3 +1481,6 @@ script = ExtResource("35_q28gw")
 
 [node name="AnimationComponent" type="Node3D" parent="." unique_id=667099167]
 script = ExtResource("36_pnw6m")
+
+[node name="HealthComponent" type="Node3D" parent="." unique_id=1820093760]
+script = ExtResource("37_pnw6m")
