@@ -27,6 +27,17 @@ node path and the attached script are unchanged.
 *HealthComponent — Node, а не Node3D: у здоровья нет точки в пространстве.*
 - `player/player.tscn`
 
+**`HealthComponent` moved to `core/components/health_component/`.** It is shared by the
+player and NPCs, so it does not belong under `player/`. `health_component.gd` and its
+`.uid` moved via `git mv`; `player.tscn`'s `ext_resource` path updated to match. The
+leftover empty `player/player_components/health_component/` and
+`npc/npc_components/health_component/` placeholder directories are removed —
+`class_name HealthComponent` is global, so no by-type reference needed touching.
+*HealthComponent переехал в core/components/ — компонент общий для игрока и NPC, папке
+игрока он не принадлежит.*
+- `core/components/health_component/health_component.gd`,
+  `core/components/health_component/health_component.gd.uid`, `player/player.tscn`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
