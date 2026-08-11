@@ -210,6 +210,26 @@ make that hold.
 не ранит.*
 - `player/player.gd`
 
+**Permanent death branch in the player animation tree.** New `ANIM_DEATH`
+(`new4/die2`) and public `play_death()`/`is_dead()` on `PlayerAnimationComponent`.
+Deliberately NOT another `AnimationNodeOneShot` layered over locomotion the way the
+punch is — the same trap `npc_base.gd`'s own header describes for its knockdown clips:
+a `OneShot`'s non-looping clip snaps back to whatever is underneath the instant it
+finishes, which is exactly wrong for a pose that has to hold forever. Instead, a new
+`AnimationNodeTransition` (`death_transition`) sits at the tree's root with two named
+inputs — `alive` (the entire tree built so far, previously wired straight to `output`)
+and `death` (a single non-looping `AnimationNodeAnimation`, which holds its last frame
+once it finishes — exactly the permanent pose needed). The switch only ever runs one
+way: nothing in the file ever requests `alive` again, and `play_death()` is idempotent
+via `is_dead()`'s own latch. New `@export var death_transition_time: float = 0.2`
+(crossfade duration), same role as the existing `stance_transition_time`. Internal tree
+parameter names (`death_transition`, its `transition_request`) do not leak past
+`play_death()`/`is_dead()`, same contract `play_punch()`/`is_punch_active()` already
+keep.
+*Постоянная ветка смерти в дереве анимаций — AnimationNodeTransition, а не OneShot:
+поза должна держаться вечно, а не соскакивать после окончания незацикленного клипа.*
+- `player/player_components/animation_component/player_animation_component.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

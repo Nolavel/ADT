@@ -65,6 +65,15 @@ const ANIM_COMBAT_RETREAT: StringName = &"new3/legs_locomotion_run_backward_2"
 ## eye against the actual swing the next time this runs.
 const ANIM_COMBAT_PUNCH: StringName = &"new4/punch1"
 
+## Death clip, ShooterLib (new4/). Non-looping — an AnimationNodeAnimation
+## holds the last frame once a non-looping clip finishes, which is exactly
+## the permanent collapsed pose play_death() needs.
+## TODO(health): unverified without running the editor whether this
+## specific import is actually flagged non-looping (see this file's own
+## root- note on import quirks). If it loops, the death pose will visibly
+## cycle instead of holding — confirm by eye and fix the import if so.
+const ANIM_DEATH: StringName = &"new4/die2"
+
 ## Speed below which the character counts as standing still (gates the TPS
 ## idle head-look in update_head_look()).
 const IDLE_ENTER_SPEED: float = 0.15
@@ -100,6 +109,12 @@ const HEAD_LOOK_FADE_SPEED: float = 4.0
 @export var head_look_secondary_limit_deg: float = 45.0
 @export var head_look_duration: float = 0.25
 
+@export_group("Death")
+## Crossfade duration for the one-way switch to the death pose. A feel
+## value, tuned by eye — same role as stance_transition_time above, just for
+## a transition that only ever fires once.
+@export var death_transition_time: float = 0.2
+
 ## Sprint progress 0..1 for the cursor UI — smoothed separately from the
 ## real speed so the icon doesn't jitter in step with stamina.
 var sprint_blend: float = 0.0
@@ -109,6 +124,10 @@ var sprint_blend_speed: float = 4.0
 ## toward every frame in update_animation_blend().
 var _stance_blend_amount: float = 0.0
 var _stance_blend_target: float = 0.0
+
+## Latches true the moment play_death() fires — the switch is one-way and
+## irreversible, so this also doubles as the guard against firing it twice.
+var _is_dead: bool = false
 
 var _anim_tree: AnimationTree
 
@@ -237,6 +256,29 @@ func is_punch_active() -> bool:
 	if not _anim_tree:
 		return false
 	return bool(_anim_tree.get("parameters/punch_oneshot/active"))
+
+
+## Fires the one-way, irreversible switch to the death pose. Deliberately
+## NOT another AnimationNodeOneShot layered over locomotion the way the
+## punch is: a OneShot's non-looping clip snaps back to whatever is
+## underneath the instant it finishes — exactly the trap npc_base.gd's own
+## header describes for its knockdown clips, and exactly wrong for a pose
+## that has to hold forever. death_transition (AnimationNodeTransition, see
+## _setup_animation_tree()) crossfades to a branch that never gets asked to
+## fade back. Idempotent — a second call is a no-op, since is_dead() is
+## already latched from the first.
+func play_death() -> void:
+	if _is_dead or not _anim_tree:
+		return
+	_is_dead = true
+	# TODO(health): AnimationNodeTransition's runtime parameter path
+	# (transition_request, taking the input's name) is unverified without
+	# running the editor — confirm this actually drives the switch.
+	_anim_tree.set("parameters/death_transition/transition_request", "death")
+
+
+func is_dead() -> bool:
+	return _is_dead
 
 
 func get_sprint_blend() -> float:
@@ -413,7 +455,28 @@ func _setup_animation_tree() -> void:
 	tree_root.add_node("punch_oneshot", punch_oneshot)
 	tree_root.connect_node("punch_oneshot", 0, "stance_blend")
 	tree_root.connect_node("punch_oneshot", 1, "punch_clip")
-	tree_root.connect_node("output", 0, "punch_oneshot")
+
+	## Death branch, an AnimationNodeTransition at the tree's root rather than
+	## another AnimationNodeOneShot: a OneShot's non-looping clip snaps back
+	## to whatever is underneath the instant it finishes playing — exactly
+	## the trap npc_base.gd's own header describes for its knockdown clips,
+	## and exactly wrong here, since the death pose has to hold forever, not
+	## for a fixed duration. "alive" is the entire tree built above
+	## (everything that used to feed output directly); "death" is a single
+	## non-looping clip that holds its last frame once it finishes — see
+	## ANIM_DEATH's own comment. The switch only ever runs one way: nothing
+	## in this file ever requests "alive" again.
+	var death_clip := AnimationNodeAnimation.new()
+	death_clip.animation = ANIM_DEATH
+	var death_transition := AnimationNodeTransition.new()
+	death_transition.xfade_time = death_transition_time
+	death_transition.add_input("alive")
+	death_transition.add_input("death")
+	tree_root.add_node("death_clip", death_clip)
+	tree_root.add_node("death_transition", death_transition)
+	tree_root.connect_node("death_transition", 0, "punch_oneshot")
+	tree_root.connect_node("death_transition", 1, "death_clip")
+	tree_root.connect_node("output", 0, "death_transition")
 
 	_anim_tree = AnimationTree.new()
 	_anim_tree.tree_root = tree_root
