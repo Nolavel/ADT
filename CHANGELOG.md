@@ -38,6 +38,16 @@ leftover empty `player/player_components/health_component/` and
 - `core/components/health_component/health_component.gd`,
   `core/components/health_component/health_component.gd.uid`, `player/player.tscn`
 
+**`world.gd` now calls `player.on_world_ready(context)`.** The player scene was the one
+thing `World._init_world()` spawned without ever offering it the same optional
+`on_world_ready(context: WorldContext)` hook systems/3D-entities/UI scenes already get —
+needed so the player's `HealthComponent` can reach `GameClockSystem`. Called right after
+`context` is fully populated (`context.systems` included), same requirement
+`WorldContext.get_system()` already has for every other caller.
+*world.gd теперь зовёт player.on_world_ready(context) — раньше игрок был единственным,
+кто не получал контекст мира.*
+- `world/world.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

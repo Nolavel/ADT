@@ -134,6 +134,9 @@ func _init_world() -> void:
 	context.stream_container = stream_container
 	context.systems = _systems
 
+	if player != null and player.has_method("on_world_ready"):
+		player.on_world_ready(context)
+
 	for system in _systems:
 		if system.has_method("on_world_ready"):
 			system.on_world_ready(context)
