@@ -105,6 +105,14 @@ var speed: float = 0.0
 var target_speed: float = 0.0
 var movement_enabled: bool = true
 
+## Permanently true once _on_died() fires. Distinct from movement_enabled: a
+## punch also sets that false, but only temporarily, and only death needs to
+## additionally silence _update_punch()'s call, which otherwise runs
+## regardless of movement_enabled by design (see _physics_process()'s own
+## comment). No revive in this task — TODO(save): clear this (and re-enable
+## movement) on whatever respawn/load does once the save system exists.
+var _is_dead: bool = false
+
 ## --- Sprint state (for the cursor UI) ---
 var is_running_mode: bool = false
 var wants_to_run: bool = false  # the player wants to run (even if they can't)
@@ -181,6 +189,20 @@ func _ready() -> void:
 
 ## --- Physics Update ---
 func _physics_process(delta: float) -> void:
+	if _is_dead:
+		## The one deliberate exception death makes to the movement lock:
+		## gravity keeps running — a body that died mid-air must still fall
+		## to the ground. Everything else (locomotion, jump, clicks, and the
+		## punch continuation below) stays locked: _handle_jump() and
+		## _on_primary_click_pressed() are already unreachable once
+		## set_movement_enabled(false) has run (see _on_died()), and this
+		## early return sits before the unconditional _update_punch() call
+		## below, which is the one thing that check alone would NOT have
+		## stopped.
+		_apply_gravity(delta)
+		move_and_slide()
+		return
+
 	## Runs even while movement is locked (a punch locks it via
 	## set_movement_enabled(false)) — everything below this needs the lock
 	## to actually stop the body, but the punch's own timer/completion check
@@ -516,9 +538,16 @@ func _on_destination_reached() -> void:
 
 
 ## --- Health Callbacks ---
+## Locks the player out of control permanently — no revive in this task, see
+## _is_dead's own comment. set_movement_enabled(false) alone already stops
+## _handle_jump() and _on_primary_click_pressed() (both only reachable while
+## movement_enabled is true); _is_dead is the extra flag _physics_process()
+## checks first, ahead of its unconditional _update_punch() call, which
+## movement_enabled alone does not gate.
 func _on_died() -> void:
-	# TODO(health): play death animation once the clip to use is confirmed.
-	push_warning("[Player] died")
+	_animation_component.play_death()
+	set_movement_enabled(false)
+	_is_dead = true
 
 
 ## --- Punch (COMBAT only) ---

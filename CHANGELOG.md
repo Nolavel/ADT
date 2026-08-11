@@ -230,6 +230,21 @@ keep.
 поза должна держаться вечно, а не соскакивать после окончания незацикленного клипа.*
 - `player/player_components/animation_component/player_animation_component.gd`
 
+**Player locked out of control on death.** `_on_died()` now calls
+`_animation_component.play_death()`, `set_movement_enabled(false)`, and sets a new
+permanent `_is_dead` flag. `movement_enabled` alone already stops `_handle_jump()` and
+`_on_primary_click_pressed()` (both only reachable from inside its gate), but not
+`_update_punch()`, which `_physics_process()` deliberately runs regardless of
+`movement_enabled` so an in-progress punch can still unlock itself — `_is_dead` is
+checked first, ahead of that unconditional call, so a corpse can never land the last hit
+of a punch already in flight. One deliberate exception to the lock: gravity (and
+`move_and_slide()`) keep running while dead, so a body that died mid-air still falls to
+the ground — everything else stays frozen. No revive in this task; a `TODO(save)` marks
+where `_is_dead` gets cleared once respawn/load exists.
+*Игрок теряет управление насовсем при смерти — гравитация продолжает работать
+(труп должен долетать до земли), всё остальное блокируется через _is_dead.*
+- `player/player.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
