@@ -12,6 +12,23 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-11 — HealthComponent wired to player and NPCs; NPCs take damage and stay down
+
+Seven commits connecting `HealthComponent` (built earlier but never attached to either
+actor) to the player and to NPCs, and giving `NPCBase.take_hit()` real damage with a
+terminal knocked-down state instead of the old infinite three-phase knockdown loop.
+*Семь коммитов: HealthComponent подключён к игроку и NPC, take_hit() теперь наносит
+урон и держит терминальный нокдаун вместо бесконечного цикла из трёх фаз.*
+
+**`HealthComponent` node type: `Node3D` → `Node` in `player.tscn`.** Health has no
+position in space — `PerceptionComponent` is `Node3D` because it needs a vantage point,
+`AnimationComponent` is a plain `Node`; `HealthComponent` belongs with the latter. Name,
+node path and the attached script are unchanged.
+*HealthComponent — Node, а не Node3D: у здоровья нет точки в пространстве.*
+- `player/player.tscn`
+
+---
+
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
 
 Four commits fixing the defect recorded in `docs/NPC_REACTIONS.md` (the punch

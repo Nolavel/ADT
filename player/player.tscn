@@ -1482,5 +1482,5 @@ script = ExtResource("35_q28gw")
 [node name="AnimationComponent" type="Node3D" parent="." unique_id=667099167]
 script = ExtResource("36_pnw6m")
 
-[node name="HealthComponent" type="Node3D" parent="." unique_id=1820093760]
+[node name="HealthComponent" type="Node" parent="." unique_id=1820093760]
 script = ExtResource("37_pnw6m")
