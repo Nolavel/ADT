@@ -89,6 +89,20 @@ has no health yet" claim on `take_hit()` is corrected.
 DOWN, из которой нет выхода; повторные удары по лежащему теперь засчитываются.*
 - `npc/npc_base.gd`
 
+**Optional debug health label above NPCs.** New `DebugHealthLabel` (`Label3D`,
+`billboard` enabled, hidden by default) in `npc.tscn`, driven by a new
+`@export var debug_show_health: bool = false` on `NPCBase`. While on, shows
+current/max health and the knockdown phase name (only while actually knocked down —
+`_knockdown_phase` otherwise holds a stale value from the last knockdown, not a
+meaningful "current" one); while off the label is hidden and its text is never
+recomputed. Placement height comes from `get_eye_height()`
+(`BodyMetrics.eye_height()`) — `BodyMetrics` has no dedicated "above the head" ratio,
+only eye/shoulder/chest, so this is the closest existing landmark rather than an
+invented offset; see the `TODO(health)` left in `_ready()`.
+*Отладочная подпись здоровья над NPC — Label3D, скрыт по умолчанию, включается
+per-instance через debug_show_health.*
+- `npc/npc.tscn`, `npc/npc_base.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

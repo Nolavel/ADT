@@ -1339,3 +1339,7 @@ script = ExtResource("11_health")
 max_health = 100.0
 enable_conditions = false
 debug_log = true
+
+[node name="DebugHealthLabel" type="Label3D" parent="." unique_id=1900000002]
+visible = false
+billboard = 1

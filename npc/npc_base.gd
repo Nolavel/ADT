@@ -100,6 +100,13 @@ class_name NPCBase
 ## the real clip length, not over.
 @export var knockdown_getup_time: float = 1.0
 
+@export_group("Debug")
+## Shows a floating Label3D above the NPC with current/max health and the
+## active knockdown phase — a quick way to see hit points land without
+## attaching a debugger. Off by default; while false the label stays
+## hidden and its text is not recomputed at all.
+@export var debug_show_health: bool = false
+
 ## Movement intent for this frame, written by whatever controller drives
 ## this NPC. direction is expected normalised and horizontal (Y ignored);
 ## speed_ratio is 0..1, a fraction of walk_speed.
@@ -152,12 +159,23 @@ var _look_target_point: Vector3 = Vector3.ZERO
 ## phase, so knockdowns loop forever (the pre-HealthComponent behaviour).
 @onready var _health: HealthComponent = get_node_or_null("HealthComponent")
 
+## Resolved once via @onready, same defensive pattern as _animation/_health.
+## Null (and debug_show_health silently has no effect) if the scene has no
+## DebugHealthLabel.
+@onready var _debug_health_label: Label3D = get_node_or_null("DebugHealthLabel")
+
 
 func _ready() -> void:
 	super._ready()
 	add_to_group("lockable")
 	if _health == null:
 		push_warning("[NPCBase] HealthComponent not found - knockdowns will loop forever, no terminal DOWN phase")
+	if _debug_health_label:
+		# TODO(health): BodyMetrics has no "above the head" ratio, only eye/
+		# shoulder/chest — eye_height is the closest existing landmark, used
+		# here rather than inventing a new offset. Revisit if BodyMetrics
+		# gains a dedicated ratio for this.
+		_debug_health_label.position.y = get_eye_height()
 
 
 func _physics_process(delta: float) -> void:
@@ -177,6 +195,10 @@ func _physics_process(delta: float) -> void:
 	if _animation:
 		_animation.update_animation_blend(delta)
 		_animation.update_head_look(delta)
+	if _debug_health_label:
+		_debug_health_label.visible = debug_show_health
+		if debug_show_health:
+			_update_debug_health_label()
 
 
 ## Movement intent for this frame, written by whatever controller drives this
@@ -312,6 +334,21 @@ func _enter_down_phase() -> void:
 	_knockdown_phase_timer = 0.0
 	if _animation and not was_lying:
 		_animation.play_lying()
+
+
+## Refreshes DebugHealthLabel's text. Only called while debug_show_health is
+## true (see _physics_process()) — the knockdown phase name is shown only
+## while actually knocked down, since _knockdown_phase otherwise still holds
+## a stale value from the last knockdown rather than a meaningful "current"
+## one.
+func _update_debug_health_label() -> void:
+	var phase_text: String = KnockdownPhase.keys()[_knockdown_phase] if _knocked_down else "-"
+	if _health:
+		_debug_health_label.text = "%.0f/%.0f  %s" % [
+			_health.current_health, _health.max_health, phase_text
+		]
+	else:
+		_debug_health_label.text = "no HealthComponent  %s" % phase_text
 
 
 ## Character metric getters — same names as player.gd, so callers that duck
