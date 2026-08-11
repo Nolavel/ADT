@@ -40,8 +40,16 @@ func _ready() -> void:
 
 
 ## Resolves the player's HealthComponent and binds it to the bar. Called by
-## world.gd once the context is populated.
+## world.gd once the context is populated — but for a WORLD_UI_SCENES entry
+## world.gd adds this node via call_deferred(), so on_world_ready() can run
+## BEFORE this node's own _ready(), while _health_bar is still null. Wait for
+## ready first when that happens; already-ready is the common case for every
+## other on_world_ready() caller (systems, 3D entities), so this is a no-op
+## there.
 func on_world_ready(context: WorldContext) -> void:
+	if not is_node_ready():
+		await ready
+
 	if context.player == null:
 		push_warning("[PlayerHUD] no player in context — status bars stay idle")
 		return

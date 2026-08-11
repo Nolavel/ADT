@@ -163,6 +163,19 @@ explicitly not wired up yet — the widget is shaped for them, the data isn't th
 подписка на world.gd's WorldContext, как у aim_reticle.*
 - `ui/hud/player_hud/player_hud.gd`, `ui/hud/player_hud/player_hud.tscn`, `world/world.gd`
 
+**Fix: `PlayerHUD.on_world_ready()` crashed on spawn.** `world.gd` adds `WORLD_UI_SCENES`
+instances via `call_deferred("add_child", ...)`, so a UI scene's own `_ready()` — and
+therefore any `@onready` var — hasn't necessarily run yet by the time `on_world_ready()`
+fires; `perception_debug_panel.gd` never hit this because its `on_world_ready()` only
+stores a reference, but `player_hud.gd`'s calls straight into `_health_bar.set_ratio()`.
+Runtime error: `Invalid call. Nonexistent function 'set_ratio' in base 'Nil'`.
+`on_world_ready()` now does `if not is_node_ready(): await ready` before touching
+`_health_bar` — a no-op for every other `on_world_ready()` caller (systems, 3D
+entities), which are already fully ready by the time it's called.
+*Фикс: PlayerHUD падал при спавне — on_world_ready() вызывался до собственного _ready()
+у UI-сцен (world.gd добавляет их через call_deferred), _health_bar был ещё null.*
+- `ui/hud/player_hud/player_hud.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
