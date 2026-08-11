@@ -129,6 +129,7 @@ var _camera_yaw: float = 0.0
 @onready var stamina_manager: StaminaComponent = $StaminaComponent
 @onready var animation_player: AnimationPlayer = $player_base_mesh/AnimationPlayer
 @onready var _animation_component: PlayerAnimationComponent = $AnimationComponent
+@onready var _health: HealthComponent = $HealthComponent
 
 
 ## --- Initialization ---
@@ -142,6 +143,8 @@ func _ready() -> void:
 
 	if stamina_manager == null:
 		push_warning("StaminaManager not found - stamina system will not work")
+
+	_health.died.connect(_on_died)
 
 	## Reuses InputSystems' existing primary_click_pressed signal instead of
 	## adding a new one. ClickToMoveSystem, the signal's other subscriber, is
@@ -187,6 +190,17 @@ func _physics_process(delta: float) -> void:
 
 
 ## --- Public API ---
+
+## Called once by world.gd after context is fully populated (see world.gd's
+## own on_world_ready sweep) — the player isn't part of the
+## WORLD_SYSTEM_SCRIPTS/3D-entity/UI loops themselves, so this is the only
+## route it has to a GameClockSystem reference. Passed straight through to
+## HealthComponent.setup(), the only thing here that needs it.
+func on_world_ready(context: WorldContext) -> void:
+	var clock := context.get_system(GameClockSystem) as GameClockSystem
+	_health.setup(clock)
+
+
 func move_to_position(pos: Vector3) -> void:
 	if not movement_enabled:
 		return
@@ -474,6 +488,12 @@ func _on_path_updated() -> void:
 
 func _on_destination_reached() -> void:
 	stop_moving(true)
+
+
+## --- Health Callbacks ---
+func _on_died() -> void:
+	# TODO(health): play death animation once the clip to use is confirmed.
+	push_warning("[Player] died")
 
 
 ## --- Punch (COMBAT only) ---

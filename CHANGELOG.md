@@ -48,6 +48,17 @@ needed so the player's `HealthComponent` can reach `GameClockSystem`. Called rig
 кто не получал контекст мира.*
 - `world/world.gd`
 
+**Player `HealthComponent` wired to `GameClockSystem`.** New `_health` `@onready` ref
+and `on_world_ready(context: WorldContext)`, which resolves `GameClockSystem` via
+`context.get_system()` and passes it to `HealthComponent.setup()`. `died` is subscribed
+in `_ready()` to a `_on_died()` stub — `TODO(health)`, only a `push_warning()` for now:
+the death clip exists somewhere in the animation libraries but which one is unconfirmed,
+so it is not wired up yet. Stamina's `band_changed` hookup is explicitly out of scope
+for this change.
+*HealthComponent игрока подключён к GameClockSystem; died пока только push_warning —
+анимация смерти не подключена, клип не подтверждён.*
+- `player/player.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
