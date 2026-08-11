@@ -264,6 +264,29 @@ editor.
 input_count/set_input_name, а не add_input(); плюс явный старт в "alive".*
 - `player/player_components/animation_component/player_animation_component.gd`
 
+**`StaminaComponent` gains an external capacity ceiling and a sprint block.** New
+`@export var critical_capacity_ratio: float = 0.25` (a tuning value, not written to from
+code), `set_capacity_ratio(ratio: float)`, internal `get_effective_max_stamina()`
+(`max_stamina * _capacity_ratio`), and `set_sprint_blocked(blocked: bool)`, independent
+of the ratio — sprinting and the ceiling are two separate decisions on purpose, so
+either can be tuned without dragging the other along. Every `max_stamina` reference in
+the file was checked individually: recovery (`_update_stamina()`), `get_stamina_ratio()`
+(now guarded against a zero ceiling), `restore_stamina()`, `is_recovering()`, and the
+initial `_ready()` fill now target the effective ceiling; `stamina_changed`'s emitted
+max, `get_max_stamina()`, `try_jump()`'s cost and the debug label stay against the
+nominal `max_stamina` on purpose (UI-facing, or a fixed-quantity cost) — each with a
+comment explaining the choice. Lowering the ceiling clamps `current_stamina` down
+immediately, with its own `stamina_changed` emit, rather than waiting for the next
+`_process()` to drain it down. `set_stamina_parameters()`'s own internal rescale
+(previously double-counting through the now-ceiling-relative `get_stamina_ratio()`) was
+corrected to keep working against the nominal max, still clamped to the current ceiling
+afterward — a direct, necessary consequence of `get_stamina_ratio()`'s new meaning, not
+a separate change. The component still knows nothing about health; `player.gd` (next
+commit) is the only thing that knows why the ceiling ever moves.
+*StaminaComponent получил внешний потолок и отдельный флаг запрета спринта — компонент
+не знает, откуда взялся коэффициент, это дело player.gd.*
+- `player/player_components/stamina_component/stamina_component.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
