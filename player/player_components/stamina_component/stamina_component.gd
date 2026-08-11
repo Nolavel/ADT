@@ -1,25 +1,56 @@
-extends Node3D
+# =============================================================================
+# stamina_component.gd — StaminaComponent
+#
+# Tracks the player's stamina pool: drains while sprinting, recovers after a
+# delay, and exposes a smooth run-speed falloff (get_run_capacity()) so
+# running doesn't cut out abruptly the instant stamina hits zero.
+#
+# EXTERNAL CEILING: max_stamina is the nominal tank size, but the actual
+# usable ceiling can be cut from outside via set_capacity_ratio() — this
+# component has no idea why, it only knows a ratio was handed to it
+# (player.gd applies critical_capacity_ratio when HealthComponent's band
+# goes CRITICAL, see that file's own comment on why a ceiling rather than an
+# outright block). Sprinting can also be forbidden outright via
+# set_sprint_blocked(), independently of the ceiling — see that method's own
+# comment for why the two are kept separate rather than one derived from
+# the other.
+#
+# UI-FACING VALUES: stamina_changed always reports against the nominal
+# max_stamina, not the effective ceiling, so a HUD/debug readout draws the
+# full bar width and lets current stamina visibly fall short of it — the
+# shortfall itself is the point. get_max_stamina() and the debug label stay
+# on the nominal value for the same reason; see their own comments.
+# =============================================================================
+extends Node
 class_name StaminaComponent
 
-# === СИГНАЛЫ ===
+# === Signals ===
 signal stamina_changed(current_stamina: float, max_stamina: float)
 signal stamina_depleted()
 signal stamina_recovered()
 signal sprint_allowed_changed(is_allowed: bool)
-signal jump_performed() 
+signal jump_performed()
 
-# === ПАРАМЕТРЫ СТАМИНЫ ===
-@export_group("Параметры стамины")
+# === Stamina parameters ===
+@export_group("Stamina")
 @export var max_stamina: float = 100.0
-@export var stamina_deplete_rate: float = 5.0  # стамина в секунду при использовании
-@export var stamina_recover_rate: float = 3.0  # стамина в секунду при восстановлении
-@export var stamina_recover_delay: float = 5.0  # секунды до начала восстановления
-@export var min_stamina_for_action: float = 1.0  # минимум стамины для выполнения действия
-@export var jump_stamina_cost: float = 5.0  # 10% от максимальной стамины
+## Stamina drained per second while consuming (sprinting).
+@export var stamina_deplete_rate: float = 5.0
+## Stamina recovered per second once recovery starts.
+@export var stamina_recover_rate: float = 3.0
+## Seconds after consumption stops before recovery begins.
+@export var stamina_recover_delay: float = 5.0
+## Minimum stamina required for has_stamina_for_action() to allow an action.
+@export var min_stamina_for_action: float = 1.0
+## Percentage of max_stamina a jump costs (see try_jump()).
+@export var jump_stamina_cost: float = 5.0
 
-@export_group("Усталость (плавное снижение скорости бега)")
-@export var fatigue_start_ratio: float = 0.4  # выше этого % стамины — бег на полной скорости
-@export var fatigue_curve_power: float = 1.6  # >1 = скорость падает резче ближе к нулю, <1 = плавнее
+@export_group("Fatigue (smooth run-speed falloff)")
+## Above this fraction of stamina, running is at full speed.
+@export var fatigue_start_ratio: float = 0.4
+## Curve shape below fatigue_start_ratio: >1 falls off sharper near zero,
+## <1 falls off more gently.
+@export var fatigue_curve_power: float = 1.6
 
 @export_group("Health Ceiling")
 ## Fraction of max_stamina available while the owner's health is critical —
@@ -29,12 +60,12 @@ signal jump_performed()
 ## ratio changes, only that it does.
 @export var critical_capacity_ratio: float = 0.25
 
-# === DEBUG ===
+# === Debug ===
 @export_group("Debug")
 @export var debug_show_stamina: bool = false
 @export var debug_label_path: NodePath
 
-# === ВНУТРЕННИЕ ПЕРЕМЕННЫЕ ===
+# === Internal state ===
 var current_stamina: float = 1.0
 var stamina_recover_timer: float = 0.0
 var is_consuming_stamina: bool = false
@@ -52,23 +83,23 @@ var _capacity_ratio: float = 1.0
 var _sprint_blocked: bool = false
 
 func _ready() -> void:
-	# Защита от некорректных значений
+	# Guard against misconfigured values
 	if max_stamina <= 0.0:
 		push_warning("Max stamina must be positive, setting to 1.0")
 		max_stamina = 1.0
-	
+
 	if stamina_deplete_rate <= 0.0:
 		push_warning("Stamina deplete rate must be positive, setting to 0.5")
 		stamina_deplete_rate = 0.5
-	
+
 	if stamina_recover_rate <= 0.0:
 		push_warning("Stamina recover rate must be positive, setting to 0.3")
 		stamina_recover_rate = 0.3
-	
-	# Инициализация стамины
+
+	# Start full
 	current_stamina = get_effective_max_stamina()  # == max_stamina while _capacity_ratio is 1.0
-	
-	# Инициализация debug label
+
+	# Debug label setup
 	if debug_show_stamina and debug_label_path != NodePath():
 		_debug_label = get_node_or_null(debug_label_path)
 		if _debug_label == null:
@@ -81,19 +112,19 @@ func _process(delta: float) -> void:
 func _update_stamina(delta: float) -> void:
 	var previous_stamina: float = current_stamina
 	var was_sprint_allowed: bool = is_sprint_allowed()
-	
+
 	if is_consuming_stamina and current_stamina > 0.0:
-		# Тратим стамину
+		# Draining
 		current_stamina -= stamina_deplete_rate * delta
 		current_stamina = max(current_stamina, 0.0)
 		stamina_recover_timer = 0.0
-		
-		# Проверяем истощение стамины
+
+		# Check for depletion
 		if current_stamina == 0.0 and not was_depleted:
 			was_depleted = true
 			stamina_depleted.emit()
 	else:
-		# Восстанавливаем стамину после задержки
+		# Recovering after the delay
 		# Recovery stops at the effective ceiling, not the nominal max —
 		# otherwise it would keep climbing past a lowered capacity ratio.
 		var effective_max: float = get_effective_max_stamina()
@@ -105,19 +136,19 @@ func _update_stamina(delta: float) -> void:
 				current_stamina += stamina_recover_rate * delta
 				current_stamina = min(current_stamina, effective_max)
 
-				# Сигнал о восстановлении стамины
+				# Signal that stamina has recovered from empty
 				if was_zero and current_stamina > 0.0:
 					was_depleted = false
 					stamina_recovered.emit()
-	
-	# Уведомления об изменениях
+
+	# Change notifications
 	# max_stamina here on purpose, not the effective ceiling: consumers of
 	# this signal (HUD, debug UI) draw the FULL bar width and let current
 	# stamina visibly fall short of it while the ceiling is lowered — that
 	# shortfall is the whole point of the health tie-in being visible.
 	if abs(current_stamina - previous_stamina) > 0.001:
 		stamina_changed.emit(current_stamina, max_stamina)
-	
+
 	var is_sprint_allowed_now: bool = is_sprint_allowed()
 	if is_sprint_allowed_now != was_sprint_allowed:
 		sprint_allowed_changed.emit(is_sprint_allowed_now)
@@ -129,8 +160,8 @@ func _update_debug_display() -> void:
 	if debug_show_stamina and _debug_label != null:
 		var percentage: float = (current_stamina / max_stamina) * 100.0
 		_debug_label.text = "Stamina: %.1f%%" % percentage
-		
-		# Меняем цвет в зависимости от уровня стамины
+
+		# Colour by stamina level
 		if current_stamina > max_stamina * 0.5:
 			_debug_label.add_theme_color_override("font_color", Color.WHITE)
 		elif current_stamina > max_stamina * 0.25:
@@ -149,31 +180,31 @@ func try_jump() -> bool:
 		return true
 	return false
 
-	
-# === ПУБЛИЧНЫЕ МЕТОДЫ ===
 
-## Начать тратить стамину
+# === Public methods ===
+
+## Start consuming stamina.
 func start_consuming_stamina() -> void:
 	if not is_consuming_stamina:
 		is_consuming_stamina = true
 
-## Прекратить тратить стамину
+## Stop consuming stamina.
 func stop_consuming_stamina() -> void:
 	if is_consuming_stamina:
 		is_consuming_stamina = false
 
-## Проверить, достаточно ли стамины для действия
+## Whether there is enough stamina left for an action.
 func has_stamina_for_action() -> bool:
 	return current_stamina >= min_stamina_for_action
 
-## Проверить, разрешен ли спринт
+## Whether sprinting is currently allowed.
 ## sprint_blocked is a separate decision from the capacity ratio (see
 ## set_sprint_blocked()) — checked here alongside current_stamina rather
 ## than folded into it.
 func is_sprint_allowed() -> bool:
 	return current_stamina > 0.0 and not _sprint_blocked
 
-## Получить текущую стамину (0.0 - 1.0)
+## Current stamina as a 0.0-1.0 ratio.
 ## Against the effective ceiling, not the nominal max — a ratio of 1.0
 ## should mean "as full as it can currently get," matching what
 ## get_run_capacity() (which reads this) needs to reason about sprinting.
@@ -183,17 +214,16 @@ func get_stamina_ratio() -> float:
 		return 0.0
 	return current_stamina / effective_max
 
-## Получить абсолютное значение стамины
+## Current stamina, absolute value.
 func get_current_stamina() -> float:
 	return current_stamina
 
-## Получить максимальную стамину
 ## The nominal max, not the effective ceiling — same UI-facing reasoning as
 ## stamina_changed above.
 func get_max_stamina() -> float:
 	return max_stamina
 
-## Мгновенно восстановить стамину (для читов/бонусов)
+## Instantly restores stamina (for cheats/pickups).
 func restore_stamina(amount: float = -1.0) -> void:
 	var effective_max: float = get_effective_max_stamina()
 	if amount < 0.0:
@@ -207,23 +237,24 @@ func restore_stamina(amount: float = -1.0) -> void:
 
 	stamina_changed.emit(current_stamina, max_stamina)
 
-## Мгновенно потратить стамину
+## Instantly spends stamina.
 func consume_stamina(amount: float) -> bool:
 	if current_stamina >= amount:
 		current_stamina -= amount
 		current_stamina = max(current_stamina, 0.0)
-		
+
 		if current_stamina == 0.0 and not was_depleted:
 			was_depleted = true
 			stamina_depleted.emit()
-		
+
 		stamina_changed.emit(current_stamina, max_stamina)
 		return true
-	
+
 	return false
-	
-## 1.0 = полный запас на бег, 0.0 = стамина кончилась (эффективно только ходьба).
-## Снижается плавно после fatigue_start_ratio — не рывком в момент истощения.
+
+## 1.0 = full capacity to run, 0.0 = stamina exhausted (effectively walk
+## only). Falls off smoothly past fatigue_start_ratio — not a sudden snap
+## the instant stamina runs out.
 func get_run_capacity() -> float:
 	var ratio: float = get_stamina_ratio()
 	if ratio >= fatigue_start_ratio:
@@ -233,7 +264,8 @@ func get_run_capacity() -> float:
 	var t: float = clamp(ratio / fatigue_start_ratio, 0.0, 1.0)
 	return pow(t, fatigue_curve_power)
 
-## Установить параметры стамины во время выполнения
+## Changes stamina parameters at runtime. Any argument left at its default
+## (-1.0) is not touched.
 func set_stamina_parameters(
 	new_max_stamina: float = -1.0,
 	new_deplete_rate: float = -1.0,
@@ -248,17 +280,17 @@ func set_stamina_parameters(
 		var ratio: float = current_stamina / max_stamina
 		max_stamina = new_max_stamina
 		current_stamina = min(max_stamina * ratio, get_effective_max_stamina())
-	
+
 	if new_deplete_rate > 0.0:
 		stamina_deplete_rate = new_deplete_rate
-	
+
 	if new_recover_rate > 0.0:
 		stamina_recover_rate = new_recover_rate
-	
+
 	if new_recover_delay >= 0.0:
 		stamina_recover_delay = new_recover_delay
 
-## Проверить, восстанавливается ли стамина сейчас
+## Whether stamina is currently recovering.
 ## Against the effective ceiling, not max_stamina - matches
 ## _update_stamina()'s own recovery condition, or this would report "still
 ## recovering" even after current_stamina has already settled at a lowered

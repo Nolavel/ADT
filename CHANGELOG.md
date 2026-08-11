@@ -306,6 +306,25 @@ itself is still refused separately, since the lowered ceiling alone doesn't stop
 бег целиком, чтобы не запустить спираль ослабления), спринт запрещается отдельно.*
 - `player/player.gd`
 
+**`StaminaComponent` brought in line with project conventions (partial).** The file
+predated the project's style rules: `extends Node3D` with no spatial meaning, Russian
+comments, no `##` docs on the class or its exports. Fixed `extends Node` to match
+(`player.tscn`'s `StaminaComponent` node changed from `Node3D` to `Node` in the same
+commit — the two must move together or the script fails to attach, the exact mismatch
+`HealthComponent` shipped with earlier), translated every comment to English, added a
+banner header and `##` docs on the class's public members and `@export` vars (including
+translating the two `@export_group` labels, which are inspector-facing strings, not
+lexical comments, but the same inconsistency otherwise). All value defaults and logic
+are unchanged — diffed line by line to confirm. Left out on purpose: moving stamina's
+update from `_process()` to `_physics_process()` changes behaviour on an unstable frame
+rate (a fixed-step drain/recovery rate reads differently against real time than against
+physics ticks), so per the task's own fallback it stays a question instead of a change —
+see the closing list.
+*StaminaComponent частично приведён к конвенциям — extends Node, английские комментарии
+и `##`-документация, без изменения поведения. Перенос в _physics_process оставлен как
+открытый вопрос.*
+- `player/player_components/stamina_component/stamina_component.gd`, `player/player.tscn`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

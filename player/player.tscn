@@ -1442,7 +1442,7 @@ script = ExtResource("32_ftrmt")
 walk_indicator_texture = ExtResource("32_fp3m1")
 sprint_indicator_texture = ExtResource("33_wmpjg")
 
-[node name="StaminaComponent" type="Node3D" parent="." unique_id=768721075]
+[node name="StaminaComponent" type="Node" parent="." unique_id=768721075]
 script = ExtResource("31_dssci")
 stamina_deplete_rate = 2.5
 jump_stamina_cost = 2.5
