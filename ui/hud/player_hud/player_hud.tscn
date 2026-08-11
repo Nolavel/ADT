@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/hud/player_hud/player_hud.gd" id="1_hud"]
+[ext_resource type="PackedScene" path="res://ui/hud/status_bar/status_bar_widget.tscn" id="2_bar"]
+
+[node name="PlayerHUD" type="Control"]
+layout_mode = 3
+script = ExtResource("1_hud")
+
+[node name="StatusStack" type="VBoxContainer" parent="."]
+layout_mode = 1
+
+[node name="HealthBar" parent="StatusStack" instance=ExtResource("2_bar")]
+layout_mode = 2

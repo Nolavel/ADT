@@ -150,6 +150,19 @@ attached, all exports left at their defaults.
 про здоровье конкретно, только ratio и подписи.*
 - `ui/hud/status_bar/status_bar_widget.gd`, `ui/hud/status_bar/status_bar_widget.tscn`
 
+**Player health now shows on the HUD.** New `PlayerHUD` (`ui/hud/player_hud/`), a
+top-left `StatusStack` (`VBoxContainer`) holding one `StatusBarWidget` instance
+(`HealthBar`) today, with hunger/rest meant to stack in the same way once those systems
+exist. `PlayerHUD` is the only place `HealthComponent` and `StatusBarWidget` meet —
+neither knows about the other — resolving the player's `HealthComponent` in
+`on_world_ready(context)` (same `WorldContext` hook `aim_reticle.tscn` already uses,
+registered in `world.gd`'s `WORLD_UI_SCENES` right next to it) and subscribing to
+`health_changed`/`condition_changed`. Hunger/rest and stamina's `band_changed` are
+explicitly not wired up yet — the widget is shaped for them, the data isn't there.
+*Здоровье игрока теперь на HUD — PlayerHUD сводит HealthComponent и StatusBarWidget,
+подписка на world.gd's WorldContext, как у aim_reticle.*
+- `ui/hud/player_hud/player_hud.gd`, `ui/hud/player_hud/player_hud.tscn`, `world/world.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
