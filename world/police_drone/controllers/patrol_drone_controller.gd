@@ -147,6 +147,30 @@ enum State { PATROL, OBSERVE, ALERT }
 ## A feel value, tuned by eye — start at 3s per spec.
 @export var alert_memory_time: float = 3.0
 
+@export_group("Hold And Watch")
+## Distance band, metres, over which the drone eases its closing speed to
+## zero as it nears hover_distance, instead of an instant full-speed/stop
+## boundary at one exact distance — a hard toggle there reads as flickering,
+## especially once separation is nudging the drone's position frame to
+## frame. A feel value; wide enough the ease is visible, not so wide the
+## drone looks sluggish well short of the ring.
+@export var hover_approach_margin: float = 2.0
+
+@export_group("Tracking")
+## How quickly the drone's internally tracked player position catches up to
+## the player's actual live position, a Smoothing.damp_factor() rate.
+## mesh_turn_smoothing and spotlight_aim_smoothing already add some implicit
+## lag turning the mesh/beam onto a target — this is a second, deliberately
+## more visible lag on the target itself, on top of that: the drone's
+## awareness of where the player currently is trails their actual motion,
+## not just its own limbs catching up. Low enough to be seen: a player who
+## changes direction quickly can make the spotlight swing past and curve
+## back to find them again — that's the intended cinematic effect, not a
+## bug. Well below mesh_turn_smoothing/spotlight_aim_smoothing on purpose,
+## so this lag is the dominant, visible one rather than being swamped by
+## those faster downstream dampers.
+@export var player_tracking_lag: float = 2.0
+
 @export_group("Spotlight")
 ## Relative to this controller node, same convention as the light bar paths
 ## below. Default matches the Spotlight node PoliceDrone.tscn adds under
@@ -186,6 +210,28 @@ enum State { PATROL, OBSERVE, ALERT }
 ## _update_light_bar()), not two independent timers, so they can never both
 ## land on the same phase by drift. A feel value, tuned by eye.
 @export var light_bar_period: float = 0.5
+
+@export_group("Separation")
+## Distance within which two drones start pushing apart from each other,
+## metres. Only matters in OBSERVE/ALERT today — that is where multiple
+## drones converge on the same player and, without this, stack on the same
+## hover point.
+@export var separation_radius: float = 12.0
+## How strongly separation bends movement away from another nearby drone,
+## relative to closing on the player — 1.0 is an equal vote, higher values
+## favour spreading out over a direct approach.
+@export var separation_weight: float = 1.5
+## How fast the combined separation push itself settles toward its current
+## raw value, a Smoothing.damp_factor() rate. _raw_separation_offset() is
+## recomputed from scratch every frame from every other drone's live
+## position — with several drones converging on one player that's an
+## unsmoothed multi-agent feedback loop with no damping of its own. This
+## smooths the one derived push vector, same "smooth the result once, not
+## each ingredient independently" idiom _update_spotlight() already uses
+## for _spotlight_open. Comparable to acceleration/braking on purpose: the
+## push feeds straight into movement, so it shouldn't settle slower than
+## the body itself does.
+@export var separation_smoothing: float = 4.0
 
 @export_group("Incident Registry")
 ## Seconds to keep retrying the group lookup before giving up and warning
@@ -232,6 +278,34 @@ var _incident_registry_search_time: float = 0.0
 ## instance instead of every frame the registry stays unresolved.
 var _warned_missing_incident_registry: bool = false
 
+## Smoothed stand-in for _raw_separation_offset() — see separation_smoothing's
+## own comment. Updated once per frame by _update_separation_offset(), read
+## everywhere else _decide_hold_and_watch() used to read the raw value.
+var _separation_offset: Vector3 = Vector3.ZERO
+## Stable per-drone escape direction, used only when another drone is within
+## 0.001m of this one — see _raw_separation_offset()'s own comment. Computed
+## once in _ready() from this drone's own instance ID, not re-rolled every
+## frame: world.tscn spawns four PoliceDrone instances at the exact same
+## transform, and a random per-frame direction here would just be a
+## different flavour of the jitter this whole mechanism exists to remove.
+## Distinct per instance so exactly-stacked drones scatter along different
+## bearings instead of cancelling out.
+var _fallback_separation_dir: Vector3 = Vector3.RIGHT
+
+## Lagged stand-in for the player's live position — see player_tracking_lag's
+## own comment. Both DroneMesh's look (set_look_target(), in
+## _decide_hold_and_watch()) and the spotlight's aim (_aim_spotlight()) read
+## this instead of observation.position directly, so the two stop chasing
+## the live position independently at their own separate rates
+## (mesh_turn_smoothing vs spotlight_aim_smoothing) — one lagged point, with
+## each of those two dampers still turning toward it at its own rate on top.
+var _tracked_player_position: Vector3 = Vector3.ZERO
+## True once _tracked_player_position has been initialized from a real
+## sighting. Guards the very first sighting so tracking starts exactly on
+## the player instead of lerping in from Vector3.ZERO (the var's default)
+## across the map.
+var _has_tracked_player_position: bool = false
+
 var _state: State = State.PATROL
 ## Seconds since the last incident that put this drone into ALERT — reset to
 ## 0 by _on_incident_reported() on every provoking report, only ever counted
@@ -265,6 +339,11 @@ func _ready() -> void:
 	_start_position = _drone.global_position
 	_start_yaw = _drone.global_rotation.y
 	_pick_new_patrol_point()
+
+	## See _fallback_separation_dir's own comment — a stable, per-instance
+	## bearing rather than a per-frame random one.
+	var fallback_angle := float(_drone.get_instance_id() % 3600) * (TAU / 3600.0)
+	_fallback_separation_dir = Vector3(cos(fallback_angle), 0.0, sin(fallback_angle))
 
 	if light_bar_blue_path != NodePath():
 		_light_bar_blue = get_node_or_null(light_bar_blue_path) as OmniLight3D
@@ -319,9 +398,9 @@ func _decide(delta: float) -> void:
 		State.PATROL:
 			_decide_patrol(delta)
 		State.OBSERVE:
-			_decide_observe(observation)
+			_decide_observe(observation, delta)
 		State.ALERT:
-			_decide_alert(observation)
+			_decide_alert(observation, delta)
 
 	_update_light_bar(delta)
 	_update_spotlight(observation, delta)
@@ -443,13 +522,13 @@ func _enter_state(new_state: State) -> void:
 
 ## OBSERVE: watches from observe_hover_distance, unhurried. See the shared
 ## _decide_hold_and_watch() below for what "watches" means mechanically.
-func _decide_observe(observation: PlayerObservation) -> void:
-	_decide_hold_and_watch(observation, observe_hover_distance, observe_speed)
+func _decide_observe(observation: PlayerObservation, delta: float) -> void:
+	_decide_hold_and_watch(observation, observe_hover_distance, observe_speed, delta)
 
 
 ## ALERT: the same watching behaviour, closer and faster to close the gap.
-func _decide_alert(observation: PlayerObservation) -> void:
-	_decide_hold_and_watch(observation, alert_hover_distance, alert_speed)
+func _decide_alert(observation: PlayerObservation, delta: float) -> void:
+	_decide_hold_and_watch(observation, alert_hover_distance, alert_speed, delta)
 
 
 ## Shared movement for OBSERVE and ALERT: closes to hover_distance and
@@ -460,7 +539,17 @@ func _decide_alert(observation: PlayerObservation) -> void:
 ## file's header): hovering
 ## near the player, who stands on the same local ground, already puts the
 ## drone hover_height above them.
-func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: float, speed: float) -> void:
+##
+## closing_factor replaces what used to be a hard "dist > hover_distance"
+## branch: 1.0 well outside the ring, 0.0 at/inside hover_distance, eased
+## across hover_approach_margin. approach_dir/drift_dir and their speeds are
+## blended by this one factor instead of switched on it, so there is no
+## frame where either jumps discontinuously right at the ring — the kind of
+## toggle that reads as flickering once separation is also nudging the
+## drone's position frame to frame. At closing_factor == 1 this reduces to
+## the old "close in" behaviour; at closing_factor == 0 it reduces to the
+## old "drift along the ring" (or hold, with no separation) behaviour.
+func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: float, speed: float, delta: float) -> void:
 	if observation == null or not observation.is_seen:
 		## Out of sight but still inside the memory window — hold position
 		## rather than steer at a stale sighting. The next observation, or
@@ -469,16 +558,94 @@ func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: floa
 		return
 
 	var player_pos := observation.position
+	_update_tracked_player_position(player_pos, delta)
+
 	var drone_pos := _drone.global_position
 	var to_player := Vector3(player_pos.x - drone_pos.x, 0.0, player_pos.z - drone_pos.z)
 	var dist := to_player.length()
 
-	if dist > hover_distance:
-		_drone.set_move_intent(to_player.normalized(), _speed_ratio(speed))
+	_update_separation_offset(delta)
+
+	var approach_dir := to_player.normalized()
+	if _separation_offset.length() > 0.001:
+		approach_dir = (approach_dir + _separation_offset * separation_weight).normalized()
+	var drift_dir := Vector3.ZERO
+	if _separation_offset.length() > 0.001:
+		drift_dir = _separation_offset.normalized()
+
+	var closing_factor := clampf(
+		(dist - hover_distance) / maxf(hover_approach_margin, 0.001), 0.0, 1.0
+	)
+
+	var move_direction := approach_dir * closing_factor + drift_dir * (1.0 - closing_factor)
+	var move_speed_ratio := _speed_ratio(speed) * closing_factor \
+			+ _speed_ratio(speed * 0.5) * (1.0 - closing_factor)
+
+	if move_direction.length() > 0.001:
+		_drone.set_move_intent(move_direction.normalized(), move_speed_ratio)
 	else:
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
 
-	_drone.set_look_target(player_pos)
+	_drone.set_look_target(_tracked_player_position)
+
+
+## Advances _tracked_player_position toward the player's live position at
+## player_tracking_lag — called once per frame from _decide_hold_and_watch(),
+## the one place both OBSERVE and ALERT read a live sighting from. Not
+## advanced (frozen at its last value) while the player isn't currently
+## seen — same "nothing fresh to chase" reasoning _aim_spotlight() and the
+## movement hold above already use.
+func _update_tracked_player_position(player_pos: Vector3, delta: float) -> void:
+	if not _has_tracked_player_position:
+		## First sighting ever — snap straight there instead of lerping in
+		## from Vector3.ZERO across the map.
+		_tracked_player_position = player_pos
+		_has_tracked_player_position = true
+		return
+	_tracked_player_position = _tracked_player_position.lerp(
+		player_pos, Smoothing.damp_factor(player_tracking_lag, delta)
+	)
+
+
+## Eases the combined separation push toward _raw_separation_offset()'s
+## current value — see separation_smoothing's own comment for why the raw
+## value can't be used directly.
+func _update_separation_offset(delta: float) -> void:
+	_separation_offset = _separation_offset.lerp(
+		_raw_separation_offset(), Smoothing.damp_factor(separation_smoothing, delta)
+	)
+
+
+## Simple boids-style separation: a vector pointing away from every other
+## DroneBase within separation_radius, stronger the closer they are. Zero
+## when no other drone is close. Drones don't have a dedicated group of
+## their own — ActorBase.GROUP_PERCEIVED_ACTOR already lists every NPC and
+## drone, filtered here to DroneBase, same lookup pattern
+## _target_chest_height() already uses for the player. Raw and unsmoothed by
+## design — _update_separation_offset() is what turns this into something
+## safe to feed into movement every frame; nothing else should call this
+## directly.
+func _raw_separation_offset() -> Vector3:
+	var offset := Vector3.ZERO
+	for candidate in get_tree().get_nodes_in_group(ActorBase.GROUP_PERCEIVED_ACTOR):
+		if candidate == _drone or not (candidate is DroneBase):
+			continue
+		var other: DroneBase = candidate
+		var away := _drone.global_position - other.global_position
+		away.y = 0.0
+		var dist := away.length()
+		if dist < 0.001:
+			## Exactly (or almost exactly) stacked — world.tscn spawns
+			## several PoliceDrone instances at the identical transform, and
+			## away.normalized() is undefined at zero length. Push along a
+			## stable per-instance bearing instead of leaving this pair with
+			## zero separation force between them.
+			offset += _fallback_separation_dir
+			continue
+		if dist > separation_radius:
+			continue
+		offset += away.normalized() * (1.0 - dist / separation_radius)
+	return offset
 
 
 ## Targeted only in ALERT while the player is actually seen — loses sight,
@@ -535,7 +702,11 @@ func _aim_spotlight(observation: PlayerObservation, delta: float) -> void:
 	if observation == null or not observation.is_seen:
 		return
 
-	var target_point := observation.position + Vector3(0.0, _target_chest_height(), 0.0)
+	## _tracked_player_position, not observation.position: see that var's own
+	## comment — this keeps the spotlight chasing the same lagged point
+	## DroneMesh's own look does, rather than two independently-damped
+	## layers each reacting to the live position at their own rate.
+	var target_point := _tracked_player_position + Vector3(0.0, _target_chest_height(), 0.0)
 	if _spotlight.global_position.distance_to(target_point) < 0.05:
 		return
 

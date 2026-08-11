@@ -30,13 +30,13 @@ const SEGMENT_COUNT: int = 3
 
 @export_group("Layout")
 ## Width of a single segment, in pixels.
-@export var segment_width: float = 54.0
-@export var segment_height: float = 9.0
+@export var segment_width: float = 92.0
+@export var segment_height: float = 13.0
 ## Gap between segments. A couple of pixels: enough to read as three bars,
 ## small enough to still read as one gauge.
-@export var segment_gap: float = 2.0
+@export var segment_gap: float = 4.0
 ## Distance from the frame to the segments inside it.
-@export var frame_padding: float = 3.0
+@export var frame_padding: float = 5.0
 @export var frame_line_width: float = 1.0
 
 @export_group("Colours")
@@ -47,7 +47,7 @@ const SEGMENT_COUNT: int = 3
 ## Fill above the impaired threshold. Deliberately not the usual green.
 @export var nominal_color: Color = Color(0.04, 0.04, 0.04, 0.95)
 @export var impaired_color: Color = Color(0.85, 0.72, 0.15, 0.95)
-@export var critical_color: Color = Color(0.75, 0.13, 0.13, 0.95)
+@export var critical_color: Color = Color(0.68, 0.10, 0.08, 0.95)
 
 @export_group("Thresholds")
 ## Ratio at or below which the fill turns impaired-coloured.
@@ -212,8 +212,17 @@ func _target_color_for(ratio: float) -> Color:
 func _start_color_fade(target: Color) -> void:
 	if _color_tween != null and _color_tween.is_valid():
 		_color_tween.kill()
+	## tween_method rather than tween_property: _draw() only runs on
+	## queue_redraw(), so a property tween would update the colour silently
+	## and never reach the screen — the bar would keep the pre-threshold
+	## colour until something else forced a redraw.
 	_color_tween = create_tween()
-	_color_tween.tween_property(self, "_fill_color", target, color_fade_time)
+	_color_tween.tween_method(_set_fill_color, _fill_color, target, color_fade_time)
+
+
+func _set_fill_color(color: Color) -> void:
+	_fill_color = color
+	queue_redraw()
 
 
 ## Keeps the Control's own size honest so a VBoxContainer of these stacks

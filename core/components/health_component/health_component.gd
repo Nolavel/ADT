@@ -52,7 +52,7 @@ signal died()
 @export var max_health: float = 100.0
 
 ## Off for NPCs: they take damage and die, but never bleed or tick.
-@export var enable_conditions: bool = false
+@export var enable_conditions: bool = true
 
 ## Health per GAME hour drained while an injury is active and the band is
 ## CRITICAL. Two thirds of the bar are a grace zone — a wound only starts
