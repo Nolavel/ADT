@@ -47,8 +47,10 @@
 # player.gd's own hit-detection comment.
 #
 # The knockdown sequence is three fixed-duration phases (FALLING/LYING/
-# GETTING_UP, see KnockdownPhase and _update_knockdown()), not two with a
-# poll on animation completion — an earlier version fired the knockdown
+# GETTING_UP, see KnockdownPhase and _update_knockdown()) plus a fourth,
+# terminal DOWN phase entered only at zero health (see HealthComponent) and
+# never left — not two with a poll on animation completion — an earlier
+# version fired the knockdown
 # clip once and then just waited out knockdown_duration before firing
 # getup, which glitched: AnimationNodeOneShot goes inactive — and the
 # locomotion tree underneath shows straight through, an idle pop mid-fall —
@@ -108,7 +110,10 @@ var _move_speed_ratio: float = 0.0
 ## GETTING_UP plays the getup clip — see _update_knockdown() for the
 ## fixed-duration timing of each and the file header for why fixed
 ## durations, not animation-completion polling, is what fixed the pop.
-enum KnockdownPhase { FALLING, LYING, GETTING_UP }
+## DOWN is terminal: entered only once HealthComponent reports zero health,
+## holds the same looping lying clip as LYING, and never transitions out —
+## see _update_knockdown().
+enum KnockdownPhase { FALLING, LYING, GETTING_UP, DOWN }
 
 ## Knocked down by a hit — see take_hit()'s own comment. While true, this
 ## body ignores movement intent outright (_physics_process branches on it
@@ -141,10 +146,18 @@ var _look_target_point: Vector3 = Vector3.ZERO
 ## defensive pattern the old $Head lookup used to have.
 @onready var _animation: NPCAnimationComponent = get_node_or_null("AnimationComponent")
 
+## Resolved once via @onready, same defensive pattern as _animation. Null if
+## the scene has no HealthComponent — take_hit() still knocks the body down
+## in that case, it just never applies damage or reaches the terminal DOWN
+## phase, so knockdowns loop forever (the pre-HealthComponent behaviour).
+@onready var _health: HealthComponent = get_node_or_null("HealthComponent")
+
 
 func _ready() -> void:
 	super._ready()
 	add_to_group("lockable")
+	if _health == null:
+		push_warning("[NPCBase] HealthComponent not found - knockdowns will loop forever, no terminal DOWN phase")
 
 
 func _physics_process(delta: float) -> void:
@@ -180,15 +193,20 @@ func get_move_speed_ratio() -> float:
 	return _move_speed_ratio
 
 
-## Knocked down by a hit. Not damage — this project has no health yet. The
-## fall is what makes the hit legible to the player and to anything
-## watching.
-##
-## Ignored while already knocked down (a second hit mid-fall doesn't restart
-## the timer — there is no stacking/combo concept here). Clears any facing/
-## look target and zeroes movement intent outright, since a knocked-down
-## body no longer has a controller deciding either — see is_knocked_down().
-func take_hit(_from_position: Vector3) -> void:
+## Knocked down by a hit and, if a HealthComponent is attached, damaged by
+## damage points — applied even to a body that is already down, so finishing
+## off someone on the ground works. Only the fall itself is ignored while
+## already knocked down (a second hit mid-fall doesn't restart the timer or
+## replay the fall clip — there is no stacking/combo concept here). Clears
+## any facing/look target and zeroes movement intent outright on the hit
+## that starts the knockdown, since a knocked-down body no longer has a
+## controller deciding either — see is_knocked_down(). Reaching zero health
+## is handled by _update_knockdown(), which locks the body into the
+## terminal DOWN phase instead of ever letting it get back up.
+func take_hit(from_position: Vector3, damage: float = 12.0) -> void:
+	if _health:
+		_health.apply_damage(damage)
+
 	if _knocked_down:
 		return
 	_knocked_down = true
@@ -216,22 +234,44 @@ func is_knocked_down() -> bool:
 ## Every phase owns its own timer and animation:
 ##
 ## FALLING
-##     Plays the non-looping fall animation.
+##     Plays the non-looping fall animation. Transitions to LYING once
+##     knockdown_fall_time elapses — or straight to DOWN instead, if health
+##     already hit zero by then.
 ##
 ## LYING
 ##     Holds the looping lying animation for exactly
-##     knockdown_hold_time seconds.
+##     knockdown_hold_time seconds, unless health hits zero first, which
+##     cuts the hold short and locks into DOWN immediately.
 ##
 ## GETTING_UP
-##     Plays the non-looping getup animation before
-##     handing control back to the controller.
+##     Plays the non-looping getup animation before handing control back to
+##     the controller, unless health hits zero first, which locks into DOWN
+##     immediately instead of ever standing back up.
+##
+## DOWN
+##     Terminal. Holds the same looping lying animation as LYING and never
+##     transitions out — no timer runs in this phase.
 func _update_knockdown(delta: float) -> void:
+	if _knockdown_phase == KnockdownPhase.DOWN:
+		return
+
+	# A hit that drains the last hit point while already LYING/GETTING_UP
+	# locks the body down right away, no timer — FALLING has its own check
+	# below instead, so the fall clip gets to finish before locking in.
+	if _knockdown_phase != KnockdownPhase.FALLING and _is_health_depleted():
+		_enter_down_phase()
+		return
+
 	_knockdown_phase_timer += delta
 
 	match _knockdown_phase:
 
 		KnockdownPhase.FALLING:
 			if _knockdown_phase_timer < knockdown_fall_time:
+				return
+
+			if _is_health_depleted():
+				_enter_down_phase()
 				return
 
 			_knockdown_phase = KnockdownPhase.LYING
@@ -256,6 +296,22 @@ func _update_knockdown(delta: float) -> void:
 
 			_knocked_down = false
 			_knockdown_phase_timer = 0.0
+
+
+func _is_health_depleted() -> bool:
+	return _health != null and _health.is_dead()
+
+
+## Locks the body into the terminal DOWN phase. Only (re-)fires the lying
+## clip when it wasn't already playing (i.e. coming from FALLING or
+## GETTING_UP) — coming from LYING the loop is already running and doesn't
+## need restarting; the body is already on the ground either way.
+func _enter_down_phase() -> void:
+	var was_lying := _knockdown_phase == KnockdownPhase.LYING
+	_knockdown_phase = KnockdownPhase.DOWN
+	_knockdown_phase_timer = 0.0
+	if _animation and not was_lying:
+		_animation.play_lying()
 
 
 ## Character metric getters — same names as player.gd, so callers that duck

@@ -69,6 +69,26 @@ not called: NPCs are streamed in/out by `StreamingSystems` and never see a
 и без setup(), NPC не видят WorldContext.*
 - `npc/npc.tscn`
 
+**NPCs take damage and stay down at zero health.** `take_hit()`'s signature grows a
+`damage: float = 12.0` parameter (default ≈ nine hits to empty a 100 HP bar) and applies
+it to `HealthComponent` — every hit, even to a body that's already down, so a downed NPC
+can be finished off. Only the fall itself still no-ops while already knocked down (no
+retriggering the fall clip mid-knockdown — unchanged). `HealthComponent` is resolved the
+same optional `get_node_or_null()` way `_animation` already is: without one, an NPC
+keeps the old infinite three-phase loop and a single `push_warning()` in `_ready()`.
+New terminal `KnockdownPhase.DOWN`: entered from `FALLING` once the fall clip finishes
+if health is already zero, or immediately (no timer) from `LYING`/`GETTING_UP` the
+moment health hits zero — holds the same looping lying clip as `LYING` and never
+transitions out, so `is_knocked_down()` stays `true` forever and movement/perception
+stay gated exactly as they already were for the other three phases (no code changed
+there — both already key off `is_knocked_down()`). The one real caller
+(`player/player.gd`'s `_resolve_punch_hit()`) needed no change — the new `damage`
+parameter's default covers it. The file header's now-false "not damage, this project
+has no health yet" claim on `take_hit()` is corrected.
+*NPC теперь получают урон и остаются лежать при нуле здоровья — новая терминальная фаза
+DOWN, из которой нет выхода; повторные удары по лежащему теперь засчитываются.*
+- `npc/npc_base.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
