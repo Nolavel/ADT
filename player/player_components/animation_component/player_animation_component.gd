@@ -271,9 +271,6 @@ func play_death() -> void:
 	if _is_dead or not _anim_tree:
 		return
 	_is_dead = true
-	# TODO(health): AnimationNodeTransition's runtime parameter path
-	# (transition_request, taking the input's name) is unverified without
-	# running the editor — confirm this actually drives the switch.
 	_anim_tree.set("parameters/death_transition/transition_request", "death")
 
 
@@ -466,12 +463,19 @@ func _setup_animation_tree() -> void:
 	## non-looping clip that holds its last frame once it finishes — see
 	## ANIM_DEATH's own comment. The switch only ever runs one way: nothing
 	## in this file ever requests "alive" again.
+	## Inputs are set via input_count/set_input_name, NOT add_input(): that
+	## method is inherited from AnimationNode but does nothing useful on an
+	## AnimationNodeTransition, which sizes its inputs from input_count
+	## instead — calling add_input() here builds a transition with zero real
+	## inputs, connect_node() succeeds silently, and the node passes nothing
+	## through to output (T-pose, no console error).
 	var death_clip := AnimationNodeAnimation.new()
 	death_clip.animation = ANIM_DEATH
 	var death_transition := AnimationNodeTransition.new()
 	death_transition.xfade_time = death_transition_time
-	death_transition.add_input("alive")
-	death_transition.add_input("death")
+	death_transition.input_count = 2
+	death_transition.set_input_name(0, "alive")
+	death_transition.set_input_name(1, "death")
 	tree_root.add_node("death_clip", death_clip)
 	tree_root.add_node("death_transition", death_transition)
 	tree_root.connect_node("death_transition", 0, "punch_oneshot")
@@ -490,6 +494,12 @@ func _setup_animation_tree() -> void:
 	_stance_blend_amount = 1.0 if PlayerState.stance == PlayerState.Stance.COMBAT else 0.0
 	_stance_blend_target = _stance_blend_amount
 	_anim_tree.set("parameters/stance_blend/blend_amount", _stance_blend_amount)
+
+	## AnimationNodeTransition has no meaningful default state — without an
+	## explicit request the node holds no input at all and the skeleton falls
+	## back to its rest pose. stance_blend needs no equivalent: a Blend2's
+	## default blend_amount of 0.0 is already a valid state.
+	_anim_tree.set("parameters/death_transition/transition_request", "alive")
 
 
 func _setup_head_look() -> void:

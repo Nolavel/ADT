@@ -245,6 +245,25 @@ where `_is_dead` gets cleared once respawn/load exists.
 (труп должен долетать до земли), всё остальное блокируется через _is_dead.*
 - `player/player.gd`
 
+**Hotfix: T-pose after the death branch landed.** `death_transition`'s inputs were built
+with `add_input()`, which `AnimationNode` inherits but which does nothing useful on an
+`AnimationNodeTransition` — that node sizes its inputs from `input_count` instead, so the
+transition ended up with zero real inputs. `connect_node()` succeeded silently (no
+console error), the node passed nothing through to `output`, and the skeleton fell back
+to its rest pose for every animation, not just death. Fixed by setting
+`input_count = 2` and naming the inputs via `set_input_name(0, "alive")` /
+`set_input_name(1, "death")`. Second half of the same gap: `AnimationNodeTransition` has
+no meaningful default state, so `_setup_animation_tree()` now explicitly requests
+`"alive"` right after activating the tree (the same reason `stance_blend`'s init already
+existed there — a `Blend2`'s default `blend_amount` of `0.0` needed no equivalent nudge).
+`play_death()` was already requesting the transition by input name (`"death"`), so it
+needed no change. Closes the `TODO(health)` about the unverified `AnimationNodeTransition`
+API; the `new4/die2` loop-flag `TODO(health)` stays open — still unconfirmed without the
+editor.
+*Хотфикс: T-поза после ветки смерти — входы AnimationNodeTransition задаются через
+input_count/set_input_name, а не add_input(); плюс явный старт в "alive".*
+- `player/player_components/animation_component/player_animation_component.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement
