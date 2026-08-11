@@ -325,6 +325,43 @@ see the closing list.
 открытый вопрос.*
 - `player/player_components/stamina_component/stamina_component.gd`, `player/player.tscn`
 
+**Police drones stop oscillating when several converge on the player.** `_decide_hold_and_watch()`
+(`patrol_drone_controller.gd`, shared by OBSERVE and ALERT) previously blended a
+separation push into the movement DIRECTION alongside the approach direction. That
+blend degenerates to pure separation drift at nonzero speed the instant a drone
+reaches the hover ring — no combination of the two directions is ever exactly zero —
+so a drone pushed off the ring by a neighbour immediately regained a full "return to
+the ring" pull the moment it crossed `hover_approach_margin`, flew back in at speed,
+got pushed out again: a stable limit cycle, not a resting state, visible as dithering
+and circling with two or more drones (invisible with one, since separation is zero
+then). Fixed by making separation offset the GOAL POINT instead — metres of
+displacement on where the drone is flying TO (the nearest point on the hover ring to
+its own current bearing from the player, so drones starting on different sides stay on
+different sides), not degrees blended into a velocity that never actually reaches
+zero. New `@export var hold_deadband: float = 0.5` — arriving within this distance of
+the goal point now actually stops the drone, a state the old direction-blend could
+never reach at all. `separation_weight`'s meaning changed accordingly (now a
+metres-per-unit-offset multiplier, not a direction-blend weight) and its doc comment
+was rewritten; its value (1.5), `separation_radius` (12.0), `observe_hover_distance`
+(10.0) and `alert_hover_distance` (6.0) were left untouched for the project author to
+retune by eye if needed.
+
+Bundled into the same commit — earlier uncommitted local tuning that led here: mutual
+separation between drones in the first place (so multiple police drones converging on
+the player spread across different hover positions instead of stacking on one point,
+`_raw_separation_offset()`/`_update_separation_offset()`, `separation_radius`/
+`separation_smoothing`), and a deliberately visible tracking lag
+(`_tracked_player_position`/`player_tracking_lag`, `_update_tracked_player_position()`)
+so the drone's body and spotlight beam trail the player's actual motion rather than
+snapping onto their live position every frame — now also driving the movement goal
+itself, not just `set_look_target()`, which is what made the lag actually show up in
+how the drone flies.
+*Дроны больше не колеблются при нескольких вокруг игрока — сепарация теперь смещает
+целевую точку полёта, а не подмешивается в направление скорости, что раньше давало
+устойчивый предельный цикл. Плюс задержка слежения теперь влияет и на полёт, не только
+на взгляд.*
+- `world/police_drone/controllers/patrol_drone_controller.gd`
+
 ---
 
 ## 2026-08-10 — Punch works in ISOMETRIC, standing still, without blocking movement

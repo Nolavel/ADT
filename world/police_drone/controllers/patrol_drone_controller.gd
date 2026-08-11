@@ -148,13 +148,21 @@ enum State { PATROL, OBSERVE, ALERT }
 @export var alert_memory_time: float = 3.0
 
 @export_group("Hold And Watch")
-## Distance band, metres, over which the drone eases its closing speed to
-## zero as it nears hover_distance, instead of an instant full-speed/stop
-## boundary at one exact distance — a hard toggle there reads as flickering,
-## especially once separation is nudging the drone's position frame to
-## frame. A feel value; wide enough the ease is visible, not so wide the
-## drone looks sluggish well short of the ring.
+## Distance, metres, over which the drone brakes its closing speed to zero
+## as it nears its current goal point (see _decide_hold_and_watch()'s own
+## header) — a hard instant-stop boundary reads as flickering, especially
+## once separation is nudging that goal point around frame to frame. A feel
+## value; wide enough the brake is visible, not so wide the drone looks
+## sluggish well short of arriving.
 @export var hover_approach_margin: float = 2.0
+## Distance, metres, inside which the drone counts itself as having arrived
+## at its goal point and holds still rather than keep nudging toward it —
+## without this the drone never actually rests, always crawling the last
+## few centimetres. See _decide_hold_and_watch()'s own header for why a
+## dead zone (not just braking) is what makes rest reachable at all now
+## that separation offsets the goal point instead of blending into a
+## velocity that never quite reaches zero.
+@export var hold_deadband: float = 0.5
 
 @export_group("Tracking")
 ## How quickly the drone's internally tracked player position catches up to
@@ -217,9 +225,18 @@ enum State { PATROL, OBSERVE, ALERT }
 ## drones converge on the same player and, without this, stack on the same
 ## hover point.
 @export var separation_radius: float = 12.0
-## How strongly separation bends movement away from another nearby drone,
-## relative to closing on the player — 1.0 is an equal vote, higher values
-## favour spreading out over a direct approach.
+## Metres of goal-point displacement per unit of _separation_offset (which
+## is itself already normalised-ish by how close/many neighbours are, see
+## _raw_separation_offset()) — NOT a blend weight against a direction
+## anymore. It used to mix into the movement direction alongside the
+## approach direction, which is exactly what produced a stable limit cycle
+## (see _decide_hold_and_watch()'s own header): a drone at rest on the ring
+## still had a nonzero separation-direction velocity, so it overshot past
+## hover_approach_margin, regained a full-speed "return to the ring" pull,
+## and flew straight back in — dithering forever with two or more drones.
+## Offsetting the GOAL POINT instead means a pushed-apart drone has
+## somewhere concrete to actually stop, not just a direction to keep
+## drifting in.
 @export var separation_weight: float = 1.5
 ## How fast the combined separation push itself settles toward its current
 ## raw value, a Smoothing.damp_factor() rate. _raw_separation_offset() is
@@ -540,15 +557,23 @@ func _decide_alert(observation: PlayerObservation, delta: float) -> void:
 ## near the player, who stands on the same local ground, already puts the
 ## drone hover_height above them.
 ##
-## closing_factor replaces what used to be a hard "dist > hover_distance"
-## branch: 1.0 well outside the ring, 0.0 at/inside hover_distance, eased
-## across hover_approach_margin. approach_dir/drift_dir and their speeds are
-## blended by this one factor instead of switched on it, so there is no
-## frame where either jumps discontinuously right at the ring — the kind of
-## toggle that reads as flickering once separation is also nudging the
-## drone's position frame to frame. At closing_factor == 1 this reduces to
-## the old "close in" behaviour; at closing_factor == 0 it reduces to the
-## old "drift along the ring" (or hold, with no separation) behaviour.
+## Flies toward a GOAL POINT and brakes to a stop on arrival — not a goal
+## DIRECTION blended with a separation direction, the previous approach,
+## which could never actually stop: at rest exactly on the ring, that blend
+## degenerated to pure separation drift at nonzero speed, so a drone pushed
+## off the ring by a neighbour immediately regained a nonzero "return to
+## the ring" component the instant it crossed hover_approach_margin, and
+## flew back in at speed — a stable limit cycle, not a resting state, read
+## as dithering/circling with two or more drones. A point target has no
+## such trap: separation offsets WHERE the drone is trying to go (in
+## metres, added to the goal point) rather than blending into a velocity
+## that's never actually zero, so arriving and braking (see hold_deadband
+## below) is reachable regardless of how close a neighbour is.
+##
+## The goal point itself is the nearest spot on the hover ring to the
+## drone's OWN current bearing from the tracked player (not, say, a fixed
+## compass angle), so drones that start on different sides of the player
+## stay on different sides rather than racing for one preferred point.
 func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: float, speed: float, delta: float) -> void:
 	if observation == null or not observation.is_seen:
 		## Out of sight but still inside the memory window — hold position
@@ -557,34 +582,41 @@ func _decide_hold_and_watch(observation: PlayerObservation, hover_distance: floa
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
 		return
 
-	var player_pos := observation.position
-	_update_tracked_player_position(player_pos, delta)
-
-	var drone_pos := _drone.global_position
-	var to_player := Vector3(player_pos.x - drone_pos.x, 0.0, player_pos.z - drone_pos.z)
-	var dist := to_player.length()
-
+	_update_tracked_player_position(observation.position, delta)
 	_update_separation_offset(delta)
 
-	var approach_dir := to_player.normalized()
-	if _separation_offset.length() > 0.001:
-		approach_dir = (approach_dir + _separation_offset * separation_weight).normalized()
-	var drift_dir := Vector3.ZERO
-	if _separation_offset.length() > 0.001:
-		drift_dir = _separation_offset.normalized()
+	## Tracked, laggy position drives movement, not observation.position —
+	## this is what actually makes player_tracking_lag visible in how the
+	## drone flies, not just in where it looks. Before this fix the goal
+	## math read the live position directly, so the lag only ever showed up
+	## in set_look_target() below, never in the flight path itself.
+	var tracked_pos := _tracked_player_position
+	var drone_pos := _drone.global_position
 
-	var closing_factor := clampf(
-		(dist - hover_distance) / maxf(hover_approach_margin, 0.001), 0.0, 1.0
-	)
-
-	var move_direction := approach_dir * closing_factor + drift_dir * (1.0 - closing_factor)
-	var move_speed_ratio := _speed_ratio(speed) * closing_factor \
-			+ _speed_ratio(speed * 0.5) * (1.0 - closing_factor)
-
-	if move_direction.length() > 0.001:
-		_drone.set_move_intent(move_direction.normalized(), move_speed_ratio)
+	var bearing := Vector3(drone_pos.x - tracked_pos.x, 0.0, drone_pos.z - tracked_pos.z)
+	if bearing.length() < 0.001:
+		## Degenerate only when the drone sits exactly above the tracked
+		## point — no horizontal bearing to hold onto. Same stable
+		## per-instance fallback _raw_separation_offset() uses for the same
+		## reason, rather than a direction that would itself flicker.
+		bearing = _fallback_separation_dir
 	else:
+		bearing = bearing.normalized()
+
+	var ring_point := tracked_pos + bearing * hover_distance
+	var goal_point := ring_point + _separation_offset * separation_weight
+
+	var to_goal := Vector3(goal_point.x - drone_pos.x, 0.0, goal_point.z - drone_pos.z)
+	var error := to_goal.length()
+
+	if error < hold_deadband:
+		## Actually at rest — the state the old direction-blend could never
+		## reach. See this method's own header for why that mattered.
 		_drone.set_move_intent(Vector3.ZERO, 0.0)
+	else:
+		var move_speed_ratio := _speed_ratio(speed) \
+				* clampf(error / maxf(hover_approach_margin, 0.001), 0.0, 1.0)
+		_drone.set_move_intent(to_goal.normalized(), move_speed_ratio)
 
 	_drone.set_look_target(_tracked_player_position)
 
