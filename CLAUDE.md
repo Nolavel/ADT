@@ -11,9 +11,8 @@ current state by replaying the log.
 
 Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"Vertical Trespass"** (`config/name`); public title **"Another Digital Thriller"** — use the public title only in store-facing material, never in code or docs. Almost entirely GDScript — the only C# file is `tools/scan_folder_files/project_scanner.cs` (an editor utility). Do not introduce C# for gameplay code unless asked; the codebase convention is GDScript. Dropping C# entirely is an open backlog item.
 
-Startup scene: `res://world/world.tscn`.
-
 ## Working with the running editor
+Startup scene: `res://world/world.tscn`.
 
 ## Documents
 
