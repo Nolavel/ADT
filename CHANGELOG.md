@@ -12,6 +12,34 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
+
+**Drone periodic PATROL scan; `alert_incident_radius` back to 60m.** Diagnosed from a
+real playtest: raising `alert_incident_radius` to 600m had made drones react correctly
+after a load, which looked like confirmation the `incidents_restored` fix (2026-08-12)
+worked — but the real cause was distance, not the signal. `PatrolDroneController` only
+ever checked `IncidentRegistry` at two fixed MOMENTS (resolving the registry, a load) —
+never as it moved — so a drone patrolling directly over a fresh incident, at the
+intended 60m radius, noticed nothing unless it happened to be within that radius at one
+of those two instants. 600m was a diagnostic workaround, not a fix, and wrong for the
+game: one incident would light up half the district in a city meant to react locally
+and lazily, not as one mass.
+*Периодическое сканирование реестра дроном в PATROL: реальная причина того, что 600 м
+«помогало», была не в сигнале, а в том, что дрон проверял реестр только в двух
+фиксированных случаях и никогда — на ходу. Радиус возвращён к 60.*
+
+- New `PatrolDroneController._update_patrol_scan()` — every `patrol_scan_interval`
+  (`1.0`s real time, PATROL only), re-runs the existing `_check_existing_incidents()`
+  query against the drone's CURRENT position, not its position at some past moment.
+  Documented as the third of three distinct hooks into that query (resolve-time
+  catch-up, load-time catch-up, periodic scan) — each closes a different gap, none
+  redundant with the others; the method's own header spells out which is which so a
+  future reader doesn't mistake one for dead weight.
+- `alert_incident_radius`: `600.0` → `60.0` (back to its pre-diagnosis value).
+- `CLAUDE.md`'s `IncidentRegistry` paragraph updated: three ALERT-entry paths become
+  four, with the periodic scan's own reasoning and the radius detour's story attached.
+- `world/police_drone/controllers/patrol_drone_controller.gd`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order

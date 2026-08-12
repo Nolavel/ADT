@@ -116,6 +116,16 @@
 # drone in ALERT nearby" signal StatusLight used to carry with an instant
 # colour lerp. The spotlight is the addressed signal (who it's looking at);
 # the light bar is the ambient one (that it's looking at all).
+#
+# alert_incident_radius went to 600m and back to 60m during this work
+# (2026-08-13) — a diagnostic detour, not a design change. The actual
+# defect it was covering for: this drone only ever checked IncidentRegistry
+# at fixed MOMENTS (resolving the registry, a load) and never as it moved,
+# so a drone patrolling directly over a fresh incident noticed nothing
+# unless the radius was inflated far past its intended scale to compensate.
+# _update_patrol_scan() (patrol_scan_interval, PATROL only) closes that —
+# see _check_existing_incidents()'s own header for all three hooks into
+# that query and which covers what.
 # =============================================================================
 extends NPCControllerBase
 class_name PatrolDroneController
@@ -140,6 +150,17 @@ enum State { PATROL, OBSERVE, ALERT }
 ## its own max_speed every frame, so this stays meaningful if max_speed is
 ## retuned on the body independently.
 @export var patrol_speed: float = 5.0
+## How often, seconds (real time — a perception cadence, like alert_memory_
+## time, not a game-time value), a PATROL drone asks IncidentRegistry
+## whether anything landed within alert_incident_radius of its CURRENT
+## position — see _check_existing_incidents()'s own header for why this is
+## a third, distinct hook into that query, not a fourth path into ALERT.
+## Not every frame: this is a poll, and checking every frame would be pure
+## waste against a registry that changes rarely. Not zero either — a drone
+## that never re-checks its surroundings while patrolling is exactly the
+## "flew right over the incident and noticed nothing" gap this closes. A
+## feel value, tuned by eye like every other cadence in this file.
+@export var patrol_scan_interval: float = 1.0
 
 @export_group("Observe")
 ## Horizontal distance from the player this drone holds while OBSERVE —
@@ -353,15 +374,19 @@ var _has_tracked_player_position: bool = false
 
 var _state: State = State.PATROL
 ## Seconds since the last incident that put this drone into ALERT — reset to
-## 0 by _on_incident_reported() on every provoking report, only ever counted
-## up while in ALERT. Compared against alert_memory_time to decide when
-## ALERT lapses.
+## 0 by _trigger_alert() on every provoking report or catch-up, only ever
+## counted up while in ALERT. Compared against alert_memory_time to decide
+## when ALERT lapses — see _update_state()'s ALERT branch.
 var _alert_memory_timer: float = 0.0
 ## Seconds since the player last provoked OBSERVE (seen and in COMBAT) —
 ## reset to 0 by _update_state() every frame that's still true, only ever
 ## counted up while in OBSERVE. Compared against alert_memory_time, same
 ## shared shape as _alert_memory_timer — see that export's own comment.
 var _observe_memory_timer: float = 0.0
+## Seconds since the last periodic registry scan while PATROL — see
+## patrol_scan_interval's own comment. Only ever counted up while PATROL
+## (_update_patrol_scan() is only called from that branch of _decide()).
+var _patrol_scan_timer: float = 0.0
 
 ## Captured once in _ready() — the patrol square's centre and rotation, same
 ## convention as the old police_drone.gd (a local square anchored to where
@@ -442,6 +467,7 @@ func _decide(delta: float) -> void:
 	match _state:
 		State.PATROL:
 			_decide_patrol(delta)
+			_update_patrol_scan(delta)
 		State.OBSERVE:
 			_decide_observe(observation, delta)
 		State.ALERT:
@@ -521,10 +547,9 @@ func _on_incident_reported(incident: Incident) -> void:
 	_trigger_alert()
 
 
-## Catch-up query shared by two DIFFERENT hooks that must not be collapsed
-## into one — see _try_resolve_incident_registry() and
-## _on_incidents_restored() for which calls this when, and read both before
-## touching either:
+## Catch-up query shared by THREE distinct hooks — see each call site below
+## for which covers what, and read all three before touching any one of
+## them; none is redundant with either of the others:
 ##
 ## 1. _try_resolve_incident_registry() calls this once, the moment this
 ##    drone first resolves the registry — covers a drone that appears in a
@@ -540,23 +565,35 @@ func _on_incident_reported(incident: Incident) -> void:
 ##    resolving once at startup CANNOT: a load happens later, on a player
 ##    keypress, long after this drone already resolved the registry (and
 ##    _try_resolve_incident_registry() will never run again — see its own
-##    early return). This is the path that actually matters today; see
-##    incident_registry.gd's incidents_restored signal for the full
-##    reasoning, and CHANGELOG.md (2026-08-1X) for the bug this replaces —
-##    an earlier version of this file assumed resolving once was enough for
-##    both cases, and it demonstrably was not.
+##    early return). See incident_registry.gd's incidents_restored signal
+##    for the full reasoning, and CHANGELOG.md (2026-08-1X) for the bug this
+##    replaced — an earlier version of this file assumed resolving once was
+##    enough for both this case and case 1, and it demonstrably was not.
 ##
-## Neither path polls; each fires from a distinct, specific event. Reuses
-## IncidentRegistry's own max_incident_age as the recency bound rather than
-## inventing a second threshold: anything the registry still holds is by
-## definition not stale by its own rule. Guarded against firing while
-## already ALERT: a catch-up finding what this drone already knows about is
-## not a new provocation, and letting it reset _alert_memory_timer would be
-## a live bug the moment ALERT's decay (currently disabled — see
-## _update_state()'s "Temporary behaviour" note) is re-enabled, since a
-## repeatedly-refreshed timer would never lapse. _on_incident_reported()
-## deliberately has no equivalent guard: a genuinely NEW live report while
-## already ALERT is a real, fresh provocation, and should extend the hold.
+## 3. _update_patrol_scan() calls this periodically (patrol_scan_interval),
+##    only while PATROL — covers a drone that is simply flying near a
+##    record that predates it noticing, which cases 1/2 cannot: both fire
+##    once, at a moment in time, and say nothing about the drone's position
+##    changing afterward. Without this, alert_incident_radius had to be
+##    inflated far past its intended scale (60m -> 600m, briefly, during
+##    diagnosis) to compensate for a drone that only ever checked its
+##    surroundings at two fixed instants rather than as it moved — see
+##    CHANGELOG.md (2026-08-13) for that diagnosis. 60m is the correct
+##    value again now that a moving drone actually re-checks its
+##    surroundings.
+##
+## None of the three poll every frame; each fires on its own distinct
+## cadence or event. Reuses IncidentRegistry's own max_incident_age as the
+## recency bound rather than inventing a second threshold: anything the
+## registry still holds is by definition not stale by its own rule.
+## Guarded against firing while already ALERT: a catch-up finding what this
+## drone already knows about is not a new provocation, and letting it reset
+## _alert_memory_timer would matter the moment ALERT's own decay
+## (_update_state()'s ALERT branch, currently disabled — see that method's
+## "Temporary behaviour" note) is re-enabled: a repeatedly-refreshed timer
+## would never lapse. _on_incident_reported() deliberately has no
+## equivalent guard: a genuinely NEW live report while already ALERT is a
+## real, fresh provocation, and should extend the hold.
 func _check_existing_incidents() -> void:
 	if _state == State.ALERT:
 		return
@@ -567,20 +604,35 @@ func _check_existing_incidents() -> void:
 		_trigger_alert()
 
 
+## Periodic scan while PATROL only — see patrol_scan_interval's own comment
+## and _check_existing_incidents()'s header (case 3) for why this drone
+## needs a THIRD hook into that query, not a fourth way into ALERT. Only
+## ever called from _decide()'s PATROL branch, so OBSERVE/ALERT never pay
+## for it, not even on the frame a state transition happens (that frame's
+## match already reads the post-transition state).
+func _update_patrol_scan(delta: float) -> void:
+	if not _incident_registry:
+		return
+	_patrol_scan_timer += delta
+	if _patrol_scan_timer < patrol_scan_interval:
+		return
+	_patrol_scan_timer = 0.0
+	_check_existing_incidents()
+
+
 ## incidents_restored fires with no payload — see that signal's own comment
 ## for why — so this just re-runs the same catch-up query
 ## _try_resolve_incident_registry() already uses, rather than a parallel
-## code path. See _check_existing_incidents()'s own comment for why BOTH
-## hooks are needed and what each one covers.
+## code path. See _check_existing_incidents()'s own comment for why all
+## three hooks into it are needed and what each one covers.
 func _on_incidents_restored() -> void:
 	_check_existing_incidents()
 
 
-## Single place ALERT is actually entered from, whether triggered live (a
-## fresh report while this drone is already in the world) or retroactively
-## (_check_existing_incidents() catching up on one it missed) — one entry
-## path, so the two never drift into slightly different "what does ALERT
-## reset" behaviour.
+## Single place ALERT is actually entered from, whichever of the four paths
+## triggered it (live report, resolve-time catch-up, load-time catch-up,
+## periodic scan) — one entry path, so none of them drift into slightly
+## different "what does ALERT reset" behaviour.
 func _trigger_alert() -> void:
 	_alert_memory_timer = 0.0
 	_enter_state(State.ALERT)
@@ -590,9 +642,9 @@ func _trigger_alert() -> void:
 ## and counts ALERT's own memory down when that's the current state — one
 ## method, not two, because falling out of ALERT needs the same "is the
 ## player still provoking OBSERVE right now" read OBSERVE's own entry uses.
-## ALERT's own entry is _on_incident_reported(), event-driven, and always
-## wins regardless of what this method would otherwise resolve to that
-## frame — this method never sets ALERT itself.
+## ALERT's own entry is _trigger_alert(), event-driven, and always wins
+## regardless of what this method would otherwise resolve to that frame —
+## this method never sets ALERT itself.
 func _update_state(observation: PlayerObservation, delta: float) -> void:
 	var provoking_observe := observation != null and observation.is_seen \
 			and observation.stance == PlayerState.Stance.COMBAT
