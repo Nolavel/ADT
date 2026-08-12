@@ -41,6 +41,8 @@ Ask first — these need a spec from the owner:
 Not open: anything listed in `planned_scope.md`. That page is a record of
 intent, not a task list.
 
+What is actively being built, and in what order, is in `scope_horizon.md`.
+
 ## Do not touch without asking
 
 `core/world/streaming_systems.gd`, `core/world/world_systems.gd`,
