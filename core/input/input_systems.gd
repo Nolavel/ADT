@@ -47,6 +47,16 @@ signal perception_debug_toggled()
 signal debug_save_pressed()
 signal debug_load_pressed()
 
+## --- Lodging sleep-hour picker (H1 step 4, world/lodging/) ---
+## Mouse wheel, read as discrete ticks via is_action_just_released() — same
+## convention zoom_in/zoom_out already use for the same physical input, but
+## a separate action rather than reusing those: they mean "camera zoom"
+## everywhere else they're read, and overloading them for an unrelated
+## "adjust a number" UI would make both meanings harder to reason about.
+## Only consumer today is LodgingRoom's sleep-hour picker, while it's open.
+signal lodging_hours_increase_pressed()
+signal lodging_hours_decrease_pressed()
+
 ## Tap/hold on "toggle_tabs" — press timing is a property of the physical
 ## input, so the timer lives here, not in the consumer.
 signal tabs_key_tapped()
@@ -114,6 +124,7 @@ func _physics_process(delta: float) -> void:
 	_handle_ui_hotkeys()
 	_handle_stance_toggle()
 	_handle_debug_save_load()
+	_handle_lodging_hours()
 
 
 ## ============================================
@@ -223,6 +234,20 @@ func _handle_debug_save_load() -> void:
 		debug_save_pressed.emit()
 	if Input.is_action_just_pressed("debug_load"):
 		debug_load_pressed.emit()
+
+
+## ============================================
+## LODGING HOURS — mouse wheel, relayed unconditionally like every other
+## action here; LodgingRoom decides whether a picker is actually open.
+## just_released, not just_pressed: Godot delivers a wheel tick as a
+## synthetic press+release in the same frame, and is_action_just_released()
+## is the convention zoom_in/zoom_out already established for reading it.
+## ============================================
+func _handle_lodging_hours() -> void:
+	if Input.is_action_just_released("lodging_hours_up"):
+		lodging_hours_increase_pressed.emit()
+	if Input.is_action_just_released("lodging_hours_down"):
+		lodging_hours_decrease_pressed.emit()
 
 
 ## ============================================

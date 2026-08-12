@@ -50,6 +50,13 @@ const SAVE_DIRECTORY: String = "user://saves"
 ## path for old saves — there is none today, so an old version is refused,
 ## not upgraded.
 const SAVE_FORMAT_VERSION: int = 1
+## Lookup group for consumers that can't reach this through WorldContext —
+## same reasoning as IncidentRegistry.GROUP_INCIDENT_REGISTRY: LodgingRoom
+## (world/lodging/) is a static scene instance placed directly in a
+## streamed block, not a WORLD_SYSTEM_SCRIPTS/3D_ENTITY_SCENES/UI_SCENES
+## entry, so it never receives on_world_ready(). Resolved via
+## get_tree().get_first_node_in_group().
+const GROUP_SAVE_SYSTEM: StringName = &"save_system"
 
 ## Snapshot of WorldContext.systems, taken once in on_world_ready() — the
 ## same array world.gd builds from WORLD_SYSTEM_SCRIPTS, in that same order.
@@ -59,6 +66,7 @@ var _systems: Array[Node] = []
 
 
 func _ready() -> void:
+	add_to_group(GROUP_SAVE_SYSTEM)
 	InputSystems.debug_save_pressed.connect(_on_debug_save_pressed)
 	InputSystems.debug_load_pressed.connect(_on_debug_load_pressed)
 

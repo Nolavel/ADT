@@ -15,7 +15,7 @@ Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
 methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
 reads raw `KEY_*` deliberately.
 
-Action count: **33** — 29 live, 4 reserved and unread.
+Action count: **35** — 31 live, 4 reserved and unread.
 
 ---
 
@@ -52,6 +52,26 @@ view is embedded in the editor.
 | `status` | `X` | Status | Статус |
 | `toggle_tabs` | `Tab` | Tap — notifier; hold — status camera | Тап/холд — уведомление/статус-камера |
 | `toggle_stance` | `T` | Toggle `PlayerState.Stance` PEACE ⇄ COMBAT | Смена стойки |
+
+---
+
+## 2a. ON_FOOT — LodgingRoom sleep-hour picker (only while open)
+
+Relayed unconditionally like every other action in this file; `LodgingRoom`
+(`world/lodging/`) decides whether a picker is actually open, same "signal
+fires always, subscriber decides relevance" convention as everything else.
+`interact` (above) is reused, not rebound — first press opens the picker,
+second confirms it; no new action needed for that part.
+
+| Action | Key | Description | RU |
+|---|---|---|---|
+| `lodging_hours_up` | Wheel up | +1 hour, clamped to 8 | +1 час, максимум 8 |
+| `lodging_hours_down` | Wheel down | −1 hour, clamped to 1 | −1 час, минимум 1 |
+| `pause` | `Esc` | Cancels the picker (also opens the pause menu, unchanged) | Отмена выбора (плюс меню паузы, как обычно) |
+
+Deliberately separate actions from `zoom_in`/`zoom_out` (same physical wheel,
+§2 above) — reusing the camera-zoom actions for an unrelated "adjust a
+number" UI would overload their meaning everywhere else they're read.
 
 ---
 

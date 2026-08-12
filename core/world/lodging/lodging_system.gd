@@ -31,6 +31,15 @@
 extends Node
 class_name LodgingSystem
 
+## Lookup group for consumers that can't reach this through WorldContext —
+## same reasoning as IncidentRegistry.GROUP_INCIDENT_REGISTRY: LodgingRoom
+## (world/lodging/) is a static scene instance placed directly in a
+## streamed block, not a WORLD_SYSTEM_SCRIPTS/3D_ENTITY_SCENES/UI_SCENES
+## entry, so it never receives on_world_ready(). Resolved via
+## get_tree().get_first_node_in_group(). Same string as get_save_key()'s
+## return value, not a coincidence.
+const GROUP_LODGING_SYSTEM: StringName = &"lodging"
+
 ## Sentinel for "never slept in this room" — distinct from any real
 ## GameClockSystem.total_game_hours reading, which only ever counts up from
 ## GameClockSystem.START_HOUR (16.0) and never goes negative. 0.0 would be
@@ -47,6 +56,10 @@ const NEVER_SLEPT: float = -1.0
 ## today — present so the record's shape doesn't change (and doesn't orphan
 ## old saves) the day something actually gets stored in a room.
 var _rooms: Dictionary = {}
+
+
+func _ready() -> void:
+	add_to_group(GROUP_LODGING_SYSTEM)
 
 
 ## Returns this room's record, creating a default one on first access. Never

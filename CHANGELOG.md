@@ -96,6 +96,49 @@ room, presence tracking, and a working interactable. Nothing here sleeps anyone 
 - `world/lodging/lodging_room.tscn`, `world/lodging/lodging_room.gd`,
   `player/player_components/interact_component/interact_component.gd`, `CLAUDE.md`.
 
+**Sleep with a chosen duration (1–8 hours) — H1's in-fiction save point is now real.**
+Builds on the previous entry's scaffolding: `BedPoint` now actually does something.
+Not an instant sleep to a fixed hour — the player picks how long, and that duration is
+recorded for a future health/hunger pass to key off, even though nothing reads it yet.
+*Сон с выбором длительности 1–8 часов — теперь BedPoint реально усыпляет игрока, а не
+просто существует. Выбранная длительность записывается для будущего восстановления
+здоровья/голода, хотя сейчас её никто не читает.*
+
+- `LodgingRoom` interaction: first `BedPoint` interact opens a picker (`MIN_SLEEP_HOURS`
+  `1` .. `MAX_SLEEP_HOURS` `8`, default `8`); new `lodging_hours_up`/`lodging_hours_down`
+  actions (mouse wheel — separate from `zoom_in`/`zoom_out`, which mean camera zoom
+  everywhere else they're read) adjust it by 1; a second interact confirms; the existing
+  `pause` action cancels — no new cancel key. Refused (a flashed `HourLabel` message,
+  never silent) unless `PresenceArea` reports the player inside and
+  `PlayerState.stance == PEACE` — both re-checked continuously while the picker is open,
+  not just at the moment it opened, so leaving the room or drawing a weapon mid-pick
+  cancels it immediately.
+- Confirming does exactly three things in order: advances `GameClockSystem.
+  total_game_hours` by the chosen duration, calls `LodgingSystem.notify_slept(room_id,
+  total_game_hours)` with the resulting ABSOLUTE wake time, then `SaveSystem.
+  save_to_slot()`. New `LodgingRoom.slept(room_id, hours)` signal fired right after —
+  nothing subscribes today; it is the seam a future health/hunger recovery pass connects
+  to, not a subscription made on that pass's behalf. No stub method written for that
+  future consumer — the signal alone is the whole contract.
+- `GameClockSystem`/`LodgingSystem`/`SaveSystem` each gained a lookup group
+  (`GROUP_GAME_CLOCK`/`GROUP_LODGING_SYSTEM`/`GROUP_SAVE_SYSTEM`, same string as each
+  system's own `get_save_key()`) so `LodgingRoom` — a static scene instance dropped into
+  streamed content, never a `WORLD_SYSTEM_SCRIPTS`/`WORLD_3D_ENTITY_SCENES`/
+  `WORLD_UI_SCENES` entry, so it never receives a `WorldContext` — can resolve all three
+  via `get_tree().get_first_node_in_group()`, the same pattern `IncidentRegistry`
+  established. A single `_ready()` attempt is enough (no per-frame retry like
+  `PatrolDroneController` needs): this scene only ever exists inside already-streamed
+  content, well after every `WORLD_SYSTEM_SCRIPTS` entry exists.
+- New `InputSystems.lodging_hours_increase_pressed`/`lodging_hours_decrease_pressed`
+  signals, relayed unconditionally like every other action in this file (`LodgingRoom`
+  decides relevance via its own `_selecting` flag). `project.godot`/`input_map.md`
+  updated (action count now `35`) — the two wheel actions got their own §2a section,
+  not folded into the shared ON_FOOT table, since they only apply while a picker is
+  open.
+- `core/world/game_clock/game_clock_system.gd`, `core/world/lodging/lodging_system.gd`,
+  `core/world/save_system/save_system.gd`, `core/input/input_systems.gd`,
+  `world/lodging/lodging_room.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order

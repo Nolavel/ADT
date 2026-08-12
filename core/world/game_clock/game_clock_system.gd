@@ -38,6 +38,15 @@ signal night_started(day_number: int)
 
 # ── Конфигурация ─────────────────────────────────────────────────────────────
 
+## Lookup group for consumers that can't reach this through WorldContext —
+## same reasoning as IncidentRegistry.GROUP_INCIDENT_REGISTRY (see that
+## file's own comment): a static scene instance placed directly in a
+## streamed block (LodgingRoom, world/lodging/) never receives
+## on_world_ready(). Resolved via get_tree().get_first_node_in_group(). Same
+## string as get_save_key()'s return value, not a coincidence — one name for
+## this system either way.
+const GROUP_GAME_CLOCK: StringName = &"game_clock"
+
 ## Полные игровые сутки за 48 реальных минут (1 игровой час = 2 реальные минуты).
 const REAL_MINUTES_PER_GAME_DAY: float = 48.0
 
@@ -68,6 +77,7 @@ var _was_day: bool = false
 # ── Жизненный цикл ───────────────────────────────────────────────────────────
 
 func _ready() -> void:
+	add_to_group(GROUP_GAME_CLOCK)
 	# Первичная рассылка состояния подписчикам произойдёт на первой смене
 	# минуты; подписчики, которым нужно состояние сразу (освещение),
 	# опрашивают get_hour_of_day() в своём on_world_ready().
