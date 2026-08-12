@@ -11,6 +11,10 @@ current state by replaying the log.
 
 Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"Vertical Trespass"** (`config/name`); public title **"Another Digital Thriller"** — use the public title only in store-facing material, never in code or docs. Almost entirely GDScript — the only C# file is `tools/scan_folder_files/project_scanner.cs` (an editor utility). Do not introduce C# for gameplay code unless asked; the codebase convention is GDScript. Dropping C# entirely is an open backlog item.
 
+Startup scene: `res://world/world.tscn`.
+
+## Working with the running editor
+
 ## Documents
 
 | File | Purpose |
@@ -22,11 +26,7 @@ Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"
 | `input_map.md` | Single source of truth for input bindings |
 | `LICENSE.md` | Proprietary; all rights reserved |
 | `docs/scope_horizon.md` | What is being built **now**, and in what order |
- ## Working with the running editor
 
-Startup scene: `res://world/world.tscn`.
-
-## Working with the running editor
 
 This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled in `project.godot` under `[editor_plugins]`, autoloaded as `_mcp_game_helper`). When the Godot editor is open, prefer the `mcp__godot-ai__*` tools over hand-editing `.tscn`/resource files or shelling out to the Godot CLI:
 - `editor_state` — check what scene is open / whether the editor is ready before issuing other calls.
