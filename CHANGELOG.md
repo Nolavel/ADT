@@ -12,6 +12,22 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
+
+Added `docs/scope_horizon.md`: what is actively being built and in what order
+(H1 dependency rules + save contract → H2 key-hints HUD → H3 EquipmentComponent
+→ H4 pistol chain). Split of responsibility between the three tracking documents
+stated explicitly: `planned_scope.md` = not started, `scope_horizon.md` = in
+progress, `CHANGELOG.md` = done. Cross-linked from `CLAUDE.md`, `CONTRIBUTING.md`,
+`planned_scope.md` and `readme.md`.
+
+`CLAUDE.md`: renderer constraint corrected from Forward Mobile to Forward+ —
+the file contradicted both `project.godot` and its own header. Shadow setting
+renamed to `directional_shadow/size`, which is what is actually overridden.
+
+> Добавлен документ активного горизонта работ; исправлено расхождение по
+> рендереру в CLAUDE.md.
+
 ## 2026-08-11 — HealthComponent wired to player and NPCs; NPCs take damage and stay down
 
 Seven commits connecting `HealthComponent` (built earlier but never attached to either
