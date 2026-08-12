@@ -19,9 +19,9 @@ Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"
 | `docs/GDSCRIPT_STYLE.md` | Code conventions; stricter than the official Godot guide in places |
 | `docs/planned_scope.md` | Scope that is **not started**. Not a task list. |
 | `docs/CREDITS.md` | Third-party attributions, incl. the Godot MIT notice |
-| `INPUT_MAP.md` | Single source of truth for input bindings |
+| `input_map.md` | Single source of truth for input bindings |
 | `LICENSE.md` | Proprietary; all rights reserved |
-+
+| `docs/scope_horizon.md` | What is being built **now**, and in what order |
  ## Working with the running editor
 
 Startup scene: `res://world/world.tscn`.
