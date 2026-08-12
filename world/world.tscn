@@ -54,7 +54,7 @@ hover_height = 5.0
 max_speed = 14.0
 
 [node name="LodgingRoom" parent="StreamContainer" unique_id=1572542072 instance=ExtResource("5_ai45w")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.583984, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 220, 0, -120)
 room_id = &"1"
 
 [node name="StatsDisplay" parent="." unique_id=1462911267 instance=ExtResource("2_h5o24")]

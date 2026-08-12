@@ -18,20 +18,34 @@
 # separate decisions; this file is only the place that sequences the calls,
 # same one-way-dependency shape LodgingSystem's own header describes.
 #
-# A static scene instance dropped into a streamed block never receives a
+# A static scene instance dropped anywhere in the tree never receives a
 # WorldContext the way WORLD_SYSTEM_SCRIPTS entries do — same situation
 # PatrolDroneController is in, and the same fix: GameClockSystem,
 # LodgingSystem and SaveSystem are each resolved via
 # get_tree().get_first_node_in_group() against a lookup group each of them
-# now carries (GROUP_GAME_CLOCK / GROUP_LODGING_SYSTEM / GROUP_SAVE_SYSTEM).
-# Unlike PatrolDroneController's situation, a SINGLE resolve attempt in
-# _ready() is reliable here rather than needing a per-frame retry: this
-# scene only ever exists inside streamed content, which by construction
-# never loads until StreamingSystems.initialize() runs, which is itself
-# after _init_world() has already finished creating every WORLD_SYSTEM_
-# SCRIPTS entry synchronously. If resolution ever fails here, it means one
-# of those three systems is genuinely missing from the scene, not a
-# bootstrap race — hence a push_warning, not a retry loop.
+# carries (GROUP_GAME_CLOCK / GROUP_LODGING_SYSTEM / GROUP_SAVE_SYSTEM),
+# retried every _process() until all three succeed, exactly like
+# PatrolDroneController's _try_resolve_incident_registry().
+#
+# An earlier version of this file assumed a single _ready() attempt was
+# enough, on the theory that this scene "only ever exists inside streamed
+# content, which loads after every WORLD_SYSTEM_SCRIPTS entry already
+# exists." That assumption depended on WHERE the scene is placed, and this
+# scene has no control over that — Stan's own first placement put it
+# directly in world.tscn (see that file's LodgingRoom instance), not inside
+# streamed content, and Godot calls _ready() bottom-up as the tree is built:
+# a statically-placed child's _ready() fires during World's own tree-entry
+# pass, before World._ready() even runs — which itself awaits a process
+# frame before _init_world() creates any WORLD_SYSTEM_SCRIPTS entry at all
+# (see world.gd). All three resolves failed for exactly this reason, not a
+# hypothetical. This file makes no assumption about placement anymore: the
+# retry is what makes correctness independent of where Stan puts the scene,
+# streamed block or not.
+#
+# A single push_warning fires if systems_search_timeout passes with any of
+# the three still unresolved, once per instance, not every frame — silence
+# here would mean a room that quietly can never be slept in, with nothing
+# in the log to explain why.
 #
 # BedPoint is an ordinary InteractableObject, InteractionType.BUTTON,
 # through the same InteractComponent path every other interactable already
@@ -64,6 +78,13 @@ signal slept(room_id: StringName, hours: float)
 ## since an unauthored room_id means LodgingSystem's record for this room
 ## can never be found again after a reload.
 @export var room_id: StringName = &""
+## Seconds to keep retrying the three system lookups before giving up and
+## warning once — see the file header on why this can't be a single
+## _ready() call. Every WORLD_SYSTEM_SCRIPTS entry should exist within the
+## first couple of frames after World starts (or immediately, for a scene
+## that streams/instances in later, well after that); a wait this long past
+## either means something is actually wrong, not a startup race.
+@export var systems_search_timeout: float = 5.0
 
 const MIN_SLEEP_HOURS: int = 1
 const MAX_SLEEP_HOURS: int = 8
@@ -89,9 +110,18 @@ const MESSAGE_DISPLAY_TIME: float = 2.5
 ## needed, matching "Stan places it manually" for the rest of the scene.
 @onready var _hour_label: Label3D = $HourLabel
 
+## Resolved lazily via a group lookup, retried from _process() until it
+## succeeds — see the file header on why this can't be a single _ready()
+## call. Null until then.
 var _game_clock: GameClockSystem = null
 var _lodging_system: LodgingSystem = null
 var _save_system: SaveSystem = null
+## Seconds spent so far retrying the lookups — compared against
+## systems_search_timeout to decide when to warn.
+var _systems_search_time: float = 0.0
+## Set once the timeout warning has fired, so it fires exactly once per
+## instance instead of every frame the systems stay unresolved.
+var _warned_missing_systems: bool = false
 
 ## True while the player's own CharacterBody3D overlaps PresenceArea — the
 ## ONLY thing PresenceArea's signals are used for; no other logic reads the
@@ -118,28 +148,50 @@ func _ready() -> void:
 	PlayerState.stance_changed.connect(_on_stance_changed)
 
 	_hour_label.visible = false
+
+	## Very likely to fail here if this instance sits statically in a scene
+	## (see the file header) — kept anyway, harmless, and resolves
+	## immediately in the case a scene actually does stream in after
+	## every WORLD_SYSTEM_SCRIPTS entry exists. _process() is what actually
+	## guarantees resolution regardless of placement.
 	_try_resolve_systems()
 
 
-## Single attempt, not a retry loop — see the file header for why a load
-## race isn't a real risk for a scene that only ever exists inside already-
-## streamed content.
-func _try_resolve_systems() -> void:
-	_game_clock = get_tree().get_first_node_in_group(
-		GameClockSystem.GROUP_GAME_CLOCK
-	) as GameClockSystem
-	_lodging_system = get_tree().get_first_node_in_group(
-		LodgingSystem.GROUP_LODGING_SYSTEM
-	) as LodgingSystem
-	_save_system = get_tree().get_first_node_in_group(
-		SaveSystem.GROUP_SAVE_SYSTEM
-	) as SaveSystem
+func _process(delta: float) -> void:
+	if _game_clock and _lodging_system and _save_system:
+		return
 
-	if not (_game_clock and _lodging_system and _save_system):
+	_try_resolve_systems()
+	if _game_clock and _lodging_system and _save_system:
+		return
+
+	_systems_search_time += delta
+	if not _warned_missing_systems and _systems_search_time >= systems_search_timeout:
+		_warned_missing_systems = true
 		push_warning(
-			"[LodgingRoom] %s: missing a required system (game_clock=%s lodging=%s save=%s) — sleeping here will not work"
-			% [name, _game_clock != null, _lodging_system != null, _save_system != null]
+			"[LodgingRoom] %s: still missing a required system after %.1fs (game_clock=%s lodging=%s save=%s) — sleeping here will not work"
+			% [name, _systems_search_time, _game_clock != null, _lodging_system != null, _save_system != null]
 		)
+
+
+## Retried from _process() until all three succeed — see the file header on
+## why a single _ready() call isn't enough. Idempotent past the first
+## success for each: already-resolved references are left alone rather than
+## looked up again, so this stays cheap (three early-out checks) once
+## everything is found.
+func _try_resolve_systems() -> void:
+	if not _game_clock:
+		_game_clock = get_tree().get_first_node_in_group(
+			GameClockSystem.GROUP_GAME_CLOCK
+		) as GameClockSystem
+	if not _lodging_system:
+		_lodging_system = get_tree().get_first_node_in_group(
+			LodgingSystem.GROUP_LODGING_SYSTEM
+		) as LodgingSystem
+	if not _save_system:
+		_save_system = get_tree().get_first_node_in_group(
+			SaveSystem.GROUP_SAVE_SYSTEM
+		) as SaveSystem
 
 
 func _on_presence_area_body_entered(body: Node3D) -> void:

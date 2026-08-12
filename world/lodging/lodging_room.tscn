@@ -1,8 +1,8 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene format=3 uid="uid://dijskn4mk0e4t"]
 
-[ext_resource type="Script" path="res://world/lodging/lodging_room.gd" id="1"]
-[ext_resource type="Script" path="res://world/interactables/interactables.gd" id="2"]
-[ext_resource type="Script" path="res://world/interactables/interactive_visual_indicator.gd" id="3"]
+[ext_resource type="Script" uid="uid://bl2h7ssedrprr" path="res://world/lodging/lodging_room.gd" id="1"]
+[ext_resource type="Script" uid="uid://crb77033gqmom" path="res://world/interactables/interactables.gd" id="2"]
+[ext_resource type="Script" uid="uid://bmjsijadfn8ws" path="res://world/interactables/interactive_visual_indicator.gd" id="3"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_floor_ceiling"]
 size = Vector3(8, 0.2, 8)
@@ -37,118 +37,114 @@ size = Vector3(2, 1, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_bed_area"]
 size = Vector3(2.5, 1.5, 2.5)
 
-[node name="LodgingRoom" type="Node3D"]
+[node name="LodgingRoom" type="Node3D" unique_id=1162393984]
 script = ExtResource("1")
-room_id = &""
 
-[node name="Geometry" type="Node3D" parent="."]
+[node name="Geometry" type="Node3D" parent="." unique_id=1249100506]
 
-[node name="Floor" type="StaticBody3D" parent="Geometry"]
+[node name="Floor" type="StaticBody3D" parent="Geometry" unique_id=1844307529]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/Floor"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/Floor" unique_id=775771845]
 mesh = SubResource("BoxMesh_floor_ceiling")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Floor"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Floor" unique_id=22613999]
 shape = SubResource("BoxShape3D_floor_ceiling")
 
-[node name="Ceiling" type="StaticBody3D" parent="Geometry"]
+[node name="Ceiling" type="StaticBody3D" parent="Geometry" unique_id=418898471]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.1, 0)
+visible = false
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/Ceiling"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/Ceiling" unique_id=363198080]
 mesh = SubResource("BoxMesh_floor_ceiling")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Ceiling"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Ceiling" unique_id=714535932]
 shape = SubResource("BoxShape3D_floor_ceiling")
 
-[node name="WallNorth" type="StaticBody3D" parent="Geometry"]
+[node name="WallNorth" type="StaticBody3D" parent="Geometry" unique_id=725893494]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -4)
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallNorth"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallNorth" unique_id=292265808]
 mesh = SubResource("BoxMesh_wall_full")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallNorth"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallNorth" unique_id=182086122]
 shape = SubResource("BoxShape3D_wall_full")
 
-[node name="WallEast" type="StaticBody3D" parent="Geometry"]
+[node name="WallEast" type="StaticBody3D" parent="Geometry" unique_id=1077389757]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.5, 0)
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallEast"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallEast" unique_id=517011493]
 mesh = SubResource("BoxMesh_wall_side")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallEast"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallEast" unique_id=1119211744]
 shape = SubResource("BoxShape3D_wall_side")
 
-[node name="WallWest" type="StaticBody3D" parent="Geometry"]
+[node name="WallWest" type="StaticBody3D" parent="Geometry" unique_id=1120144797]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.5, 0)
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallWest"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallWest" unique_id=1635274810]
 mesh = SubResource("BoxMesh_wall_side")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallWest"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallWest" unique_id=608006272]
 shape = SubResource("BoxShape3D_wall_side")
 
-[node name="WallSouthLeft" type="StaticBody3D" parent="Geometry"]
+[node name="WallSouthLeft" type="StaticBody3D" parent="Geometry" unique_id=520999990]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1.5, 4)
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallSouthLeft"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallSouthLeft" unique_id=706780135]
 mesh = SubResource("BoxMesh_wall_half")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallSouthLeft"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallSouthLeft" unique_id=89273184]
 shape = SubResource("BoxShape3D_wall_half")
 
-[node name="WallSouthRight" type="StaticBody3D" parent="Geometry"]
+[node name="WallSouthRight" type="StaticBody3D" parent="Geometry" unique_id=815529871]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1.5, 4)
 collision_layer = 3
 collision_mask = 0
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallSouthRight"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/WallSouthRight" unique_id=619111353]
 mesh = SubResource("BoxMesh_wall_half")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallSouthRight"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/WallSouthRight" unique_id=1785179152]
 shape = SubResource("BoxShape3D_wall_half")
 
-[node name="PresenceArea" type="Area3D" parent="."]
+[node name="PresenceArea" type="Area3D" parent="." unique_id=478711137]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 collision_layer = 0
-collision_mask = 1
 monitorable = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="PresenceArea"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PresenceArea" unique_id=1690077219]
 shape = SubResource("BoxShape3D_presence")
 
-[node name="BedPoint" type="RigidBody3D" parent="."]
+[node name="BedPoint" type="RigidBody3D" parent="." unique_id=2047676946]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, -2.5)
 freeze = true
 script = ExtResource("2")
-interaction_type = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BedPoint"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BedPoint" unique_id=338983286]
 shape = SubResource("BoxShape3D_bed")
 
-[node name="Area" type="Area3D" parent="BedPoint"]
+[node name="Area" type="Area3D" parent="BedPoint" unique_id=1119306934]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="BedPoint/Area"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BedPoint/Area" unique_id=772442213]
 shape = SubResource("BoxShape3D_bed_area")
 
-[node name="InteractiveVisualIndicator" type="Node3D" parent="BedPoint"]
+[node name="InteractiveVisualIndicator" type="Node3D" parent="BedPoint" unique_id=528008542]
 script = ExtResource("3")
 
-[node name="HourLabel" type="Label3D" parent="."]
+[node name="HourLabel" type="Label3D" parent="." unique_id=1296287229]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 2, -2.5)
 billboard = 1
-font_size = 32
 outline_size = 8
-text = ""

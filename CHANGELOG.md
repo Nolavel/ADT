@@ -14,6 +14,41 @@ touched, and — where relevant — which parallel track it came from.
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
 
+**`LodgingRoom` couldn't find its systems when placed statically.** Symptom: Stan
+placed `LodgingRoom` directly in `world.tscn` (not a streamed block), interacted with
+`BedPoint`, got "Something's wrong with this room". Root cause: the previous entry's
+`_try_resolve_systems()` was a single `_ready()`-only attempt, justified by the claim
+that this scene "only ever exists inside streamed content, which loads after every
+`WORLD_SYSTEM_SCRIPTS` entry already exists" — an assumption about WHERE the scene gets
+placed, which this file has no control over. Godot calls `_ready()` bottom-up as a
+scene enters the tree, so a statically-placed child's `_ready()` — `LodgingRoom`'s
+included — fires during `World`'s own tree-entry pass, before `World._ready()` even
+runs, which itself awaits a process frame before `_init_world()` creates any
+`WORLD_SYSTEM_SCRIPTS` entry at all. All three resolves failed for exactly that reason
+— the same bug class `PatrolDroneController` already had and already fixed, applied
+here on a wrong belief that this scene was exempt from it.
+*LodgingRoom не находил системы, когда его поставили прямо в world.tscn: единственная
+попытка резолва в _ready() была основана на неверном допущении о том, где сцена
+физически размещена — Godot вызывает _ready() у детей раньше, чем World успевает
+создать системы.*
+
+- `_try_resolve_systems()` now retried every `_process()` until all three resolve —
+  same shape as `PatrolDroneController._try_resolve_incident_registry()`. Idempotent
+  per-system (each already-resolved reference is left alone, so this is three cheap
+  early-out checks once everything is found, not a re-lookup). New
+  `systems_search_timeout` (`5.0`s, same idiom as
+  `PatrolDroneController.incident_registry_search_timeout`) gates a single
+  `push_warning` if any of the three is still missing past that point — not every
+  frame.
+- File header rewritten: the "only exists inside streamed content" assumption is
+  removed, not left standing next to the code that no longer relies on it.
+- Checked for other statically-placed objects doing a single-attempt `_ready()` system
+  lookup: none found. `tools/scan_folder_files/project_stats_ui.gd` has a similar
+  single-attempt group lookup but is an editor tool unrelated to `WORLD_SYSTEM_SCRIPTS`
+  bootstrap timing, not an instance of this bug class.
+- `CLAUDE.md`'s `LodgingRoom` bullet corrected to match.
+- `world/lodging/lodging_room.gd`, `CLAUDE.md`.
+
 **Drone periodic PATROL scan; `alert_incident_radius` back to 60m.** Diagnosed from a
 real playtest: raising `alert_incident_radius` to 600m had made drones react correctly
 after a load, which looked like confirmation the `incidents_restored` fix (2026-08-12)
