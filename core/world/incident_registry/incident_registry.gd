@@ -73,6 +73,26 @@ class_name IncidentRegistry
 const GROUP_INCIDENT_REGISTRY: StringName = &"incident_registry"
 
 signal incident_reported(incident: Incident)
+## Emitted once, at the end of load_save_data(), after _incidents has been
+## fully rebuilt and pruned — NOT a replay of incident_reported per restored
+## entry. Deliberately a separate signal rather than re-emitting
+## incident_reported once per restored incident: incident_reported means
+## "this just happened", a claim a consumer might reasonably act on as fresh
+## (extend a live reaction, stamp a fresh detection time) — a restored
+## incident is not fresh, it is pre-existing state the consumer simply
+## missed, and a consumer that cares about that distinction (a future one,
+## not PatrolDroneController today) couldn't recover it from a replayed
+## incident_reported. The cost of that honesty is a second channel every
+## incident_reported consumer now has to consider whether it also needs to
+## listen to — worth it for the one consumer that exists today
+## (PatrolDroneController, see its own file) explicitly wanting to tell
+## "reacted to a live report" apart from "caught up after a load" in its own
+## comments, even though both currently funnel into the same _trigger_alert().
+## Carries no payload on purpose: a consumer that cares goes back to this
+## registry and asks (get_incidents_near(), the same query the streaming
+## catch-up path already uses) with its own criteria, rather than being
+## handed a list it would have to re-filter anyway.
+signal incidents_restored()
 
 ## How long the city keeps a fact on record, GAME HOURS — not how fast a
 ## drone reacts (see the file header on why those are different questions;
@@ -206,7 +226,12 @@ func get_save_data() -> Dictionary:
 
 ## Rebuilds _incidents from a payload get_save_data() produced. Replaces the
 ## current list outright rather than merging — a load is a full restore of
-## this registry's state, not an append.
+## this registry's state, not an append. Emits incidents_restored() at the
+## end, after pruning — see that signal's own comment for why this is not
+## incident_reported replayed per entry, and why a consumer that resolved
+## this registry before the load (PatrolDroneController's one-shot
+## _try_resolve_incident_registry() among them) would otherwise never learn
+## the replacement happened at all.
 func load_save_data(data: Dictionary) -> void:
 	_incidents.clear()
 	for entry_variant in data.get("incidents", []) as Array:
@@ -221,6 +246,7 @@ func load_save_data(data: Dictionary) -> void:
 		incident.timestamp = float(entry.get("timestamp", 0.0))
 		_incidents.append(incident)
 	_prune()
+	incidents_restored.emit()
 
 
 func _on_punch_landed(position: Vector3) -> void:
