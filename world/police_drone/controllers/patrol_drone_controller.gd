@@ -31,18 +31,31 @@
 #
 # incident_reported alone only covers facts reported WHILE this drone is
 # already listening — it says nothing about facts already on record from
-# before this drone existed in the world. That gap is real, not
-# theoretical: it is exactly what a save/load boundary and a streamed-out-
-# and-back-in block both produce, and IncidentRegistry surviving both is the
+# before this drone existed in the world, or from before its own most
+# recent state replacement. That gap is real, not theoretical, and it is
+# TWO gaps, not one, closed by two different hooks — see
+# _check_existing_incidents()'s own comment for exactly which case each
+# covers, and do not read the two as redundant:
+#
+#   - a streamed-out-and-back-in block, closed by a one-shot query the
+#     moment this drone resolves the registry
+#     (_try_resolve_incident_registry() -> _check_existing_incidents());
+#
+#   - a save/load boundary, closed by IncidentRegistry's own
+#     incidents_restored signal (_on_incidents_restored() ->
+#     _check_existing_incidents()) — NOT by the resolve-time query above,
+#     which already ran once, early, typically while the registry was
+#     still empty, and will never run again on its own (see
+#     _try_resolve_incident_registry()'s early return). An earlier version
+#     of this file assumed the resolve-time query alone covered both cases;
+#     it did not — see CHANGELOG.md, 2026-08-1X, for the diagnosis.
+#
+# IncidentRegistry surviving both a reload and a streaming cycle is the
 # whole point of H1 (docs/scope_horizon.md) — a fact durable enough to
-# outlive a reload is wasted if the one consumer that should act on it can
-# only ever hear about it live. _check_existing_incidents() closes this: one
-# query against IncidentRegistry.get_incidents_near(), run exactly once at
-# the moment this drone resolves the registry (_try_resolve_incident_
-# registry(), not every frame), asking "is there anything already on record
-# nearby" the same way a fresh set of eyes would ask on arrival. Not a
-# second perception channel — a one-time sync, same distinction
-# has_recent_incident_by() vs. a hypothetical polling API would draw.
+# outlive either is wasted if the one consumer that should act on it can
+# only ever hear about it live. Neither hook polls — a one-time sync per
+# event, same distinction has_recent_incident_by() vs. a hypothetical
+# polling API would draw.
 #
 # Both rungs hold on the same memory shape (alert_memory_time), not two
 # independent timers: ALERT doesn't un-trigger the instant the incident
@@ -490,6 +503,7 @@ func _try_resolve_incident_registry() -> void:
 		return
 	_incident_registry = found
 	_incident_registry.incident_reported.connect(_on_incident_reported)
+	_incident_registry.incidents_restored.connect(_on_incidents_restored)
 	_check_existing_incidents()
 
 
@@ -507,27 +521,59 @@ func _on_incident_reported(incident: Incident) -> void:
 	_trigger_alert()
 
 
-## One-time catch-up, run exactly once from _try_resolve_incident_registry()
-## the moment it succeeds — not polled every frame (see that method's own
-## comment). incident_reported only fires for reports made AFTER this drone
-## connects to it; it says nothing about facts already on record from
-## before this drone existed in the world, which is exactly the situation
-## after a save/load (this controller's own _state defaults to PATROL and
-## nothing else re-derives it) or after this drone's block streams back in
-## following an unload. Without this, a fact IncidentRegistry itself
-## survived a reload for is invisible to the one consumer that's supposed
-## to react to it — the same gap this whole registry exists to close for
-## the fact ITSELF, just one layer further out: the fact living durably
-## isn't enough if nothing that appears later can read it. Reuses
+## Catch-up query shared by two DIFFERENT hooks that must not be collapsed
+## into one — see _try_resolve_incident_registry() and
+## _on_incidents_restored() for which calls this when, and read both before
+## touching either:
+##
+## 1. _try_resolve_incident_registry() calls this once, the moment this
+##    drone first resolves the registry — covers a drone that appears in a
+##    world where the registry ALREADY holds relevant facts, i.e. this
+##    drone's own block streaming back in after being unloaded. In today's
+##    build this path is effectively inert (drones are static instances in
+##    world.tscn, not yet real streamed content, and resolution happens in
+##    the first few frames of a fresh session when the registry is reliably
+##    still empty) but the hook is correct for when that stops being true.
+##
+## 2. _on_incidents_restored() calls this every time IncidentRegistry's
+##    state is replaced wholesale by a load — covers the case that
+##    resolving once at startup CANNOT: a load happens later, on a player
+##    keypress, long after this drone already resolved the registry (and
+##    _try_resolve_incident_registry() will never run again — see its own
+##    early return). This is the path that actually matters today; see
+##    incident_registry.gd's incidents_restored signal for the full
+##    reasoning, and CHANGELOG.md (2026-08-1X) for the bug this replaces —
+##    an earlier version of this file assumed resolving once was enough for
+##    both cases, and it demonstrably was not.
+##
+## Neither path polls; each fires from a distinct, specific event. Reuses
 ## IncidentRegistry's own max_incident_age as the recency bound rather than
 ## inventing a second threshold: anything the registry still holds is by
-## definition not stale by its own rule.
+## definition not stale by its own rule. Guarded against firing while
+## already ALERT: a catch-up finding what this drone already knows about is
+## not a new provocation, and letting it reset _alert_memory_timer would be
+## a live bug the moment ALERT's decay (currently disabled — see
+## _update_state()'s "Temporary behaviour" note) is re-enabled, since a
+## repeatedly-refreshed timer would never lapse. _on_incident_reported()
+## deliberately has no equivalent guard: a genuinely NEW live report while
+## already ALERT is a real, fresh provocation, and should extend the hold.
 func _check_existing_incidents() -> void:
+	if _state == State.ALERT:
+		return
 	var nearby := _incident_registry.get_incidents_near(
 		_drone.global_position, alert_incident_radius, _incident_registry.max_incident_age
 	)
 	if not nearby.is_empty():
 		_trigger_alert()
+
+
+## incidents_restored fires with no payload — see that signal's own comment
+## for why — so this just re-runs the same catch-up query
+## _try_resolve_incident_registry() already uses, rather than a parallel
+## code path. See _check_existing_incidents()'s own comment for why BOTH
+## hooks are needed and what each one covers.
+func _on_incidents_restored() -> void:
+	_check_existing_incidents()
 
 
 ## Single place ALERT is actually entered from, whether triggered live (a

@@ -204,11 +204,77 @@ Four fixes from this diagnosis, three requested, one found while implementing th
   fact itself: a record surviving reload/streaming is wasted if nothing that appears
   afterward can read it, only hear about it happening live. `core/world/incident_registry/
   incident_registry.gd`, `world/police_drone/controllers/patrol_drone_controller.gd`.
+  **Correction, same day, below:** this bullet's closing claim was wrong for the
+  save/load case specifically — see "The incidents_restored gap" entry further down.
+  This one-shot, resolve-time query alone does not cover a load happening later, on a
+  player keypress, after a drone has already resolved the registry.
 - **`debug_save`/`debug_load` rebound `F5`/`F9` → `K`/`L`.** `F5` collides with the Godot
   editor's own "Run Project" shortcut, which intercepts the key before it reaches the
   running game when the game view is embedded — exactly why the DoD playtest above had to
   fall back on quitting to desktop rather than a quick in-editor round-trip.
   `project.godot`, `input_map.md`.
+
+**The `incidents_restored` gap.** Points 1/2/4 of the previous fix round verified clean
+in Stan's log (`incidents: 2 entries` matched before and after a save/load, times
+matched) — point 3 did not: drones stayed `PATROL` after a load even though the panel
+and the log both showed the incident restored. Diagnosed by reading
+`_try_resolve_incident_registry()`/`_check_existing_incidents()` again against the
+actual sequence of events, not just re-reading the method in isolation:
+`_try_resolve_incident_registry()` runs once, early — a few frames into a fresh
+session, before anything has happened, so `_check_existing_incidents()`'s one query
+reliably finds nothing. Its own `if _incident_registry: return` guard means it never
+runs again. A load triggered later, on a player keypress, long after that one query
+already ran and found nothing, was consequently invisible to this drone — not a
+timing race, a hook that had already permanently fired and closed.
+*Пробел с incidents_restored: резолв реестра дроном происходит один раз, рано, пока
+реестр ещё пуст — последующая загрузка сохранения этому единственному запросу уже не
+видна, и запрос больше никогда не повторяется.*
+
+The original framing of H1's drone-catch-up task ("разовая синхронизация при
+появлении в мире") was correct for a drone streaming back into the world, and wrong
+for a load: a load is not the drone appearing, it is the registry's own content being
+replaced out from under a drone that is already there. The fix adds a second, distinct
+hook for that:
+
+- New `IncidentRegistry.incidents_restored()` signal, no payload, emitted at the end of
+  `load_save_data()` after `_incidents` is rebuilt and pruned. Deliberately NOT a
+  replay of `incident_reported` once per restored entry — considered and rejected:
+  `incident_reported` means "this just happened", which a consumer could reasonably
+  treat as license to act as though it were fresh (extend a live reaction, stamp a
+  fresh detection time); a restored incident is pre-existing state a consumer merely
+  missed, and replaying the live signal would make that distinction permanently
+  unrecoverable for any future consumer that needs it. The cost paid for that honesty:
+  a second signal every future `incident_reported` consumer has to separately decide
+  whether it also needs. `core/world/incident_registry/incident_registry.gd`.
+- New `PatrolDroneController._on_incidents_restored()`, connected alongside
+  `incident_reported` in `_try_resolve_incident_registry()`. Re-runs the existing
+  `_check_existing_incidents()` query rather than a parallel code path.
+  `_check_existing_incidents()` is now explicitly documented as serving TWO distinct
+  callers/cases — resolve-time (streaming re-entry, effectively inert today) and
+  load-time (the path that actually matters today) — with a comment spelling out which
+  is which, so the two don't read as redundant to the next person who touches this
+  file. `world/police_drone/controllers/patrol_drone_controller.gd`.
+- `_check_existing_incidents()` now no-ops while the drone is already `ALERT`. Checked
+  specifically because a load can now trigger a second catch-up call against a drone
+  that's already `ALERT` from an earlier live report or an earlier catch-up, and
+  `_trigger_alert()` unconditionally resets `_alert_memory_timer` — harmless today only
+  because ALERT's own decay is commented out (`_update_state()`'s "Temporary
+  behaviour" note: ALERT currently persists indefinitely regardless of the timer), but
+  would become a live bug — a permanently-refreshed timer that never lets ALERT lapse —
+  the moment that decay is re-enabled. `_on_incident_reported()` (the live path)
+  deliberately keeps no equivalent guard: a genuinely new live report while already
+  `ALERT` is a real, fresh provocation and should extend the hold; a catch-up finding
+  what the drone already knows about is not.
+- Investigated, not changed: whether a single punch could call `report()` twice,
+  explaining Stan's `incidents: 2 entries` after what he described as one beating.
+  `player.gd`'s punch path guards against it three separate ways —
+  `_punch_hit_resolved` gates `_resolve_punch_hit()` to at most once per
+  `_start_punch()`, `_is_punching` blocks a second punch from starting while one is in
+  flight, and `_find_punch_target()` returns at most one `NPCBase` — and
+  `IncidentRegistry.on_world_ready()` connects `punch_landed` exactly once. No path
+  found for one punch to produce two reports; `2 entries` most plausibly reflects two
+  real punches across a multi-round test session, not a duplicate-report defect. No
+  code change from this finding.
 
 ## 2026-08-11 — HealthComponent wired to player and NPCs; NPCs take damage and stay down
 
