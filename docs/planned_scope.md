@@ -15,6 +15,8 @@ Design specifications for things on this page, where they exist, live
 beside it: the city's reaction to the player is specified in
 `NPC_REACTIONS.md`
 
+Items promoted from this page to active work move to `scope_horizon.md`.
+
 Last reviewed: 2026-08-07
 
 ---
