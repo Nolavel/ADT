@@ -28,8 +28,13 @@ Active regardless of `PlayerState.mode`.
 | `pause` | `Esc` | Open / close pause menu; owns `get_tree().paused` via `PlayerState` | Меню паузы |
 | `toggle_stream_debug` | `\` | Toggle the streaming debug panel (observer only) | Панель отладки стриминга |
 | `toggle_perception_debug` | `]` | Toggle the NPC perception debug panel (observer only) | Панель отладки восприятия NPC |
-| `debug_save` | `F5` | Debug save to slot 0 (`SaveSystem`) — permanent developer tool, not the in-fiction save mechanism | Отладочное сохранение |
-| `debug_load` | `F9` | Debug load from slot 0 (`SaveSystem`) | Отладочная загрузка |
+| `debug_save` | `K` | Debug save to slot 0 (`SaveSystem`) — permanent developer tool, not the in-fiction save mechanism | Отладочное сохранение |
+| `debug_load` | `L` | Debug load from slot 0 (`SaveSystem`) | Отладочная загрузка |
+
+`debug_save`/`debug_load` were originally bound to `F5`/`F9` (2026-08-12) and rebound
+to `K`/`L` the same day: `F5` collides with the Godot editor's own "Run Project"
+shortcut, which intercepts the key before it reaches the running game when the game
+view is embedded in the editor.
 
 ---
 

@@ -29,6 +29,21 @@
 # player.gd's punch reports to — and always wins over OBSERVE regardless of
 # what the live stance/visibility read says that frame.
 #
+# incident_reported alone only covers facts reported WHILE this drone is
+# already listening — it says nothing about facts already on record from
+# before this drone existed in the world. That gap is real, not
+# theoretical: it is exactly what a save/load boundary and a streamed-out-
+# and-back-in block both produce, and IncidentRegistry surviving both is the
+# whole point of H1 (docs/scope_horizon.md) — a fact durable enough to
+# outlive a reload is wasted if the one consumer that should act on it can
+# only ever hear about it live. _check_existing_incidents() closes this: one
+# query against IncidentRegistry.get_incidents_near(), run exactly once at
+# the moment this drone resolves the registry (_try_resolve_incident_
+# registry(), not every frame), asking "is there anything already on record
+# nearby" the same way a fresh set of eyes would ask on arrival. Not a
+# second perception channel — a one-time sync, same distinction
+# has_recent_incident_by() vs. a hypothetical polling API would draw.
+#
 # Both rungs hold on the same memory shape (alert_memory_time), not two
 # independent timers: ALERT doesn't un-trigger the instant the incident
 # ages past the registry's own window, and OBSERVE doesn't un-trigger the
@@ -462,7 +477,9 @@ func is_incident_registry_resolved() -> bool:
 ## Retried from _decide() until it succeeds — see the file header on why a
 ## single _ready() call isn't enough. Idempotent past the first success: an
 ## already-resolved _incident_registry is left alone, and the signal is only
-## ever connected once (on the call that finds it).
+## ever connected once (on the call that finds it). The moment resolution
+## succeeds is also the one and only time _check_existing_incidents() runs
+## — see that method's own comment for why a one-time catch-up belongs here.
 func _try_resolve_incident_registry() -> void:
 	if _incident_registry:
 		return
@@ -473,6 +490,7 @@ func _try_resolve_incident_registry() -> void:
 		return
 	_incident_registry = found
 	_incident_registry.incident_reported.connect(_on_incident_reported)
+	_check_existing_incidents()
 
 
 ## The drone does not care that someone is there — the city is full of
@@ -486,6 +504,38 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 	if incident.position.distance_to(_drone.global_position) > alert_incident_radius:
 		return
+	_trigger_alert()
+
+
+## One-time catch-up, run exactly once from _try_resolve_incident_registry()
+## the moment it succeeds — not polled every frame (see that method's own
+## comment). incident_reported only fires for reports made AFTER this drone
+## connects to it; it says nothing about facts already on record from
+## before this drone existed in the world, which is exactly the situation
+## after a save/load (this controller's own _state defaults to PATROL and
+## nothing else re-derives it) or after this drone's block streams back in
+## following an unload. Without this, a fact IncidentRegistry itself
+## survived a reload for is invisible to the one consumer that's supposed
+## to react to it — the same gap this whole registry exists to close for
+## the fact ITSELF, just one layer further out: the fact living durably
+## isn't enough if nothing that appears later can read it. Reuses
+## IncidentRegistry's own max_incident_age as the recency bound rather than
+## inventing a second threshold: anything the registry still holds is by
+## definition not stale by its own rule.
+func _check_existing_incidents() -> void:
+	var nearby := _incident_registry.get_incidents_near(
+		_drone.global_position, alert_incident_radius, _incident_registry.max_incident_age
+	)
+	if not nearby.is_empty():
+		_trigger_alert()
+
+
+## Single place ALERT is actually entered from, whether triggered live (a
+## fresh report while this drone is already in the world) or retroactively
+## (_check_existing_incidents() catching up on one it missed) — one entry
+## path, so the two never drift into slightly different "what does ALERT
+## reset" behaviour.
+func _trigger_alert() -> void:
 	_alert_memory_timer = 0.0
 	_enter_state(State.ALERT)
 

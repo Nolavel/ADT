@@ -150,11 +150,56 @@ func load_from_slot(slot: int = 0) -> bool:
 func _on_debug_save_pressed() -> void:
 	if save_to_slot(0):
 		print("[SaveSystem] saved to slot 0")
+		_print_payload_summary()
 
 
 func _on_debug_load_pressed() -> void:
 	if load_from_slot(0):
 		print("[SaveSystem] loaded from slot 0")
+		_print_payload_summary()
+
+
+## Debug-only: re-reads each system's CURRENT get_save_data() purely to log
+## what it holds, one line per system — save_to_slot()/load_from_slot()
+## themselves stay silent when called from game logic, which is why this
+## lives here and not inside either of them. Safe to call immediately after
+## a save or load, synchronously, no frame boundary crossed: get_save_data()
+## is a pure read of current state (the save contract already requires
+## this), so re-invoking it here cannot change what was written, and after a
+## load it reports the ACTUAL post-load state (including anything
+## load_save_data() itself pruned), not the raw file contents — which is
+## precisely the distinction that would have made the pruning-on-load bug
+## (see incident_registry.gd's own header) visible in the log instead of
+## costing a manual save-file inspection to find.
+func _print_payload_summary() -> void:
+	for system in _systems:
+		if not _implements_save_contract(system):
+			continue
+		var key := String(system.call(&"get_save_key"))
+		var data: Dictionary = system.call(&"get_save_data")
+		print("[SaveSystem]   %s: %s" % [key, _summarize_payload(data)])
+
+
+## One line per top-level field: arrays/dictionaries are reported by size
+## (today's systems each hold their state as exactly one — "incidents",
+## "rooms" — so this is "volume", not just "it printed something"), floats
+## rounded for readability, anything else printed as-is rather than guessed
+## at.
+func _summarize_payload(data: Dictionary) -> String:
+	if data.is_empty():
+		return "(empty)"
+	var parts: Array[String] = []
+	for key in data:
+		var value: Variant = data[key]
+		if value is Array:
+			parts.append("%s: %d entries" % [key, (value as Array).size()])
+		elif value is Dictionary:
+			parts.append("%s: %d entries" % [key, (value as Dictionary).size()])
+		elif value is float:
+			parts.append("%s: %.3f" % [key, value])
+		else:
+			parts.append("%s: %s" % [key, value])
+	return ", ".join(parts)
 
 
 ## A system opts into the save contract by implementing all three methods

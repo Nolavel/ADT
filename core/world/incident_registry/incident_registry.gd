@@ -18,8 +18,9 @@
 # Stores a bounded, aging list rather than everything ever reported —
 # max_incidents/max_incident_age are exports because both are feel/scale
 # values with no derivable "correct" number. Consumers ask has_recent_
-# incident_by() for a yes/no rather than walking the list themselves, so the
-# storage shape (Array today) can change later without touching a caller.
+# incident_by() for a yes/no, or get_incidents_near() for a catch-up list,
+# rather than walking the list themselves, so the storage shape (Array
+# today) can change later without touching a caller.
 #
 # Timestamps are GAME HOURS (GameClockSystem.total_game_hours), not real
 # seconds — this is a deliberate reversal of an earlier version of this file,
@@ -33,15 +34,31 @@
 # stays correct across a reload. This does mean max_incident_age and
 # has_recent_incident_by()'s within_hours are in GAME hours now, not real
 # seconds — at the default REAL_MINUTES_PER_GAME_DAY (48) and time_scale
-# 1.0, 1 game hour = 120 real seconds, so this is not a like-for-like
-# renumbering; max_incident_age's default below was chosen to land close to
-# the old real-time feel at time_scale 1.0, not carried over as a raw
-# number.
+# 1.0, 1 game hour = 120 real seconds. max_incident_age's own doc comment
+# below has the current reasoning for its value; see the "pruning-on-load"
+# paragraph further down for why an earlier value here (0.25, converted
+# from a real-seconds figure that was never this field's to convert from)
+# was wrong in kind, not just in magnitude.
 #
 # perpetrator is a stable StringName actor id (perpetrator_id on Incident),
 # not a Node3D — see incident.gd's own header. report() takes the id
 # directly; resolving "which node reported this" to an id is the caller's
 # job (see player.gd's punch_landed handler below), not this registry's.
+#
+# max_incident_age and PatrolDroneController's alert_memory_time are NOT the
+# same value under different names, even though they briefly shared the same
+# rough magnitude — that was an artifact of history, not a design intent,
+# and treating them as interchangeable caused a real bug (see CHANGELOG.md,
+# 2026-08-12, the pruning-on-load incident). alert_memory_time is a drone's
+# own short-lived, real-second memory of "when did I last have a reason to
+# be alert" — a live-session reaction timer, reset by
+# PatrolDroneController._on_incident_reported(), and none of this
+# registry's business. max_incident_age is how long THE CITY keeps a fact on
+# record at all, in game hours — the retention window a fact must survive to
+# still be readable by a consumer days later, across streaming and across a
+# save/load boundary. A drone forgetting to react after three seconds and a
+# city forgetting a fact ever happened are different questions on different
+# clocks; only one of them belongs here.
 # =============================================================================
 extends Node
 class_name IncidentRegistry
@@ -57,13 +74,23 @@ const GROUP_INCIDENT_REGISTRY: StringName = &"incident_registry"
 
 signal incident_reported(incident: Incident)
 
-## Oldest incidents are dropped past this age, regardless of count — a feel/
-## scale value, tuned by eye. GAME HOURS, not real seconds (see the file
-## header) — 0.25 game hours = 15 game minutes = ~30 real seconds at the
-## default REAL_MINUTES_PER_GAME_DAY (48) and time_scale 1.0, chosen to land
-## close to this value's old real-time feel rather than reusing the old
-## number unconverted.
-@export var max_incident_age: float = 0.25
+## How long the city keeps a fact on record, GAME HOURS — not how fast a
+## drone reacts (see the file header on why those are different questions;
+## PatrolDroneController.alert_memory_time is that one, in real seconds, and
+## is not read here). This is a retention window: a fact must outlive a
+## normal play session and an ordinary walk to the next district to be worth
+## recording at all, or nothing durable is actually being kept. 24.0 (one
+## full in-game day, itself 48 real minutes at the default
+## REAL_MINUTES_PER_GAME_DAY and time_scale 1.0) was chosen as a value long
+## enough that no ordinary session or errand expires a record by accident,
+## short enough that this still reads as an aging log and not the
+## permanent, only-cleared-on-mission-completion record Sid's wanted broadcast
+## is in canon — this registry is a first slice of WitnessSystem, not that
+## system. max_incidents below is the actual safety valve against unbounded
+## growth in a busy city, so raising this doesn't trade away that guarantee.
+## A feel/scale value regardless — tune by eye like max_incidents always has
+## been.
+@export var max_incident_age: float = 24.0
 ## Oldest incidents are dropped past this count, regardless of age — a hard
 ## ceiling so a busy city can't grow this list unbounded.
 @export var max_incidents: int = 32
@@ -124,6 +151,28 @@ func has_recent_incident_by(perpetrator_id: StringName, within_hours: float) -> 
 		if incident.perpetrator_id == perpetrator_id and now - incident.timestamp <= within_hours:
 			return true
 	return false
+
+
+## Every incident within radius metres of point, reported within max_age
+## game hours — for a consumer that needs to catch up on facts it missed
+## rather than hear about them as they happen (a drone re-entering the world
+## after its block streamed back in, or after a save/load boundary, neither
+## of which fires incident_reported for anything already on record). A
+## read-only query, same as has_recent_incident_by() — does not prune;
+## report() and load_save_data() keep the list bounded on their own
+## schedule. Meant to be called once per "I just appeared in the world",
+## not polled — see PatrolDroneController._check_existing_incidents() for
+## the one caller today and why it only runs once.
+func get_incidents_near(point: Vector3, radius: float, max_age: float) -> Array[Incident]:
+	var now := _now()
+	var matches: Array[Incident] = []
+	for incident in _incidents:
+		if now - incident.timestamp > max_age:
+			continue
+		if incident.position.distance_to(point) > radius:
+			continue
+		matches.append(incident)
+	return matches
 
 
 ## Most recent incident on record, or null if none — read by debug tooling.

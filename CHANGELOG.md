@@ -149,6 +149,67 @@ found only by re-reading a file the report hadn't touched.
   sleeping, and item loss — only the act of sleeping-as-save-point moved into H1, not
   everything around it.
 
+**The pruning-on-load incident.** DoD playtest (punch, run >0.35 game hours, save, quit,
+relaunch, load) came back with the incident missing. Diagnosed against the actual save
+file on disk, not just the code: `slot_0.json` held `game_clock.total_game_hours:
+16.7704177555556` and `incident_registry.incidents[0].timestamp: 16.2768720055556` — a
+gap of `0.4935` game hours between the punch and the save. The file was correct; nothing
+pruned before writing it (`get_save_data()` doesn't prune, and nothing else calls
+`_prune()` between a punch and a save unless a second punch happens). The eviction
+happened inside `IncidentRegistry.load_save_data()`'s own trailing `_prune()` call,
+which is correct given `max_incident_age` was `0.25`: `WORLD_SYSTEM_SCRIPTS` order
+(`world/world.gd`) restores `GameClockSystem` before `IncidentRegistry`, so by the time
+that `_prune()` ran, "now" was already the restored `16.7704...`, correctly computing the
+incident as `0.4935` game hours old — which exceeds `0.25`. Root cause: `max_incident_age`
+was inherited from a real-seconds drone-reaction timer and never re-examined as a
+city-record retention window once it became one.
+*Инцидент с прунингом при загрузке: диагностирован по реальному файлу сохранения, а не
+только по коду — запись была корректно сохранена, но выброшена при загрузке
+собственным вызовом _prune() внутри load_save_data(), потому что max_incident_age
+(0.25 игрового часа) был перенесён из таймера реакции дрона и никогда не пересмотрен
+как окно хранения записи городом.*
+
+Four fixes from this diagnosis, three requested, one found while implementing the third:
+
+- **`IncidentRegistry.max_incident_age`: `0.25` → `24.0` game hours (one in-game day).**
+  Header now states explicitly that this is a retention window ("how long the city keeps
+  a fact on record"), not a reaction timer, and that it is NOT the same value as
+  `PatrolDroneController.alert_memory_time` (real seconds, unrelated, unchanged) despite
+  once sharing a rough magnitude by accident of history. `max_incidents` (unchanged, the
+  count-based cap) remains the actual safety valve against unbounded growth, so raising
+  the age doesn't trade that away. Not addressed: whether retention should differ by
+  `Incident.Kind` (e.g. evidence vs. ambient noise) — moot today since `Kind` has exactly
+  one value; flagged in this session's own report as a call for Stan if/when a second
+  `Kind` exists, not implemented. `core/world/incident_registry/incident_registry.gd`.
+- **`SaveSystem` debug save/load now logs payload composition.** `_on_debug_save_pressed()`/
+  `_on_debug_load_pressed()` each print one line per system (`get_save_key()`: size of
+  every array/dict field, e.g. `incident_registry: incidents: 0`) via a new
+  `_print_payload_summary()`/`_summarize_payload()` pair, safe to call immediately after
+  save/load since `get_save_data()` is a pure read (re-invoking it cannot change what was
+  written or loaded) and reports actual post-load state, including anything
+  `load_save_data()` itself pruned — this is what would have shown the incident count
+  dropping to `0` in the log instead of costing a manual save-file inspection.
+  `save_to_slot()`/`load_from_slot()` themselves remain silent when called from game
+  logic — only the debug handlers print. `core/world/save_system/save_system.gd`.
+- **`PatrolDroneController` now catches up on incidents already on record, not only ones
+  reported live.** New `IncidentRegistry.get_incidents_near(point, radius, max_age) ->
+  Array[Incident]` (read-only, doesn't prune, same convention as
+  `has_recent_incident_by()`). New `PatrolDroneController._check_existing_incidents()`,
+  called exactly once — from `_try_resolve_incident_registry()`, the moment resolution
+  succeeds, never polled — queries `alert_incident_radius` around the drone using
+  `IncidentRegistry`'s own `max_incident_age` as the recency bound (no second threshold
+  invented). Both this path and the existing live `incident_reported` path now funnel
+  through one new `_trigger_alert()` instead of duplicating the "reset memory timer,
+  enter ALERT" logic twice. Closes the same gap for the CONSUMER that H1 closed for the
+  fact itself: a record surviving reload/streaming is wasted if nothing that appears
+  afterward can read it, only hear about it happening live. `core/world/incident_registry/
+  incident_registry.gd`, `world/police_drone/controllers/patrol_drone_controller.gd`.
+- **`debug_save`/`debug_load` rebound `F5`/`F9` → `K`/`L`.** `F5` collides with the Godot
+  editor's own "Run Project" shortcut, which intercepts the key before it reaches the
+  running game when the game view is embedded — exactly why the DoD playtest above had to
+  fall back on quitting to desktop rather than a quick in-editor round-trip.
+  `project.godot`, `input_map.md`.
+
 ## 2026-08-11 — HealthComponent wired to player and NPCs; NPCs take damage and stay down
 
 Seven commits connecting `HealthComponent` (built earlier but never attached to either
