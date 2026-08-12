@@ -124,6 +124,12 @@ func get_formatted_time() -> String:
 
 # ── Save / Load ──────────────────────────────────────────────────────────────
 
+## SaveSystem's key for this system's payload — stable independent of the
+## class/file name (see save_system.gd's header for why).
+func get_save_key() -> StringName:
+	return &"game_clock"
+
+
 func get_save_data() -> Dictionary:
 	return {"total_game_hours": total_game_hours}
 

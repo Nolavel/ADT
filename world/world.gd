@@ -61,7 +61,9 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	ZoomRulerSystem,
 	WorldBorderDebugSystem,
 	WorldBorderGuardSystem,
-	IncidentRegistry             # ← what the city has on record; actors report, don't remember
+	IncidentRegistry,            # ← what the city has on record; actors report, don't remember
+	LodgingSystem,                # ← durable per-room record; survives block unloading like IncidentRegistry
+	SaveSystem                   # ← walks the systems above and moves dictionaries to/from disk; last on purpose
 ]
 
 ## 2) Самостоятельные 3D-сцены — instantiate(), родитель = stream_container.

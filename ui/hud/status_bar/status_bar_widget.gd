@@ -37,7 +37,7 @@ const SEGMENT_COUNT: int = 3
 @export var segment_gap: float = 4.0
 ## Distance from the frame to the segments inside it.
 @export var frame_padding: float = 5.0
-@export var frame_line_width: float = 1.0
+@export var frame_line_width: float = 2.0
 
 @export_group("Colours")
 @export var frame_color: Color = Color(0.45, 0.45, 0.45, 0.9)

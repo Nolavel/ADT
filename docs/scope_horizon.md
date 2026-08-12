@@ -54,19 +54,27 @@ constrain everything after them.
   - **Signal** — event notification, one-to-many, sender does not care who listens.
   - **Group** — discovery and tagging, for nodes that never receive a
     `WorldContext` (static scene instances such as `DroneBase`).
-- [ ] Define `save_state() -> Dictionary` / `load_state(data: Dictionary)` as an
-      optional contract on `WORLD_SYSTEM_SCRIPTS` entries, alongside the existing
-      `on_world_ready(context)` lifecycle hook.
-- [ ] Implement it on exactly two systems: `GameClockSystem` (trivial payload,
+- [x] Generalise and document `get_save_data() -> Dictionary` /
+      `load_save_data(data: Dictionary)` as an optional contract on
+      `WORLD_SYSTEM_SCRIPTS` entries, alongside the existing
+      `on_world_ready(context)` lifecycle hook. This contract already existed —
+      `GameClockSystem` implemented it before H1 started — so the task here was
+      never to define it, only to write it down and give it a second
+      implementer. A system opts in by implementing `get_save_key()`,
+      `get_save_data()` and `load_save_data()` together; `SaveSystem`
+      (`core/world/save_system/`) walks every system and checks with
+      `has_method()`, exactly like the existing `on_world_ready()` opt-in.
+- [x] Implement it on exactly two systems: `GameClockSystem` (trivial payload,
       proves the lifecycle) and `IncidentRegistry` (hard payload, proves the
       contract is real).
-- [ ] `IncidentRegistry` specifically: replace the `Node3D` perpetrator reference
+- [x] `IncidentRegistry` specifically: replace the `Node3D` perpetrator reference
       with a stable string id, and replace `Time.get_ticks_msec()` timestamps with
       game time. Both are required for the record to survive a reload, and both
       get more expensive once a second producer exists.
-- [ ] Version field in the payload from the first write. Not "later" — the first
+- [x] Version field in the payload from the first write. Not "later" — the first
       save file written without one is a migration problem forever.
-- [ ] Debug save/load on a keybind through `InputSystems`.
+- [x] Debug save/load on a keybind through `InputSystems` (`F5`/`F9`,
+      `debug_save`/`debug_load`).
 
 **Definition of Done:** punch an NPC, save, quit to desktop, relaunch, load — the
 drone still knows about the incident.

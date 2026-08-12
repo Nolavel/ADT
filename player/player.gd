@@ -30,6 +30,13 @@ signal punch_landed(position: Vector3)
 ## --- Movement State ---
 enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
 
+## --- Save contract (H1, docs/scope_horizon.md) ---
+## The player's stable actor id, read by IncidentRegistry (via the duck-typed
+## get_actor_id() below) instead of a Node3D reference — see actor_base.gd's
+## own actor_id for why. A constant, not an @export: there is exactly one
+## player, so there is nothing to author per-instance the way an NPC's id is.
+const ACTOR_ID: StringName = &"player"
+
 ## Character height, meters — the one value that varies per instance
 ## (NPCs carry their own body_height field too, see npc/npc_base.gd).
 ## Eye/shoulder/chest ratios are shared anatomy, not a trait of a specific
@@ -368,6 +375,12 @@ func get_sprint_blend() -> float:
 ## Checks whether the player wants to run (independent of stamina)
 func is_wanting_to_run() -> bool:
 	return wants_to_run
+
+
+## Stable id for IncidentRegistry (and any future consumer) to key on instead
+## of this Node — see ACTOR_ID's own comment.
+func get_actor_id() -> StringName:
+	return ACTOR_ID
 
 
 ## Character metric getters — callers (camera, future IK/effects) ask for a

@@ -41,6 +41,12 @@ signal stream_debug_toggled()
 ## Toggle for the NPC perception debug panel (action "toggle_perception_debug").
 signal perception_debug_toggled()
 
+## --- Debug save/load (H1, docs/scope_horizon.md) ---
+## A permanent developer tool, not a stand-in for the in-fiction save
+## mechanism (sleeping in a LodgingRoom) — both remain after that lands.
+signal debug_save_pressed()
+signal debug_load_pressed()
+
 ## Tap/hold on "toggle_tabs" — press timing is a property of the physical
 ## input, so the timer lives here, not in the consumer.
 signal tabs_key_tapped()
@@ -107,6 +113,7 @@ func _physics_process(delta: float) -> void:
 	_handle_tabs_key(delta)
 	_handle_ui_hotkeys()
 	_handle_stance_toggle()
+	_handle_debug_save_load()
 
 
 ## ============================================
@@ -204,6 +211,18 @@ func _handle_ui_hotkeys() -> void:
 		stream_debug_toggled.emit()
 	if Input.is_action_just_pressed("toggle_perception_debug"):
 		perception_debug_toggled.emit()
+
+
+## ============================================
+## DEBUG SAVE/LOAD — see debug_save_pressed's own comment. Relayed
+## unconditionally, same as every other action here; SaveSystem does not
+## gate on PlayerState.mode today.
+## ============================================
+func _handle_debug_save_load() -> void:
+	if Input.is_action_just_pressed("debug_save"):
+		debug_save_pressed.emit()
+	if Input.is_action_just_pressed("debug_load"):
+		debug_load_pressed.emit()
 
 
 ## ============================================

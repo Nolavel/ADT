@@ -28,6 +28,85 @@ renamed to `directional_shadow/size`, which is what is actually overridden.
 > Добавлен документ активного горизонта работ; исправлено расхождение по
 > рендереру в CLAUDE.md.
 
+**H1 (part 1 of 2): save contract generalised, `SaveSystem` added, `IncidentRegistry`
+made saveable.** `GameClockSystem.get_save_data()`/`load_save_data()` already existed
+(predates H1) — this generalises that shape into an optional contract any
+`WORLD_SYSTEM_SCRIPTS` entry can opt into (`get_save_key()` + `get_save_data()` +
+`load_save_data()`, checked with `has_method()`, same idiom as the existing
+`on_world_ready(context)` opt-in), and gives it a second, harder implementer.
+*Контракт сохранения (get_save_data/load_save_data) обобщён из GameClockSystem в
+опциональный интерфейс для любой системы; добавлен SaveSystem; IncidentRegistry
+теперь тоже сохраняется.*
+
+- New `core/world/save_system/save_system.gd` (`SaveSystem`, `WORLD_SYSTEM_SCRIPTS`
+  entry, added last). Walks `WorldContext.systems`, collects `get_save_data()` under
+  each system's own `get_save_key()`, writes `user://saves/slot_<n>.json` with a
+  top-level `"version"` field present from this first write. `save_to_slot(slot)` /
+  `load_from_slot(slot)` both return `bool` and `push_error`/`push_warning` with a
+  specific reason on failure — a version mismatch refuses the whole file rather than
+  half-loading it. Knows nothing about lodging, sleeping, or any in-fiction save
+  point; something else decides *when* to call it.
+- `InputSystems`: two new signals, `debug_save_pressed`/`debug_load_pressed`, bound to
+  new actions `debug_save` (`F5`) / `debug_load` (`F9`) — a permanent developer tool,
+  not the in-fiction save mechanism (sleeping). `project.godot`, `input_map.md` updated
+  (action count 31 → 33).
+- `core/world/game_clock/game_clock_system.gd`: added `get_save_key() -> "game_clock"`
+  next to its existing `get_save_data()`/`load_save_data()` — no other change.
+- `core/world/incident_registry/incident_registry.gd` and `incident.gd`: `Incident.
+  perpetrator` (`Node3D`) → `perpetrator_id` (`StringName`) — a node reference is
+  meaningless after a reload or once the reporting actor's block has streamed out.
+  `report(perpetrator, kind, position)` → `report(perpetrator_id, kind, position)`;
+  `has_recent_incident_by(perpetrator, within_seconds)` →
+  `has_recent_incident_by(perpetrator_id, within_hours)`. Timestamps switched from
+  `Time.get_ticks_msec()` (real seconds, reset on launch) to
+  `GameClockSystem.total_game_hours` (game hours, itself saved/restored) — `_now()`
+  resolves `GameClockSystem` via `on_world_ready(context)`. `max_incident_age`'s
+  default changed from `30.0` (real seconds) to `0.25` (game hours ≈ 30 real seconds
+  at default `time_scale`/`REAL_MINUTES_PER_GAME_DAY`) — a converted default, not the
+  old number reinterpreted in a new unit. Implements `get_save_key()` →
+  `"incident_registry"`, `get_save_data()`/`load_save_data()` (position flattened to a
+  3-float array, `perpetrator_id`/`kind` to `String`/`int` — JSON has none of those
+  types natively).
+- `core/characters/actor_base.gd`: new `@export var actor_id: StringName` +
+  `get_actor_id()`, authored per-instance the same convention as `BlockBase.id` /
+  `LodgingRoom.room_id` — deliberately not derived from `get_path()`/
+  `get_instance_id()`, both of which change across a streaming reload. Warns once in
+  `_ready()` if left unset. The player is not an `ActorBase`; `player.gd` carries the
+  same contract independently (`const ACTOR_ID := &"player"` + its own
+  `get_actor_id()`), so `IncidentRegistry` resolves both through one duck-typed call.
+- **Call site:** `IncidentRegistry._on_punch_landed()` is the only place that resolved
+  a `Node3D` perpetrator before this change — it now calls `_player.get_actor_id()`
+  before `report()`, with a `push_warning` (no report sent) if the player somehow has
+  no such method. No other call site existed to update; `has_recent_incident_by()` has
+  no callers yet either.
+- `CLAUDE.md` updated: `WORLD_SYSTEM_SCRIPTS` list, the `IncidentRegistry` paragraph
+  (id/timestamp change), and three new paragraphs (save contract, `ActorBase.actor_id`,
+  `LodgingSystem`). `docs/scope_horizon.md` H1: corrected — the save contract already
+  existed (`GameClockSystem`), so the task was generalising and documenting it, not
+  defining a new one; checkboxes updated.
+
+**H1 (part 2 of 2): `LodgingSystem`.** Durable per-room record — same "survives block
+unloading" reasoning as `IncidentRegistry`. `docs/scope_horizon.md` itself scopes
+sleep-as-save-point as *a separate item that does not block H1*; it landed here anyway
+because the brief for this session bundled it into H1 explicitly. Flagged, not silently
+reconciled — see this session's own report for detail.
+*LodgingSystem — устойчивая запись по комнатам, добавлена в рамках этой сессии, хотя
+scope_horizon.md изначально выносил её отдельным пунктом.*
+
+- New `core/world/lodging/lodging_system.gd` (`LodgingSystem`, `WORLD_SYSTEM_SCRIPTS`
+  entry). `_rooms: Dictionary` keyed by `room_id: StringName` →
+  `{"last_slept_game_hours": float, "storage": Array}` (`storage` unused, present so
+  the shape doesn't change later). `get_room_record(room_id)` creates a default record
+  on first access; `notify_slept(room_id, hours_advanced)` overwrites
+  `last_slept_game_hours` with the given value (a judgement call on an underspecified
+  field — see this session's report). Implements `get_save_key()` → `"lodging"`,
+  `get_save_data()`/`load_save_data()`. Does not import or call `SaveSystem` — the
+  one-way dependency (room asks for sleep → sleep advances the clock → caller asks
+  `SaveSystem` to write) is enforced by this file simply never mentioning it.
+- Not yet built: the `LodgingRoom` scene that actually calls this system (step 4 of
+  this session's brief) — stopped for review before that step, per the brief's own
+  instruction.
+
 ## 2026-08-11 — HealthComponent wired to player and NPCs; NPCs take damage and stay down
 
 Seven commits connecting `HealthComponent` (built earlier but never attached to either

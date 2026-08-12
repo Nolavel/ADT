@@ -1,6 +1,6 @@
 # InputMap
 
-> Verified against `project.godot` on **2026-08-06** · Godot 4.7 · GDScript
+> Verified against `project.godot` on **2026-08-12** · Godot 4.7 · GDScript
 
 **This document is the single source of truth for input bindings.** Update it
 in the same commit as any action added, removed or rebound in
@@ -15,7 +15,7 @@ Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
 methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
 reads raw `KEY_*` deliberately.
 
-Action count: **31** — 27 live, 4 reserved and unread.
+Action count: **33** — 29 live, 4 reserved and unread.
 
 ---
 
@@ -28,6 +28,8 @@ Active regardless of `PlayerState.mode`.
 | `pause` | `Esc` | Open / close pause menu; owns `get_tree().paused` via `PlayerState` | Меню паузы |
 | `toggle_stream_debug` | `\` | Toggle the streaming debug panel (observer only) | Панель отладки стриминга |
 | `toggle_perception_debug` | `]` | Toggle the NPC perception debug panel (observer only) | Панель отладки восприятия NPC |
+| `debug_save` | `F5` | Debug save to slot 0 (`SaveSystem`) — permanent developer tool, not the in-fiction save mechanism | Отладочное сохранение |
+| `debug_load` | `F9` | Debug load from slot 0 (`SaveSystem`) | Отладочная загрузка |
 
 ---
 

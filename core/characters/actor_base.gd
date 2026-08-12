@@ -22,6 +22,21 @@
 # every perceived actor without depending on a combat-specific group.
 # Subclasses that want combat lock-on join "lockable" themselves, as NPCBase
 # already does.
+#
+# actor_id is this actor's contribution to H1's save contract
+# (docs/scope_horizon.md): IncidentRegistry.report()/has_recent_incident_by()
+# key on this instead of a Node3D reference, since a node reference is
+# meaningless after a reload and meaningless once the block this actor lived
+# in has been streamed out. Deliberately an authored @export, not something
+# derived from get_path() or get_instance_id() — both change across a
+# streaming reload/reinstantiation, which is exactly the case this id has to
+# survive. It is authored the same way BlockBase's id or LodgingRoom's
+# room_id are: set once by whoever places the instance, stable regardless of
+# where in the tree it ends up. The player is not an ActorBase (player.gd
+# extends CharacterBody3D directly) and carries its own id the same way —
+# see player.gd's ACTOR_ID constant and get_actor_id() — so IncidentRegistry
+# resolves both through the same duck-typed get_actor_id() call rather than
+# two different lookups.
 # =============================================================================
 extends CharacterBody3D
 class_name ActorBase
@@ -30,9 +45,24 @@ class_name ActorBase
 ## "lockable".
 const GROUP_PERCEIVED_ACTOR: StringName = &"perceived_actor"
 
+## Stable id for this actor, authored per-instance — see the file header.
+## Empty by default; every ActorBase placed in a scene that might ever
+## report() or be reported on needs this set explicitly, the same way a
+## BlockBase marker needs its own id set.
+@export var actor_id: StringName = &""
+
 
 func _ready() -> void:
 	add_to_group(GROUP_PERCEIVED_ACTOR)
+	if actor_id == &"":
+		push_warning("[%s] actor_id is unset — this instance cannot be identified as an incident perpetrator/witness" % name)
+
+
+## Stable id for IncidentRegistry (and any future consumer) to key on instead
+## of this Node. Duck-typed rather than requiring a cast to ActorBase: the
+## player carries the same method without extending this class.
+func get_actor_id() -> StringName:
+	return actor_id
 
 
 ## Movement intent for this frame, written by whatever controller drives
