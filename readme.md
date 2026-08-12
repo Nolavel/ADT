@@ -73,7 +73,7 @@ deliberately.
 | `world/` | `world.tscn`, block and ground-tile content and silhouettes |
 | `tools/` | Editor tooling, incl. the greybox block generator |
 | `data/` | Data resources: `world_data.tres`, items |
-| `docs/` | Style guide, planned scope |
+| `docs/` | Style guide, planned scope, current horizon|
 
 ## World editing
 
