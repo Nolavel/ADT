@@ -70,6 +70,32 @@ fact on record.
   re-enablement.
 - `world/police_drone/controllers/patrol_drone_controller.gd`, `CLAUDE.md`.
 
+**`LodgingRoom` scene — scaffolding only.** Step 4 of the original H1 brief, deferred
+since. This step is deliberately scoped to structure alone, matching what its own brief
+section actually asked for (the sleep mechanic itself — `GameClockSystem`/
+`LodgingSystem`/`SaveSystem` — is entirely the next entry, not this one): an 8×8 greybox
+room, presence tracking, and a working interactable. Nothing here sleeps anyone yet.
+*Сцена LodgingRoom — пока только каркас: комната, отслеживание присутствия игрока,
+рабочий интерактивный объект. Сама механика сна — в следующей записи.*
+
+- New `world/lodging/lodging_room.tscn` / `.gd`, `class_name LodgingRoom`, root
+  `Node3D`. Node tree: `Geometry` (four `StaticBody3D` walls — one split into two to
+  leave a doorway gap — floor and ceiling, collision layer `1|2`), `PresenceArea`
+  (`Area3D`, tracks only whether the player overlaps it — `_player_inside`, no other
+  logic), `BedPoint` (`InteractableObject`, `InteractionType.BUTTON`, with its required
+  `Area` and `InteractiveVisualIndicator` children). `room_id` is a stable, authored
+  `@export`, same convention as `ActorBase.actor_id`/`BlockBase.id` — warns once if left
+  unset. Not instanced into any streamed block by this commit or any `WORLD_*_SCENES`
+  list — Stan places it by hand.
+- **`InteractComponent._activate_button()` filled in, not bypassed.** Was an empty
+  `pass` — `InteractableObject.activated(by: Node)` and its doc comment ("doors/lifts/
+  terminals subscribe to this signal") already existed, but nothing ever emitted it, so
+  `InteractionType.BUTTON` did nothing on interact, for any object, project-wide, until
+  now. `player/player_components/interact_component/interact_component.gd`.
+- `CLAUDE.md`: new bullets for `LodgingRoom` and the `activated` fix.
+- `world/lodging/lodging_room.tscn`, `world/lodging/lodging_room.gd`,
+  `player/player_components/interact_component/interact_component.gd`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order

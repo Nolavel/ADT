@@ -233,8 +233,14 @@ func _attach_to_slot(item: InteractableObject) -> void:
 	item.position = Vector3.ZERO
 	item.rotation = Vector3.ZERO
 	
-func _activate_button(current_interactable):
-	pass
+## Was an empty stub — InteractableObject.activated already existed and
+## already documented "doors/lifts/terminals subscribe to this signal", but
+## nothing ever emitted it, so BUTTON never actually did anything on
+## interact. Filled in, not bypassed: LodgingRoom's BedPoint (world/lodging/)
+## is the first real BUTTON consumer and goes through this same path, per
+## its own brief ("не заводи отдельный путь ввода для кровати").
+func _activate_button(current_interactable: InteractableObject) -> void:
+	current_interactable.activated.emit(player)
 	
 func _drop_item() -> void:
 	if not carried_item: return
