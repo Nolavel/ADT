@@ -49,6 +49,42 @@ here on a wrong belief that this scene was exempt from it.
 - `CLAUDE.md`'s `LodgingRoom` bullet corrected to match.
 - `world/lodging/lodging_room.gd`, `CLAUDE.md`.
 
+**Search lasted three seconds, not the intended "tens of seconds."** Symptom from
+Stan: a drone noticed, lit up, he stepped out of sight — migalki went dark and it
+went straight back to patrol almost immediately. Cause: re-enabling `alert_memory_time`
+as ALERT's only timer (previous entry, this same day) meant it governed BOTH how long
+a brief perception blink is tolerated AND how long the whole search phase runs — three
+seconds is right for the first, nowhere near enough for the second (barely reaches one
+wander point at `search_speed`).
+*Поиск длился три секунды вместо десятков: alert_memory_time случайно стал управлять
+и терпимостью к морганию восприятия, и всей длительностью поиска одновременно — для
+второго три секунды это почти ничего.*
+
+- New `@export var search_duration: float = 30.0` — the search phase's own timer,
+  starts counting only once `alert_memory_time`'s tolerance has already elapsed, resets
+  to `0.0` the instant the player is seen again. Value derived from `search_radius`/
+  `search_speed`, not picked blind: expected distance between two random points in a
+  20m-radius disk ≈ `0.9 × 20` ≈ 18m, ≈3s per leg at 6 m/s, so 30s covers roughly ten
+  distinct wander points.
+- `alert_memory_time` unchanged in value and default, narrowed in role: now purely a
+  TOLERANCE against a single dropped frame of perception (shared with `OBSERVE`'s own
+  decay, unaffected by this change) — not, on its own, how long ALERT itself lasts
+  anymore. Doc comments on the export, on `_alert_memory_timer`, and in the file header
+  rewritten to say so explicitly, since the previous entry's comments described a
+  timer doing more than it actually should.
+- `_update_state()`'s `ALERT` branch restructured into the three states this implies:
+  seen (both timers reset, ordinary hold-and-watch) → not seen, within tolerance (hold
+  position, no state change) → not seen, past tolerance (search timer ticks,
+  `_decide_search()` runs) → search exhausted (exits via the pre-existing
+  `OBSERVE`-if-seen-and-`COMBAT`-else-`PATROL` rule, unchanged). `_decide_alert()`
+  mirrors the same tolerance threshold for movement: still holds position (reusing
+  `_decide_hold_and_watch()`'s existing not-seen freeze) rather than searching, until
+  past `alert_memory_time`.
+- `get_alert_memory_remaining()` (read by the perception debug panel) now spans both
+  phases behind the one number it always returned, so that panel stays accurate without
+  needing to know search exists as a separate concept.
+- `world/police_drone/controllers/patrol_drone_controller.gd`, `CLAUDE.md`.
+
 **Drone periodic PATROL scan; `alert_incident_radius` back to 60m.** Diagnosed from a
 real playtest: raising `alert_incident_radius` to 600m had made drones react correctly
 after a load, which looked like confirmation the `incidents_restored` fix (2026-08-12)

@@ -57,14 +57,20 @@
 # event, same distinction has_recent_incident_by() vs. a hypothetical
 # polling API would draw.
 #
-# Both rungs hold on the same memory shape (alert_memory_time), not two
-# independent timers: ALERT doesn't un-trigger the instant the incident
-# ages past the registry's own window, and OBSERVE doesn't un-trigger the
-# instant the player lowers their stance or looks away — a drone that
-# forgets mid-blink reads as glitching, not calming down. Losing ALERT's
-# memory falls back to OBSERVE if the player is still seen and in COMBAT
-# that frame, otherwise PATROL — the same live read OBSERVE's own entry
-# uses, not a separate "was I provoked recently" flag.
+# Both rungs share alert_memory_time as a tolerance against a single dropped
+# frame, not an instant un-trigger: ALERT doesn't un-trigger the instant the
+# incident ages past the registry's own window, and OBSERVE doesn't
+# un-trigger the instant the player lowers their stance or looks away — a
+# drone that forgets mid-blink reads as glitching, not calming down. Past
+# that shared tolerance the two diverge: OBSERVE un-triggers directly
+# (falls back to PATROL, nothing left to search for — a raised stance was
+# never a fact on record); ALERT instead enters its own search phase, timed
+# separately by search_duration, and only THAT expiring — not
+# alert_memory_time — falls back to OBSERVE-if-seen-and-COMBAT-else-PATROL,
+# the same live read OBSERVE's own entry uses, not a separate "was I
+# provoked recently" flag. See search_duration's own comment for why one
+# shared shape stopped being enough once ALERT's un-triggering also had to
+# cover a whole search, not a single moment.
 #
 # IncidentRegistry is a WORLD_SYSTEM_SCRIPTS entry (world.gd), not an
 # autoload, and this drone is a static test instance placed directly in
@@ -124,12 +130,27 @@
 # sighting if this drone has ever actually seen the player, otherwise the
 # triggering incident's own position (seeded once, in _trigger_alert()).
 # search_speed is deliberately closer to patrol_speed than to alert_speed —
-# this is looking around an area, not a pursuit. ALERT's memory decay
-# (alert_memory_time, falling back to OBSERVE-or-PATROL) was re-enabled
-# alongside this (2026-08-13) — it had been disabled ("stay ALERT
-# indefinitely") specifically because dropping out of a frozen hover read
-# as giving up mid-freeze; a real search gives that decay somewhere
-# purposeful to lapse FROM.
+# this is looking around an area, not a pursuit.
+#
+# Losing sight of the player in ALERT is now TWO phases, not one, on two
+# DIFFERENT timers — collapsing them into one (alert_memory_time alone,
+# 2026-08-13's first pass at this) meant a "search" that gave up after three
+# seconds, barely long enough to reach a single wander point:
+#
+#   - alert_memory_time (unchanged in value, narrowed in meaning) is a
+#     TOLERANCE: a brief loss of sight — a frame of occlusion, a corner
+#     briefly blocking the line — holds position rather than immediately
+#     lurching into search, the same way OBSERVE's own entry doesn't un-
+#     trigger on a single dropped frame. Three seconds is right for "don't
+#     twitch on a blink," wrong for "how long to actually look."
+#
+#   - search_duration is how long the search phase itself runs once the
+#     tolerance is spent — see that export's own comment for the value and
+#     why. Resets to 0 the moment the player is seen again (mid-search or
+#     mid-tolerance both fall back to ordinary hold-and-watch on a
+#     sighting); expiring without a sighting exits ALERT via the existing
+#     OBSERVE-or-PATROL rule, same formula this file already used before
+#     search existed.
 #
 # alert_incident_radius went to 600m and back to 60m during this work
 # (2026-08-13) — a diagnostic detour, not a design change. The actual
@@ -201,13 +222,16 @@ enum State { PATROL, OBSERVE, ALERT }
 ## feel/scale value: wide enough that a drone patrolling nearby plausibly
 ## notices, not so wide every drone in the district converges on one punch.
 @export var alert_incident_radius: float = 60.0
-## Seconds ALERT persists after the triggering incident ages out of memory,
-## before lapsing back to OBSERVE-or-PATROL — and, reused (see the file
-## header on why it's one shared shape, not two timers), seconds OBSERVE
-## persists after the player lowers their stance or is lost from sight.
-## Not zero either way: a drone that forgets the instant the fact is old,
-## or the instant a fist is lowered, reads as glitching, not calming down.
-## A feel value, tuned by eye — start at 3s per spec.
+## Seconds ALERT and OBSERVE tolerate the player being out of sight/lowered
+## before reacting — NOT how long the resulting reaction lasts, see the file
+## header on why those used to be the same number and stopped being one.
+## For OBSERVE this is the whole story: past this tolerance it un-triggers
+## straight to PATROL. For ALERT this only gates entry into the SEARCH
+## phase (_decide_search()) — search_duration, a separate export, is what
+## actually times that phase. A drone that reacts to a single dropped frame
+## of perception reads as glitching, not calming down; three seconds is
+## right for that purpose specifically. A feel value, tuned by eye — start
+## at 3s per spec.
 @export var alert_memory_time: float = 3.0
 ## Radius, metres, this drone wanders within while searching (ALERT, player
 ## not currently seen — see _decide_search()) — around _tracked_player_
@@ -222,6 +246,21 @@ enum State { PATROL, OBSERVE, ALERT }
 ## has a reason to suspect, not chasing a live sighting. Converted to
 ## DroneBase's speed_ratio the same way patrol_speed/alert_speed are.
 @export var search_speed: float = 6.0
+## Seconds the search phase itself runs (see _update_state()'s ALERT
+## branch) before giving up and exiting ALERT via the existing OBSERVE-or-
+## PATROL rule — starts counting only once alert_memory_time's own
+## tolerance has already elapsed, and resets to 0 the instant the player is
+## seen again. Deliberately NOT alert_memory_time: reusing that single
+## value for search duration too (2026-08-13's first pass at this) meant a
+## search that gave up after three seconds — barely enough to reach one
+## wander point before quitting, which read as a shrug, not a search.
+## 30.0 is derived from search_radius/search_speed, not picked blind: the
+## expected distance between two random points inside a disk of radius R is
+## ≈0.9·R, so at search_radius 20m and search_speed 6 m/s each leg between
+## wander points takes roughly 3s — 30s covers on the order of ten distinct
+## points, enough to read as an actual search. A feel value regardless,
+## tuned by eye like every other cadence in this file.
+@export var search_duration: float = 30.0
 
 @export_group("Hold And Watch")
 ## Distance, metres, over which the drone brakes its closing speed to zero
@@ -400,20 +439,30 @@ var _tracked_player_position: Vector3 = Vector3.ZERO
 var _has_tracked_player_position: bool = false
 
 var _state: State = State.PATROL
-## Seconds since the last incident that put this drone into ALERT — reset to
-## 0 by _trigger_alert() on every provoking report or catch-up, only ever
-## counted up while in ALERT. Compared against alert_memory_time to decide
-## when ALERT lapses — see _update_state()'s ALERT branch.
+## Seconds since the player was last actually seen while in ALERT — reset to
+## 0 by _trigger_alert() on entry and by _update_state() every frame the
+## player is seen again, only ever counted up while in ALERT and not seen.
+## Gates entry into the search phase (compared against alert_memory_time,
+## the tolerance) — NOT how long ALERT itself lasts, see _search_timer for
+## that. Renamed in role, not in name, 2026-08-13 — see the file header.
 var _alert_memory_timer: float = 0.0
 ## Seconds since the player last provoked OBSERVE (seen and in COMBAT) —
 ## reset to 0 by _update_state() every frame that's still true, only ever
 ## counted up while in OBSERVE. Compared against alert_memory_time, same
-## shared shape as _alert_memory_timer — see that export's own comment.
+## tolerance _alert_memory_timer uses for ALERT's own entry into search —
+## see that export's own comment.
 var _observe_memory_timer: float = 0.0
 ## Seconds since the last periodic registry scan while PATROL — see
 ## patrol_scan_interval's own comment. Only ever counted up while PATROL
 ## (_update_patrol_scan() is only called from that branch of _decide()).
 var _patrol_scan_timer: float = 0.0
+## Seconds spent actively searching (ALERT, player not seen, past
+## alert_memory_time's own tolerance) — compared against search_duration to
+## decide when ALERT actually lapses. Only ever counted up during the
+## search phase itself (see _update_state()'s ALERT branch); reset to 0 by
+## _trigger_alert() on entry and by _update_state() the instant the player
+## is seen again, same reset points as _alert_memory_timer.
+var _search_timer: float = 0.0
 
 ## Current wander goal while searching (ALERT, player not seen) — same
 ## "goal point, arrive, pick a new one" idiom _patrol_target uses for
@@ -520,13 +569,20 @@ func get_state_name() -> String:
 	return State.keys()[_state]
 
 
-## Seconds left before ALERT lapses back to OBSERVE-or-PATROL from memory
-## alone, or -1.0 outside ALERT ("n/a") — read by the perception debug
-## panel.
+## Seconds left before ALERT actually lapses back to OBSERVE-or-PATROL, or
+## -1.0 outside ALERT ("n/a") — read by the perception debug panel. Spans
+## BOTH phases behind one number, same contract this getter had before
+## search existed, so the debug panel's existing "held by incident memory"
+## line stays meaningful without that file needing to know search exists:
+## still in the tolerance (haven't started searching yet) reports the rest
+## of that tolerance PLUS the full search_duration still ahead; already
+## searching reports what's left of search_duration alone.
 func get_alert_memory_remaining() -> float:
 	if _state != State.ALERT:
 		return -1.0
-	return maxf(0.0, alert_memory_time - _alert_memory_timer)
+	if _alert_memory_timer < alert_memory_time:
+		return maxf(0.0, (alert_memory_time - _alert_memory_timer) + search_duration)
+	return maxf(0.0, search_duration - _search_timer)
 
 
 ## Read by the perception debug panel — a getter instead of exposing
@@ -695,6 +751,7 @@ func _trigger_alert(incident_position: Vector3) -> void:
 		_tracked_player_position = incident_position
 		_has_tracked_player_position = true
 	_alert_memory_timer = 0.0
+	_search_timer = 0.0
 	_enter_state(State.ALERT)
 
 
@@ -710,22 +767,38 @@ func _update_state(observation: PlayerObservation, delta: float) -> void:
 			and observation.stance == PlayerState.Stance.COMBAT
 
 	if _state == State.ALERT:
-		## Ticks regardless of whether the player is visible THIS frame —
-		## "memory" is how long since this drone had a real reason to be
-		## alert, not a per-frame visibility flag, and _trigger_alert()
-		## already resets it on every fresh provocation. Re-enabled
-		## (2026-08-13) now that ALERT without a visible player is a real
-		## search (_decide_search()), not a frozen hover: lapsing out after
-		## alert_memory_time now reads as "searched for a while, didn't
-		## find them, stood down" instead of "gave up mid-freeze," which is
-		## what kept this disabled before. Read on expiry, not before:
-		## provoking_observe reflects whatever the drone can see THIS
-		## frame, which may differ from what it saw earlier in the same
-		## ALERT hold — a player found again right as memory runs out steps
-		## down to OBSERVE, not all the way to PATROL.
+		var seen := observation != null and observation.is_seen
+		if seen:
+			## Found (again) — ordinary hold-and-watch resumes in
+			## _decide_alert(). Both timers reset: a sighting means
+			## nothing is currently being tolerated or searched for.
+			_alert_memory_timer = 0.0
+			_search_timer = 0.0
+			return
+
+		## Not seen this frame. First tick toward alert_memory_time's own
+		## tolerance — a brief loss of sight (a dropped frame, a moment
+		## behind a corner) holds position rather than immediately
+		## treating the player as actually lost; _decide_alert() mirrors
+		## this same threshold for what it does with the body.
 		_alert_memory_timer += delta
 		if _alert_memory_timer < alert_memory_time:
 			return
+
+		## Tolerance spent — actively searching. Ticks search_duration
+		## instead of alert_memory_time now; see search_duration's own
+		## comment for why conflating the two (2026-08-13's first pass at
+		## this) meant a search that gave up after three seconds.
+		_search_timer += delta
+		if _search_timer < search_duration:
+			return
+
+		## Search exhausted, still not found — exits via the same formula
+		## this file used before search existed. provoking_observe needs
+		## observation.is_seen, which this branch only reaches when false,
+		## so OBSERVE is reachable here only in the edge case of a
+		## sighting landing on the exact frame the search timer expires;
+		## PATROL is the practical outcome otherwise.
 		_enter_state(State.OBSERVE if provoking_observe else State.PATROL)
 		return
 
@@ -764,13 +837,25 @@ func _decide_observe(observation: PlayerObservation, delta: float) -> void:
 
 
 ## ALERT: hold-and-watch (same as OBSERVE, closer and faster) while the
-## player is actually seen; search otherwise. See the file header on why
-## ALERT without a visible player used to just hover motionless waiting —
-## that read as broken, or as "waiting for the player to walk up to it,"
-## neither of which is what a drone escalated by a fact on record should
-## look like.
+## player is actually seen, and — mirroring _update_state()'s own
+## alert_memory_time threshold — for a brief loss of sight too, still
+## within tolerance: a drone that immediately lurches into searching over
+## one dropped frame of perception reads as twitchy, not attentive. Only
+## past that tolerance (_alert_memory_timer >= alert_memory_time) does
+## _decide_search() actually take over. See the file header on why ALERT
+## without a visible player used to just hover motionless waiting
+## indefinitely — that read as broken, or as "waiting for the player to
+## walk up to it," neither of which is what a drone escalated by a fact on
+## record should look like.
 func _decide_alert(observation: PlayerObservation, delta: float) -> void:
 	if observation != null and observation.is_seen:
+		_decide_hold_and_watch(observation, alert_hover_distance, alert_speed, delta)
+		return
+	if _alert_memory_timer < alert_memory_time:
+		## Within tolerance — hold position rather than start searching
+		## over a single perception blink. _decide_hold_and_watch()'s own
+		## not-seen branch already just freezes in place, which is exactly
+		## the behaviour wanted here too — reused, not duplicated.
 		_decide_hold_and_watch(observation, alert_hover_distance, alert_speed, delta)
 		return
 	_decide_search(delta)
