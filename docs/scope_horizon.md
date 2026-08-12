@@ -82,8 +82,18 @@ drone still knows about the incident.
 **Explicitly not in scope here:** player position, inventory contents, streaming
 state, NPC state. The contract is what matters, not payload coverage.
 
-Sleep-as-save-point is the in-fiction mechanism and belongs to specific
-locations. It is a separate item and does not block this one.
+Sleeping in a room is H1's own payload, not a separate item that comes after
+it — this line said otherwise until 2026-08-12 and was wrong by then; see
+`CHANGELOG.md` for when and why it was corrected instead of just deleted. A
+debug keybind proves `SaveSystem` is wired correctly; it cannot prove the
+contract is worth having, because nothing in the fiction ever produces a
+save that way. Sleep is what makes "the contract works" a claim about
+something real rather than about the plumbing alone — a room, not a
+keypress, is the save point this horizon exists to prove out. What stays
+out of H1 is everything around the act of sleeping, not the act itself:
+which rooms the player can use, any cost to sleeping, whether unstored
+items can be lost, and lodging read as part of the fiction rather than as
+test scaffolding for this contract.
 
 ---
 

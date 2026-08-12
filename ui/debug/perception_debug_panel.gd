@@ -45,6 +45,10 @@ var _text: RichTextLabel
 ## to fall back to a group lookup instead). Null (and the last-incident line
 ## silently skipped) only in an isolated test scene without one.
 var _incident_registry: IncidentRegistry = null
+## Resolved the same way — needed to turn Incident.timestamp (game hours,
+## since H1) into an age a human can read. See _describe_last_incident()'s
+## own comment for why this can't just reuse Time.get_ticks_msec() anymore.
+var _game_clock: GameClockSystem = null
 
 
 func _ready() -> void:
@@ -54,6 +58,7 @@ func _ready() -> void:
 
 func on_world_ready(context: WorldContext) -> void:
 	_incident_registry = context.get_system(IncidentRegistry) as IncidentRegistry
+	_game_clock = context.get_system(GameClockSystem) as GameClockSystem
 
 
 func _on_toggle() -> void:
@@ -96,10 +101,13 @@ func _redraw() -> void:
 	_text.text = header + "\n\n" + "\n\n".join(lines)
 
 
-## "last incident: ASSAULT 3.2s ago" or "no incidents recorded" — global,
-## same reasoning as the stance line above. Uses the same real-seconds clock
-## IncidentRegistry itself stamps timestamps with (Time.get_ticks_msec()),
-## not GameClockSystem — see that file's header for why.
+## "last incident: ASSAULT 0.05h ago" or "no incidents recorded" — global,
+## same reasoning as the stance line above. Incident.timestamp is game hours
+## (GameClockSystem.total_game_hours) as of H1 (docs/scope_horizon.md), not
+## Time.get_ticks_msec() — see incident_registry.gd's own header for why a
+## durable record can't be timestamped in a clock that resets on launch. Age
+## is therefore read against GameClockSystem here too, not computed from
+## engine uptime.
 func _describe_last_incident() -> String:
 	if not _incident_registry:
 		return "last incident: [color=#777777]no IncidentRegistry in scene[/color]"
@@ -108,8 +116,12 @@ func _describe_last_incident() -> String:
 	if incident == null:
 		return "last incident: [color=#777777]none recorded[/color]"
 
-	var age := Time.get_ticks_msec() / 1000.0 - incident.timestamp
-	return "last incident: %s   %.1fs ago" % [Incident.Kind.keys()[incident.kind], age]
+	if not _game_clock:
+		return "last incident: %s   [color=#777777]no GameClockSystem in scene[/color]" \
+				% Incident.Kind.keys()[incident.kind]
+
+	var age_hours := _game_clock.total_game_hours - incident.timestamp
+	return "last incident: %s   %.2fh ago" % [Incident.Kind.keys()[incident.kind], age_hours]
 
 
 func _describe_actor(actor: ActorBase) -> String:

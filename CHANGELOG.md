@@ -97,15 +97,57 @@ scope_horizon.md изначально выносил её отдельным п�
   entry). `_rooms: Dictionary` keyed by `room_id: StringName` →
   `{"last_slept_game_hours": float, "storage": Array}` (`storage` unused, present so
   the shape doesn't change later). `get_room_record(room_id)` creates a default record
-  on first access; `notify_slept(room_id, hours_advanced)` overwrites
-  `last_slept_game_hours` with the given value (a judgement call on an underspecified
-  field — see this session's report). Implements `get_save_key()` → `"lodging"`,
-  `get_save_data()`/`load_save_data()`. Does not import or call `SaveSystem` — the
-  one-way dependency (room asks for sleep → sleep advances the clock → caller asks
-  `SaveSystem` to write) is enforced by this file simply never mentioning it.
+  on first access; `notify_slept(room_id, slept_at_game_hours)` records that absolute
+  reading. Implements `get_save_key()` → `"lodging"`, `get_save_data()`/
+  `load_save_data()`. Does not import or call `SaveSystem` — the one-way dependency
+  (room asks for sleep → sleep advances the clock → caller asks `SaveSystem` to write)
+  is enforced by this file simply never mentioning it.
 - Not yet built: the `LodgingRoom` scene that actually calls this system (step 4 of
   this session's brief) — stopped for review before that step, per the brief's own
   instruction.
+
+**Review fixes on the above, same day.** Three corrections from a review pass before
+step 4 started — two flagged in the original report and fixed cheaply as a result, one
+found only by re-reading a file the report hadn't touched.
+*Три правки по итогам ревью того же дня: две — по пунктам, отмеченным в отчёте, третья
+найдена заново при чтении файла, которого отчёт не касался.*
+
+- **`LodgingSystem.notify_slept()` stored the wrong quantity.** It wrote
+  `hours_advanced` (a duration — how long the sleep took) into a field named
+  `last_slept_game_hours`, which is supposed to answer "how long ago did the player
+  sleep here" — a question a duration cannot answer, only an absolute clock reading
+  can. Fixed: `notify_slept(room_id, slept_at_game_hours)` now takes the ABSOLUTE
+  `GameClockSystem.total_game_hours` reading, taken by the caller after advancing the
+  clock, not a duration taken during it. `LodgingSystem` still does not resolve
+  `GameClockSystem` itself — the one caller this method exists for (`LodgingRoom`,
+  not yet built) already has to hold that reference to advance the clock in the first
+  place, so having `LodgingSystem` reach for `WorldContext` too would be a second copy
+  of a lookup this file otherwise has no use for. New `LodgingSystem.NEVER_SLEPT`
+  (`-1.0`) sentinel distinguishes "never slept here" from "slept during game hour 0" —
+  `0.0` was ambiguous between the two, and `total_game_hours` only ever counts up from
+  `GameClockSystem.START_HOUR` (`16.0`), so `-1.0` is unreachable by construction.
+  `core/world/lodging/lodging_system.gd`.
+- **`perception_debug_panel.gd`'s "last incident" line was reading the wrong clock —
+  found during this fix, not flagged in the original report.** It still computed
+  incident age as `Time.get_ticks_msec() / 1000.0 - incident.timestamp`, left over from
+  before `Incident.timestamp` became game hours; after that change this was comparing
+  an engine-uptime real-seconds value against a game-hours one, which would have shown
+  a nonsense age (tens of thousands of "seconds") the moment anyone opened the panel.
+  The original stale-reference sweep only grepped for `.perpetrator` and
+  `has_recent_incident_by(` — it missed `.timestamp` itself. Fixed: the panel now
+  resolves `GameClockSystem` via `on_world_ready()`, same as `IncidentRegistry` does,
+  and reports age in game hours. `ui/debug/perception_debug_panel.gd`.
+- **`docs/scope_horizon.md` H1 contradicted the brief that built it.** Lines 85–86 said
+  sleep-as-save-point "is a separate item and does not block this one" — true when
+  originally written, false since the brief for this session deliberately pulled
+  sleeping-in-a-room into H1 as its actual payload: a debug keybind proves `SaveSystem`
+  is wired correctly, but only a real save point (sleep) proves the contract is worth
+  having, because nothing in the fiction produces a save any other way. The doc was not
+  updated when that call was made. Corrected today, 2026-08-12 — the old line was not
+  silently deleted; the replacement text says in-place that it held until this date and
+  points here for why. Scope still excludes room availability/gating, any cost to
+  sleeping, and item loss — only the act of sleeping-as-save-point moved into H1, not
+  everything around it.
 
 ## 2026-08-11 — HealthComponent wired to player and NPCs; NPCs take damage and stay down
 

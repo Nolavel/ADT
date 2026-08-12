@@ -18,6 +18,11 @@
 # SaveSystem, that is a sign the design has inverted, not a sign this file
 # needs updating.
 #
+# For the same reason, notify_slept() takes an ABSOLUTE game-hour reading
+# (slept_at_game_hours), not a duration — see that method's own comment for
+# why, and for why this system still doesn't reach for GameClockSystem
+# itself to get it.
+#
 # room_id is a stable, authored StringName — the same convention as
 # BlockBase's id and ActorBase's actor_id, not derived from a node path
 # (LodgingRoom instances are placed by hand today, not streamed content, but
@@ -26,30 +31,48 @@
 extends Node
 class_name LodgingSystem
 
+## Sentinel for "never slept in this room" — distinct from any real
+## GameClockSystem.total_game_hours reading, which only ever counts up from
+## GameClockSystem.START_HOUR (16.0) and never goes negative. 0.0 would be
+## wrong here: it collides with "slept in during the very first game hour",
+## a real and reachable value, not just a theoretical one.
+const NEVER_SLEPT: float = -1.0
+
 ## room_id -> Dictionary{"last_slept_game_hours": float, "storage": Array}.
-## storage is empty and unused today — present so the record's shape doesn't
-## change (and doesn't orphan old saves) the day something actually gets
-## stored in a room.
+## last_slept_game_hours is an ABSOLUTE reading — the value
+## GameClockSystem.total_game_hours held at the moment this room was last
+## slept in, directly comparable to that same property later ("how many
+## game hours ago did I sleep here?" is now just a subtraction) — not a
+## duration. NEVER_SLEPT until the first sleep. storage is empty and unused
+## today — present so the record's shape doesn't change (and doesn't orphan
+## old saves) the day something actually gets stored in a room.
 var _rooms: Dictionary = {}
 
 
 ## Returns this room's record, creating a default one on first access. Never
 ## returns null — a room that has never been slept in still has a record,
-## just an empty/zeroed one.
+## with last_slept_game_hours == NEVER_SLEPT.
 func get_room_record(room_id: StringName) -> Dictionary:
 	if not _rooms.has(room_id):
 		_rooms[room_id] = _make_default_record()
 	return _rooms[room_id]
 
 
-## Records that room_id was just slept in, advancing the clock by
-## hours_advanced game hours. This system does not advance the clock itself
-## (that is GameClockSystem's job, driven by whoever handles the sleep
-## interaction) — hours_advanced is reported here after the fact, purely as
-## the room's own memory of its last use.
-func notify_slept(room_id: StringName, hours_advanced: float) -> void:
+## Records that room_id was just slept in, at slept_at_game_hours — an
+## ABSOLUTE GameClockSystem.total_game_hours reading, taken by the caller
+## AFTER advancing the clock, not a duration. This system deliberately does
+## not read GameClockSystem itself to fill this in: the one caller this
+## exists for (LodgingRoom, world/lodging/) already has to hold a
+## GameClockSystem reference anyway, to advance the clock to the next 07:00
+## before calling this — so making this system resolve its own
+## WorldContext/GameClockSystem dependency, purely to re-derive a value the
+## caller already has in hand, would be a second copy of a lookup this file
+## otherwise has zero use for. See this session's own report for the
+## alternative considered (on_world_ready() resolving GameClockSystem
+## directly) and why it was rejected.
+func notify_slept(room_id: StringName, slept_at_game_hours: float) -> void:
 	var record := get_room_record(room_id)
-	record["last_slept_game_hours"] = hours_advanced
+	record["last_slept_game_hours"] = slept_at_game_hours
 
 
 ## SaveSystem's key for this system's payload — stable independent of the
@@ -66,7 +89,7 @@ func get_save_data() -> Dictionary:
 	for room_id in _rooms:
 		var record: Dictionary = _rooms[room_id]
 		saved_rooms[String(room_id)] = {
-			"last_slept_game_hours": record.get("last_slept_game_hours", 0.0),
+			"last_slept_game_hours": record.get("last_slept_game_hours", NEVER_SLEPT),
 			"storage": record.get("storage", []),
 		}
 	return {"rooms": saved_rooms}
@@ -80,10 +103,10 @@ func load_save_data(data: Dictionary) -> void:
 	for room_id_string in saved_rooms:
 		var entry: Dictionary = saved_rooms[room_id_string]
 		_rooms[StringName(room_id_string)] = {
-			"last_slept_game_hours": float(entry.get("last_slept_game_hours", 0.0)),
+			"last_slept_game_hours": float(entry.get("last_slept_game_hours", NEVER_SLEPT)),
 			"storage": entry.get("storage", []),
 		}
 
 
 func _make_default_record() -> Dictionary:
-	return {"last_slept_game_hours": 0.0, "storage": []}
+	return {"last_slept_game_hours": NEVER_SLEPT, "storage": []}
