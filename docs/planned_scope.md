@@ -13,7 +13,7 @@ two systems that already exist.
 
 Design specifications for things on this page, where they exist, live
 beside it: the city's reaction to the player is specified in
-`npc_reactions.md`.
+`NPC_REACTIONS.md`
 
 Last reviewed: 2026-08-07
 
