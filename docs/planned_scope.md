@@ -133,7 +133,7 @@ two participants and expensive to retrofit when there are twenty.
   their own durable store or as a section of the save payload. They must
   outlive world teardown either way.
 - Whether the durable wanted record is `IncidentRegistry` or a separate
-  object — see `npc_reactions.md` §8. The registry today is a short-lived
+  object — see `NPC_REACTIONS.md` §8. The registry today is a short-lived
   sensor buffer holding node references and engine-uptime timestamps, both
   of which are correct for what it does and wrong for a fact that survives
   sleep.
@@ -194,7 +194,7 @@ Named here so the absence is deliberate rather than overlooked:
   (`IncidentRegistry`) — but still not the whole reaction: nothing beyond
   one drone's radius hears about it, and there's no witness system yet
   (NPCs don't report what they see, only the player's own punch does). The
-  design this is built against is `npc_reactions.md`.
+  design this is built against is `NPC_REACTIONS.md`.
 - **Combat.** A punch exists (`COMBAT`-only, `mouse_left_button`,
   `player.gd`) and knocks a hit NPC down for a few seconds — see NPC and AI,
   above. What doesn't: health, damage numbers, death, a weapon to swing, and
@@ -221,7 +221,7 @@ Named here so the absence is deliberate rather than overlooked:
   Once it lands, a drawn weapon in COMBAT is meant to put a drone into
   OBSERVE — attention on *intent*, released when the player returns to
   PEACE, distinct from the ALERT that a reported fact causes; see
-  `npc_reactions.md` §4a and `patrol_drone_controller.gd`'s own header. The
+  `NPC_REACTIONS.md` §4a and `patrol_drone_controller.gd`'s own header. The
   evidence system is meant to read stance too. NPC reaction to the player's
   stance is done (the glance/turn gate); drone reaction to it is not — see
   Combat and NPC/AI, above, for what replaced it.
