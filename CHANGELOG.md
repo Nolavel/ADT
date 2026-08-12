@@ -40,6 +40,36 @@ and lazily, not as one mass.
   four, with the periodic scan's own reasoning and the radius detour's story attached.
 - `world/police_drone/controllers/patrol_drone_controller.gd`, `CLAUDE.md`.
 
+**ALERT without a visible player: search, not a frozen hover.** Symptom: a drone in
+ALERT with no player in sight just hovered motionless, waiting — read as broken, or as
+"waiting for the player to walk up to it," neither of which fits a city responding to a
+fact on record.
+*ALERT без видимого игрока теперь — поиск, а не зависание на месте: дрон патрулирует
+окрестности последней известной позиции игрока или места инцидента.*
+
+- `PatrolDroneController._decide_alert()` now branches: hold-and-watch (unchanged) while
+  `observation.is_seen`, else new `_decide_search()` — a `_decide_patrol()`-shaped
+  wander (goal point, arrive, pick a new one, reusing `PATROL_ARRIVAL_RADIUS`) around new
+  `search_radius` (`20.0`m) of `_tracked_player_position` at new `search_speed` (`6.0`
+  m/s, closer to `patrol_speed` than to `alert_speed` — looking around, not chasing).
+- `_trigger_alert()` now takes `incident_position: Vector3`, used only to seed
+  `_tracked_player_position` when this drone has never actually seen the player
+  (`_has_tracked_player_position` false) — the triggering incident's own location is the
+  only estimate available before a real sighting. A live sighting always wins once one
+  exists. `_check_existing_incidents()` now picks the CLOSEST matching incident (not
+  first/last) to pass along, since with a search behaviour to anchor, which incident is
+  chosen now matters, not just whether one exists.
+- `alert_memory_time` decay (falling back to `OBSERVE`-or-`PATROL`) re-enabled in
+  `_update_state()` — commented out since an earlier session specifically because
+  lapsing out of a frozen hover read as giving up mid-freeze; a real search gives that
+  decay somewhere purposeful to lapse FROM. Ticks regardless of live visibility that
+  frame (memory is "how long since a real reason to be alert," not a per-frame flag) and
+  is read only at expiry, so a player re-found right as memory runs out steps down to
+  `OBSERVE`, not all the way to `PATROL`.
+- `CLAUDE.md`: new bullet documenting ALERT's search behaviour and the decay
+  re-enablement.
+- `world/police_drone/controllers/patrol_drone_controller.gd`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order

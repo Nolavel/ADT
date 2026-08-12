@@ -117,6 +117,20 @@
 # colour lerp. The spotlight is the addressed signal (who it's looking at);
 # the light bar is the ambient one (that it's looking at all).
 #
+# ALERT without a visible player is a SEARCH (_decide_search()), not a
+# frozen hover — a motionless drone waiting for the player to walk up to it
+# read as broken, not as a city responding to a fact on record. Search
+# wanders search_radius of _tracked_player_position: the real last-known
+# sighting if this drone has ever actually seen the player, otherwise the
+# triggering incident's own position (seeded once, in _trigger_alert()).
+# search_speed is deliberately closer to patrol_speed than to alert_speed —
+# this is looking around an area, not a pursuit. ALERT's memory decay
+# (alert_memory_time, falling back to OBSERVE-or-PATROL) was re-enabled
+# alongside this (2026-08-13) — it had been disabled ("stay ALERT
+# indefinitely") specifically because dropping out of a frozen hover read
+# as giving up mid-freeze; a real search gives that decay somewhere
+# purposeful to lapse FROM.
+#
 # alert_incident_radius went to 600m and back to 60m during this work
 # (2026-08-13) — a diagnostic detour, not a design change. The actual
 # defect it was covering for: this drone only ever checked IncidentRegistry
@@ -195,6 +209,19 @@ enum State { PATROL, OBSERVE, ALERT }
 ## or the instant a fist is lowered, reads as glitching, not calming down.
 ## A feel value, tuned by eye — start at 3s per spec.
 @export var alert_memory_time: float = 3.0
+## Radius, metres, this drone wanders within while searching (ALERT, player
+## not currently seen — see _decide_search()) — around _tracked_player_
+## position, the same "last known point" _decide_hold_and_watch() already
+## reads, seeded from the triggering incident's own position if this drone
+## has never actually seen the player (see _trigger_alert()). A feel/scale
+## value: wide enough that circling reads as looking around an area, not
+## orbiting one exact point.
+@export var search_radius: float = 20.0
+## Desired speed while searching, m/s — deliberately closer to patrol_speed
+## than to alert_speed: this is a drone looking around an area it already
+## has a reason to suspect, not chasing a live sighting. Converted to
+## DroneBase's speed_ratio the same way patrol_speed/alert_speed are.
+@export var search_speed: float = 6.0
 
 @export_group("Hold And Watch")
 ## Distance, metres, over which the drone brakes its closing speed to zero
@@ -388,6 +415,16 @@ var _observe_memory_timer: float = 0.0
 ## (_update_patrol_scan() is only called from that branch of _decide()).
 var _patrol_scan_timer: float = 0.0
 
+## Current wander goal while searching (ALERT, player not seen) — same
+## "goal point, arrive, pick a new one" idiom _patrol_target uses for
+## PATROL, around _tracked_player_position instead of _start_position. See
+## _decide_search()/_pick_new_search_target().
+var _search_target: Vector3 = Vector3.ZERO
+## False until the first search target is picked after entering ALERT —
+## reset by _enter_state() on every ALERT entry, so a stale target from an
+## earlier, unrelated ALERT episode is never reused.
+var _has_search_target: bool = false
+
 ## Captured once in _ready() — the patrol square's centre and rotation, same
 ## convention as the old police_drone.gd (a local square anchored to where
 ## the drone started, not world axes).
@@ -544,7 +581,7 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 	if incident.position.distance_to(_drone.global_position) > alert_incident_radius:
 		return
-	_trigger_alert()
+	_trigger_alert(incident.position)
 
 
 ## Catch-up query shared by THREE distinct hooks — see each call site below
@@ -588,20 +625,32 @@ func _on_incident_reported(incident: Incident) -> void:
 ## registry still holds is by definition not stale by its own rule.
 ## Guarded against firing while already ALERT: a catch-up finding what this
 ## drone already knows about is not a new provocation, and letting it reset
-## _alert_memory_timer would matter the moment ALERT's own decay
-## (_update_state()'s ALERT branch, currently disabled — see that method's
-## "Temporary behaviour" note) is re-enabled: a repeatedly-refreshed timer
-## would never lapse. _on_incident_reported() deliberately has no
-## equivalent guard: a genuinely NEW live report while already ALERT is a
-## real, fresh provocation, and should extend the hold.
+## _alert_memory_timer would prevent ALERT's own decay (_update_state()'s
+## ALERT branch) from ever completing — not a hypothetical anymore now that
+## decay is live, see that method's own comment. _on_incident_reported()
+## deliberately has no equivalent guard: a genuinely NEW live report while
+## already ALERT is a real, fresh provocation, and should extend the hold.
 func _check_existing_incidents() -> void:
 	if _state == State.ALERT:
 		return
 	var nearby := _incident_registry.get_incidents_near(
 		_drone.global_position, alert_incident_radius, _incident_registry.max_incident_age
 	)
-	if not nearby.is_empty():
-		_trigger_alert()
+	if nearby.is_empty():
+		return
+
+	## Closest, not first/last — with more than one match, the nearest is
+	## the most plausible reason THIS drone specifically noticed something,
+	## and the most useful anchor to search around if the player isn't
+	## seen yet (see _trigger_alert()).
+	var closest := nearby[0]
+	var closest_dist := closest.position.distance_to(_drone.global_position)
+	for incident in nearby:
+		var dist := incident.position.distance_to(_drone.global_position)
+		if dist < closest_dist:
+			closest = incident
+			closest_dist = dist
+	_trigger_alert(closest.position)
 
 
 ## Periodic scan while PATROL only — see patrol_scan_interval's own comment
@@ -632,8 +681,19 @@ func _on_incidents_restored() -> void:
 ## Single place ALERT is actually entered from, whichever of the four paths
 ## triggered it (live report, resolve-time catch-up, load-time catch-up,
 ## periodic scan) — one entry path, so none of them drift into slightly
-## different "what does ALERT reset" behaviour.
-func _trigger_alert() -> void:
+## different "what does ALERT reset" behaviour. incident_position is the
+## reporting incident's own location — used only to seed
+## _tracked_player_position if this drone has never actually seen the
+## player yet (_has_tracked_player_position false): _decide_search() needs
+## SOME point to search around, and "where the triggering fact happened" is
+## the only estimate available before an actual sighting. If the player has
+## already been seen at least once, their real last-known position is used
+## instead and incident_position is ignored — a live sighting is always a
+## better anchor than the incident that merely provoked the escalation.
+func _trigger_alert(incident_position: Vector3) -> void:
+	if not _has_tracked_player_position:
+		_tracked_player_position = incident_position
+		_has_tracked_player_position = true
 	_alert_memory_timer = 0.0
 	_enter_state(State.ALERT)
 
@@ -650,16 +710,23 @@ func _update_state(observation: PlayerObservation, delta: float) -> void:
 			and observation.stance == PlayerState.Stance.COMBAT
 
 	if _state == State.ALERT:
-		#_alert_memory_timer += delta
-		#if _alert_memory_timer < alert_memory_time:
-			#return
-		#_enter_state(State.OBSERVE if provoking_observe else State.PATROL)
-		## Temporary behaviour.
-		##
-		## Once an incident has escalated to ALERT, stay there indefinitely until
-		## a proper resolution/de-escalation system exists. This keeps the
-		## spotlight and light bar active instead of dropping back to PATROL after
-		## alert_memory_time expires.
+		## Ticks regardless of whether the player is visible THIS frame —
+		## "memory" is how long since this drone had a real reason to be
+		## alert, not a per-frame visibility flag, and _trigger_alert()
+		## already resets it on every fresh provocation. Re-enabled
+		## (2026-08-13) now that ALERT without a visible player is a real
+		## search (_decide_search()), not a frozen hover: lapsing out after
+		## alert_memory_time now reads as "searched for a while, didn't
+		## find them, stood down" instead of "gave up mid-freeze," which is
+		## what kept this disabled before. Read on expiry, not before:
+		## provoking_observe reflects whatever the drone can see THIS
+		## frame, which may differ from what it saw earlier in the same
+		## ALERT hold — a player found again right as memory runs out steps
+		## down to OBSERVE, not all the way to PATROL.
+		_alert_memory_timer += delta
+		if _alert_memory_timer < alert_memory_time:
+			return
+		_enter_state(State.OBSERVE if provoking_observe else State.PATROL)
 		return
 
 	if provoking_observe:
@@ -683,6 +750,11 @@ func _enter_state(new_state: State) -> void:
 	_state = new_state
 	if new_state == State.PATROL:
 		_pick_new_patrol_point()
+	elif new_state == State.ALERT:
+		## Discard any search target left over from an earlier, unrelated
+		## ALERT episode — _decide_search() picks a fresh one, anchored to
+		## wherever _tracked_player_position is NOW, on its first call.
+		_has_search_target = false
 
 
 ## OBSERVE: watches from observe_hover_distance, unhurried. See the shared
@@ -691,9 +763,17 @@ func _decide_observe(observation: PlayerObservation, delta: float) -> void:
 	_decide_hold_and_watch(observation, observe_hover_distance, observe_speed, delta)
 
 
-## ALERT: the same watching behaviour, closer and faster to close the gap.
+## ALERT: hold-and-watch (same as OBSERVE, closer and faster) while the
+## player is actually seen; search otherwise. See the file header on why
+## ALERT without a visible player used to just hover motionless waiting —
+## that read as broken, or as "waiting for the player to walk up to it,"
+## neither of which is what a drone escalated by a fact on record should
+## look like.
 func _decide_alert(observation: PlayerObservation, delta: float) -> void:
-	_decide_hold_and_watch(observation, alert_hover_distance, alert_speed, delta)
+	if observation != null and observation.is_seen:
+		_decide_hold_and_watch(observation, alert_hover_distance, alert_speed, delta)
+		return
+	_decide_search(delta)
 
 
 ## Shared movement for OBSERVE and ALERT: closes to hover_distance and
@@ -959,6 +1039,42 @@ func _pick_new_patrol_point() -> void:
 	var local_z := randf_range(-patrol_radius, patrol_radius)
 	var local_offset := Vector3(local_x, 0.0, local_z).rotated(Vector3.UP, _start_yaw)
 	_patrol_target = _start_position + local_offset
+
+
+## ALERT, player not currently seen: wanders the neighbourhood of
+## _tracked_player_position (the real last-known sighting, or the
+## triggering incident's own position if there was never a sighting — see
+## _trigger_alert()) instead of holding still and waiting. Same "goal
+## point, arrive, pick a new one" idiom _decide_patrol() uses for its own
+## square — reuses PATROL_ARRIVAL_RADIUS as the arrival threshold rather
+## than a second near-identical constant, since both mean the same thing
+## ("close enough to this wander goal to pick another one"). Spotlight and
+## light bar are untouched here — _update_spotlight()/_update_light_bar()
+## already key off _state == State.ALERT and observation.is_seen
+## independently of this movement, so search only changes where the drone
+## flies, not what its lights do.
+func _decide_search(_delta: float) -> void:
+	if not _has_search_target \
+			or _drone.global_position.distance_to(_search_target) < PATROL_ARRIVAL_RADIUS:
+		_pick_new_search_target()
+
+	var dist := _drone.global_position.distance_to(_search_target)
+	var direction := Vector3.ZERO
+	if dist > 0.5:
+		direction = (_search_target - _drone.global_position).normalized()
+
+	_drone.set_move_intent(direction, _speed_ratio(search_speed))
+	_drone.set_look_target(_search_target)
+
+
+## A random point inside search_radius of _tracked_player_position — same
+## shape as _pick_new_patrol_point(), around the search anchor instead of
+## the patrol square's centre.
+func _pick_new_search_target() -> void:
+	var local_x := randf_range(-search_radius, search_radius)
+	var local_z := randf_range(-search_radius, search_radius)
+	_search_target = _tracked_player_position + Vector3(local_x, 0.0, local_z)
+	_has_search_target = true
 
 
 ## Converts an absolute m/s speed to DroneBase's 0..1 speed_ratio against its
