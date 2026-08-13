@@ -1,0 +1,294 @@
+[gd_resource type="Resource" script_class="KeyHintsCatalog" format=3]
+
+[ext_resource type="Script" path="res://ui/hud/player_hud/key_hint_entry.gd" id="1_entry"]
+[ext_resource type="Script" path="res://ui/hud/player_hud/key_hints_catalog.gd" id="2_catalog"]
+
+[sub_resource type="Resource" id="Resource_kh01"]
+script = ExtResource("1_entry")
+action_name = &"interact"
+description = "Interact / pick up / board"
+modes = Array[int]([0])
+sort_order = 10
+
+[sub_resource type="Resource" id="Resource_kh02"]
+script = ExtResource("1_entry")
+action_name = &"toggle_stance"
+description = "Toggle stance: Peace ⇄ Combat"
+modes = Array[int]([0])
+sort_order = 20
+
+[sub_resource type="Resource" id="Resource_kh03"]
+script = ExtResource("1_entry")
+action_name = &"mouse_right_button"
+description = "Move to point (hold: run)"
+modes = Array[int]([0])
+view_modes = Array[int]([1])
+sort_order = 30
+
+[sub_resource type="Resource" id="Resource_kh04"]
+script = ExtResource("1_entry")
+action_name = &"mouse_left_button"
+description = "Stop / cancel move target"
+modes = Array[int]([0])
+view_modes = Array[int]([1])
+stances = Array[int]([0])
+sort_order = 40
+
+[sub_resource type="Resource" id="Resource_kh05"]
+script = ExtResource("1_entry")
+action_name = &"mouse_left_button"
+description = "Punch (standing still)"
+modes = Array[int]([0])
+view_modes = Array[int]([1])
+stances = Array[int]([1])
+sort_order = 41
+
+[sub_resource type="Resource" id="Resource_kh06"]
+script = ExtResource("1_entry")
+action_name = &"lean_left"
+description = "Camera step left"
+modes = Array[int]([0])
+view_modes = Array[int]([1])
+sort_order = 150
+
+[sub_resource type="Resource" id="Resource_kh07"]
+script = ExtResource("1_entry")
+action_name = &"lean_right"
+description = "Camera step right"
+modes = Array[int]([0])
+view_modes = Array[int]([1])
+sort_order = 151
+
+[sub_resource type="Resource" id="Resource_kh08"]
+script = ExtResource("1_entry")
+action_name = &"move_forward"
+description = "Move forward"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 30
+
+[sub_resource type="Resource" id="Resource_kh09"]
+script = ExtResource("1_entry")
+action_name = &"move_backward"
+description = "Move backward"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 31
+
+[sub_resource type="Resource" id="Resource_kh10"]
+script = ExtResource("1_entry")
+action_name = &"move_left"
+description = "Strafe left"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 32
+
+[sub_resource type="Resource" id="Resource_kh11"]
+script = ExtResource("1_entry")
+action_name = &"move_right"
+description = "Strafe right"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 33
+
+[sub_resource type="Resource" id="Resource_kh12"]
+script = ExtResource("1_entry")
+action_name = &"jump"
+description = "Jump"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 45
+
+[sub_resource type="Resource" id="Resource_kh13"]
+script = ExtResource("1_entry")
+action_name = &"sprint"
+description = "Sprint (uses stamina)"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 46
+
+[sub_resource type="Resource" id="Resource_kh14"]
+script = ExtResource("1_entry")
+action_name = &"mouse_left_button"
+description = "Punch (standing still)"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+stances = Array[int]([1])
+sort_order = 50
+
+[sub_resource type="Resource" id="Resource_kh15"]
+script = ExtResource("1_entry")
+action_name = &"mouse_right_button"
+description = "Hold: aim down sights"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+stances = Array[int]([1])
+sort_order = 51
+
+[sub_resource type="Resource" id="Resource_kh16"]
+script = ExtResource("1_entry")
+action_name = &"switch_shoulder"
+description = "Swap camera shoulder"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 160
+
+[sub_resource type="Resource" id="Resource_kh17"]
+script = ExtResource("1_entry")
+action_name = &"lock_on"
+description = "Lock on target"
+modes = Array[int]([0])
+view_modes = Array[int]([0])
+sort_order = 161
+
+[sub_resource type="Resource" id="Resource_kh18"]
+script = ExtResource("1_entry")
+action_name = &"toggle_view"
+description = "Toggle view: Isometric ⇄ TPS"
+modes = Array[int]([0])
+sort_order = 170
+
+[sub_resource type="Resource" id="Resource_kh19"]
+script = ExtResource("1_entry")
+action_name = &"toggle_follow"
+description = "Camera follows rotation"
+modes = Array[int]([0])
+sort_order = 171
+
+[sub_resource type="Resource" id="Resource_kh20"]
+script = ExtResource("1_entry")
+action_name = &"zoom_in"
+description = "Zoom camera in"
+modes = Array[int]([0])
+sort_order = 180
+
+[sub_resource type="Resource" id="Resource_kh21"]
+script = ExtResource("1_entry")
+action_name = &"zoom_out"
+description = "Zoom camera out"
+modes = Array[int]([0])
+sort_order = 181
+
+[sub_resource type="Resource" id="Resource_kh22"]
+script = ExtResource("1_entry")
+action_name = &"inventory"
+description = "Inventory"
+modes = Array[int]([0])
+sort_order = 250
+
+[sub_resource type="Resource" id="Resource_kh23"]
+script = ExtResource("1_entry")
+action_name = &"map"
+description = "Map"
+modes = Array[int]([0])
+sort_order = 251
+
+[sub_resource type="Resource" id="Resource_kh24"]
+script = ExtResource("1_entry")
+action_name = &"status"
+description = "Status"
+modes = Array[int]([0])
+sort_order = 252
+
+[sub_resource type="Resource" id="Resource_kh25"]
+script = ExtResource("1_entry")
+action_name = &"toggle_tabs"
+description = "Tap: notifier / hold: status camera"
+modes = Array[int]([0])
+sort_order = 253
+
+[sub_resource type="Resource" id="Resource_kh26"]
+script = ExtResource("1_entry")
+action_name = &"move_forward"
+description = "Thrust forward"
+modes = Array[int]([1])
+sort_order = 30
+
+[sub_resource type="Resource" id="Resource_kh27"]
+script = ExtResource("1_entry")
+action_name = &"move_backward"
+description = "Thrust reverse"
+modes = Array[int]([1])
+sort_order = 31
+
+[sub_resource type="Resource" id="Resource_kh28"]
+script = ExtResource("1_entry")
+action_name = &"move_left"
+description = "Strafe / yaw left"
+modes = Array[int]([1])
+sort_order = 32
+
+[sub_resource type="Resource" id="Resource_kh29"]
+script = ExtResource("1_entry")
+action_name = &"move_right"
+description = "Strafe / yaw right"
+modes = Array[int]([1])
+sort_order = 33
+
+[sub_resource type="Resource" id="Resource_kh30"]
+script = ExtResource("1_entry")
+action_name = &"hover_up"
+description = "Ascend (release: altitude hold)"
+modes = Array[int]([1])
+sort_order = 40
+
+[sub_resource type="Resource" id="Resource_kh31"]
+script = ExtResource("1_entry")
+action_name = &"hover_down"
+description = "Descend (release: altitude hold)"
+modes = Array[int]([1])
+sort_order = 41
+
+[sub_resource type="Resource" id="Resource_kh32"]
+script = ExtResource("1_entry")
+action_name = &"toggle_view"
+description = "Camera: Chase ⇄ Cockpit"
+modes = Array[int]([1])
+sort_order = 170
+
+[sub_resource type="Resource" id="Resource_kh33"]
+script = ExtResource("1_entry")
+action_name = &"interact"
+description = "Exit hover (near-zero speed only)"
+modes = Array[int]([1])
+sort_order = 10
+
+[sub_resource type="Resource" id="Resource_kh34"]
+script = ExtResource("1_entry")
+action_name = &"pause"
+description = "Pause menu"
+sort_order = 900
+
+[sub_resource type="Resource" id="Resource_kh35"]
+script = ExtResource("1_entry")
+action_name = &"toggle_key_hints"
+description = "Toggle this panel"
+sort_order = 901
+
+[sub_resource type="Resource" id="Resource_kh36"]
+script = ExtResource("1_entry")
+action_name = &"debug_save"
+description = "Debug save (SaveSystem)"
+sort_order = 910
+
+[sub_resource type="Resource" id="Resource_kh37"]
+script = ExtResource("1_entry")
+action_name = &"debug_load"
+description = "Debug load (SaveSystem)"
+sort_order = 911
+
+[sub_resource type="Resource" id="Resource_kh38"]
+script = ExtResource("1_entry")
+action_name = &"toggle_stream_debug"
+description = "Streaming debug panel"
+sort_order = 920
+
+[sub_resource type="Resource" id="Resource_kh39"]
+script = ExtResource("1_entry")
+action_name = &"toggle_perception_debug"
+description = "Perception debug panel"
+sort_order = 921
+
+[resource]
+script = ExtResource("2_catalog")
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh01"), SubResource("Resource_kh02"), SubResource("Resource_kh03"), SubResource("Resource_kh04"), SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh08"), SubResource("Resource_kh09"), SubResource("Resource_kh10"), SubResource("Resource_kh11"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21"), SubResource("Resource_kh22"), SubResource("Resource_kh23"), SubResource("Resource_kh24"), SubResource("Resource_kh25"), SubResource("Resource_kh26"), SubResource("Resource_kh27"), SubResource("Resource_kh28"), SubResource("Resource_kh29"), SubResource("Resource_kh30"), SubResource("Resource_kh31"), SubResource("Resource_kh32"), SubResource("Resource_kh33"), SubResource("Resource_kh34"), SubResource("Resource_kh35"), SubResource("Resource_kh36"), SubResource("Resource_kh37"), SubResource("Resource_kh38"), SubResource("Resource_kh39")])
