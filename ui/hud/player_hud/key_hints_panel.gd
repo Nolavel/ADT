@@ -1,14 +1,21 @@
 # =============================================================================
 # key_hints_panel.gd — KeyHintsPanel.
 #
-# Bottom-center strip of "key — what it does" rows, visible whenever
-# InputSystems.key_hints_enabled is true (docs/scope_horizon.md H2). A
-# collaborator cannot evaluate a build whose controls are undiscoverable —
-# this is what makes them discoverable.
+# Bottom-center strip of key hints, visible whenever InputSystems.
+# key_hints_enabled is true (docs/scope_horizon.md H2). A collaborator
+# cannot evaluate a build whose controls are undiscoverable — this is what
+# makes them discoverable.
 #
 # Instanced inside player_hud.tscn rather than added as a separate
 # WORLD_UI_SCENES entry — PlayerHUD already owns a world-UI lifecycle, a
 # second one would duplicate it for no reason.
+#
+# THREE COLUMNS, NOT ONE RIBBON: a flat horizontal row list forces the eye
+# to scan the whole thing, since left-to-right position only ever encoded
+# sort_order, not meaning. One column per KeyHintEntry.Category
+# (MOVEMENT/ACTION/SYSTEM), built by iterating Category.values() — so
+# column ORDER comes from the enum's declaration order, not a case
+# statement here. Within a column, rows still sort by sort_order.
 #
 # DATA-DRIVEN: rows come from a KeyHintsCatalog resource (catalog export,
 # res://data/key_hints.tres by convention), not a hardcoded per-state
@@ -17,10 +24,14 @@
 #
 # REBUILDS ONLY ON SIGNAL: PlayerState.mode_changed / view_mode_changed /
 # stance_changed / aiming_changed, never every frame. Each rebuild diffs the
-# newly-active entry set against the rows already on screen (keyed by
-# KeyHintEntry.get_row_key()) instead of clearing and recreating the whole
-# row list, so a stance flip that only adds or drops one entry doesn't flash
-# the rows that stayed valid.
+# newly-active entry set against the rows already on screen, PER COLUMN
+# (keyed within that column by KeyHintEntry.get_row_key()) instead of
+# clearing and recreating anything wholesale, so a stance flip that only
+# adds or drops one entry doesn't flash the rows that stayed valid — same
+# idea as before columns existed, just scoped to one column's own row list
+# instead of the panel's single flat one. A column with zero active rows
+# hides itself (header included) rather than leaving an empty slot in the
+# layout.
 #
 # GROUPING: an entry can describe several actions that share one meaning
 # (KeyHintEntry.action_names, e.g. WASD → "Move") — their key labels are
@@ -39,18 +50,35 @@ extends PanelContainer
 
 ## Button index → short label, for the physical buttons every mouse has.
 ## Anything else (a fifth+ side button) falls back to "MB<index>" in
-## _format_mouse_button_label().
+## _format_mouse_button_label(). Wheel directions are spelled out in ASCII
+## rather than drawn with ↑/↓/←/→: this label is rendered through
+## _mono_font (a plain SystemFont request, see _build_mono_font()), and
+## nothing here guarantees the resolved system font actually carries those
+## Unicode Arrows-block glyphs — an unsupported glyph renders as an empty
+## box, which is worse than a slightly longer label. Hypothesis, not a
+## verified fact: not something this change could confirm by running the
+## game.
 const _MOUSE_BUTTON_LABELS: Dictionary = {
 	MOUSE_BUTTON_LEFT: "LMB",
 	MOUSE_BUTTON_RIGHT: "RMB",
 	MOUSE_BUTTON_MIDDLE: "MMB",
-	MOUSE_BUTTON_WHEEL_UP: "Wheel ↑",
-	MOUSE_BUTTON_WHEEL_DOWN: "Wheel ↓",
-	MOUSE_BUTTON_WHEEL_LEFT: "Wheel ←",
-	MOUSE_BUTTON_WHEEL_RIGHT: "Wheel →",
+	MOUSE_BUTTON_WHEEL_UP: "Wheel Up",
+	MOUSE_BUTTON_WHEEL_DOWN: "Wheel Dn",
+	MOUSE_BUTTON_WHEEL_LEFT: "Wheel Left",
+	MOUSE_BUTTON_WHEEL_RIGHT: "Wheel Right",
 	MOUSE_BUTTON_XBUTTON1: "MB4",
 	MOUSE_BUTTON_XBUTTON2: "MB5",
 }
+
+## One VBoxContainer column (header + its own row list) for one
+## KeyHintEntry.Category. Plain data holder — see _build_columns().
+class _Column:
+	var container: VBoxContainer
+	var rows_list: VBoxContainer
+	## KeyHintEntry.get_row_key() → row Control currently on screen in THIS
+	## column, for the diffed rebuild — scoped per column so a row never
+	## needs to be told apart from a same-named row in another column.
+	var rows: Dictionary = {}
 
 @export var catalog: KeyHintsCatalog
 
@@ -58,36 +86,44 @@ const _MOUSE_BUTTON_LABELS: Dictionary = {
 @export var background_color: Color = Color(0.05, 0.05, 0.05, 0.72)
 @export var key_color: Color = Color(0.95, 0.82, 0.35, 1.0)
 @export var description_color: Color = Color(0.88, 0.88, 0.88, 1.0)
+## Deliberately dimmer/smaller than the descriptions: a column header is a
+## landmark for the eye, not content to read.
+@export var header_color: Color = Color(0.55, 0.55, 0.55, 0.85)
 @export var font_size: int = 14
+@export var header_font_size: int = 11
 ## Joins the individual key labels of a grouped entry (KeyHintEntry.
 ## action_names) into one cell, e.g. "W / A / S / D". The single place this
 ## separator is defined — nowhere else repeats it.
 @export var group_key_separator: String = " / "
 ## Horizontal gap between a row's key label and its description.
 @export var key_description_gap: float = 6.0
-## Horizontal gap between rows.
-@export var row_gap: float = 20.0
-## Panel padding around the row list.
+## Vertical gap between rows within one column.
+@export var row_gap: float = 8.0
+## Horizontal gap between columns — deliberately a separate export from
+## row_gap, which now governs spacing WITHIN a column instead.
+@export var column_gap: float = 28.0
+## Panel padding around the column list.
 @export var panel_padding: Vector2 = Vector2(16.0, 8.0)
 ## Distance from the bottom of the screen to the panel.
 @export var bottom_margin: float = 16.0
 
-@onready var _rows_box: HBoxContainer = $Rows
+@onready var _columns_box: HBoxContainer = $Rows
 
 ## One shared monospace font for every key label — see _build_mono_font().
 var _mono_font: Font = null
 
-## KeyHintEntry.get_row_key() → row Control currently on screen, for the
-## diffed rebuild.
-var _rows: Dictionary = {}
+## KeyHintEntry.Category → _Column, one per category, built once in
+## _build_columns() and never recreated — only their contents change.
+var _columns: Dictionary = {}
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_rows_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_rows_box.add_theme_constant_override("separation", int(row_gap))
+	_columns_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_columns_box.add_theme_constant_override("separation", int(column_gap))
 	_mono_font = _build_mono_font()
 	_apply_background_style()
+	_build_columns()
 
 	resized.connect(_reposition)
 	get_viewport().size_changed.connect(_reposition)
@@ -101,6 +137,34 @@ func _ready() -> void:
 	visible = InputSystems.key_hints_enabled
 	_rebuild()
 	_reposition()
+
+
+## One column per KeyHintEntry.Category, in Category.values() order — the
+## enum's declaration order is the only thing that decides column order,
+## not anything written here.
+func _build_columns() -> void:
+	for category in KeyHintEntry.Category.values():
+		var column := _Column.new()
+
+		column.container = VBoxContainer.new()
+		column.container.name = "Column_%s" % KeyHintEntry.Category.keys()[category]
+		column.container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var header := Label.new()
+		header.text = KeyHintEntry.Category.keys()[category].capitalize()
+		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		header.add_theme_font_size_override("font_size", header_font_size)
+		header.add_theme_color_override("font_color", header_color)
+		column.container.add_child(header)
+
+		column.rows_list = VBoxContainer.new()
+		column.rows_list.name = "Rows"
+		column.rows_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.rows_list.add_theme_constant_override("separation", int(row_gap))
+		column.container.add_child(column.rows_list)
+
+		_columns_box.add_child(column.container)
+		_columns[category] = column
 
 
 func _on_mode_changed(_old_mode: PlayerState.Mode, _new_mode: PlayerState.Mode) -> void:
@@ -123,8 +187,9 @@ func _on_enabled_changed(enabled: bool) -> void:
 	visible = enabled
 
 
-## Diffs the newly-active KeyHintEntry set against the rows already shown —
-## adds/removes/reorders only what changed, never clears the whole list.
+## Splits the newly-active KeyHintEntry set by category, then diffs each
+## column's share against its own rows already shown — adds/removes/
+## reorders only what changed, per column, never clears any list wholesale.
 func _rebuild() -> void:
 	if catalog == null:
 		push_warning("[KeyHintsPanel] no catalog assigned — panel stays empty")
@@ -133,29 +198,52 @@ func _rebuild() -> void:
 	var active := catalog.get_active_entries(
 			PlayerState.mode, PlayerState.view_mode, PlayerState.stance, PlayerState.is_aiming)
 
-	var wanted: Array[StringName] = []
+	# get_active_entries() already returns entries sorted by sort_order, and
+	# filtering by category below preserves that relative order — no
+	# separate per-column sort needed.
+	var active_by_category: Dictionary = {}
 	for entry in active:
+		if not active_by_category.has(entry.category):
+			active_by_category[entry.category] = []
+		(active_by_category[entry.category] as Array).append(entry)
+
+	for category in _columns.keys():
+		var column: _Column = _columns[category]
+		_rebuild_column(column, active_by_category.get(category, []))
+
+	_reposition()
+
+
+## Same diffing shape _rebuild() always used, applied to one column's own
+## row list instead of one shared one — adds/removes/reorders only what
+## changed within THIS column, never clears the whole thing.
+func _rebuild_column(column: _Column, active_entries: Array) -> void:
+	var wanted: Array[StringName] = []
+	for entry in active_entries:
 		wanted.append(entry.get_row_key())
 
 	# Dictionary.keys() materializes a fresh Array each call, so this is safe
-	# to iterate while erasing from _rows below — it is not a live view.
-	for row_key in _rows.keys():
+	# to iterate while erasing from column.rows below — it is not a live view.
+	for row_key in column.rows.keys():
 		if not wanted.has(row_key):
-			var stale_row: Control = _rows[row_key]
+			var stale_row: Control = column.rows[row_key]
 			stale_row.queue_free()
-			_rows.erase(row_key)
+			column.rows.erase(row_key)
 
-	for i in active.size():
-		var entry := active[i]
+	for i in active_entries.size():
+		var entry: KeyHintEntry = active_entries[i]
 		var row_key := entry.get_row_key()
-		var row: Control = _rows.get(row_key) as Control
+		var row: Control = column.rows.get(row_key) as Control
 		if row == null:
 			row = _make_row(entry)
-			_rows_box.add_child(row)
-			_rows[row_key] = row
-		_rows_box.move_child(row, i)
+			column.rows_list.add_child(row)
+			column.rows[row_key] = row
+		column.rows_list.move_child(row, i)
 
-	_reposition()
+	# An empty column would otherwise leave a bare header floating over
+	# nothing, or — worse — a dead gap in the row where its content used to
+	# be. Hiding the whole container removes both at once.
+	column.container.visible = not active_entries.is_empty()
 
 
 func _make_row(entry: KeyHintEntry) -> Control:

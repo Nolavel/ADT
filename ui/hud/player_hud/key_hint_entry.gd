@@ -26,6 +26,14 @@ class_name KeyHintEntry
 ## A plain bool on the entry itself could not express "don't care".
 enum AimRequirement { ANY, AIMING_ONLY, NOT_AIMING }
 
+## Which column of the panel this entry belongs to. Column order on screen
+## follows THIS ENUM'S DECLARATION ORDER (KeyHintsPanel builds one column
+## per Category.values(), in that order) — reordering the panel's columns
+## means reordering these members, not touching KeyHintsPanel. Three, not
+## four: a dedicated camera column would only ever hold one or two rows, so
+## camera/view entries live in ACTION.
+enum Category { MOVEMENT, ACTION, SYSTEM }
+
 ## Action name as registered in InputMap (Project Settings → Input Map).
 ## Used when this entry describes a SINGLE action. Ignored (action_names
 ## wins) once action_names is non-empty — leave this at its default for a
@@ -39,6 +47,12 @@ enum AimRequirement { ANY, AIMING_ONLY, NOT_AIMING }
 @export var action_names: Array[StringName] = []
 ## Short description shown next to the resolved key label(s).
 @export var description: String = ""
+## ACTION, not MOVEMENT's or Category's own first member: chosen so every
+## entry authored before this field existed — none of which set it — lands
+## somewhere plausible rather than in a column its content doesn't suggest.
+## Column order is still MOVEMENT/ACTION/SYSTEM (Category's declaration
+## order); this default is a separate choice from that order.
+@export var category: Category = Category.ACTION
 
 @export_group("Visible when")
 ## Values are PlayerState.Mode members. Empty = any mode.

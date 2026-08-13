@@ -286,6 +286,41 @@ long and with a technical tail that means nothing to a reviewer.
 - `ui/hud/player_hud/key_hints_panel.gd`, `ui/hud/player_hud/key_hint_entry.gd`,
   `data/key_hints.tres`, `CLAUDE.md`.
 
+**Key-hints HUD, third pass: three columns instead of one ribbon.** Stan's feedback,
+same day, on the readability pass above: seven to eleven rows was a fine count, but a
+single horizontal ribbon still forced the eye to scan the whole thing, because
+`sort_order` only ever encoded sequence, not meaning.
+*Панель подсказок, третий проход: три колонки вместо одной ленты — количество строк
+уже было в порядке, проблема была в том, что порядок ничего не значил.*
+
+- New `KeyHintEntry.category` (`Category` enum: `MOVEMENT`, `ACTION`, `SYSTEM`) picks
+  which column an entry's row renders in. Column order on screen is the enum's own
+  declaration order — `KeyHintsPanel._build_columns()` iterates `Category.values()`,
+  nothing in the panel chooses an order by name. Default `Category.ACTION`: every entry
+  authored before this field existed left it unset, and `ACTION` is the least-wrong
+  bucket for an unclassified row. Three columns, not four: a dedicated camera/view
+  column would only ever hold one or two rows, so camera/view entries live in `ACTION`
+  instead.
+- `KeyHintsPanel`'s single `$Rows` `HBoxContainer` of rows became an `HBoxContainer` of
+  three `VBoxContainer` columns (header + that column's own row list), built once in
+  `_build_columns()`. The diffed rebuild (`get_row_key()`-keyed, add/remove/reorder only
+  what changed) is unchanged in shape — `_rebuild_column()` is the same algorithm,
+  applied per column instead of to one shared row list. A column with zero active
+  entries hides itself, header included, rather than leaving a bare title or a gap in
+  the layout. New `column_gap` export (horizontal, between columns) is separate from
+  `row_gap`, which now means vertical spacing WITHIN a column instead of horizontal
+  spacing between ribbon entries. New `header_color`/`header_font_size` — dimmer and
+  smaller than the description text, since a column header is a landmark, not content.
+- Wheel-direction labels (`Wheel Up`/`Wheel Dn`/`Wheel Left`/`Wheel Right`, from the
+  readability pass above) were spelled out in ASCII, not drawn with `↑`/`↓`/`←`/`→`:
+  those glyphs would render through the panel's `SystemFont` key-label font
+  (`Consolas`/`Courier New`/`DejaVu Sans Mono`/`monospace`), and nothing confirms that
+  font actually carries the Arrows Unicode block — an unsupported glyph renders as an
+  empty box. Flagged as a hypothesis, not a checked fact; this could not be verified by
+  running the game.
+- `ui/hud/player_hud/key_hint_entry.gd`, `ui/hud/player_hud/key_hints_panel.gd`,
+  `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order
