@@ -88,8 +88,13 @@ hand-owned.
 
 ## For collaborators
 
-Read **`CONTRIBUTING.md`** first, then `CLAUDE.md` (architecture and
-contracts) and `docs/GDSCRIPT_STYLE.md` (code conventions).
+Start with **`docs/ARCHITECTURE.md`** — how the project is put together and
+why, with diagrams. Then `docs/CONTRIBUTING.md` (what you can pick up, what
+is off-limits) and `docs/GDSCRIPT_STYLE.md` (code conventions).
+
+`CLAUDE.md` in the root is a working brief for Claude Code, the AI tool used
+in the editor. It states the same contracts as rules to obey rather than
+explaining them, and it is not an introduction to the project.
 
 Most code comments are currently in Russian. Translation of the load-bearing
 system headers to English is in progress; see `CONTRIBUTING.md` for which
