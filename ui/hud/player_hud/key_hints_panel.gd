@@ -32,6 +32,21 @@
 class_name KeyHintsPanel
 extends PanelContainer
 
+## Button index → short label, for the physical buttons every mouse has.
+## Anything else (a fifth+ side button) falls back to "MB<index>" in
+## _format_mouse_button_label().
+const _MOUSE_BUTTON_LABELS: Dictionary = {
+	MOUSE_BUTTON_LEFT: "LMB",
+	MOUSE_BUTTON_RIGHT: "RMB",
+	MOUSE_BUTTON_MIDDLE: "MMB",
+	MOUSE_BUTTON_WHEEL_UP: "Wheel ↑",
+	MOUSE_BUTTON_WHEEL_DOWN: "Wheel ↓",
+	MOUSE_BUTTON_WHEEL_LEFT: "Wheel ←",
+	MOUSE_BUTTON_WHEEL_RIGHT: "Wheel →",
+	MOUSE_BUTTON_XBUTTON1: "MB4",
+	MOUSE_BUTTON_XBUTTON2: "MB5",
+}
+
 @export var catalog: KeyHintsCatalog
 
 @export_group("Style")
@@ -157,16 +172,52 @@ func _make_row(entry: KeyHintEntry) -> Control:
 
 
 ## Resolves the on-screen label for one action straight from InputMap, so a
-## rebind is reflected without touching this panel or its catalog. An action
-## can carry several bound events (keyboard, mouse, wheel, and in principle
-## a gamepad) — only the FIRST one is shown, whatever device it belongs to.
+## rebind is reflected without touching this panel or its catalog.
+##
+## An action can carry several bound events (keyboard, mouse, wheel, and in
+## principle a gamepad). Keyboard wins when there's a choice — it is always
+## the most universally-recognizable label — with the first event of any
+## other kind as fallback; no action in today's catalog is actually bound
+## to more than one device, so this only matters going forward.
 func _resolve_key_label(action_name: StringName) -> String:
 	if action_name == &"" or not InputMap.has_action(action_name):
 		return "?"
 	var events := InputMap.action_get_events(action_name)
 	if events.is_empty():
 		return "?"
-	return events[0].as_text().strip_edges()
+	return _format_event_label(_pick_display_event(events))
+
+
+func _pick_display_event(events: Array) -> InputEvent:
+	for event in events:
+		if event is InputEventKey:
+			return event
+	return events[0]
+
+
+func _format_event_label(event: InputEvent) -> String:
+	if event is InputEventKey:
+		return _format_key_label(event as InputEventKey)
+	if event is InputEventMouseButton:
+		return _format_mouse_button_label(event as InputEventMouseButton)
+	return event.as_text().strip_edges()
+
+
+## Strips as_text()'s occasional "(Physical)"-style parenthetical — a
+## reviewer doesn't need to know a binding came from a physical keycode,
+## only which key to press.
+func _format_key_label(event: InputEventKey) -> String:
+	var text := event.as_text()
+	var paren_index := text.find(" (")
+	if paren_index != -1:
+		text = text.substr(0, paren_index)
+	return text.strip_edges()
+
+
+func _format_mouse_button_label(event: InputEventMouseButton) -> String:
+	if _MOUSE_BUTTON_LABELS.has(event.button_index):
+		return _MOUSE_BUTTON_LABELS[event.button_index]
+	return "MB%d" % event.button_index
 
 
 func _reposition() -> void:
