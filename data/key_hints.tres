@@ -1,48 +1,58 @@
-[gd_resource type="Resource" script_class="KeyHintsCatalog" format=3]
+[gd_resource type="Resource" script_class="KeyHintsCatalog" format=3 uid="uid://bh34hykqp0do3"]
 
-[ext_resource type="Script" path="res://ui/hud/player_hud/key_hint_entry.gd" id="1_entry"]
-[ext_resource type="Script" path="res://ui/hud/player_hud/key_hints_catalog.gd" id="2_catalog"]
+[ext_resource type="Script" uid="uid://dxfo0lkh8qq6" path="res://ui/hud/player_hud/key_hint_entry.gd" id="1_entry"]
+[ext_resource type="Script" uid="uid://de37mj8lo13e1" path="res://ui/hud/player_hud/key_hints_catalog.gd" id="2_catalog"]
 
 [sub_resource type="Resource" id="Resource_kh01"]
 script = ExtResource("1_entry")
 action_name = &"pause"
 description = "Pause menu"
+category = 2
 sort_order = 900
 
 [sub_resource type="Resource" id="Resource_kh02"]
 script = ExtResource("1_entry")
-action_names = Array[StringName]([&"debug_save", &"debug_load"])
-description = "Debug save / load"
+action_name = &"debug_save"
+description = "Debug save"
+category = 2
 sort_order = 910
 
 [sub_resource type="Resource" id="Resource_kh03"]
 script = ExtResource("1_entry")
-action_name = &"toggle_key_hints"
-description = "Toggle this panel"
-sort_order = 920
+action_name = &"debug_load"
+description = "Debug load"
+category = 2
+sort_order = 911
 
 [sub_resource type="Resource" id="Resource_kh04"]
+script = ExtResource("1_entry")
+action_name = &"toggle_key_hints"
+description = "Toggle this panel"
+category = 2
+sort_order = 920
+
+[sub_resource type="Resource" id="Resource_kh05"]
 script = ExtResource("1_entry")
 action_name = &"interact"
 description = "Interact / pick up / board"
 modes = Array[int]([0])
 sort_order = 10
 
-[sub_resource type="Resource" id="Resource_kh05"]
+[sub_resource type="Resource" id="Resource_kh06"]
 script = ExtResource("1_entry")
 action_name = &"toggle_stance"
 description = "Toggle stance: Peace ⇄ Combat"
 modes = Array[int]([0])
 sort_order = 20
 
-[sub_resource type="Resource" id="Resource_kh06"]
+[sub_resource type="Resource" id="Resource_kh07"]
 script = ExtResource("1_entry")
 action_name = &"toggle_view"
 description = "Toggle view: Isometric ⇄ TPS"
 modes = Array[int]([0])
 sort_order = 170
 
-[sub_resource type="Resource" id="Resource_kh07"]
+[sub_resource type="Resource" id="Resource_kh08"]
 script = ExtResource("1_entry")
 action_names = Array[StringName]([&"zoom_in", &"zoom_out"])
 description = "Zoom camera"
@@ -50,24 +60,26 @@ modes = Array[int]([0])
 stances = Array[int]([0])
 sort_order = 180
 
-[sub_resource type="Resource" id="Resource_kh08"]
+[sub_resource type="Resource" id="Resource_kh09"]
 script = ExtResource("1_entry")
 action_name = &"mouse_right_button"
 description = "Move to point (hold: run)"
+category = 0
 modes = Array[int]([0])
 view_modes = Array[int]([1])
 sort_order = 30
 
-[sub_resource type="Resource" id="Resource_kh09"]
+[sub_resource type="Resource" id="Resource_kh10"]
 script = ExtResource("1_entry")
 action_name = &"mouse_left_button"
 description = "Stop / cancel move"
+category = 0
 modes = Array[int]([0])
 view_modes = Array[int]([1])
 stances = Array[int]([0])
 sort_order = 40
 
-[sub_resource type="Resource" id="Resource_kh10"]
+[sub_resource type="Resource" id="Resource_kh11"]
 script = ExtResource("1_entry")
 action_name = &"mouse_left_button"
 description = "Punch (standing still)"
@@ -76,7 +88,7 @@ view_modes = Array[int]([1])
 stances = Array[int]([1])
 sort_order = 41
 
-[sub_resource type="Resource" id="Resource_kh11"]
+[sub_resource type="Resource" id="Resource_kh12"]
 script = ExtResource("1_entry")
 action_names = Array[StringName]([&"lean_left", &"lean_right"])
 description = "Camera step"
@@ -84,32 +96,35 @@ modes = Array[int]([0])
 view_modes = Array[int]([1])
 sort_order = 150
 
-[sub_resource type="Resource" id="Resource_kh12"]
+[sub_resource type="Resource" id="Resource_kh13"]
 script = ExtResource("1_entry")
 action_names = Array[StringName]([&"move_forward", &"move_backward", &"move_left", &"move_right"])
 description = "Move"
+category = 0
 modes = Array[int]([0])
 view_modes = Array[int]([0])
 sort_order = 30
 
-[sub_resource type="Resource" id="Resource_kh13"]
+[sub_resource type="Resource" id="Resource_kh14"]
 script = ExtResource("1_entry")
 action_name = &"jump"
 description = "Jump"
+category = 0
 modes = Array[int]([0])
 view_modes = Array[int]([0])
 sort_order = 45
 
-[sub_resource type="Resource" id="Resource_kh14"]
+[sub_resource type="Resource" id="Resource_kh15"]
 script = ExtResource("1_entry")
 action_name = &"sprint"
 description = "Sprint (uses stamina)"
+category = 0
 modes = Array[int]([0])
 view_modes = Array[int]([0])
 stances = Array[int]([0])
 sort_order = 46
 
-[sub_resource type="Resource" id="Resource_kh15"]
+[sub_resource type="Resource" id="Resource_kh16"]
 script = ExtResource("1_entry")
 action_name = &"lock_on"
 description = "Lock on target"
@@ -118,7 +133,7 @@ view_modes = Array[int]([0])
 stances = Array[int]([1])
 sort_order = 161
 
-[sub_resource type="Resource" id="Resource_kh16"]
+[sub_resource type="Resource" id="Resource_kh17"]
 script = ExtResource("1_entry")
 action_name = &"mouse_left_button"
 description = "Punch (standing still)"
@@ -127,7 +142,7 @@ view_modes = Array[int]([0])
 stances = Array[int]([1])
 sort_order = 50
 
-[sub_resource type="Resource" id="Resource_kh17"]
+[sub_resource type="Resource" id="Resource_kh18"]
 script = ExtResource("1_entry")
 action_name = &"mouse_right_button"
 description = "Hold: aim down sights"
@@ -136,28 +151,30 @@ view_modes = Array[int]([0])
 stances = Array[int]([1])
 sort_order = 51
 
-[sub_resource type="Resource" id="Resource_kh18"]
+[sub_resource type="Resource" id="Resource_kh19"]
 script = ExtResource("1_entry")
 action_names = Array[StringName]([&"move_forward", &"move_backward", &"move_left", &"move_right"])
 description = "Move / strafe"
+category = 0
 modes = Array[int]([1])
 sort_order = 30
 
-[sub_resource type="Resource" id="Resource_kh19"]
+[sub_resource type="Resource" id="Resource_kh20"]
 script = ExtResource("1_entry")
 action_names = Array[StringName]([&"hover_up", &"hover_down"])
 description = "Ascend / descend (release: hold)"
+category = 0
 modes = Array[int]([1])
 sort_order = 40
 
-[sub_resource type="Resource" id="Resource_kh20"]
+[sub_resource type="Resource" id="Resource_kh21"]
 script = ExtResource("1_entry")
 action_name = &"toggle_view"
 description = "Camera: Chase ⇄ Cockpit"
 modes = Array[int]([1])
 sort_order = 170
 
-[sub_resource type="Resource" id="Resource_kh21"]
+[sub_resource type="Resource" id="Resource_kh22"]
 script = ExtResource("1_entry")
 action_name = &"interact"
 description = "Exit hover (near-zero speed only)"
@@ -166,4 +183,4 @@ sort_order = 10
 
 [resource]
 script = ExtResource("2_catalog")
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh01"), SubResource("Resource_kh02"), SubResource("Resource_kh03"), SubResource("Resource_kh04"), SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh08"), SubResource("Resource_kh09"), SubResource("Resource_kh10"), SubResource("Resource_kh11"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh01"), SubResource("Resource_kh02"), SubResource("Resource_kh03"), SubResource("Resource_kh04"), SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh08"), SubResource("Resource_kh09"), SubResource("Resource_kh10"), SubResource("Resource_kh11"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21"), SubResource("Resource_kh22")])

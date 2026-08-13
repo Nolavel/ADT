@@ -321,6 +321,29 @@ single horizontal ribbon still forced the eye to scan the whole thing, because
 - `ui/hud/player_hud/key_hint_entry.gd`, `ui/hud/player_hud/key_hints_panel.gd`,
   `CLAUDE.md`.
 
+**Key-hints HUD: every entry in `data/key_hints.tres` sorted into its column.** Follow-up
+to the three-column layout above, same day — the schema and the panel were ready, the
+catalog itself still needed every `KeyHintEntry.category` set.
+*Панель подсказок: каждой записи в data/key_hints.tres назначена колонка.*
+
+- All 21 entries categorized `MOVEMENT`/`ACTION`/`SYSTEM` per the brief's own list
+  (movement/run/jump/hover-vertical → `MOVEMENT`; interact/stance/punch/aim/camera/view
+  → `ACTION`; menu/save-load/panel-toggle/debug → `SYSTEM`). One genuinely debatable
+  case: `lock_on` (TPS target lock) could read as camera/movement or as
+  combat-targeting — filed under `ACTION`, closer to the latter, rather than inventing a
+  fourth column for one row.
+- `debug_save`/`debug_load` split back from their one grouped `K / L` row into two
+  separate `SYSTEM` rows (`"Debug save"` / `"Debug load"`): the grouped key label and
+  grouped description relied on positional correspondence (first key ↔ first word) to
+  say which key did what, which isn't the same as actually saying it — not worth the one
+  row it saved, per this task's own instruction to prefer clarity over economy here.
+  Catalog is 22 entries again, up from 21.
+- Per-state row counts with categories applied (unchanged row totals from the prior
+  pass, plus the one extra debug row): ISOMETRIC+PEACE 11, ISOMETRIC+COMBAT 10,
+  TPS+PEACE 11, TPS+COMBAT 12, HOVER 8. `SYSTEM` (4 rows: pause, debug save, debug load,
+  toggle hints) is present in full in every state, since none of it is mode-gated.
+- `data/key_hints.tres`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order
