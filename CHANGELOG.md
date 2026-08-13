@@ -210,6 +210,42 @@ recorded for a future health/hunger pass to key off, even though nothing reads i
   `core/world/save_system/save_system.gd`, `core/input/input_systems.gd`,
   `world/lodging/lodging_room.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`.
 
+**H2, key-hints HUD: a collaborator can now see which keys do what.** Before this,
+every valid action per `PlayerState.mode`/`view_mode`/`stance`/`is_aiming` lived only
+in the author's head and in `input_map.md` — undiscoverable to anyone reviewing a live
+build, which `docs/scope_horizon.md` flags as the reason H2 is sequenced ahead of the
+pistol chain.
+*H2, панель подсказок клавиш: теперь актуальные клавиши видны прямо на экране, а не
+только автору в голове.*
+
+- New `KeyHintEntry`/`KeyHintsCatalog` resources (`ui/hud/player_hud/`) — one row per
+  InputMap action, each with a description and `modes`/`view_modes`/`stances` condition
+  arrays (empty = any) plus a tri-state `is_aiming` requirement and a `sort_order`.
+  Populated in `res://data/key_hints.tres` for every action `input_map.md` already
+  documents as read by some script (the two `lodging_hours_*` actions are left out for
+  now — showing them correctly would need to know whether `LodgingRoom`'s sleep-hour
+  picker is open, which nothing outside that scene currently tracks, and adding that
+  tracking is out of scope here).
+- New `KeyHintsPanel` (`ui/hud/player_hud/key_hints_panel.gd`/`.tscn`), instanced inside
+  `player_hud.tscn` rather than added as a `WORLD_UI_SCENES` entry. Bottom-center,
+  always visible while enabled. Rebuilds only on `PlayerState`'s four signals, diffing
+  the newly-active entry set against the rows already shown instead of clearing the
+  list, so an unrelated stance change doesn't flash rows that stayed valid. Key labels
+  come from `InputMap.action_get_events()` at rebuild time, not typed by hand, so a
+  rebind is reflected automatically; an action with several bound events shows only the
+  first.
+- New `InputSystems.key_hints_enabled` (default `true`) gates the panel's visibility,
+  with a matching `key_hints_enabled_changed` signal and a new `toggle_key_hints` action
+  (`H`) that flips it. Placed on `InputSystems` rather than on the panel itself — an
+  explicit design call, not an oversight: see the field's own comment and `CLAUDE.md`'s
+  `InputSystems` bullet for why, and for the UI → `InputSystems` dependency this is now
+  the first instance of in the project.
+- `project.godot`/`input_map.md` updated (action count now `36`) for `toggle_key_hints`.
+- `ui/hud/player_hud/key_hint_entry.gd`, `ui/hud/player_hud/key_hints_catalog.gd`,
+  `data/key_hints.tres`, `ui/hud/player_hud/key_hints_panel.gd`,
+  `ui/hud/player_hud/key_hints_panel.tscn`, `ui/hud/player_hud/player_hud.tscn`,
+  `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order

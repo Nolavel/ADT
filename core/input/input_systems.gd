@@ -47,6 +47,9 @@ signal perception_debug_toggled()
 signal debug_save_pressed()
 signal debug_load_pressed()
 
+## --- Key hints HUD toggle (H2, docs/scope_horizon.md) ---
+signal key_hints_enabled_changed(enabled: bool)
+
 ## --- Lodging sleep-hour picker (H1 step 4, world/lodging/) ---
 ## Mouse wheel, read as discrete ticks via is_action_just_released() — same
 ## convention zoom_in/zoom_out already use for the same physical input, but
@@ -68,6 +71,24 @@ signal tabs_key_held()
 ## emitted — InteractComponent is blind during that time. One owner makes
 ## the decision, instead of subscribers racing each other.
 var _interact_claimant: Node = null
+
+## ── Key hints HUD switch (H2, docs/scope_horizon.md) ──────────────────
+## Deliberately placed on InputSystems rather than on KeyHintsPanel itself,
+## even though this file's own header says it carries no game logic and
+## isn't a UI concern: InputSystems is the only system that actually knows
+## about keys as physical things, so "should the panel explaining the keys
+## be visible" is gated from the one place already reading Input.* rather
+## than duplicating that knowledge on the panel. This DOES introduce a
+## UI → input dependency that didn't exist before (KeyHintsPanel now reads
+## an InputSystems field/signal, where previously nothing in ui/hud/ needed
+## InputSystems at all) — accepted as a deliberate exception, not a pattern
+## to repeat for other UI toggles without the same reasoning applying.
+var key_hints_enabled: bool = true:
+	set(value):
+		if value == key_hints_enabled:
+			return
+		key_hints_enabled = value
+		key_hints_enabled_changed.emit(key_hints_enabled)
 
 const TABS_HOLD_TIME: float = 0.5
 const RUN_TRIGGER_TIME: float = 0.5
@@ -125,6 +146,7 @@ func _physics_process(delta: float) -> void:
 	_handle_stance_toggle()
 	_handle_debug_save_load()
 	_handle_lodging_hours()
+	_handle_key_hints_toggle()
 
 
 ## ============================================
@@ -248,6 +270,15 @@ func _handle_lodging_hours() -> void:
 		lodging_hours_increase_pressed.emit()
 	if Input.is_action_just_released("lodging_hours_down"):
 		lodging_hours_decrease_pressed.emit()
+
+
+## ============================================
+## KEY HINTS HUD TOGGLE — see key_hints_enabled's own comment for why this
+## switch lives here instead of on KeyHintsPanel.
+## ============================================
+func _handle_key_hints_toggle() -> void:
+	if Input.is_action_just_pressed("toggle_key_hints"):
+		key_hints_enabled = not key_hints_enabled
 
 
 ## ============================================

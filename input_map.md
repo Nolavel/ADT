@@ -15,7 +15,7 @@ Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
 methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
 reads raw `KEY_*` deliberately.
 
-Action count: **35** — 31 live, 4 reserved and unread.
+Action count: **36** — 32 live, 4 reserved and unread.
 
 ---
 
@@ -30,6 +30,7 @@ Active regardless of `PlayerState.mode`.
 | `toggle_perception_debug` | `]` | Toggle the NPC perception debug panel (observer only) | Панель отладки восприятия NPC |
 | `debug_save` | `K` | Debug save to slot 0 (`SaveSystem`) — permanent developer tool, not the in-fiction save mechanism | Отладочное сохранение |
 | `debug_load` | `L` | Debug load from slot 0 (`SaveSystem`) | Отладочная загрузка |
+| `toggle_key_hints` | `H` | Show/hide the key-hints HUD panel (`InputSystems.key_hints_enabled`) | Показать/скрыть панель подсказок |
 
 `debug_save`/`debug_load` were originally bound to `F5`/`F9` (2026-08-12) and rebound
 to `K`/`L` the same day: `F5` collides with the Godot editor's own "Run Project"
