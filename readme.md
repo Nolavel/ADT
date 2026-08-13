@@ -88,7 +88,7 @@ hand-owned.
 
 ## For collaborators
 
-Start with **`docs/ARCHITECTURE.md`** — how the project is put together and
+Start with **`ARCHITECTURE.md`** — how the project is put together and
 why, with diagrams. Then `docs/CONTRIBUTING.md` (what you can pick up, what
 is off-limits) and `docs/GDSCRIPT_STYLE.md` (code conventions).
 
