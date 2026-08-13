@@ -1,11 +1,12 @@
 # =============================================================================
 # KeyHintEntry.gd
 # Resource — one row of the key-hints HUD panel (key_hints_panel.gd,
-# docs/scope_horizon.md H2). Describes ONE InputMap action: what it does, and
-# under which PlayerState combination it is currently relevant.
+# docs/scope_horizon.md H2). Describes one InputMap action — or a small
+# group of them that share one meaning (WASD → "Move") — and under which
+# PlayerState combination the row is currently relevant.
 #
 # The key LABEL is never authored here — KeyHintsPanel resolves it live from
-# InputMap by action_name, so a rebind in Project Settings never lets the
+# InputMap by action name, so a rebind in Project Settings never lets the
 # panel lie about which key does what.
 #
 # CONDITION FIELDS: an empty array means "any" on that axis — an entry that
@@ -26,8 +27,17 @@ class_name KeyHintEntry
 enum AimRequirement { ANY, AIMING_ONLY, NOT_AIMING }
 
 ## Action name as registered in InputMap (Project Settings → Input Map).
+## Used when this entry describes a SINGLE action. Ignored (action_names
+## wins) once action_names is non-empty — leave this at its default for a
+## grouped entry, do not set both.
 @export var action_name: StringName = &""
-## Short description shown next to the resolved key label.
+## Action names for a GROUPED entry, e.g. move_forward/backward/left/right
+## for one "Move" row: their key labels are joined into a single cell
+## (KeyHintsPanel.group_key_separator) sharing this entry's one
+## description. Empty for an ordinary single-action entry — see
+## get_action_names().
+@export var action_names: Array[StringName] = []
+## Short description shown next to the resolved key label(s).
 @export var description: String = ""
 
 @export_group("Visible when")
@@ -45,6 +55,8 @@ enum AimRequirement { ANY, AIMING_ONLY, NOT_AIMING }
 
 
 ## True if this row belongs on screen for the given PlayerState snapshot.
+## The condition fields apply to the entry as a whole — a grouped entry has
+## exactly one set of them, same as a single-action one.
 func matches(mode: PlayerState.Mode, view_mode: PlayerState.ViewMode,
 		stance: PlayerState.Stance, is_aiming: bool) -> bool:
 	if not modes.is_empty() and not modes.has(mode):
@@ -58,3 +70,22 @@ func matches(mode: PlayerState.Mode, view_mode: PlayerState.ViewMode,
 	if aiming_requirement == AimRequirement.NOT_AIMING and is_aiming:
 		return false
 	return true
+
+
+## The action name(s) this entry resolves key labels for: action_names if
+## the entry is a group, else the single action_name.
+func get_action_names() -> Array[StringName]:
+	if not action_names.is_empty():
+		return action_names
+	return [action_name]
+
+
+## Stable identity for this entry's on-screen row, used by KeyHintsPanel to
+## track it across a diffed rebuild. For an ordinary single-action entry
+## this is just action_name, unchanged from before grouping existed.
+func get_row_key() -> StringName:
+	var names := get_action_names()
+	var joined := String(names[0])
+	for i in range(1, names.size()):
+		joined += "|" + String(names[i])
+	return StringName(joined)

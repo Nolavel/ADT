@@ -246,6 +246,46 @@ pistol chain.
   `ui/hud/player_hud/key_hints_panel.tscn`, `ui/hud/player_hud/player_hud.tscn`,
   `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`.
 
+**Key-hints HUD, readability pass: 39 rows was a wall of text, and mouse actions were
+unreadable.** Stan's feedback on the panel above, same day: the full-catalog population
+put roughly forty rows on screen per state — nobody reads that — and
+`InputEventMouseButton.as_text()` prints things like "Left Mouse Button (Physical)",
+long and with a technical tail that means nothing to a reviewer.
+*Панель подсказок, проход по читаемости: 39 строк превращались в стену текста, а
+подписи мышиных кнопок были нечитаемы.*
+
+- `KeyHintsPanel._resolve_key_label()` now dispatches on event type instead of calling
+  `as_text()` blind: a keyboard event keeps `as_text()` with any parenthetical
+  (`" (Physical)"` and the like) stripped; a mouse button becomes `LMB`/`RMB`/`MMB`, the
+  two named side buttons become `MB4`/`MB5`, anything else falls back to `MB<index>`;
+  a wheel tick becomes `Wheel ↑`/`Wheel ↓`/`Wheel ←`/`Wheel →`. New
+  `_pick_display_event()` also replaces the old arbitrary `events[0]`: keyboard wins if
+  the action has a keyboard event, otherwise the first event of whatever else it's
+  bound to — deterministic rather than "whatever InputMap happened to list first". No
+  action in the catalog is actually bound to more than one device today, so this only
+  matters going forward.
+- New `KeyHintEntry.action_names` (`Array[StringName]`) lets one entry describe a GROUP
+  of actions sharing one meaning and one key cell — WASD → one "Move" row instead of
+  four. `action_name` (singular) is untouched and still works for an ordinary entry;
+  `get_action_names()` returns `action_names` if set, else `[action_name]`, so nothing
+  already authored needed migrating. `get_row_key()` (the group's action names joined)
+  replaces `action_name` as what `KeyHintsPanel`'s diffed rebuild tracks a row by.
+  `KeyHintsPanel.group_key_separator` (new export, default `" / "`) is the one place the
+  separator between a group's key labels is defined.
+- `res://data/key_hints.tres` cut from 39 entries to 21: movement (WASD, on-foot and
+  hover) and camera pairs (`lean_left`/`lean_right`, `hover_up`/`hover_down`,
+  `zoom_in`/`zoom_out`) collapsed into grouped rows; `debug_save`/`debug_load` grouped
+  into one row (kept, per Stan's earlier ruling that debug actions are shown on par with
+  game ones — just not as two separate rows anymore); `inventory`/`map`/`status` removed
+  outright, since none of those systems exist and the hint was promising something the
+  game doesn't have; `toggle_stream_debug`/`toggle_perception_debug` removed as
+  observer-only debug overlays, judged out of scope for "can a reviewer operate this
+  build" (H2's actual goal); `toggle_follow`/`toggle_tabs`/`switch_shoulder` removed as
+  low-value secondary camera preferences. Per-state row counts now: ISOMETRIC+PEACE 10,
+  ISOMETRIC+COMBAT 9, TPS+PEACE 10, TPS+COMBAT 11, HOVER 7 — down from ~30-40.
+- `ui/hud/player_hud/key_hints_panel.gd`, `ui/hud/player_hud/key_hint_entry.gd`,
+  `data/key_hints.tres`, `CLAUDE.md`.
+
 ## 2026-08-12 — Scope horizon document; doc cross-links; renderer constraint corrected
 
 Added `docs/scope_horizon.md`: what is actively being built and in what order

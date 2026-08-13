@@ -18,9 +18,14 @@
 # REBUILDS ONLY ON SIGNAL: PlayerState.mode_changed / view_mode_changed /
 # stance_changed / aiming_changed, never every frame. Each rebuild diffs the
 # newly-active entry set against the rows already on screen (keyed by
-# action_name) instead of clearing and recreating the whole row list, so a
-# stance flip that only adds or drops one action doesn't flash the rows that
-# stayed valid.
+# KeyHintEntry.get_row_key()) instead of clearing and recreating the whole
+# row list, so a stance flip that only adds or drops one entry doesn't flash
+# the rows that stayed valid.
+#
+# GROUPING: an entry can describe several actions that share one meaning
+# (KeyHintEntry.action_names, e.g. WASD → "Move") — their key labels are
+# joined into one cell instead of costing one row each. See
+# _resolve_entry_key_label().
 #
 # SELF-CONTAINED: unlike the rest of player_hud.gd, this reads PlayerState
 # and InputSystems directly in _ready() rather than waiting for
@@ -54,6 +59,10 @@ const _MOUSE_BUTTON_LABELS: Dictionary = {
 @export var key_color: Color = Color(0.95, 0.82, 0.35, 1.0)
 @export var description_color: Color = Color(0.88, 0.88, 0.88, 1.0)
 @export var font_size: int = 14
+## Joins the individual key labels of a grouped entry (KeyHintEntry.
+## action_names) into one cell, e.g. "W / A / S / D". The single place this
+## separator is defined — nowhere else repeats it.
+@export var group_key_separator: String = " / "
 ## Horizontal gap between a row's key label and its description.
 @export var key_description_gap: float = 6.0
 ## Horizontal gap between rows.
@@ -68,7 +77,8 @@ const _MOUSE_BUTTON_LABELS: Dictionary = {
 ## One shared monospace font for every key label — see _build_mono_font().
 var _mono_font: Font = null
 
-## action_name → row Control currently on screen, for the diffed rebuild.
+## KeyHintEntry.get_row_key() → row Control currently on screen, for the
+## diffed rebuild.
 var _rows: Dictionary = {}
 
 
@@ -125,23 +135,24 @@ func _rebuild() -> void:
 
 	var wanted: Array[StringName] = []
 	for entry in active:
-		wanted.append(entry.action_name)
+		wanted.append(entry.get_row_key())
 
 	# Dictionary.keys() materializes a fresh Array each call, so this is safe
 	# to iterate while erasing from _rows below — it is not a live view.
-	for action_name in _rows.keys():
-		if not wanted.has(action_name):
-			var stale_row: Control = _rows[action_name]
+	for row_key in _rows.keys():
+		if not wanted.has(row_key):
+			var stale_row: Control = _rows[row_key]
 			stale_row.queue_free()
-			_rows.erase(action_name)
+			_rows.erase(row_key)
 
 	for i in active.size():
 		var entry := active[i]
-		var row: Control = _rows.get(entry.action_name) as Control
+		var row_key := entry.get_row_key()
+		var row: Control = _rows.get(row_key) as Control
 		if row == null:
 			row = _make_row(entry)
 			_rows_box.add_child(row)
-			_rows[entry.action_name] = row
+			_rows[row_key] = row
 		_rows_box.move_child(row, i)
 
 	_reposition()
@@ -149,12 +160,12 @@ func _rebuild() -> void:
 
 func _make_row(entry: KeyHintEntry) -> Control:
 	var row := HBoxContainer.new()
-	row.name = "Row_%s" % entry.action_name
+	row.name = "Row_%s" % entry.get_row_key()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", int(key_description_gap))
 
 	var key_label := Label.new()
-	key_label.text = "[%s]" % _resolve_key_label(entry.action_name)
+	key_label.text = "[%s]" % _resolve_entry_key_label(entry)
 	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	key_label.add_theme_font_override("font", _mono_font)
 	key_label.add_theme_font_size_override("font_size", font_size)
@@ -169,6 +180,25 @@ func _make_row(entry: KeyHintEntry) -> Control:
 	row.add_child(desc_label)
 
 	return row
+
+
+## The key cell for one entry: one resolved label for a single-action entry,
+## or every action's label joined by group_key_separator for a grouped one
+## (KeyHintEntry.action_names), e.g. "W / A / S / D".
+func _resolve_entry_key_label(entry: KeyHintEntry) -> String:
+	var labels: Array[String] = []
+	for action_name in entry.get_action_names():
+		labels.append(_resolve_key_label(action_name))
+	return _join_labels(labels, group_key_separator)
+
+
+func _join_labels(labels: Array[String], separator: String) -> String:
+	var joined := ""
+	for i in labels.size():
+		if i > 0:
+			joined += separator
+		joined += labels[i]
+	return joined
 
 
 ## Resolves the on-screen label for one action straight from InputMap, so a
