@@ -32,6 +32,8 @@ class_name HoverEntryTrigger
 
 enum State { IDLE, BOARDING, SEATED, EXITING }
 
+@onready var _entry_light: AreaLight3D = $EntryLight
+
 ## Корень ховера. По умолчанию — родитель триггера.
 @export var hover_path: NodePath = ^".."
 
@@ -49,6 +51,7 @@ var _door_anchor: Marker3D = null
 var _controller: InputHoverController = null
 
 func _ready() -> void:
+	_set_entry_light_enabled(false)
 	_hover = get_node(hover_path)
 	_door_anchor = _hover.get_node_or_null("DoorAnchor")
 	if _door_anchor == null:
@@ -71,6 +74,7 @@ func _on_body_entered(body: Node3D) -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 	_player = body
+	_set_entry_light_enabled(true)
 	InputSystems.claim_interact(self)
 	print("[HoverEntryTrigger] Игрок у двери '%s' — interact для посадки"
 			% _hover.name)
@@ -80,6 +84,7 @@ func _on_body_exited(body: Node3D) -> void:
 	if _state != State.IDLE or body != _player:
 		return
 	_player = null
+	_set_entry_light_enabled(false)
 	InputSystems.release_interact(self)
 	print("[HoverEntryTrigger] Игрок отошёл от '%s'" % _hover.name)
 
@@ -102,6 +107,7 @@ func on_interact_claimed() -> void:
 
 func _begin_boarding() -> void:
 	_state = State.BOARDING
+	_set_entry_light_enabled(false)
 	PlayerState.set_mode(PlayerState.Mode.HOVER)   # пеший ввод гаснет сразу
 	print("[HoverEntryTrigger] BOARDING → '%s'" % _hover.name)
 
@@ -153,3 +159,7 @@ func _hover_speed() -> float:
 		var v := (_hover as CharacterBody3D).velocity
 		return Vector2(v.x, v.z).length()
 	return 0.0
+	
+func _set_entry_light_enabled(enabled: bool) -> void:
+	if _entry_light:
+		_entry_light.visible = enabled

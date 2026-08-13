@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://cvuw2ef72te81" path="res://tools/input_debugger/input_debugger.tscn" id="3_mmdvd"]
 [ext_resource type="PackedScene" uid="uid://cnhshfsm2gpjs" path="res://tools/scan_folder_files/scan_folder_files.tscn" id="4_fn3g3"]
 [ext_resource type="PackedScene" uid="uid://d20xtrkue3841" path="res://world/police_drone/PoliceDrone.tscn" id="4_sc4t8"]
-[ext_resource type="PackedScene" path="res://world/lodging/lodging_room.tscn" id="5_ai45w"]
+[ext_resource type="PackedScene" uid="uid://dijskn4mk0e4t" path="res://world/lodging/lodging_room.tscn" id="5_ai45w"]
 [ext_resource type="PackedScene" uid="uid://tfirmx15wush" path="res://world/interactables/hover_test.tscn" id="5_mmdvd"]
 [ext_resource type="PackedScene" uid="uid://buvco4qb6amvt" path="res://npc/npc.tscn" id="6_npc"]
 

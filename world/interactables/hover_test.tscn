@@ -39,6 +39,11 @@ script = ExtResource("1_iqrxv")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="HoverEntryTrigger" unique_id=1738602094]
 shape = SubResource("BoxShape3D_bx8n8")
 
+[node name="EntryLight" type="AreaLight3D" parent="HoverEntryTrigger" unique_id=534872127]
+transform = Transform3D(-2.8156535e-08, 0.7649022, -0.64414644, 3.3434937e-08, 0.64414644, 0.7649022, 1, 0, -4.371139e-08, 0, 0, 0)
+light_color = Color(1, 1, 0.023529412, 1)
+light_energy = 3.0
+
 [node name="InputHoverController" type="Node" parent="." unique_id=1790197098]
 script = ExtResource("3_bqrf5")
 
