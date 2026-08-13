@@ -18,6 +18,7 @@ Startup scene: `res://world/world.tscn`.
 
 | File | Purpose |
 |---|---|
+| `docs/ARCHITECTURE.md` | **Architecture and the reasoning behind the contracts, with diagrams.** Human-facing counterpart to this file — read it before any structural change. |
 | `docs/CONTRIBUTING.md` | What a collaborator may pick up, what is off-limits, contribution terms |
 | `docs/GDSCRIPT_STYLE.md` | Code conventions; stricter than the official Godot guide in places |
 | `docs/planned_scope.md` | Scope that is **not started**. Not a task list. |
@@ -44,6 +45,11 @@ There is no separate unit-test framework (no GUT etc.); "testing" a change means
 - **Do not create placeholder scripts or empty directories** for work that has not started. Planned scope belongs in `docs/planned_scope.md`. An empty file in the tree reads as a promise.
  
 ## Architecture
+
+The contracts below are stated here as rules to follow. The reasoning behind
+them, the boot sequence, the streaming state machine and the save contract
+are explained with diagrams in `docs/ARCHITECTURE.md` — read that before
+making a structural change, not just this summary.
 
 ### Autoload singletons (`project.godot` `[autoload]`)
 
