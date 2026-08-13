@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://ui/hud/player_hud/player_hud.gd" id="1_hud"]
 [ext_resource type="PackedScene" path="res://ui/hud/status_bar/status_bar_widget.tscn" id="2_bar"]
+[ext_resource type="PackedScene" path="res://ui/hud/player_hud/key_hints_panel.tscn" id="3_hints"]
 
 [node name="PlayerHUD" type="Control"]
 layout_mode = 3
@@ -12,3 +13,6 @@ layout_mode = 1
 
 [node name="HealthBar" parent="StatusStack" instance=ExtResource("2_bar")]
 layout_mode = 2
+
+[node name="KeyHintsPanel" parent="." instance=ExtResource("3_hints")]
+layout_mode = 3

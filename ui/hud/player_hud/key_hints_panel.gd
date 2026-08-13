@@ -1,0 +1,201 @@
+# =============================================================================
+# key_hints_panel.gd — KeyHintsPanel.
+#
+# Bottom-center strip of "key — what it does" rows, visible whenever
+# InputSystems.key_hints_enabled is true (docs/scope_horizon.md H2). A
+# collaborator cannot evaluate a build whose controls are undiscoverable —
+# this is what makes them discoverable.
+#
+# Instanced inside player_hud.tscn rather than added as a separate
+# WORLD_UI_SCENES entry — PlayerHUD already owns a world-UI lifecycle, a
+# second one would duplicate it for no reason.
+#
+# DATA-DRIVEN: rows come from a KeyHintsCatalog resource (catalog export,
+# res://data/key_hints.tres by convention), not a hardcoded per-state
+# switch — the valid-action combinations keep changing as modes/stances are
+# added, and a code switch would need editing every time one does.
+#
+# REBUILDS ONLY ON SIGNAL: PlayerState.mode_changed / view_mode_changed /
+# stance_changed / aiming_changed, never every frame. Each rebuild diffs the
+# newly-active entry set against the rows already on screen (keyed by
+# action_name) instead of clearing and recreating the whole row list, so a
+# stance flip that only adds or drops one action doesn't flash the rows that
+# stayed valid.
+#
+# SELF-CONTAINED: unlike the rest of player_hud.gd, this reads PlayerState
+# and InputSystems directly in _ready() rather than waiting for
+# on_world_ready(context) — both are autoloads, always present, and nothing
+# here needs the player/camera a WorldContext would hand over.
+#
+# Dependencies: PlayerState, InputSystems (both autoloads).
+# =============================================================================
+class_name KeyHintsPanel
+extends PanelContainer
+
+@export var catalog: KeyHintsCatalog
+
+@export_group("Style")
+@export var background_color: Color = Color(0.05, 0.05, 0.05, 0.72)
+@export var key_color: Color = Color(0.95, 0.82, 0.35, 1.0)
+@export var description_color: Color = Color(0.88, 0.88, 0.88, 1.0)
+@export var font_size: int = 14
+## Horizontal gap between a row's key label and its description.
+@export var key_description_gap: float = 6.0
+## Horizontal gap between rows.
+@export var row_gap: float = 20.0
+## Panel padding around the row list.
+@export var panel_padding: Vector2 = Vector2(16.0, 8.0)
+## Distance from the bottom of the screen to the panel.
+@export var bottom_margin: float = 16.0
+
+@onready var _rows_box: HBoxContainer = $Rows
+
+## One shared monospace font for every key label — see _build_mono_font().
+var _mono_font: Font = null
+
+## action_name → row Control currently on screen, for the diffed rebuild.
+var _rows: Dictionary = {}
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rows_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_rows_box.add_theme_constant_override("separation", int(row_gap))
+	_mono_font = _build_mono_font()
+	_apply_background_style()
+
+	resized.connect(_reposition)
+	get_viewport().size_changed.connect(_reposition)
+
+	PlayerState.mode_changed.connect(_on_mode_changed)
+	PlayerState.view_mode_changed.connect(_on_view_mode_changed)
+	PlayerState.stance_changed.connect(_on_stance_changed)
+	PlayerState.aiming_changed.connect(_on_aiming_changed)
+	InputSystems.key_hints_enabled_changed.connect(_on_enabled_changed)
+
+	visible = InputSystems.key_hints_enabled
+	_rebuild()
+	_reposition()
+
+
+func _on_mode_changed(_old_mode: PlayerState.Mode, _new_mode: PlayerState.Mode) -> void:
+	_rebuild()
+
+
+func _on_view_mode_changed(_old_view: PlayerState.ViewMode, _new_view: PlayerState.ViewMode) -> void:
+	_rebuild()
+
+
+func _on_stance_changed(_old_stance: PlayerState.Stance, _new_stance: PlayerState.Stance) -> void:
+	_rebuild()
+
+
+func _on_aiming_changed(_is_aiming: bool) -> void:
+	_rebuild()
+
+
+func _on_enabled_changed(enabled: bool) -> void:
+	visible = enabled
+
+
+## Diffs the newly-active KeyHintEntry set against the rows already shown —
+## adds/removes/reorders only what changed, never clears the whole list.
+func _rebuild() -> void:
+	if catalog == null:
+		push_warning("[KeyHintsPanel] no catalog assigned — panel stays empty")
+		return
+
+	var active := catalog.get_active_entries(
+			PlayerState.mode, PlayerState.view_mode, PlayerState.stance, PlayerState.is_aiming)
+
+	var wanted: Array[StringName] = []
+	for entry in active:
+		wanted.append(entry.action_name)
+
+	# Dictionary.keys() materializes a fresh Array each call, so this is safe
+	# to iterate while erasing from _rows below — it is not a live view.
+	for action_name in _rows.keys():
+		if not wanted.has(action_name):
+			var stale_row: Control = _rows[action_name]
+			stale_row.queue_free()
+			_rows.erase(action_name)
+
+	for i in active.size():
+		var entry := active[i]
+		var row: Control = _rows.get(entry.action_name) as Control
+		if row == null:
+			row = _make_row(entry)
+			_rows_box.add_child(row)
+			_rows[entry.action_name] = row
+		_rows_box.move_child(row, i)
+
+	_reposition()
+
+
+func _make_row(entry: KeyHintEntry) -> Control:
+	var row := HBoxContainer.new()
+	row.name = "Row_%s" % entry.action_name
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", int(key_description_gap))
+
+	var key_label := Label.new()
+	key_label.text = "[%s]" % _resolve_key_label(entry.action_name)
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	key_label.add_theme_font_override("font", _mono_font)
+	key_label.add_theme_font_size_override("font_size", font_size)
+	key_label.add_theme_color_override("font_color", key_color)
+	row.add_child(key_label)
+
+	var desc_label := Label.new()
+	desc_label.text = entry.description
+	desc_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	desc_label.add_theme_font_size_override("font_size", font_size)
+	desc_label.add_theme_color_override("font_color", description_color)
+	row.add_child(desc_label)
+
+	return row
+
+
+## Resolves the on-screen label for one action straight from InputMap, so a
+## rebind is reflected without touching this panel or its catalog. An action
+## can carry several bound events (keyboard, mouse, wheel, and in principle
+## a gamepad) — only the FIRST one is shown, whatever device it belongs to.
+func _resolve_key_label(action_name: StringName) -> String:
+	if action_name == &"" or not InputMap.has_action(action_name):
+		return "?"
+	var events := InputMap.action_get_events(action_name)
+	if events.is_empty():
+		return "?"
+	return events[0].as_text().strip_edges()
+
+
+func _reposition() -> void:
+	var viewport_size := get_viewport_rect().size
+	global_position = Vector2(
+			(viewport_size.x - size.x) / 2.0,
+			viewport_size.y - size.y - bottom_margin
+	)
+
+
+func _apply_background_style() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background_color
+	style.content_margin_left = panel_padding.x
+	style.content_margin_right = panel_padding.x
+	style.content_margin_top = panel_padding.y
+	style.content_margin_bottom = panel_padding.y
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	add_theme_stylebox_override("panel", style)
+
+
+## SystemFont, not a bundled asset: this panel is a working tool for showing
+## the build to a reviewer, not final UI (see this file's own header) — not
+## worth shipping a font file for. Falls back to the platform default if
+## none of these are installed, same as any other SystemFont use.
+func _build_mono_font() -> Font:
+	var system_font := SystemFont.new()
+	system_font.font_names = ["Consolas", "Courier New", "DejaVu Sans Mono", "monospace"]
+	return system_font
