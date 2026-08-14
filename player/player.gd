@@ -826,7 +826,7 @@ func _update_direct_move_target_speed() -> void:
 ## camera at combat_face_camera_smoothing in every branch below, moving or
 ## idle, so there is nothing ADS-specific to add here.
 func _face_camera(delta: float, smoothing: float) -> void:
-	rotation.y = lerp_angle(rotation.y, _camera_yaw + PI, delta * smoothing)
+	rotation.y = lerp_angle(rotation.y, _camera_yaw + PI, Smoothing.damp_factor(smoothing, delta))
 
 
 func _apply_direct_movement(delta: float) -> void:
