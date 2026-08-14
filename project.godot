@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Vertical Trespass"
 run/main_scene="uid://bftcnbrfar8om"
-config/features=PackedStringArray("4.7", "C#")
+config/features=PackedStringArray("4.7")
 config/icon="res://icon.svg"
 
 [autoload]
