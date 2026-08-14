@@ -7,7 +7,10 @@ The design was settled in discussion and lived outside the repository, which
 meant a contributor could not find it. Sections 2, 3, 5, 6 and 7 are still
 unbuilt; section 4 is partly built. See Status below for the split.
 
-Read `CONTRIBUTING.md` before picking any of it up.
+Read `CONTRIBUTING.md` before picking any of it up. This page also assumes
+`core_loop.md` (why the player is out here, and the loop this design answers)
+and `npc_archetypes.md` (what the crowd looks like before any of this
+triggers) — read those first if you have not.
 
 Last reviewed: 2026-08-10
 
@@ -50,7 +53,9 @@ locomotion.
 ## 1. Why the crowd is load-bearing
 
 The core minute of play is: move with the crowd → read people and space →
-either avoid a threat or strike and rob → keep moving. Every verb in that
+either avoid a threat or strike and rob → keep moving — the same NEED →
+MOVE → OBSERVE → DECIDE → ACT loop laid out in full in `core_loop.md` §1,
+compressed to the part the crowd is on stage for. Every verb in that
 loop takes the crowd as its object. A crowd that only walks past turns the
 core loop into scenery.
 
@@ -61,6 +66,11 @@ more here than an NPC that plans well.
 ---
 
 ## 2. Readability — the crowd must be legible without UI
+
+`npc_archetypes.md` §3 is the fuller, more recent version of this section —
+six named archetypes built against these channels, plus placeholder colours
+for prototyping before meshes exist. Kept here for the reasoning behind why
+readability matters at all.
 
 There is no profiler overlay, no scan mode, no highlight. The player learns
 to read the crowd by looking at it. Four channels carry that information:

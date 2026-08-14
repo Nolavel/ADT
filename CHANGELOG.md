@@ -89,6 +89,45 @@ design — the dead zone just hid it behind a flat non-reaction).
   and `_zone_x`/`_zone_y`'s own defaults updated to match, no logic touched.
 - `camera/isometric_camera_state.gd`, `CLAUDE.md`.
 
+**Documentation pass: wired `core_loop.md`/`npc_archetypes.md` into the rest of the
+docs, stated plainly that this repo is developed with an LLM agent, and removed two
+identifying details.** No code changed.
+
+- Cross-links added along the intended reading order — `core_loop.md` →
+  `npc_archetypes.md` → `NPC_REACTIONS.md` — each pointing at the specific claim that
+  needs it, not a generic see-also block: `NPC_REACTIONS.md` now names both earlier
+  pages up top and links §1/§2 to the loop and the fuller channel spec;
+  `planned_scope.md`'s NPC/AI and Combat entries point at `core_loop.md` §7/§9;
+  `scope_horizon.md` points at `core_loop.md` §9 for weak points instead of leaving
+  room to restate them; `CONTRIBUTING.md`'s Open areas gained an entry for the two new
+  pages with the reading order spelled out; `ARCHITECTURE.md`'s "Where to look first"
+  table gained rows for both, ahead of the existing `NPC_REACTIONS.md` row.
+- `readme.md` gains a paragraph, `CONTRIBUTING.md` a line, stating plainly that this
+  codebase is developed with an LLM coding agent alongside the author, that
+  `CLAUDE.md` is that agent's working context, and that this repo's documentation
+  conventions (dense *why*-focused headers, docs kept in sync with code) exist partly
+  for that reason. `CLAUDE.md` already read as guidance addressed to the agent;
+  nothing previously said so to a human reader in those words.
+- Removed the identifying dev-hardware detail (`CLAUDE.md`, `ARCHITECTURE.md`):
+  "Intel HD 620 laptop" → "low-end integrated graphics." The FPS target and every
+  decision it drives (Forward+ over Forward Mobile, the 1024 shadow map, filter
+  quality at 0) are unchanged — only the machine name is gone.
+- Removed the specific weekly-hours figure (`scope_horizon.md`, two spots): the
+  governing constraint is now stated as "development time is limited and irregular"
+  and "under limited development time," without a number.
+- **Contradictions found, not resolved** — see the chat for the full list: (1)
+  `NPC_REACTIONS.md` §8 and `planned_scope.md`'s save "Open questions" both still
+  describe `IncidentRegistry` as holding `Node3D` references and a 30-second,
+  engine-uptime `max_incident_age`; `CLAUDE.md`'s current `IncidentRegistry` entry
+  says this was fixed under H1 — stable `StringName` ids, game-hour timestamps,
+  `max_incident_age` defaulting to `24.0`. Both design docs are stale on this point.
+  (2) `NPC_REACTIONS.md` §2's four-channel readability table and
+  `npc_archetypes.md` §3's are the same idea with different names and one different
+  category (`Stratum`/"population mix" vs. `Density & mix`/"spawn composition") —
+  not contradictory, but not identical either, and no longer worth maintaining twice.
+- `readme.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`,
+  `docs/NPC_REACTIONS.md`, `docs/planned_scope.md`, `docs/scope_horizon.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker

@@ -31,6 +31,11 @@ Safe to pick up without deep context:
 - **UI widgets** under `ui/widgets/` — self-contained.
 - **English editing** of comments and docs.
 - **3D props** to written spec, outside the codebase.
+- **NPC archetype visuals and locomotion**, against the written spec. Read
+  `core_loop.md` → `npc_archetypes.md` → `NPC_REACTIONS.md`, in that order,
+  before picking this up — starting mid-chain means missing why the crowd
+  has to be legible before it needs to be smart. The delegable pieces
+  themselves are listed in `npc_archetypes.md` §6 and `NPC_REACTIONS.md` §9.
 
 Ask first — these need a spec from the owner:
 
@@ -75,7 +80,7 @@ and breaking them fails silently, not loudly.
 
 ## A note on Claude Code
 
-CLAUDE.md isn't just documentation — it's a working brief for Claude Code, the AI tool the owner uses in the editor. If the tool pushes back on something from "Hard constraints" (renderer, autoloads, naming contracts), that's not the tool having an opinion — it's a decision the owner already made, just enforced automatically.
+This codebase is developed with an LLM coding agent working alongside the owner, not by the owner alone — the documentation conventions below (dense header comments explaining *why*, docs kept in sync with code) exist partly for that reason. CLAUDE.md isn't just documentation — it's a working brief for Claude Code, the AI tool the owner uses in the editor. If the tool pushes back on something from "Hard constraints" (renderer, autoloads, naming contracts), that's not the tool having an opinion — it's a decision the owner already made, just enforced automatically.
 If a constraint seems wrong or outdated, raise it with the owner directly rather than arguing with the tool or working around it. The tool executes decisions, it doesn't make them.
 
 ## Scope rules

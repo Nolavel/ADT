@@ -20,9 +20,9 @@ they describe changes far more slowly.
 ## The shape of the thing
 
 Roughly 20,000 lines of GDScript across ~97 scripts and ~256 scenes. Engine
-is Godot 4.7, Forward+ renderer, targeting Intel HD 620 at ~55 FPS — that
-hardware target is the reason behind a number of decisions that otherwise
-look overly frugal.
+is Godot 4.7, Forward+ renderer, targeting low-end integrated graphics at
+~55 FPS — that performance target is the reason behind a number of
+decisions that otherwise look overly frugal.
 
 Four ideas carry most of the weight:
 
@@ -400,4 +400,6 @@ on its next run. Rename to drop the prefix to make a marker hand-owned.
 | What is being built right now | `scope_horizon.md` |
 | What is intended but not started | `planned_scope.md` |
 | Input bindings | `../input_map.md` |
-| NPC reaction design | `NPC_REACTIONS.md` |
+| Why the player is out there, and the core gameplay loop | `core_loop.md` |
+| What the crowd looks like (readability spec) | `npc_archetypes.md` |
+| NPC reaction design (what the crowd and the city *do*) | `NPC_REACTIONS.md` |

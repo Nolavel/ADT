@@ -19,8 +19,12 @@ Anything not on this page is not scheduled, however good an idea it is. Ideas go
 to `planned_scope.md` with their prerequisite named; they do not go here until
 that prerequisite is met.
 
-**Time budget:** 5–12 hours per week, irregular. This is the governing constraint
-on everything below. A horizon that assumes more is fiction.
+The same no-overlap rule applies to design weak points: they are named once, in
+`core_loop.md` §9, not restated here. If a weak point becomes relevant to
+sequencing, link it from the item that depends on it.
+
+**Time budget:** development time is limited and irregular. This is the governing
+constraint on everything below. A horizon that assumes more is fiction.
 
 **Sequencing is by dependency, not by date.** Items unlock each other. Calendar
 dates appear only where an external commitment exists.
@@ -146,7 +150,7 @@ without H2, and without H1 would be built on a foundation that cannot be saved.
 
 Both external architecture reviews (August 2026) flagged the absence of automated
 testing. The judgement here is that building test infrastructure competes directly
-with combat and save on a 5–12 h/week budget, and loses.
+with combat and save under limited development time, and loses.
 
 This is recorded as an accepted trade, not an oversight, so that it stops being
 re-raised as a finding. Revisit when a second person is working in the repo —

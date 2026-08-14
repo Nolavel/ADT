@@ -92,9 +92,15 @@ Start with **`ARCHITECTURE.md`** — how the project is put together and
 why, with diagrams. Then `docs/CONTRIBUTING.md` (what you can pick up, what
 is off-limits) and `docs/GDSCRIPT_STYLE.md` (code conventions).
 
-`CLAUDE.md` in the root is a working brief for Claude Code, the AI tool used
-in the editor. It states the same contracts as rules to obey rather than
-explaining them, and it is not an introduction to the project.
+This codebase is developed with an LLM coding agent (Claude Code) working
+alongside the author, not by the author alone. `CLAUDE.md` in the root is
+that agent's working context — a working brief stating the same contracts
+as rules to obey rather than explaining them, so it is not an introduction
+to the project for a human reader. The documentation conventions used
+throughout this repo — dense header comments that explain *why*, docs kept
+in sync with code in the same commit — exist partly for the agent's
+benefit: a session starts with no memory of the last one and has to
+re-derive context from what is written down.
 
 Most code comments are currently in Russian. Translation of the load-bearing
 system headers to English is in progress; see `CONTRIBUTING.md` for which

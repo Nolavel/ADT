@@ -194,7 +194,8 @@ Named here so the absence is deliberate rather than overlooked:
   (`IncidentRegistry`) — but still not the whole reaction: nothing beyond
   one drone's radius hears about it, and there's no witness system yet
   (NPCs don't report what they see, only the player's own punch does). The
-  design this is built against is `NPC_REACTIONS.md`.
+  design this is built against is `NPC_REACTIONS.md`; see `core_loop.md` §7
+  for the loop-level picture of what each stage this feeds still needs.
 - **Combat.** A punch exists (`COMBAT`-only, `mouse_left_button`,
   `player.gd`) and knocks a hit NPC down for a few seconds — see NPC and AI,
   above. What doesn't: health, damage numbers, death, a weapon to swing, and
@@ -203,7 +204,7 @@ Named here so the absence is deliberate rather than overlooked:
   encounter). This is "the player can hit something," not combat. Note that
   the consequence system is currently ahead of the combat it measures:
   incidents are recorded for a punch, while nothing worse than a punch is
-  possible.
+  possible — see `core_loop.md` §9 for the loop-level framing of this gap.
 - **Stance has state and reads through to animation.** `PlayerState.Stance`
   (PEACE/COMBAT, `core/player_state/player_state.gd`) exists and is read
   by movement speed and TPS body rotation (`player.gd`), lock-on gating
