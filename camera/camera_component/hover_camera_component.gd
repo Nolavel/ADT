@@ -40,6 +40,11 @@ enum HoverView { CHASE, COCKPIT }
 @export var fov_speed_kick: float = 12.0
 @export var fov_lerp_speed: float = 4.0
 
+@export_group("Cockpit")
+## Смещение камеры вперёд от CockpitAnchor вдоль носа (локальный −Z), метры.
+## На самом якоре камера сидела внутри меша кабины.
+@export var cockpit_forward_offset: float = 0.25
+
 @export_group("Boarding arc")
 ## Длительность дуги входа камеры, сек.
 @export var arc_duration: float = 0.6
@@ -109,7 +114,10 @@ func _current_view() -> HoverView:
 
 func _desired_transform() -> Transform3D:
 	if _current_view() == HoverView.COCKPIT:
-		return _cockpit.global_transform
+		var t := _cockpit.global_transform
+		# Вперёд = -Z камеры/якоря (см. конвенцию осей в шапке файла).
+		t.origin -= t.basis.z * cockpit_forward_offset
+		return t
 
 	# CHASE: оффсет откладываем от направления ДВИЖЕНИЯ (velocity гладок),
 	# а не от global_transform корпуса — его yaw дрожит через lerp_angle и
