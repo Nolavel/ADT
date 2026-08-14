@@ -29,7 +29,33 @@ constraint on everything below. A horizon that assumes more is fiction.
 **Sequencing is by dependency, not by date.** Items unlock each other. Calendar
 dates appear only where an external commitment exists.
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-14
+
+---
+
+## Closed
+
+Horizons that met their Definition of Done. Their substance lives in
+`CHANGELOG.md`, dated — not restated here; this section exists so a closed
+horizon has somewhere to go instead of just disappearing from the page.
+
+- **H1. Dependency rules + save contract.** `SaveSystem` walks
+  `WORLD_SYSTEM_SCRIPTS` on the `get_save_key()`/`get_save_data()`/
+  `load_save_data()` contract, implemented by `GameClockSystem` and
+  `IncidentRegistry` (stable `StringName` perpetrator ids, game-hour
+  timestamps, versioned payload); sleeping in `LodgingRoom` is the
+  in-fiction save point the contract exists to prove out. See
+  `CHANGELOG.md`, entries dated 2026-08-11 through 2026-08-13.
+- **H2. Key hints HUD.** `KeyHintsPanel` reads `PlayerState`
+  (`mode`/`view_mode`/`stance`/`is_aiming`) and shows the currently valid
+  actions, data-driven from `data/key_hints.tres`, three columns
+  (Movement/Action/System). See `CHANGELOG.md`'s "H2" entries.
+
+H1's own task list had one box still unchecked when this horizon closed —
+the Context/Autoload/Signal/Group rule, bundled into H1 because it was
+cheap to write alongside it, was never actually written into `CLAUDE.md`.
+Finished as part of closing H1 rather than left as a loose end on a
+horizon marked done; see `CLAUDE.md`'s Architecture rules.
 
 ---
 
@@ -38,96 +64,70 @@ Last reviewed: 2026-08-12
 One horizon open at a time. It closes when its Definition of Done is met, then
 the next is promoted from Next.
 
-### H1. Dependency rules + save contract
+### H3. Crowd readability
 
-**Why this first:** every system built without a save contract raises the cost of
-adding one later. `IncidentRegistry` already holds `Node3D` references and
-engine-uptime timestamps — neither survives a save/load boundary. This is debt
-accruing interest, and it is the only item on this page that gets worse with
-delay. Everything else merely waits.
+**Why this first, ahead of the pistol chain:** `core_loop.md` §7 names OBSERVE
+the only stage of the loop that is completely empty — every NPC is the same
+mesh, nothing to read. §8 draws the consequence bluntly: with an unreadable
+crowd there is nothing to test — not the core statement, not evidence-over-
+stars, not the 1/5/10 minute test (§11 — minutes 5 and 10 have no answer yet,
+both blocked on this exact gap). A pistol grafted onto an unreadable crowd
+changes nothing structural: it only widens ACT, the one stage that already
+half-works, while the loop stays broken exactly where it always was — a
+louder fist, not a different game. A weapon earns its place once there is
+someone worth aiming it at on purpose, which is what this horizon builds
+toward.
 
-The dependency rules are bundled in because they are cheap to write and they
-constrain everything after them.
+Implements `npc_archetypes.md` in full: six archetypes as data (a resource
+per archetype plus one field on `NPCBase`), plain-colour placeholders — the
+document itself sanctions flat colour at this stage — and enough population
+in one Doggerland block to actually feel like a crowd rather than a lineup
+of individuals, not a spawn system (see the implementation commits for what
+was used instead and why it will not need tearing out).
 
-**Tasks**
-
-- [ ] Write the Context / Autoload / Signal / Group rule into `CLAUDE.md`:
-  - **`WorldContext`** — composition and runtime dependencies. Default choice.
-  - **Autoload** — genuinely global state or service. Closed set: the existing
-    four plus the MCP helper. Additions require explicit discussion.
-  - **Signal** — event notification, one-to-many, sender does not care who listens.
-  - **Group** — discovery and tagging, for nodes that never receive a
-    `WorldContext` (static scene instances such as `DroneBase`).
-- [x] Generalise and document `get_save_data() -> Dictionary` /
-      `load_save_data(data: Dictionary)` as an optional contract on
-      `WORLD_SYSTEM_SCRIPTS` entries, alongside the existing
-      `on_world_ready(context)` lifecycle hook. This contract already existed —
-      `GameClockSystem` implemented it before H1 started — so the task here was
-      never to define it, only to write it down and give it a second
-      implementer. A system opts in by implementing `get_save_key()`,
-      `get_save_data()` and `load_save_data()` together; `SaveSystem`
-      (`core/world/save_system/`) walks every system and checks with
-      `has_method()`, exactly like the existing `on_world_ready()` opt-in.
-- [x] Implement it on exactly two systems: `GameClockSystem` (trivial payload,
-      proves the lifecycle) and `IncidentRegistry` (hard payload, proves the
-      contract is real).
-- [x] `IncidentRegistry` specifically: replace the `Node3D` perpetrator reference
-      with a stable string id, and replace `Time.get_ticks_msec()` timestamps with
-      game time. Both are required for the record to survive a reload, and both
-      get more expensive once a second producer exists.
-- [x] Version field in the payload from the first write. Not "later" — the first
-      save file written without one is a migration problem forever.
-- [x] Debug save/load on a keybind through `InputSystems` (`F5`/`F9`,
-      `debug_save`/`debug_load`).
-
-**Definition of Done:** punch an NPC, save, quit to desktop, relaunch, load — the
-drone still knows about the incident.
-
-**Explicitly not in scope here:** player position, inventory contents, streaming
-state, NPC state. The contract is what matters, not payload coverage.
-
-Sleeping in a room is H1's own payload, not a separate item that comes after
-it — this line said otherwise until 2026-08-12 and was wrong by then; see
-`CHANGELOG.md` for when and why it was corrected instead of just deleted. A
-debug keybind proves `SaveSystem` is wired correctly; it cannot prove the
-contract is worth having, because nothing in the fiction ever produces a
-save that way. Sleep is what makes "the contract works" a claim about
-something real rather than about the plumbing alone — a room, not a
-keypress, is the save point this horizon exists to prove out. What stays
-out of H1 is everything around the act of sleeping, not the act itself:
-which rooms the player can use, any cost to sleeping, whether unstored
-items can be lost, and lodging read as part of the fiction rather than as
-test scaffolding for this contract.
+**Definition of Done:** walk one block and name who is who out loud, without
+opening the inspector. Specifically: it must be obvious who is not worth
+robbing, and who is watching.
 
 ---
 
-## Next — promoted when H1 closes
+## Next — promoted when H3 closes
 
-### H2. Key hints HUD
+### H4. Witnesses
 
-**Why before the pistol:** a collaborator cannot evaluate a build whose controls
-are undiscoverable. Valid inputs differ by mode, view mode and stance, and none of
-it is on screen. This is the cheapest item here with the largest effect on anyone
-who is not the author — and a game designer review on a live build is the first
-collaborator milestone.
+**Why before the pistol, after crowd readability:** readability alone gives
+OBSERVE something to look at; it does not yet give ACT's aftermath anywhere
+to go. `core_loop.md` §6 lays out four different outcomes of the same punch
+in an alley, told apart only by what became known and to whom: nobody saw
+it; a witness saw the act but not where the player went; a camera recorded
+the incident without a face; a drone recorded both. `IncidentRegistry`
+today has exactly one level of knowledge — a fact is reported, tied to a
+known perpetrator id, or it does not exist. The work here is mostly not
+code: `report()`/`Incident` already exist and work. It is deciding the
+model for "witnessed, but the witness doesn't know who" — a shape the
+current registry has no room for, since every incident it accepts already
+assumes an identified perpetrator.
 
-Reads `PlayerState` (`mode`, `view_mode`, `stance`, `is_aiming`) and displays the
-currently valid actions. Data-driven from a resource, not a hardcoded per-state
-switch — the combinations will keep changing.
+Scope, once picked up: which of `core_loop.md` §6's four outcomes the
+registry needs to represent, a witness flag on a minority of NPCs
+(`npc_archetypes.md` §2 — deliberately no visual tell, see that section for
+why), and Call as a placeholder trigger proving the model, not the finished
+response (`NPC_REACTIONS.md` §4's Flee/Freeze/Call split is the fuller
+design — this horizon only needs enough of it to prove the knowledge model,
+not all of it).
 
-**Definition of Done:** someone who has never seen the project can enter combat
-stance, aim, and board a hover without being told how.
+**Description only — not started.** This is next, not now.
 
-### H3. EquipmentComponent
+### H5. EquipmentComponent
 
 What is held, what is stowed, draw/holster state. Distinct from
 `InventoryComponent`, which owns what is carried — a weapon is an inventory item
 that equipment can hold. The only genuinely new component in this sequence;
 everything else it touches already exists.
 
-Prerequisite for all of H4.
+Prerequisite for all of H6.
 
-### H4. Pistol chain
+### H6. Pistol chain
 
 The demo's TIER 2 target, built as one connected slice rather than four separate
 features:
@@ -141,8 +141,9 @@ features:
 5. Firing at an NPC, damage through the existing `HealthComponent` and `take_hit()`
 
 **Sequenced last on purpose.** It is the most visible item and the one most likely
-to be started first out of enthusiasm. It depends on H3, is hard to evaluate
-without H2, and without H1 would be built on a foundation that cannot be saved.
+to be started first out of enthusiasm. It depends on H5, and — the newer reason,
+see H3's own rationale above — it answers ACT, which was never this build's
+actual gap; OBSERVE (H3) and WHAT BECAME KNOWN (H4) were.
 
 ---
 

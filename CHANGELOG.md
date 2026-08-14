@@ -131,6 +131,37 @@ identifying details.** No code changed.
 - `readme.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`,
   `docs/NPC_REACTIONS.md`, `docs/planned_scope.md`, `docs/scope_horizon.md`.
 
+**`scope_horizon.md` closed H1/H2 and reordered what comes after them: crowd
+readability and witnesses now sit ahead of EquipmentComponent and the pistol
+chain.** H1 and H2 had been sitting in Now/Next fully done — H1's save contract
+and H2's `KeyHintsPanel` are both long since shipped and recorded in earlier
+entries below — with nothing marking them closed. `core_loop.md` §7 names
+OBSERVE the loop's only completely empty stage, and §8/§11 say plainly that an
+unreadable crowd leaves nothing to test, not the core statement, not evidence-
+over-stars, not the 1/5/10 minute test. A pistol against that crowd only widens
+ACT, which was never the gap — it reads as a louder fist, not a different game.
+*Крестики в H1 давно все стояли, а горизонт всё ещё висел в Now — закрыл его и
+H2, и переставил порядок: читаемость толпы и свидетели теперь идут раньше
+EquipmentComponent и пистолета, потому что нечитаемая толпа — не то же самое,
+что нечитаемая толпа плюс пистолет.*
+
+- New **Closed** section replaces the old H1/H2 blocks — full task lists not
+  restated, that's this file's own job description; each links to the
+  `CHANGELOG.md` entries that already carry the substance.
+- One real loose end found while closing H1: its task list had an unchecked
+  box for a Context/Autoload/Signal/Group decision rule, bundled into H1 as
+  cheap-to-write but never actually written into `CLAUDE.md`. Written now
+  (`CLAUDE.md`'s Architecture rules, new first bullet) rather than closing
+  H1 over a real gap.
+- **Now**: H3, crowd readability — implements `npc_archetypes.md`, reasoned
+  from `core_loop.md` §7/§8/§9/§11 in scope_horizon.md's own words rather than
+  quoted. **Next**: H4 witnesses (design-only, not started this session — the
+  work is mostly modelling, not code: `IncidentRegistry` has one level of
+  knowledge today, `core_loop.md` §6 needs four), then H5 EquipmentComponent
+  and H6 the pistol chain, renumbered from H3/H4 with their content otherwise
+  unchanged.
+- `docs/scope_horizon.md`, `CLAUDE.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
