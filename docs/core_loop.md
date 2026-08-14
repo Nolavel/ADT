@@ -24,21 +24,21 @@ Verified against HEAD `24b36e6` — 2026-08-13
 
 ```mermaid
 flowchart TD
-    NEED["NEED — the body wants a state"]
-    MOVE["MOVE — traverse the city"]
-    OBS["OBSERVE — read people and space"]
-    DEC{"DECIDE — worth the risk?"}
-    ACT["ACT — change the world"]
-    KNOWN{"WHAT BECAME KNOWN"}
-    ADAPT["ADAPT — recalculate"]
+	NEED["NEED — the body wants a state"]
+	MOVE["MOVE — traverse the city"]
+	OBS["OBSERVE — read people and space"]
+	DEC{"DECIDE — worth the risk?"}
+	ACT["ACT — change the world"]
+	KNOWN{"WHAT BECAME KNOWN"}
+	ADAPT["ADAPT — recalculate"]
 
-    NEED --> MOVE --> OBS --> DEC
-    DEC -->|walk on| OBS
-    DEC -->|intervene| ACT
-    ACT --> KNOWN
-    KNOWN -->|nothing| NEED
-    KNOWN -->|something| ADAPT
-    ADAPT --> NEED
+	NEED --> MOVE --> OBS --> DEC
+	DEC -->|walk on| OBS
+	DEC -->|intervene| ACT
+	ACT --> KNOWN
+	KNOWN -->|nothing| NEED
+	KNOWN -->|something| ADAPT
+	ADAPT --> NEED
 ```
 
 **NEED** — the body or circumstance demands a state: eat, sleep, get money,

@@ -234,7 +234,7 @@ func get_move_speed_ratio() -> float:
 ## controller deciding either — see is_knocked_down(). Reaching zero health
 ## is handled by _update_knockdown(), which locks the body into the
 ## terminal DOWN phase instead of ever letting it get back up.
-func take_hit(from_position: Vector3, damage: float = 12.0) -> void:
+func take_hit(from_position: Vector3, damage: float = 25.0) -> void:
 	if _health:
 		_health.apply_damage(damage)
 

@@ -125,6 +125,21 @@ const OBSTACLE_MASK: int = 1 << 2
 ## PatrolDroneController.incident_registry_search_timeout.
 @export var incident_registry_search_timeout: float = 5.0
 
+@export_group("Witness (NPC_REACTIONS.md §4)")
+## Fraction of the population that gets the witness flag — rolled once per
+## NPC in _ready(), not re-rolled per incident (see _is_witness's own
+## comment for why). ONE number for the whole population on purpose: §4
+## gives the flag a density, not a per-archetype rate, and
+## npc_archetypes.md §5 already treats population composition as scene
+## data, not an archetype property — this follows that same split. Retune
+## density by changing this default; do not add a per-archetype override.
+@export_range(0.0, 1.0) var witness_density: float = 0.15
+## Given a witness NPC reacts to an incident at all, the chance it calls
+## rather than just fleeing/freezing like everyone else — a witness doesn't
+## always report, same "bias, not a rule" principle flee_probability
+## already applies to Flee vs. Freeze.
+@export_range(0.0, 1.0) var call_probability: float = 0.6
+
 ## NPCControllerBase resolves _actor as ActorBase (shared with
 ## PatrolDroneController/DroneBase); this controller only ever drives an
 ## NPCBase and uses NPC-only facing-target methods ActorBase doesn't
@@ -175,6 +190,14 @@ var _incident_registry_search_time: float = 0.0
 ## instance instead of every frame the registry stays unresolved.
 var _warned_missing_incident_registry: bool = false
 
+## Rolled once in _ready() against witness_density — NOT re-rolled per
+## incident (NPC_REACTIONS.md §4 is explicit: static on the NPC, not thrown
+## fresh each time, so a save survives it and "the same passer-by" stays
+## meaningful if anything later needs that). No visual tell by design (§2):
+## nothing here reads this to change appearance, only whether _on_incident_
+## reported() offers this NPC the Call branch at all.
+var _is_witness: bool = false
+
 
 func _ready() -> void:
 	super._ready()
@@ -195,6 +218,10 @@ func _ready() -> void:
 
 	_wander_state = State.IDLE
 	_pause_timer = wander_pause_time
+
+	## Once per instance, at spawn — see _is_witness's own comment on why
+	## not per incident.
+	_is_witness = randf() < witness_density
 
 	## Very likely to fail here (see the file header on why) — kept anyway,
 	## harmless, and resolves immediately in the rare case ordering ever
@@ -375,10 +402,38 @@ func _on_incident_reported(incident: Incident) -> void:
 		_start_responding(incident.position)
 		return
 
+	## Witness/Call check happens before the ordinary Flee/Freeze roll, not
+	## alongside it — a witness who calls still visibly freezes and stares
+	## (reusing that state outright, not a fourth visual behaviour); a
+	## witness who doesn't call this time falls through to the same
+	## probabilistic roll every other NPC uses.
+	if _is_witness and randf() < call_probability:
+		_call_it_in(incident)
+		_start_freeze(incident.position)
+		return
+
 	if randf() < _npc.archetype.flee_probability:
 		_start_flee(incident.position)
 	else:
 		_start_freeze(incident.position)
+
+
+## Witness Call — NPC_REACTIONS.md §4: "reports the incident." Reuses
+## IncidentRegistry.report() exactly as player.gd's own punch handler
+## already does (see incident_registry.gd's own header: "a future witness
+## reports through the same call" was the design from the start, not a
+## retrofit). Attribution (does this report name a perpetrator, or only
+## that something happened) is Part 3's job — this still reports fully
+## attributed, same as every producer today, until that lands.
+func _call_it_in(incident: Incident) -> void:
+	if not _incident_registry:
+		return
+	var player_node := get_tree().get_first_node_in_group("player")
+	if not (player_node and player_node.has_method(&"get_actor_id")):
+		return
+	_incident_registry.report(
+		StringName(player_node.call(&"get_actor_id")), Incident.Kind.ASSAULT, incident.position
+	)
 
 
 func _start_flee(incident_position: Vector3) -> void:

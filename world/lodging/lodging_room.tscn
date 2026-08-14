@@ -56,13 +56,14 @@ shape = SubResource("BoxShape3D_floor_ceiling")
 [node name="Ceiling" type="StaticBody3D" parent="Geometry" unique_id=418898471]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.1, 0)
 visible = false
-collision_layer = 3
+collision_layer = 0
 collision_mask = 0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Geometry/Ceiling" unique_id=363198080]
 mesh = SubResource("BoxMesh_floor_ceiling")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Geometry/Ceiling" unique_id=714535932]
+process_mode = 4
 shape = SubResource("BoxShape3D_floor_ceiling")
 
 [node name="WallNorth" type="StaticBody3D" parent="Geometry" unique_id=725893494]

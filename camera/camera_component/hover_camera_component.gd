@@ -43,7 +43,7 @@ enum HoverView { CHASE, COCKPIT }
 @export_group("Cockpit")
 ## Смещение камеры вперёд от CockpitAnchor вдоль носа (локальный −Z), метры.
 ## На самом якоре камера сидела внутри меша кабины.
-@export var cockpit_forward_offset: float = 0.25
+@export var cockpit_forward_offset: float = 0.45
 
 @export_group("Boarding arc")
 ## Длительность дуги входа камеры, сек.
