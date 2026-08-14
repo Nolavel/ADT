@@ -43,6 +43,20 @@ reproducible defect in this path.
   uses.
 - `player/player.gd`.
 
+**TPS vertical look capped at only +20°/-50°.** Too little downward range for a city
+built on verticality (looking down off a ledge/deck) and the +20° upward cap was the
+"stuck" ceiling Stan flagged.
+
+- `OnFootCameraComponent.TPS_PITCH_MIN/MAX` (const) → `@export var
+  tps_pitch_min_deg/tps_pitch_max_deg` (default `-70`/`+60`) — a feel value, not an
+  implementation detail, same reasoning as this file's other `@export` look/feel
+  numbers. Checked against the spring-damper yaw (untouched, pitch-independent), the
+  breathing-sway pitch offset (applied after the clamp, unaffected), and the
+  wall/floor occlusion raycast (already pitch-agnostic) — none of the three break with
+  the wider range, and both bounds stay well clear of the ±90° gimbal case the direct
+  Euler `global_rotation` set would hit.
+- `camera/camera_component/on_foot_camera_component.gd`, `CLAUDE.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
