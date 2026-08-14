@@ -162,6 +162,31 @@ EquipmentComponent и пистолета, потому что нечитаема
   unchanged.
 - `docs/scope_horizon.md`, `CLAUDE.md`.
 
+**H3 start: `NPCArchetypeData` — `npc_archetypes.md` as data, applied to `NPCBase`.**
+One `.tres` per archetype (`data/npc_archetypes/`: `vagrant`/`thug`/`commuter`/
+`clerk`/`patrolman`) carrying three of the document's four readability channels
+(§3) — silhouette & clothing, gait, attention — plus the two axes from §1
+(`worth_taking`, `alert`). `NPCBase.archetype` + `_apply_archetype()` (called once
+in `_ready()`) apply the three channels as independent steps on purpose: a flat
+`material_override` across every `MeshInstance3D` under the rig (§4 sanctions flat
+colour explicitly, as prototype scaffolding), a multiplier on `walk_speed` (gait —
+speed only, posture/animation-set variation is delegated, unbuilt), and
+`vision_range`/`vision_angle_deg` written onto the sibling `PerceptionComponent`'s
+own exports — configuration, not a change to `PerceptionComponent.gd`, which stays
+untouched per this horizon's own stated boundary. The fourth channel, density &
+mix, has no field here — §5's per-stratum composition is a scene-data question
+(how many of each archetype get placed), covered by the next commit, not this
+resource. Witness (§2) has no field: no visual identity of its own, only a flag
+meant for an instance of one of these five later (H4).
+*Начало H3: NPCArchetypeData — npc_archetypes.md как данные, применяется в
+NPCBase._apply_archetype() тремя независимыми шагами (цвет/походка/внимание),
+чтобы замена цвета на меш позже не трогала остальное. PerceptionComponent не
+менялся — только настроены его существующие exported-поля.*
+
+- `npc/npc_archetype_data.gd` (new), `data/npc_archetypes/vagrant.tres`,
+  `thug.tres`, `commuter.tres`, `clerk.tres`, `patrolman.tres` (new),
+  `npc/npc_base.gd`, `CLAUDE.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker

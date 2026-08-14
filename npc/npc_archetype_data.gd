@@ -1,0 +1,68 @@
+# =============================================================================
+# npc_archetype_data.gd — NPCArchetypeData, one row of docs/npc_archetypes.md
+# as data. Assigned to NPCBase.archetype; applied once in NPCBase._ready()
+# via _apply_archetype().
+#
+# Carries three of the document's four readability channels (§3):
+# silhouette & clothing, gait, attention. The fourth, density & mix, is not a
+# field here — §5's per-stratum composition table is about how many of each
+# archetype a scene places, not a property of one NPC, so it lives in scene
+# data (which .tres each hand-placed NPC gets, and how many of each) rather
+# than on this resource.
+#
+# placeholder_color is deliberately its own field, not the archetype's
+# identity: §4 calls flat colour "scaffolding, not the design," meant to be
+# replaced by a mesh/material variant later. NPCBase._apply_archetype()
+# applies colour, gait and perception as three independent steps precisely
+# so that swap touches only the colour step, not this resource or the other
+# two channels.
+#
+# Witness (§2) has no field here. It carries no visual identity of its own —
+# only a flag layered onto an instance of one of these five archetypes,
+# later (H4, docs/scope_horizon.md) — and adding a field for it now would be
+# exactly the kind of promise CONTRIBUTING.md's placeholder rule warns
+# against.
+# =============================================================================
+extends Resource
+class_name NPCArchetypeData
+
+## Matches npc_archetypes.md §1/§2 naming, for debug/reporting only — never
+## branched on in code. The fields below are what behaviour actually reads.
+@export var archetype_name: String = ""
+
+@export_group("Two axes (§1)")
+## "Worth taking?" — does this archetype carry anything worth robbing. Not
+## consumed by any system yet (no search/robbery system exists — see
+## planned_scope.md's Combat entry); carried now so this resource matches
+## the spec in full rather than growing a second time once that system
+## lands.
+@export var worth_taking: bool = false
+## "Watching me?" — alert vs absorbed. Drives the Attention channel exports
+## below; kept as its own bool so the archetype's declared intent stays
+## legible even though vision_range/vision_angle_deg are the actual
+## mechanism a player will feel.
+@export var alert: bool = false
+
+@export_group("Silhouette & clothing (§3)")
+## Prototype-stage stand-in for a mesh/material variant — §4 sanctions flat
+## colour explicitly ("scaffolding, not the design"). Applied as
+## material_override across every MeshInstance3D under the rig, so the whole
+## silhouette reads as one flat colour.
+@export var placeholder_color: Color = Color.WHITE
+
+@export_group("Gait (§3)")
+## Multiplier on NPCBase.walk_speed. Posture and animation-set variation
+## (also named by §3 as carrying this channel) are not implemented —
+## NPCAnimationComponent has one idle<->walk blend and no per-archetype
+## variants, and building those is explicitly delegated to a contributor in
+## §6, not built this pass.
+@export var walk_speed_multiplier: float = 1.0
+
+@export_group("Attention (§3)")
+## Fed into this NPC's sibling PerceptionComponent.vision_range/
+## vision_angle_deg when applied — configuration, not a change to
+## PerceptionComponent itself. An alert archetype notices the player from
+## further away and across a wider cone; an absorbed one barely notices at
+## all.
+@export var vision_range: float = 8.0
+@export var vision_angle_deg: float = 45.0

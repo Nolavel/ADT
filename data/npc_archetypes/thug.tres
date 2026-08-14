@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCArchetypeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc/npc_archetype_data.gd" id="1_archdata"]
+
+[resource]
+script = ExtResource("1_archdata")
+archetype_name = "Thug"
+worth_taking = false
+alert = true
+placeholder_color = Color(0.05, 0.05, 0.05, 1)
+walk_speed_multiplier = 0.9
+vision_range = 14.0
+vision_angle_deg = 90.0

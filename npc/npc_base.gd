@@ -105,6 +105,13 @@ const DEBUG_LABEL_CLEARANCE: float = 0.25
 ## the real clip length, not over.
 @export var knockdown_getup_time: float = 1.0
 
+@export_group("Archetype")
+## docs/npc_archetypes.md data — see NPCArchetypeData's own header for what
+## each field drives. Unset (null) is valid: an NPC without one keeps its
+## own body_height/walk_speed/PerceptionComponent defaults untouched, same
+## as before this field existed.
+@export var archetype: NPCArchetypeData = null
+
 @export_group("Debug")
 ## Shows a floating Label3D above the NPC with current/max health and the
 ## active knockdown phase — a quick way to see hit points land without
@@ -177,6 +184,7 @@ func _ready() -> void:
 		push_warning("[NPCBase] HealthComponent not found - knockdowns will loop forever, no terminal DOWN phase")
 	if _debug_health_label:
 		_debug_health_label.position.y = get_head_top_height() + DEBUG_LABEL_CLEARANCE
+	_apply_archetype()
 
 
 func _physics_process(delta: float) -> void:
@@ -434,3 +442,46 @@ func _face_move_direction(delta: float) -> void:
 	else:
 		return
 	rotation.y = lerp_angle(rotation.y, target_angle, Smoothing.damp_factor(turn_smoothing, delta))
+
+
+## Applies archetype's per-channel data (docs/npc_archetypes.md §3) as three
+## independent steps — colour, gait, attention — so that replacing the
+## colour step with a real mesh/material variant later touches only that
+## step, not the other two or the archetype resource itself. No-op if
+## archetype is unset.
+func _apply_archetype() -> void:
+	if not archetype:
+		return
+
+	# Silhouette & clothing (placeholder, §4): one flat material across
+	# every mesh part, so the whole rig reads as a single colour instead of
+	# keeping its per-part textures.
+	var material := StandardMaterial3D.new()
+	material.albedo_color = archetype.placeholder_color
+	for mesh in _find_mesh_instances(self):
+		mesh.material_override = material
+
+	# Gait: speed only. Posture/animation-set variation (also named by §3)
+	# is future, delegated work (§6) — NPCAnimationComponent has one
+	# idle<->walk blend and no per-archetype variants to select between.
+	walk_speed *= archetype.walk_speed_multiplier
+
+	# Attention: configures the sibling PerceptionComponent's own exports —
+	# does not modify PerceptionComponent.gd itself.
+	var perception := get_node_or_null("PerceptionComponent") as PerceptionComponent
+	if perception:
+		perception.vision_range = archetype.vision_range
+		perception.vision_angle_deg = archetype.vision_angle_deg
+
+
+## Recursively collects every MeshInstance3D under node. The rig nests
+## meshes several levels deep (player_base_mesh/GeneralSkeleton/
+## RetargetModifier3D/OriginalSkeleton/<part>) — hardcoding that path would
+## break the moment the rig is restructured.
+func _find_mesh_instances(node: Node) -> Array[MeshInstance3D]:
+	var found: Array[MeshInstance3D] = []
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			found.append(child)
+		found.append_array(_find_mesh_instances(child))
+	return found

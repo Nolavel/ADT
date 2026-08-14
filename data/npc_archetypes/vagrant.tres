@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCArchetypeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc/npc_archetype_data.gd" id="1_archdata"]
+
+[resource]
+script = ExtResource("1_archdata")
+archetype_name = "Vagrant"
+worth_taking = false
+alert = false
+placeholder_color = Color(0.4, 0.26, 0.15, 1)
+walk_speed_multiplier = 0.7
+vision_range = 6.0
+vision_angle_deg = 40.0

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCArchetypeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc/npc_archetype_data.gd" id="1_archdata"]
+
+[resource]
+script = ExtResource("1_archdata")
+archetype_name = "Clerk"
+worth_taking = true
+alert = true
+placeholder_color = Color(0.12, 0.28, 0.65, 1)
+walk_speed_multiplier = 0.85
+vision_range = 16.0
+vision_angle_deg = 100.0

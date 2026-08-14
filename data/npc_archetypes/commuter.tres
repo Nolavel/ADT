@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCArchetypeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc/npc_archetype_data.gd" id="1_archdata"]
+
+[resource]
+script = ExtResource("1_archdata")
+archetype_name = "Commuter"
+worth_taking = true
+alert = false
+placeholder_color = Color(0.5, 0.5, 0.5, 1)
+walk_speed_multiplier = 1.3
+vision_range = 7.0
+vision_angle_deg = 45.0

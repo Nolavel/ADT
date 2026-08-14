@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NPCArchetypeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc/npc_archetype_data.gd" id="1_archdata"]
+
+[resource]
+script = ExtResource("1_archdata")
+archetype_name = "Patrolman"
+worth_taking = false
+alert = true
+placeholder_color = Color(0.7, 0.08, 0.06, 1)
+walk_speed_multiplier = 1.0
+vision_range = 20.0
+vision_angle_deg = 140.0
