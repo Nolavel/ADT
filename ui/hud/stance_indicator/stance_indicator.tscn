@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/hud/stance_indicator/stance_indicator.gd" id="1_stance"]
+
+[node name="StanceIndicator" type="Control"]
+script = ExtResource("1_stance")

@@ -24,7 +24,7 @@ extends Control
 ## Vertical gap between stacked gauges (health, then hunger, then rest).
 @export var gauge_spacing: float = 6.0
 
-@onready var _health_bar: StatusBarWidget = $StatusStack/HealthBar
+@onready var _health_bar: StatusBarWidget = $StatusStack/HealthRow/HealthBar
 
 var _health: HealthComponent = null
 
