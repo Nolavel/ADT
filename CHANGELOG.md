@@ -115,16 +115,19 @@ identifying details.** No code changed.
 - Removed the specific weekly-hours figure (`scope_horizon.md`, two spots): the
   governing constraint is now stated as "development time is limited and irregular"
   and "under limited development time," without a number.
-- **Contradictions found, not resolved** — see the chat for the full list: (1)
-  `NPC_REACTIONS.md` §8 and `planned_scope.md`'s save "Open questions" both still
-  describe `IncidentRegistry` as holding `Node3D` references and a 30-second,
-  engine-uptime `max_incident_age`; `CLAUDE.md`'s current `IncidentRegistry` entry
-  says this was fixed under H1 — stable `StringName` ids, game-hour timestamps,
-  `max_incident_age` defaulting to `24.0`. Both design docs are stale on this point.
-  (2) `NPC_REACTIONS.md` §2's four-channel readability table and
-  `npc_archetypes.md` §3's are the same idea with different names and one different
-  category (`Stratum`/"population mix" vs. `Density & mix`/"spawn composition") —
-  not contradictory, but not identical either, and no longer worth maintaining twice.
+- **Contradiction found and fixed:** `NPC_REACTIONS.md` §8 and `planned_scope.md`'s
+  save "Open questions" both still described `IncidentRegistry` as holding `Node3D`
+  references and a 30-second, engine-uptime `max_incident_age` — stale since H1
+  fixed exactly that (stable `StringName` ids, game-hour timestamps,
+  `max_incident_age` defaulting to `24.0`). Both bullets rewritten to match
+  `CLAUDE.md`'s current `IncidentRegistry` entry; the open question itself survives,
+  narrowed to retention (`24.0` game hours vs. what a durable wanted record needs).
+- **Contradiction found, left alone on request:** `NPC_REACTIONS.md` §2's
+  four-channel readability table and `npc_archetypes.md` §3's are the same idea with
+  different names and one different category (`Stratum`/"population mix" vs.
+  `Density & mix`/"spawn composition"). Not contradictory, not identical — left as
+  is, since both are still concepts, not a built spec, and reconciling them now
+  would be premature.
 - `readme.md`, `CLAUDE.md`, `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`,
   `docs/NPC_REACTIONS.md`, `docs/planned_scope.md`, `docs/scope_horizon.md`.
 

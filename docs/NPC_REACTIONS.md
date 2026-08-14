@@ -236,11 +236,12 @@ Named so the absence is deliberate:
 - Spawn composition — which archetypes appear together, in what proportion,
   per stratum and time of day.
 - Whether a durable wanted record is the same object as `IncidentRegistry`
-  or a separate one. The registry today is a short-lived sensor buffer
-  (`max_incident_age` defaults to 30s) holding node references and
-  engine-uptime timestamps; a record that outlives sleep needs stable
-  identity and game-time stamps instead. Decide before a second consumer
-  arrives.
+  or a separate one. The registry already carries stable actor ids and
+  game-hour timestamps (H1, see `CLAUDE.md`'s `IncidentRegistry` entry) — the
+  node-reference/engine-uptime problem this bullet used to describe is fixed.
+  What is still short-lived is retention: `max_incident_age` defaults to
+  `24.0` game hours (one day), and a durable wanted record needs to outlive
+  far more than that. Decide before a second consumer arrives.
 
 ---
 

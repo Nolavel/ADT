@@ -133,10 +133,11 @@ two participants and expensive to retrofit when there are twenty.
   their own durable store or as a section of the save payload. They must
   outlive world teardown either way.
 - Whether the durable wanted record is `IncidentRegistry` or a separate
-  object — see `NPC_REACTIONS.md` §8. The registry today is a short-lived
-  sensor buffer holding node references and engine-uptime timestamps, both
-  of which are correct for what it does and wrong for a fact that survives
-  sleep.
+  object — see `NPC_REACTIONS.md` §8. The registry already carries stable
+  actor ids and game-hour timestamps (H1, see `CLAUDE.md`), so the open
+  question isn't identity or timestamp correctness anymore — it's retention:
+  `max_incident_age` defaults to `24.0` game hours, far short of what a
+  durable wanted record needs.
 - Event orchestration — sequencing story events and injecting behaviour into
   the world — is a *system*, and belongs with the other world systems. The
   flags it reads and writes are *data*, and belong in the save. These are
