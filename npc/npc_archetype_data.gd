@@ -66,3 +66,20 @@ class_name NPCArchetypeData
 ## all.
 @export var vision_range: float = 8.0
 @export var vision_angle_deg: float = 45.0
+
+@export_group("Incident response (NPC_REACTIONS.md §4)")
+## Probability this archetype flees rather than freezes-and-stares when it
+## reacts to a nearby incident. A BIAS, not a rule: §4 is explicit that the
+## crowd reacts by chance, and a deterministic "this archetype always flees"
+## would turn the crowd into a lookup table — precisely what NPC_REACTIONS.md
+## §2's "street literacy, learned by observation" argues against. Loosely
+## tuned from the `alert` axis above (absorbed leans Flee, alert leans
+## Freeze) but kept as its own number rather than derived from `alert` in
+## code, so it can be retuned without changing what `alert` means.
+@export_range(0.0, 1.0) var flee_probability: float = 0.5
+## Patrolman-only — npc_archetypes.md §1 places it outside the two-axis
+## grid entirely. True here means this archetype ignores flee_probability
+## and the witness/Call check and instead walks toward the incident; that
+## is its own behaviour, not a third crowd reaction. A patrolman already
+## responds institutionally by going there, so it never also calls it in.
+@export var responds_by_approaching: bool = false

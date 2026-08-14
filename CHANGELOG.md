@@ -210,6 +210,39 @@ nothing here needs tearing out later; swapping this for a real spawner means
 deleting `DoggerlandCrowdBlock` and its children, nothing more.
 - `world/world.tscn`.
 
+**H3 reopened: colour alone was a lookup table, not readability — crowd reaction
+to an incident, part 1 of 4 (Flee/Freeze, no witnesses yet).** Stan walked the
+populated block and couldn't read anything beyond memorised colours; the
+`alert`/`worth_taking` axes existed as numbers (`vision_range`/`vision_angle_deg`)
+with nothing observable following from them, since `NPCBase` only ever reacted to
+`take_hit()`. `NPC_REACTIONS.md` §4: within `earshot_radius` of a live
+`IncidentRegistry.incident_reported`, an ordinary archetype rolls
+`archetype.flee_probability` to Flee or Freeze-and-stare — probabilistic, not a
+fixed per-archetype outcome, per the design's own "reacts by chance" rule (a
+deterministic "Vagrant always flees" would turn the crowd back into a table).
+Patrolman (`responds_by_approaching`, outside §1's two-axis grid) instead walks
+toward the incident — its own behaviour, not a third crowd roll. Subscription uses
+the exact lazy-resolve scheme `PatrolDroneController` already uses for the same
+reason: an ambient NPC can be sitting statically in `world.tscn` ahead of
+`IncidentRegistry` existing, same as a drone. Deliberately skips
+`PatrolDroneController`'s catch-up-on-resolve query — a stale incident making an
+NPC flinch now would read as a bug, not memory; a drone's durable ALERT and a
+crowd's momentary startle aren't the same kind of "remembering."
+*H3 переоткрыт: цвет без наблюдаемого поведения — это таблица для заучивания, не
+читаемость. Часть 1 из 4: вероятностная реакция толпы (Flee/Freeze) на
+IncidentRegistry.incident_reported, тем же ленивым резолвингом, что у
+PatrolDroneController. Patrolman — не третья реакция, а собственное поведение.
+Свидетели и Call — в следующих частях.*
+
+Noted, not fixed (out of scope by this task's own boundary): `_obstacle_ray` in
+`idle_npc_controller.gd` is built in `_ready()` but the line adding it to the tree
+is commented out, so `is_colliding()` has always read false — wander's own
+obstacle avoidance, and now Flee/Respond's, are inert. Fixing it is a navigation
+change, and the brief for this task rules that out explicitly.
+- `npc/npc_archetype_data.gd`, `data/npc_archetypes/vagrant.tres`, `thug.tres`,
+  `commuter.tres`, `clerk.tres`, `patrolman.tres`, `npc/controllers/idle_npc_controller.gd`,
+  `CLAUDE.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
