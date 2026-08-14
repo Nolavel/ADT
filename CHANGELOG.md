@@ -12,6 +12,39 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-14 — Pre-demo first-impression pass: TPS turn oscillation, TPS pitch range, stance indicator, bird-eye dead zone
+
+Four fixes ahead of Stan showing the build to an outside viewer, ordered by how much
+each breaks the first impression. Everything else Stan flagged (target-lock focus in
+bird-eye, auto-drop-focus by distance, camera lead toward a locked target, cursor
+aiming at NPCs in TPS) is one target-lock system and was deliberately left alone —
+two days is not enough to do it right.
+*Четыре правки перед показом билда постороннему человеку, по убыванию важности.
+Остальное, что назвал Стэн (прицеливание/захват цели), — одна система, её
+сознательно не трогали.*
+
+**TPS body-facing turn oscillated/stalled at low FPS, read as "left doesn't turn,
+right does, and it's all rough."** `player.gd:_face_camera()` used
+`lerp_angle(..., delta * smoothing)` — stable only while `delta * smoothing < 1`
+(`Smoothing.damp_factor`'s own doc comment). At `combat_face_camera_smoothing = 20.0`
+that needs >20 FPS, easily lost on the Intel HD 620 dev target under Forward+.
+Investigated the alternative hypothesis (an unhandled discontinuity at the camera
+yaw's `wrapf(-PI, PI)` wrap) by tracing and simulating the exact `wrapf`/`lerp_angle`
+math for continuous rotation through the wrap in both directions — found it
+mathematically symmetric, not the cause. The naive-smoothing instability is the one
+reproducible defect in this path.
+*Доворот тела за камерой в TPS раскачивался/залипал на низком FPS — читалось как
+"влево не работает, вправо работает, и всё грубо". Причина — наивный delta*smoothing
+вместо Smoothing.damp_factor. Гипотезу про необработанный разрыв угла на ±π проверил
+трассировкой и симуляцией — не подтвердилась, обработка перехода уже симметрична.*
+
+- `_face_camera()` now uses `Smoothing.damp_factor(smoothing, delta)`, same
+  frame-rate-independent form every other smoothed value in the camera code already
+  uses.
+- `player/player.gd`.
+
+---
+
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
 
 **`LodgingRoom` couldn't find its systems when placed statically.** Symptom: Stan
