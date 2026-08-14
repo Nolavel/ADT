@@ -76,6 +76,19 @@ tell why a punch connected or didn't.
 - `ui/hud/stance_indicator/stance_indicator.gd`, `ui/hud/stance_indicator/stance_indicator.tscn`,
   `ui/hud/player_hud/player_hud.tscn`, `ui/hud/player_hud/player_hud.gd`, `CLAUDE.md`.
 
+**Bird-eye dead zone let the character drift almost a quarter of the screen before the
+camera reacted at all**, reading as the camera being unhooked from the character
+rather than deliberately lagging it (the lag itself, `FOLLOW_RATE_MOVING`, is by
+design — the dead zone just hid it behind a flat non-reaction).
+
+- `IsometricCameraState.DEAD_ZONE_X/Y` (const, `0.12`/`0.08`) → `@export var
+  dead_zone_x/dead_zone_y` (`0.07`/`0.045`, roughly halved), same "feel value, not an
+  implementation constant" reasoning as the TPS pitch range above. Stays comfortably
+  above `DEAD_ZONE_COMBAT_X/Y` (`0.05`/`0.04`) so PEACE and COMBAT dead zones remain
+  visibly different sizes. Pure parameter change — `_update_zone_size()`, `decay()`
+  and `_zone_x`/`_zone_y`'s own defaults updated to match, no logic touched.
+- `camera/isometric_camera_state.gd`, `CLAUDE.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
