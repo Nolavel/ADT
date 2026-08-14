@@ -187,6 +187,29 @@ NPCBase._apply_archetype() тремя независимыми шагами (ц�
   `thug.tres`, `commuter.tres`, `clerk.tres`, `patrolman.tres` (new),
   `npc/npc_base.gd`, `CLAUDE.md`.
 
+**H3, second commit: populated one Doggerland block with 18 NPCs across all
+five archetypes.** The three `NPCTestInstance` placeholders (stacked on the
+exact same transform, `editor_description` explicitly asking for removal
+"once real NPC placement/spawning exists") were nowhere near enough to feel
+a crowd. Replaced with a new `DoggerlandCrowdBlock` group under
+`StreamContainer` holding 18 hand-placed `npc.tscn` instances, each with an
+`archetype` assigned: 6 Vagrant, 5 Thug, 3 Commuter, 2 Clerk, 2 Patrolman.
+Counts follow `npc_archetypes.md` §5's Doggerland composition for Vagrant
+(dominant), Thug (dominant) and Clerk (rare); Commuter and Patrolman aren't
+listed for Doggerland at all in that table, so their counts are this scene's
+own call, not a spec value.
+*H3, второй коммит: заселил один квартал Доггерленда 18 NPC по всем пяти
+архетипам вместо трёх слипшихся в одной точке NPCTestInstance-заглушек.
+Плотность Vagrant/Thug/Clerk — по §5 документа; Commuter и Patrolman там для
+Doggerland не перечислены, их количество — решение по месту.*
+
+No spawn system: every NPC is a plain node saved directly in `world.tscn`,
+same mechanism `HoverTest`/`LodgingRoom`/the old `NPCTestInstance`s already
+used — there is no runtime instantiation code to grow into a system, so
+nothing here needs tearing out later; swapping this for a real spawner means
+deleting `DoggerlandCrowdBlock` and its children, nothing more.
+- `world/world.tscn`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
