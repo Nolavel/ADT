@@ -23,8 +23,6 @@ signal zoom_input_received()
 ## anatomy. Proportional to the old 2.6 @ 2.32m body would be ~2.02; 2.2 is
 ## visually tighter framing for this camera family.
 const TPS_DISTANCE: float = 2.2
-const TPS_PITCH_MIN: float = -50.0
-const TPS_PITCH_MAX: float = 20.0
 ## Vertical look is deliberately slower than horizontal — the traditional
 ## "mouse Y feels heavier than mouse X" convention for TPS/FPS cameras.
 const TPS_PITCH_SENSITIVITY_RATIO: float = 0.7
@@ -150,6 +148,14 @@ var _tps_lock_distance: float = TPS_DISTANCE
 @export var look_sensitivity_y: float = 0.65
 @export var invert_look_x: bool = false
 @export var invert_look_y: bool = false
+## Eye-by-feel tuning values, not implementation constants — hence @export
+## rather than const. -50/20 (the old constants) capped looking up at 20°
+## and gave only 50° of downward range; -70/60 gives real headroom to look
+## down off a ledge/deck (Blackrock's verticality is the whole point) and to
+## look up at towers, while staying well clear of the ±90° gimbal case
+## global_rotation's direct Euler set would hit.
+@export var tps_pitch_min_deg: float = -70.0
+@export var tps_pitch_max_deg: float = 60.0
 
 
 @export_group("Follow")
@@ -348,7 +354,7 @@ func _handle_tps_follow(delta: float) -> void:
 	# --- Free mouse look (TLOU-style) ---
 	# `look` (InputSystems.get_look_delta()) is in radians — camera_target_yaw
 	# is also radians, so it can be added directly. _tps_pitch_deg is stored
-	# in DEGREES (clamped by TPS_PITCH_MIN/MAX, fed to deg_to_rad() later), so
+	# in DEGREES (clamped by tps_pitch_min_deg/tps_pitch_max_deg, fed to deg_to_rad() later), so
 	# it needs an explicit rad_to_deg() conversion — this mismatch was the bug
 	# that made vertical look nearly unresponsive.
 	var look := InputSystems.get_look_delta()
@@ -363,7 +369,7 @@ func _handle_tps_follow(delta: float) -> void:
 	# look_sensitivity_y rather than folded into it.
 	var y_sign := -1.0 if invert_look_y else 1.0
 	_tps_pitch_deg -= rad_to_deg(look.y) * look_sensitivity_y * TPS_PITCH_SENSITIVITY_RATIO * y_sign
-	_tps_pitch_deg = clamp(_tps_pitch_deg, TPS_PITCH_MIN, TPS_PITCH_MAX)
+	_tps_pitch_deg = clamp(_tps_pitch_deg, tps_pitch_min_deg, tps_pitch_max_deg)
 
 	# --- Lock-on (combat state overrides yaw only when locked) ---
 	if InputSystems.is_lock_on_just_pressed():
