@@ -57,6 +57,25 @@ built on verticality (looking down off a ledge/deck) and the +20° upward cap wa
   Euler `global_rotation` set would hit.
 - `camera/camera_component/on_foot_camera_component.gd`, `CLAUDE.md`.
 
+**No on-screen indicator of PEACE vs. COMBAT stance.** An outside viewer had no way to
+tell why a punch connected or didn't.
+
+- New `ui/hud/stance_indicator/` (`stance_indicator.gd`/`.tscn`) — a small badge next
+  to the health bar, subscribed directly to `PlayerState.stance_changed`, self-
+  contained like `KeyHintsPanel` (no `WorldContext` needed, `PlayerState` is an
+  autoload). Not a `StatusBarWidget` instance: that widget is a ratio gauge built for
+  a continuous value like health, and stance is a plain two-state switch — feeding it
+  a fake ratio to borrow its frame would be more indirection than a short `_draw()`
+  costs. Shows both colour (COMBAT reuses `StatusBarWidget`'s own `critical_color`)
+  and a text label (`PEACE`/`COMBAT`), so a first-time viewer isn't required to learn
+  the HUD's colour language before it means anything. Working-readability styling, not
+  final HUD art.
+- `player_hud.tscn`'s `HealthBar` moved into a new `HealthRow` `HBoxContainer`
+  alongside `StanceIndicator`; `player_hud.gd`'s `$StatusStack/HealthBar` onready path
+  updated to match.
+- `ui/hud/stance_indicator/stance_indicator.gd`, `ui/hud/stance_indicator/stance_indicator.tscn`,
+  `ui/hud/player_hud/player_hud.tscn`, `ui/hud/player_hud/player_hud.gd`, `CLAUDE.md`.
+
 ---
 
 ## 2026-08-13 — Drone periodic scan, search behaviour, LodgingRoom scene, sleep-hour picker
