@@ -93,8 +93,17 @@ class Frame extends RefCounted:
 ## drift this far from the follow point before the camera reacts at all.
 ## Wider than tall on purpose: horizontal drift reads as headroom, vertical
 ## drift reads as the camera losing the character.
-const DEAD_ZONE_X: float = 0.12
-const DEAD_ZONE_Y: float = 0.08
+##
+## @export rather than const — this is an eye-by-feel framing value, not an
+## implementation detail (same reasoning as TpsCombatCameraState's spring
+## constants). Was 0.12/0.08; shrunk to roughly half. At the old size the
+## character could cross nearly a quarter of the screen width before the
+## follow point reacted at all, which read as the camera being unhooked
+## from the character rather than deliberately lagging it — the lag IS the
+## point (see FOLLOW_RATE_MOVING's own comment), but a dead zone this size
+## hid the lag behind a flat non-reaction instead.
+@export var dead_zone_x: float = 0.07
+@export var dead_zone_y: float = 0.045
 
 ## Dead zone in COMBAT. Tighter, so the character stays near the centre of
 ## the frame while the player is watching for threats.
@@ -216,8 +225,8 @@ var _air_time: float = 0.0
 ## Current dead-zone half-extents in viewport fractions, eased toward the
 ## stance-appropriate constants so a stance change does not resize the
 ## rectangle instantly.
-var _zone_x: float = DEAD_ZONE_X
-var _zone_y: float = DEAD_ZONE_Y
+var _zone_x: float = dead_zone_x
+var _zone_y: float = dead_zone_y
 
 ## True until the first update after enter(), so the follow point can be
 ## placed on the character instead of easing in from wherever it was left.
@@ -284,8 +293,8 @@ func update(delta: float, f: Frame) -> Vector3:
 func decay(delta: float) -> void:
 	var k := Smoothing.damp_factor(DECAY_RATE, delta)
 	_lead_offset = _lead_offset.lerp(Vector3.ZERO, k)
-	_zone_x = lerp(_zone_x, DEAD_ZONE_X, k)
-	_zone_y = lerp(_zone_y, DEAD_ZONE_Y, k)
+	_zone_x = lerp(_zone_x, dead_zone_x, k)
+	_zone_y = lerp(_zone_y, dead_zone_y, k)
 	_air_time = 0.0
 	_needs_reset = true
 
@@ -298,8 +307,8 @@ func decay(delta: float) -> void:
 ## for. Resizing rather than switching keeps a stance change from snapping
 ## the camera when the character happens to be off-centre at the time.
 func _update_zone_size(delta: float, combat: bool) -> void:
-	var want_x := DEAD_ZONE_COMBAT_X if combat else DEAD_ZONE_X
-	var want_y := DEAD_ZONE_COMBAT_Y if combat else DEAD_ZONE_Y
+	var want_x := DEAD_ZONE_COMBAT_X if combat else dead_zone_x
+	var want_y := DEAD_ZONE_COMBAT_Y if combat else dead_zone_y
 	var k := Smoothing.damp_factor(ZONE_RESIZE_RATE, delta)
 	_zone_x = lerp(_zone_x, want_x, k)
 	_zone_y = lerp(_zone_y, want_y, k)
