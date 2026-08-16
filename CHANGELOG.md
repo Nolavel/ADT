@@ -12,6 +12,47 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-17 — Entire enabled for Claude Code (checkpoint capture, preview)
+
+Entire (entire.io) added as an observability layer over agent-assisted commits —
+versions session transcripts/prompts/tool calls alongside commits on a dedicated
+`entire/checkpoints/v1` branch, keeping `main`'s own history untouched. Enabled via
+`entire enable -y --agent claude-code`, backend explicitly set to `branch` (the CLI's
+actual default on this install was `refs`, contradicting the docs' own comparison
+table — forced back to `branch` to match documented behaviour and this repo's
+verification steps). `.claude/settings.json` (agent hooks) and `.entire/settings.json`
++ `.entire/.gitignore` (project config) committed per Entire's own guidance for shared
+repos; `.entire/settings.local.json` (machine-local: absolute git-hook paths, so
+GUI clients like GitHub Desktop that don't load shell `$PATH` can still find the
+hooks, plus `commit_linking: always`) stays untracked.
+
+The CLI binary itself is NOT a system install: the official Windows release zip was
+downloaded from `entireio/cli`'s GitHub Releases (checksum-verified against the
+published `checksums.txt`) into a folder next to this repo, outside the working tree,
+and added to this user's own PATH so Claude Code's own agent hooks (which do a plain
+`command -v entire` PATH lookup with no absolute-path option, unlike the git hooks)
+can find it. No package manager installed, no admin rights used, nothing global to
+other users of this machine.
+
+**Not yet verified live in this session:** Claude Code's own hooks are registered at
+session start, so the session that ran `entire enable` cannot retroactively capture
+itself — Entire's own troubleshooting docs say as much. The first checkpoint will
+appear on the next fresh `claude` session in this repo, after both this PATH change
+and the new hooks are picked up.
+
+*Entire (entire.io) подключён для Claude Code — версионирует транскрипты/промпты/
+вызовы инструментов рядом с коммитами на отдельной ветке entire/checkpoints/v1,
+не трогая обычную историю main. Бинарь CLI не ставился как системный пакет — скачан
+напрямую с GitHub Releases с проверкой контрольной суммы, лежит рядом с репозиторием,
+добавлен в PATH пользователя (это обязательно для перехвата хуков Claude Code, у
+которых, в отличие от git-хуков, нет варианта с абсолютным путём). Живая проверка
+чекпоинта в этой же сессии невозможна — хуки Claude Code регистрируются в начале
+сессии, а `entire enable` выполнялся уже внутри неё.*
+- `.claude/settings.json` (new), `.entire/settings.json` (new), `.entire/.gitignore`
+  (new); `.entire/settings.local.json` untracked by design
+
+---
+
 ## 2026-08-17 — readme.md: fix inconsistent CONTRIBUTING.md path
 
 The "For collaborators" section referenced the file two different ways in the same
