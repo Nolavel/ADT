@@ -36,8 +36,8 @@
 #
 # WHILE an IdleNPCController is in ReactionState.CALLING (docs/attribution.md
 # §7), also shows why its active WitnessReport got the observation_level it
-# got — distance, attention, the ceiling before attention, and the final
-# result — plus the report's own PENDING/COMMITTED/CANCELLED status and time
+# got — distance, whether it was in FOV at all, and the resulting ceiling —
+# plus the report's own PENDING/COMMITTED/CANCELLED status and time
 # remaining. This is the only place any of that is visible; the player never
 # sees it, and WitnessReport itself is never logged.
 # =============================================================================
@@ -225,13 +225,20 @@ func _describe_idle_controller(
 ## fixed label, not read off anything: WitnessReport has no field a suspect
 ## could go in (see witness_report.gd's own header), so this line exists
 ## purely to make that boundary visible to whoever is reading the panel.
+##
+## "in FOV" replaces what used to be an "attention" line — a witness only
+## ever gets this far (has an active report to describe at all) once
+## _is_incident_in_vision_cone() already gated them in, so this always reads
+## true today; it is shown anyway, as a plain fact, rather than assumed. See
+## idle_npc_controller.gd's own header on why "facing away" no longer
+## quietly downgrades a report instead of blocking it.
 func _describe_witness_report(controller: IdleNPCController) -> String:
 	var remaining := controller.get_witness_report_remaining()
 	var remaining_text := "  (%.1fs remaining)" % remaining if remaining >= 0.0 else ""
 	return (
 		"  WITNESS\n"
 		+ "    distance   %.1f m\n" % controller.get_witness_distance()
-		+ "    attention  %s\n" % controller.get_witness_attention_name()
+		+ "    in FOV     %s\n" % controller.get_witness_in_cone_text()
 		+ "    ceiling    %s\n" % controller.get_witness_ceiling_name()
 		+ "    result     %s\n" % controller.get_witness_observation_level_name()
 		+ "  REPORT\n"

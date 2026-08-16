@@ -61,13 +61,22 @@
 # constant here, so retuning it never means touching this file.
 #
 # WITNESS CALL (docs/attribution.md §7) no longer reports the instant a
-# witness rolls Call. ReactionState.CALLING resolves an observation quality
-# (distance ceiling + facing-based attention, docs/attribution.md §2) into a
-# WitnessReport, then holds it PENDING for call_report_duration seconds
-# before _commit_witness_report() actually calls IncidentRegistry — see that
-# method, _step_calling() and _cancel_active_witness_report(). Attribution
-# itself (docs/attribution.md §5) is not built: _call_it_in() still reports
-# fully attributed once a report commits, same as every producer today.
+# witness rolls Call. Becoming a caller requires actually having seen the
+# incident — _is_incident_in_vision_cone() (range + cone against
+# PerceptionComponent's own vision_range/vision_angle_deg, no line-of-sight
+# raycast) gates entry into ReactionState.CALLING; a witness whose back was
+# turned falls through to the ordinary Flee/Freeze roll instead, same as any
+# non-witness. Only past that gate does _build_witness_report() resolve a
+# distance ceiling (docs/attribution.md §2) into a WitnessReport, held
+# PENDING for call_report_duration seconds before _commit_witness_report()
+# actually calls IncidentRegistry — see that method, _step_calling() and
+# _cancel_active_witness_report(). Attention (§2's REDUCED modifier) is not
+# applied this iteration — its two real triggers, talking and looking into
+# one's own Votive, have no mechanic yet; "facing away" used to stand in for
+# it and was wrong in kind, not tuning, since facing away means not seeing
+# it at all. Attribution itself (docs/attribution.md §5) is not built:
+# _call_it_in() still reports fully attributed once a report commits, same
+# as every producer today.
 #
 # The sibling VotiveProjector (core/components/votive_projector/) is driven
 # from here, not from itself — _start_calling() tells it to start_transmit-
@@ -88,15 +97,6 @@ enum State { IDLE, WALKING }
 ## now resolves an observation quality and holds a WitnessReport PENDING for
 ## call_report_duration before it actually commits — see _step_calling().
 enum ReactionState { NONE, FLEEING, FROZEN, RESPONDING, CALLING }
-
-## docs/attribution.md section 2's binary attention modifier. Only the
-## "facing away from the incident" trigger is implemented — "talking to
-## another NPC" and "looking into their own Votive projection" both name
-## behaviour this build has no mechanic for (no NPC-to-NPC conversation state,
-## and NPCs never look at their own Votive), so this deliberately covers the
-## one trigger that's actually derivable from what an NPC already knows about
-## itself: its own facing versus the incident's position.
-enum Attention { NORMAL, REDUCED }
 
 ## Distance to the wander target that counts as "arrived."
 const WANDER_ARRIVAL_RADIUS: float = 0.5
@@ -170,8 +170,9 @@ const OBSTACLE_MASK: int = 1 << 2
 @export_range(0.0, 1.0) var call_probability: float = 0.6
 
 @export_group("Witness Observation Quality (attribution.md §2)")
-## Beyond this distance the ceiling is SILHOUETTE — nothing more is
-## achievable regardless of attention. Thresholds are @export, not
+## Beyond this distance the ceiling is SILHOUETTE — the maximum achievable
+## once a witness is confirmed to have actually seen the incident at all
+## (see _is_incident_in_vision_cone()). Thresholds are @export, not
 ## constants, per attribution.md §7's own instruction: they are feel/scale
 ## values, not derived numbers.
 @export var witness_ceiling_equipment_distance: float = 30.0
@@ -181,10 +182,6 @@ const OBSTACLE_MASK: int = 1 << 2
 ## Beyond this distance (and within witness_ceiling_face_distance) the
 ## ceiling is FACE; within it, IRIS.
 @export var witness_ceiling_iris_distance: float = 5.0
-## Degrees off this NPC's own facing, toward the incident's position, past
-## which attention counts as REDUCED rather than NORMAL — see Attention's own
-## comment on why "facing away" is the one trigger this build can derive.
-@export var witness_attention_angle_deg: float = 90.0
 
 @export_group("Witness Report (attribution.md §6/§7)")
 ## Seconds until a PENDING WitnessReport commits — "time until transmission
@@ -282,7 +279,19 @@ var _pending_incident: Incident = null
 ## requirement) without WitnessReport itself carrying scaffolding fields the
 ## design doesn't call for.
 var _debug_witness_distance: float = -1.0
-var _debug_witness_attention: Attention = Attention.NORMAL
+## Always true by the time a report is actually built — see
+## _is_incident_in_vision_cone(), which gates entry into CALLING before
+## _build_witness_report() ever runs. Kept as its own field (rather than
+## assumed) so the debug panel states the fact plainly instead of implying
+## it, matching attribution.md §7's own panel format ("in FOV").
+var _debug_witness_in_cone: bool = false
+## Distance-ceiling result — see _distance_ceiling(). Currently always equal
+## to the report's own observation_level: attention (attribution.md §2) is
+## not applied this iteration, since this build has no mechanic for either
+## of its real triggers (talking, looking into one's own Votive) — see
+## _resolve_observation_level()'s own comment. Kept as a separate field
+## anyway, matching the design's panel format, so it starts differing again
+## the moment a real attention trigger lands, with no panel change needed.
 var _debug_witness_ceiling: WitnessReport.ObservationLevel = WitnessReport.ObservationLevel.NONE
 
 
@@ -443,13 +452,16 @@ func get_witness_distance() -> float:
 	return _debug_witness_distance
 
 
-func get_witness_attention_name() -> String:
-	return Attention.keys()[_debug_witness_attention]
+## "true"/"false" (attribution.md §7's own panel format uses "in FOV",
+## lowercase true/false, not this panel's usual YES/no convention) — see
+## _debug_witness_in_cone's own comment on why this is always true by the
+## time there's a report to describe at all.
+func get_witness_in_cone_text() -> String:
+	return "true" if _debug_witness_in_cone else "false"
 
 
-## Distance-ceiling result BEFORE the attention modifier — compare against
-## get_witness_observation_level_name() (the report's own, attention-adjusted
-## final value) to see whether attention actually lowered it.
+## Distance-ceiling result — see _debug_witness_ceiling's own comment on why
+## this currently always matches get_witness_observation_level_name().
 func get_witness_ceiling_name() -> String:
 	return WitnessReport.ObservationLevel.keys()[_debug_witness_ceiling]
 
@@ -559,7 +571,16 @@ func _on_incident_reported(incident: Incident) -> void:
 	## witness who doesn't call this time falls through to the same
 	## probabilistic roll every other NPC uses. Reporting is no longer
 	## instant — see _start_calling() and docs/attribution.md §7.
-	if _is_witness and randf() < call_probability:
+	##
+	## _is_incident_in_vision_cone() is a hard gate, not a modifier: a witness
+	## whose back is turned did not see anything and does not become a
+	## caller over it, however the probability roll would have landed — see
+	## that method's own header and attribution.md §2 on why "didn't see"
+	## and "saw, but worse" used to be the same case and are not the same
+	## case. earshot_radius above still gates whether this NPC reacts AT ALL
+	## (Flee/Freeze/Call) — that stays hearing-based, unchanged; only Call
+	## additionally requires having actually seen it.
+	if _is_witness and _is_incident_in_vision_cone(incident) and randf() < call_probability:
 		_start_calling(incident)
 		return
 
@@ -646,22 +667,28 @@ func _build_witness_report(incident: Incident) -> WitnessReport:
 	return report
 
 
-## Distance ceiling (attribution.md §2's table), then attention (facing away
-## only, see Attention's own comment) lowers it by exactly one step — never
-## raises it, a hard rule per that section, not a tuning choice. Also stashes
-## the intermediate values on _debug_witness_* for the perception debug
-## panel — see those vars' own comment.
+## Distance ceiling only (attribution.md §2's table) — attention is NOT
+## applied this iteration. It used to lower the ceiling by one step for a
+## witness facing away, which was wrong in kind, not just in tuning: facing
+## away means the witness did not see the incident at all, not that they saw
+## it worse (attribution.md §2's own corrected split — "didn't see" vs. "saw,
+## but worse" are different cases, and this build only has a mechanic for the
+## first). _is_incident_in_vision_cone() is that gate now, checked in
+## _on_incident_reported() before this is ever called — a report is only
+## ever built for a witness already confirmed to have seen the incident, so
+## there is nothing left here to lower. Real REDUCED triggers (talking,
+## looking into one's own Votive) have no mechanic to derive them from yet;
+## add attention back here, not as a vision-cone workaround, once one does.
+## Also stashes the intermediate values on _debug_witness_* for the
+## perception debug panel — see those vars' own comment.
 func _resolve_observation_level(incident: Incident) -> WitnessReport.ObservationLevel:
 	var distance := _npc.global_position.distance_to(incident.position)
 	var ceiling := _distance_ceiling(distance)
-	var attention := _resolve_attention(incident)
 
 	_debug_witness_distance = distance
-	_debug_witness_attention = attention
+	_debug_witness_in_cone = true
 	_debug_witness_ceiling = ceiling
 
-	if attention == Attention.REDUCED:
-		return _lower_one_step(ceiling)
 	return ceiling
 
 
@@ -675,38 +702,34 @@ func _distance_ceiling(distance: float) -> WitnessReport.ObservationLevel:
 	return WitnessReport.ObservationLevel.IRIS
 
 
-## Facing away from the incident is the one REDUCED trigger this build can
-## derive — see Attention's own comment. Uses this NPC's own facing versus
-## the incident's position directly (NPCBase.get_facing_direction()), not
-## PerceptionComponent: that component only ever measures facing relative to
-## the PLAYER, and the incident's position is not always the player's
-## current position (the victim may have moved since).
-func _resolve_attention(incident: Incident) -> Attention:
-	var to_incident := incident.position - _npc.global_position
-	to_incident.y = 0.0
-	if to_incident.length() < 0.01:
-		return Attention.NORMAL
+## Whether this NPC actually saw incident — range + cone only, same check
+## PerceptionComponent.observe_player() runs for the player (distance versus
+## vision_range, angle versus half of vision_angle_deg), retargeted at the
+## incident's own position instead of the player's live one (they are not
+## always the same point — the victim may have moved since). Reads
+## PerceptionComponent's public vision_range/vision_angle_deg exports rather
+## than calling into it: that component's own API only ever answers "can
+## this actor see the PLAYER right now," which isn't the question here.
+## Deliberately no line-of-sight raycast — PerceptionComponent's own
+## LINE_OF_SIGHT_MASK includes the floor layer, an open, undiagnosed defect
+## in that component; wiring an occlusion check into this gate would inherit
+## that bug rather than answer "does this NPC see the incident."
+func _is_incident_in_vision_cone(incident: Incident) -> bool:
+	if not _perception:
+		return false
+
+	var eye_pos := _npc.global_position + Vector3(0.0, _npc.get_eye_height(), 0.0)
+	if eye_pos.distance_to(incident.position) > _perception.vision_range:
+		return false
+
+	var horizontal_to_incident := incident.position - eye_pos
+	horizontal_to_incident.y = 0.0
+	if horizontal_to_incident.length() < 0.001:
+		return true
+
 	var facing := _npc.get_facing_direction()
-	var angle := rad_to_deg(facing.angle_to(to_incident.normalized()))
-	return Attention.REDUCED if angle > witness_attention_angle_deg else Attention.NORMAL
-
-
-## One step down the ObservationLevel ladder, floored at NONE — attention
-## never pushes a report below the ladder's own bottom. In practice the
-## floor is never reached here: a witness only ever reaches this path
-## already within earshot_radius, which is well under
-## witness_ceiling_equipment_distance by default, so the ceiling is always
-## at least SILHOUETTE before attention is applied.
-func _lower_one_step(level: WitnessReport.ObservationLevel) -> WitnessReport.ObservationLevel:
-	match level:
-		WitnessReport.ObservationLevel.IRIS:
-			return WitnessReport.ObservationLevel.FACE
-		WitnessReport.ObservationLevel.FACE:
-			return WitnessReport.ObservationLevel.EQUIPMENT
-		WitnessReport.ObservationLevel.EQUIPMENT:
-			return WitnessReport.ObservationLevel.SILHOUETTE
-		_:
-			return WitnessReport.ObservationLevel.NONE
+	var angle := rad_to_deg(facing.angle_to(horizontal_to_incident.normalized()))
+	return angle <= _perception.vision_angle_deg * 0.5
 
 
 ## Dispatches the active reaction — called from _decide() instead of the

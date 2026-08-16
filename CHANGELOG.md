@@ -47,6 +47,49 @@ facing direction at a glance, at distance, without opening the inspector.
 
 ---
 
+## 2026-08-16 — Witness Call gated on actually seeing the incident, not just hearing it
+
+Second finding from the same playtest: witnesses reacted as if they could see through
+their own backs. `idle_npc_controller.gd`'s Call branch had a distance/attention model
+but no vision-cone check at all — an NPC facing entirely away from an incident still
+became a caller, just at a level one step lower.
+
+This was a spec bug, not a tuning one: `attribution.md` §2 had folded "didn't see it"
+and "saw it, but worse" into one `REDUCED` case, with "facing away" standing in for
+both. They aren't the same case. §2 is corrected to split them explicitly, and this
+build now only implements the first: `_is_incident_in_vision_cone()` (range against
+`PerceptionComponent.vision_range`, angle against half of `vision_angle_deg` — read
+from that component's public exports, not called into it, and deliberately without a
+line-of-sight raycast, since that component's own `LINE_OF_SIGHT_MASK` already has an
+undiagnosed floor-layer defect this gate has no business inheriting) gates entry into
+`ReactionState.CALLING` outright. A witness who fails it falls through to the ordinary
+Flee/Freeze roll instead of quietly downgrading. `earshot_radius` still gates whether
+this NPC reacts AT ALL (hearing-based, unchanged) — only actually reporting now
+additionally requires having seen it.
+
+`Attention`, `witness_attention_angle_deg`, `_resolve_attention()` and
+`_lower_one_step()` are removed outright rather than left unused: attention itself
+isn't applied this iteration (its two real triggers — talking, looking into one's own
+Votive — have no mechanic to derive them from), so `_resolve_observation_level()` is
+now pure distance ceiling. The debug panel's "attention" line became "in FOV" (always
+true by construction today, shown as a plain fact rather than assumed — `attribution.md`
+§7's own panel example updated to match, attention line dropped). §7's test case D
+("witness talking", one level below IRIS) is corrected to "witness facing away, does
+not become a witness at all" — the only version of that case this build can actually
+reproduce.
+
+*Свидетель мог "видеть" инцидент затылком — проверки конуса зрения не было вообще,
+только дистанция+внимание. Это ошибка спецификации: attribution.md §2 путал "не видел"
+и "видел хуже". Добавлен жёсткий гейт по конусу (дистанция+угол через публичные поля
+PerceptionComponent, без линии видимости — в компоненте уже известный баг с маской
+пола). Attention как модификатор убран целиком, а не оставлен неиспользуемым - для
+него просто нет реализованных триггеров. Тест-кейс D в §7 поправлен под то, что
+реально воспроизводимо.*
+- `npc/controllers/idle_npc_controller.gd`, `ui/debug/perception_debug_panel.gd`,
+  `docs/attribution.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-16 — `attribution.md`: Observation → Incident → Report → Attribution design
 
 New design doc (`docs/attribution.md`), Stan's — Observation → Incident → Report →

@@ -12,7 +12,7 @@ judged.
 Read `core_loop.md` (§6 in particular) and `NPC_REACTIONS.md` (§4, §4a, §5)
 first. This page extends both.
 
-Last reviewed: 2026-08-15
+Last reviewed: 2026-08-16
 
 ---
 
@@ -85,23 +85,45 @@ architecture.
 | 5–10 m | FACE |
 | < 5 m | IRIS |
 
+### Not seeing it and seeing it worse are different cases
+
+The first pass at this page collapsed two different things into one
+`REDUCED` bucket, and playtest caught it immediately: a witness with their
+back turned still became a witness, just one step down the ladder. That is
+wrong in kind, not in tuning. Facing away is not reduced attention — it is
+not seeing the incident at all.
+
+- **Did not see it.** Outside the vision cone, blocked, back turned. The
+  result is `NONE`. This witness does not become a witness for this
+  incident — nothing is reported, at any quality, because there is nothing
+  to report.
+- **Saw it, but worse.** Inside the cone, but occupied — talking to another
+  NPC, looking into their own Votive projection. The result is one level
+  below whatever distance alone would have given.
+
+Only the first case is gated in this iteration: a witness must be within
+range and within the vision cone (no line-of-sight check — that is a
+separate, already-broken raycast issue in `PerceptionComponent`, not this
+gate's to fix) or they never become a witness at all. **Attention itself is
+not applied.** Its only two real triggers — talking, looking into one's own
+Votive — have no mechanic to derive them from yet in this build; standing in
+"facing away" for them was the original mistake, not a workable
+approximation. Every witness who clears the vision gate gets the distance
+ceiling as-is. Add the `REDUCED` step back once a real busy-trigger exists,
+not as a repurposed vision check.
+
 ### Attention can only lower it
 
-This asymmetry is a hard rule, not a tuning choice. Attention never raises the
-ceiling: a witness at 20 m cannot reach IRIS however alert they are. Without
-this rule the system becomes an unpredictable product of factors and cannot be
-debugged by eye.
-
-First iteration keeps attention binary:
-
-- `NORMAL` — walking, facing roughly toward the event
-- `REDUCED` — one level down; talking to another NPC, looking into their own
-  Votive projection, facing away
+This asymmetry is a hard rule, not a tuning choice, for whenever attention
+does get built: it never raises the ceiling — a witness at 20 m cannot reach
+IRIS however alert they are. Without this rule the system becomes an
+unpredictable product of factors and cannot be debugged by eye.
 
 Further inputs — obstruction, lighting, hearing, orientation as a continuous
-value — are deliberately deferred. Six weighted inputs produce a result no one
-can explain during playtest: *why* did this witness fail to recognise a face?
-Add them only if binary attention proves insufficient in play, one at a time.
+value — are deliberately deferred beyond even `REDUCED` itself. Six weighted
+inputs produce a result no one can explain during playtest: *why* did this
+witness fail to recognise a face? Add them only if binary attention proves
+insufficient in play, one at a time.
 
 **Being busy does not blind an NPC.** A witness talking on their Votive still
 sees a man struck in front of them. They see it worse. Anything that gates
@@ -302,7 +324,6 @@ be possible to look at a witness and see why they got what they got:
 WITNESS
   distance   7.4 m
   in FOV     true
-  attention  REDUCED (talking)
   ceiling    FACE
   result     EQUIPMENT
 
@@ -311,6 +332,11 @@ REPORT
   actor      UNRESOLVED
   status     PENDING (1.8 s remaining)
 ```
+
+No `attention` line: this iteration doesn't apply it (§2's own correction) —
+`in FOV` is the only gate that's real today. `ceiling` and `result` still
+both show because they will differ again the moment a real attention
+trigger lands; today they're always the same number.
 
 The player never sees this. It is the only practical way to debug a perception
 rule by eye.
@@ -322,8 +348,16 @@ rule by eye.
 | A | incident 3 m from an idle NPC facing it | IRIS |
 | B | 15 m | EQUIPMENT |
 | C | 35 m | SILHOUETTE |
-| D | 3 m, witness talking | one level below IRIS |
+| D | 3 m, witness facing away | does not become a witness — no report at any quality |
 | E | interrupted at 1.5 s | CANCELLED, nothing in registry |
+
+Case D changed from an earlier draft ("witness talking", one level below
+IRIS): §2's own correction applies here too. Facing away is the one gate
+this iteration actually implements, and it means not seeing the incident,
+not seeing it worse — there is no report to hold a level at all. A witness
+who is genuinely talking (not built) would still be tested against D's old
+expectation once that trigger exists; today D is the only concrete,
+reproducible test of the vision-cone gate itself.
 
 ### The test that actually matters
 
