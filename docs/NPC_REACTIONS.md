@@ -12,7 +12,7 @@ Read `CONTRIBUTING.md` before picking any of it up. This page also assumes
 and `npc_archetypes.md` (what the crowd looks like before any of this
 triggers) — read those first if you have not.
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-08-16
 
 ---
 
@@ -141,8 +141,16 @@ The flag is also cheap. Deep behaviour is needed on few agents; the rest is
 a small reaction state machine. This matters at the population densities the
 city implies.
 
-Open: how witness density scales per stratum, and whether the flag is
-static per NPC or rolled per incident.
+Open: how witness density scales per stratum.
+
+The second question this section used to leave open — whether the flag is
+static per NPC or rolled per incident — is no longer quite the right
+question. `attribution.md` reframes the Call response as a transmission the
+player can see happening (§6, §7): once "who is reporting" is legible on the
+witness's own Votive rather than a hidden coin flip, the flag stops being a
+secret the player has to reverse-engineer and becomes something the player
+reads and reacts to in the moment. See that page for the shape this now
+takes.
 
 ### 4a. Intent, before anything has happened
 

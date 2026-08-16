@@ -12,6 +12,31 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-16 — `attribution.md`: Observation → Incident → Report → Attribution design
+
+New design doc (`docs/attribution.md`), Stan's — Observation → Incident → Report →
+Attribution as four distinct stages, none of them collapsing "player did X" straight
+into "wanted += 1". Only §7 (a witness perception → observation quality →
+`WitnessReport` → Votive transmission → COMMITTED/CANCELLED vertical slice) is in the
+horizon; §1–§6 and §8 are written down so they aren't re-derived later and stay
+deliberately unbuilt until §7 has been played.
+
+Added to `CLAUDE.md`'s Documents table. `NPC_REACTIONS.md` §4's witness-flag-density
+open question got a pointer to `attribution.md` §6/§7 instead of a rewrite — the flag
+stops being a hidden coin flip once the Call response is a transmission the player can
+see happening. `scope_horizon.md`'s H4 entry now describes attribution.md §7 as its
+scope directly, and notes H3 stays open (crowd reactions still unverified in play) even
+though H4's own prior work (archetypes, witness flag, Flee/Freeze/Call) already landed
+in `idle_npc_controller.gd` ahead of H3's Definition of Done being exercised.
+
+*Новый дизайн-документ Стэна: Observation → Incident → Report → Attribution как четыре
+отдельные стадии. Строится только §7 (вертикальный срез свидетельской цепочки);
+остальное сознательно не реализуется. Обновлены CLAUDE.md, NPC_REACTIONS.md §4 и
+scope_horizon.md (H4) — без переписывания текста целиком, только ссылки/срез.*
+- `docs/attribution.md`, `CLAUDE.md`, `docs/NPC_REACTIONS.md`, `docs/scope_horizon.md`
+
+---
+
 ## 2026-08-14 — Pre-demo first-impression pass: TPS turn oscillation, TPS pitch range, stance indicator, bird-eye dead zone
 
 Four fixes ahead of Stan showing the build to an outside viewer, ordered by how much

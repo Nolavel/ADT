@@ -1,0 +1,353 @@
+# Observation and attribution — design specification
+
+This page is the design the witness chain is built against. It is not a task
+list and most of it is not scheduled. Only §7 is currently in the horizon.
+
+It exists for the same reason `NPC_REACTIONS.md` does: this design was settled
+in discussion and would otherwise live outside the repository, where a
+contributor — or a future session — could not find it. Everything below §7 is
+deliberately unbuilt and must stay that way until §7 has been played and
+judged.
+
+Read `core_loop.md` (§6 in particular) and `NPC_REACTIONS.md` (§4, §4a, §5)
+first. This page extends both.
+
+Last reviewed: 2026-08-15
+
+---
+
+## 1. The chain
+
+The central design decision: a witness does not know who committed a crime. A
+witness knows what they saw. The city decides what follows from it.
+
+```
+NPC
+ │  observes
+ ▼
+OBSERVATION        what the eyes and ears actually got
+ │  qualifies
+ ▼
+INCIDENT           an objective fact: A struck B, here, then
+ │  witness transmits
+ ▼
+REPORT             a statement, held in the registry
+ │  city processes
+ ▼
+ATTRIBUTION        evidence matched against known identities
+ │
+ ▼
+KNOWN or UNKNOWN ACTOR
+```
+
+Each arrow is a place where information can be lost, delayed, degraded or
+contested. That is the point. The conventional alternative —
+
+```
+player commits crime → wanted += 1 → police pursue
+```
+
+— collapses all four stages into one and leaves nothing for the player to act
+on between them.
+
+The gap between REPORT and ATTRIBUTION is where this project's thesis lives.
+The city registers and attributes; humans read the record lazily. A statement
+can sit unprocessed. In Doggerland, for a long time. In Glare, instantly.
+
+**Two boundaries that must not blur:**
+
+- OBSERVATION is not CRIME. The NPC reports a physical fact, not a judgement.
+- REPORT is not IDENTIFICATION. Transmitting a statement is not naming a person.
+
+---
+
+## 2. Observation quality
+
+What a witness got is a single value, resolved once, at the moment of the
+incident. It does not improve afterwards — a witness cannot walk closer and
+retroactively recognise a face.
+
+```
+NONE  <  SILHOUETTE  <  PERSON  <  EQUIPMENT  <  FACE  <  IRIS
+```
+
+Naming note: the top level is `IRIS`, not `IDENTITY`. The NPC observes a
+credential, not a person. Identity is produced later, by attribution, from
+that observation. Getting this wrong in naming leads to getting it wrong in
+architecture.
+
+### Distance sets the ceiling
+
+| Distance | Maximum achievable |
+|---|---|
+| > 30 m | SILHOUETTE |
+| 10–30 m | EQUIPMENT |
+| 5–10 m | FACE |
+| < 5 m | IRIS |
+
+### Attention can only lower it
+
+This asymmetry is a hard rule, not a tuning choice. Attention never raises the
+ceiling: a witness at 20 m cannot reach IRIS however alert they are. Without
+this rule the system becomes an unpredictable product of factors and cannot be
+debugged by eye.
+
+First iteration keeps attention binary:
+
+- `NORMAL` — walking, facing roughly toward the event
+- `REDUCED` — one level down; talking to another NPC, looking into their own
+  Votive projection, facing away
+
+Further inputs — obstruction, lighting, hearing, orientation as a continuous
+value — are deliberately deferred. Six weighted inputs produce a result no one
+can explain during playtest: *why* did this witness fail to recognise a face?
+Add them only if binary attention proves insufficient in play, one at a time.
+
+**Being busy does not blind an NPC.** A witness talking on their Votive still
+sees a man struck in front of them. They see it worse. Anything that gates
+perception outright on activity reads as an engine rule rather than a person.
+
+---
+
+## 3. Saw versus understood
+
+An NPC can see an event without understanding it.
+
+What is observed is physical:
+
+```
+person A, person B, physical contact
+```
+
+What that *means* — assault, brawl, self-defence, accident, performance — is a
+separate layer, and it belongs to the city, not the witness. Keeping the two
+apart buys two things for free: a witness can be wrong about what happened, and
+the city can read a correct statement badly.
+
+First iteration collapses this: an incident is objectively an incident and the
+witness reports it as such. The seam must exist in the data even while the
+classification layer does not — the report carries what was seen, and nothing
+that presumes what it meant.
+
+---
+
+## 4. The report
+
+A `WitnessReport` is a statement, not a conclusion. It never contains a
+suspect.
+
+```
+WitnessReport
+├── witness_id
+├── observation_level        SILHOUETTE … IRIS
+├── observed_equipment       what the actor was wearing/carrying, if seen
+├── observed_at              game time
+├── observed_from            position, for later line-of-sight reasoning
+└── status                   PENDING / COMMITTED / CANCELLED
+```
+
+An `Incident` accumulates reports:
+
+```
+Incident
+├── event_type
+├── location
+├── timestamp
+├── victim
+└── reports[]
+```
+
+Nothing in either structure names the player. The registry holds what the city
+was told, not what the city concluded.
+
+---
+
+## 5. Attribution — deferred, and this is the expanded form
+
+Not scheduled. Written down so it is not re-derived from scratch later, and so
+that §7 can be built without foreclosing it.
+
+Attribution takes the reports on an incident and attempts to resolve an actor.
+It is a separate system with a one-way dependency: it reads the registry, the
+registry knows nothing about it.
+
+What makes it worth building, in order of importance:
+
+**It gives eye replacement a real cost model.** Changing a credential is
+expensive, illegal, and wipes name, wallet, status and access. Today that is
+narrative. Under attribution it becomes a calculation the player can actually
+make: *how much of me is already in the system, and at what quality?*
+
+- A report at 20 m holds `male, dark coat, weapon, height` — none of it tied to
+  a credential. Changing eyes does not touch it.
+- A report at 7 m holds a face. Changing eyes weakens the link but the face is
+  still a face.
+- A report at 3 m holds an iris. That one dies with the old credential.
+
+**Old incidents are never deleted on credential change.** The prior identity is
+archived, not erased. The new one is active. Whether the city connects them
+depends on what the reports contain — which is exactly the tension the whole
+design is for.
+
+**Behavioural signature is the endgame, not the start.** Identity can be faked;
+behaviour cannot. Once reports accumulate, a pattern — how the player enters, how
+often they kill, what they take — can link an archived identity to an active one
+without any credential at all. This is the mechanical form of the project's
+central claim, and it is also the easiest thing to over-build. It is named here
+and nothing more.
+
+**Timing is stratum-dependent.** Attribution is not instant. Doggerland reports
+may sit unprocessed indefinitely, or be discarded. Glare resolves in seconds.
+This is the same gradient as surveillance density and Votive connection speed —
+one idea expressed three times, which is why it reads as a world rather than as
+three systems.
+
+Open questions, not to be answered now:
+
+- Does contradictory testimony exist, and can it be exploited?
+- Can the player influence what gets processed, rather than only what gets
+  reported?
+- Does a wrongly attributed identity — someone else charged — become available
+  as a move?
+
+---
+
+## 6. Votive as the visible layer
+
+The Votive is a communication terminal, worn at the right temple, projecting
+a hologram in front of the face. It is not a credential and must never act as
+one. The eye opens; the Votive shows.
+
+```
+EyeCredential                    VotiveTerminal
+    identity_id                      communication_state
+    access_profile                   projection_state
+    wallet                           current_call
+    permissions
+```
+
+Game code must not let these two touch.
+
+Default state is a steady blue projection, on everyone. That baseline is what
+makes the alert state legible: if only witnesses lit up, any light would mean
+trouble and there would be nothing to read against.
+
+Transmission reads as:
+
+```
+blue … blue … RED · off · RED · off · RED · SOLID
+                └──────── ~3 s ────────┘
+```
+
+Three flashes are a countdown the player can literally count, with no UI. This
+is the escalation principle of `NPC_REACTIONS.md` §3 applied to the report
+chain: the city shows its attention before acting on it.
+
+The three seconds are **time until transmission completes**, not "time to kill
+the witness". The distinction matters: it leaves room for interrupting,
+fleeing, breaking line of sight, or deciding the report is not worth what
+stopping it would cost. If the only viable answer is always violence, the
+window is a punishment rather than a decision.
+
+Stratum gradient, same idea again: Doggerland connections are slow and some
+fail outright; Glare is near-instant and cannot be interrupted. Caution in the
+upper city is taught by the mechanism, not stated.
+
+**Suppressing a witness is itself an incident.** Nothing special is needed for
+this — attacking a witness is an assault, and assaults have witnesses. The
+recursion should be allowed to happen rather than designed: the city keeps
+functioning, and cleaning up creates more to clean up.
+
+Whether the Votive later becomes a slot on `EquipmentComponent` (H5) is an open
+question deferred on purpose — it is worn always, by everyone, and is not meant
+to be removable in this first iteration, so it does not belong to the same
+"what's held, what's stowed" contract equipment governs. Revisit once H5 exists
+and the witness chain already works, not before.
+
+---
+
+## 7. What is actually being built — the vertical slice
+
+Everything above except this section is deferred.
+
+```
+NPC perception
+    ↓
+incident observed?
+    ↓
+observation quality resolved (distance ceiling, attention modifier)
+    ↓
+WitnessReport created
+    ↓
+Votive: blue → red/off ×3 → solid red
+    ↓  3 s
+COMMITTED  or  CANCELLED
+```
+
+**`observation_level` is written and nothing reads it.** This is intentional
+and must be stated plainly wherever it might look like an oversight: the field
+is a deferred output, not dead code. The system is permitted to know more than
+the game can currently show — but only because §5 exists on this page. Without
+a written design behind it, a field nobody reads is speculative generality.
+
+**No drone reaction differentiated by observation level.** Adding one now would
+turn the test from "does the witness chain work" into "does mini-attribution
+work", and every rule added there invites the next: what about two witnesses,
+one with a face and one with a silhouette? That is §5, and §5 is not scheduled.
+
+**Developer-only observation panel**, not a log line. During playtest it should
+be possible to look at a witness and see why they got what they got:
+
+```
+WITNESS
+  distance   7.4 m
+  in FOV     true
+  attention  REDUCED (talking)
+  ceiling    FACE
+  result     EQUIPMENT
+
+REPORT
+  observed   EQUIPMENT
+  actor      UNRESOLVED
+  status     PENDING (1.8 s remaining)
+```
+
+The player never sees this. It is the only practical way to debug a perception
+rule by eye.
+
+### Test cases
+
+| Case | Setup | Expected |
+|---|---|---|
+| A | incident 3 m from an idle NPC facing it | IRIS |
+| B | 15 m | EQUIPMENT |
+| C | 35 m | SILHOUETTE |
+| D | 3 m, witness talking | one level below IRIS |
+| E | interrupted at 1.5 s | CANCELLED, nothing in registry |
+
+### The test that actually matters
+
+The registry is the lesser half. The real question is behavioural, and it is
+about the person holding the mouse:
+
+1. After the first incident — did they notice the red temple?
+2. After the second — did they work out that red means transmission?
+3. After the third — did they start looking for *who* is transmitting?
+4. After several — do they move to interrupt it without being told to?
+
+If step 4 happens unprompted, the loop has a core. If it does not, that is
+worth knowing after one alley and twenty NPCs rather than after a year of
+police, identity archives and behavioural profiling.
+
+---
+
+## 8. Terminology
+
+| Term | Means |
+|---|---|
+| Iris Access | The city's identity system. The eye is a key to a cloud record, not a store of data. |
+| credential | The eye. Opens things. Passive — you are read, not asked. |
+| Votive | The temple terminal. Shows things. Active, visible, never a credential. |
+| observation | What a witness got. Physical, not interpretive. |
+| report | A transmitted statement. Never contains a suspect. |
+| attribution | The city resolving reports into an identity. Deferred. |

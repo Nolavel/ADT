@@ -29,7 +29,7 @@ constraint on everything below. A horizon that assumes more is fiction.
 **Sequencing is by dependency, not by date.** Items unlock each other. Calendar
 dates appear only where an external commitment exists.
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-16
 
 ---
 
@@ -108,15 +108,42 @@ model for "witnessed, but the witness doesn't know who" — a shape the
 current registry has no room for, since every incident it accepts already
 assumes an identified perpetrator.
 
-Scope, once picked up: which of `core_loop.md` §6's four outcomes the
-registry needs to represent, a witness flag on a minority of NPCs
-(`npc_archetypes.md` §2 — deliberately no visual tell, see that section for
-why), and Call as a placeholder trigger proving the model, not the finished
-response (`NPC_REACTIONS.md` §4's Flee/Freeze/Call split is the fuller
-design — this horizon only needs enough of it to prove the knowledge model,
-not all of it).
+Scope is now `docs/attribution.md` §7, the vertical slice of that page's
+fuller Observation → Incident → Report → Attribution chain (§1–§6, all
+deliberately unbuilt past this slice):
 
-**Description only — not started.** This is next, not now.
+```
+NPC perception
+    ↓
+incident observed?
+    ↓
+observation quality resolved (distance ceiling, attention modifier)
+    ↓
+WitnessReport created
+    ↓
+Votive: blue → red/off ×3 → solid red
+    ↓  3 s
+COMMITTED  or  CANCELLED
+```
+
+A witness (`npc_archetypes.md` §2's flag, no visual tell) that decides to
+call no longer reports instantly — it resolves an observation quality
+(distance ceiling from §2, attention modifier from facing) into a
+`WitnessReport`, then visibly transmits for `attribution.md` §6's ~3-second
+window before the report actually commits. `observation_level` is written
+and read by nothing yet — a deferred output for §5 (attribution, not
+scheduled), not dead code. No drone reacts differently by observation
+quality; suppressing a witness mid-transmission is not a special case, it is
+just another assault with its own witnesses.
+
+**Picked up out of order relative to H3.** This horizon's own work — six
+archetypes, the witness flag, the Flee/Freeze/Call reaction roll — landed in
+`npc/controllers/idle_npc_controller.gd` before H3's Definition of Done was
+formally exercised in play. `docs/attribution.md` §7 is what replaces that
+Call roll's instant, fully-attributed report with the resolve-then-transmit
+chain above. H3 stays open (see its own entry) — crowd reactions still
+haven't been walked through and judged by Stan — so this entry documents
+what is actually being built now without claiming H3 is done.
 
 ### H5. EquipmentComponent
 

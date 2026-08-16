@@ -22,6 +22,7 @@ Startup scene: `res://world/world.tscn`.
 | `docs/CONTRIBUTING.md` | What a collaborator may pick up, what is off-limits, contribution terms |
 | `docs/GDSCRIPT_STYLE.md` | Code conventions; stricter than the official Godot guide in places |
 | `docs/planned_scope.md` | Scope that is **not started**. Not a task list. |
+| `docs/attribution.md` | Observation → Incident → Report → Attribution design. Only §7 (the witness vertical slice) is in the horizon; the rest is deliberately unbuilt. |
 | `docs/CREDITS.md` | Third-party attributions, incl. the Godot MIT notice |
 | `input_map.md` | Single source of truth for input bindings |
 | `LICENSE.md` | Proprietary; all rights reserved |
