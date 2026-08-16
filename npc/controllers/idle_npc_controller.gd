@@ -59,15 +59,37 @@
 # "street literacy, learned by observation" is arguing against. The bias
 # lives on the archetype (NPCArchetypeData.flee_probability), not as a
 # constant here, so retuning it never means touching this file.
+#
+# WITNESS CALL (docs/attribution.md §7) no longer reports the instant a
+# witness rolls Call. ReactionState.CALLING resolves an observation quality
+# (distance ceiling + facing-based attention, docs/attribution.md §2) into a
+# WitnessReport, then holds it PENDING for call_report_duration seconds
+# before _commit_witness_report() actually calls IncidentRegistry — see that
+# method, _step_calling() and _cancel_active_witness_report(). Attribution
+# itself (docs/attribution.md §5) is not built: _call_it_in() still reports
+# fully attributed once a report commits, same as every producer today.
 # =============================================================================
 extends NPCControllerBase
 class_name IdleNPCController
 
 enum State { IDLE, WALKING }
 
-## NONE = ordinary wander/observe-player behaviour applies. The other three
+## NONE = ordinary wander/observe-player behaviour applies. The other four
 ## pre-empt it entirely for as long as they're active — see the file header.
-enum ReactionState { NONE, FLEEING, FROZEN, RESPONDING }
+## CALLING (docs/attribution.md section 7) replaces what used to be an
+## instant, fully-attributed report on the spot: a witness that rolls Call
+## now resolves an observation quality and holds a WitnessReport PENDING for
+## call_report_duration before it actually commits — see _step_calling().
+enum ReactionState { NONE, FLEEING, FROZEN, RESPONDING, CALLING }
+
+## docs/attribution.md section 2's binary attention modifier. Only the
+## "facing away from the incident" trigger is implemented — "talking to
+## another NPC" and "looking into their own Votive projection" both name
+## behaviour this build has no mechanic for (no NPC-to-NPC conversation state,
+## and NPCs never look at their own Votive), so this deliberately covers the
+## one trigger that's actually derivable from what an NPC already knows about
+## itself: its own facing versus the incident's position.
+enum Attention { NORMAL, REDUCED }
 
 ## Distance to the wander target that counts as "arrived."
 const WANDER_ARRIVAL_RADIUS: float = 0.5
@@ -140,6 +162,30 @@ const OBSTACLE_MASK: int = 1 << 2
 ## already applies to Flee vs. Freeze.
 @export_range(0.0, 1.0) var call_probability: float = 0.6
 
+@export_group("Witness Observation Quality (attribution.md §2)")
+## Beyond this distance the ceiling is SILHOUETTE — nothing more is
+## achievable regardless of attention. Thresholds are @export, not
+## constants, per attribution.md §7's own instruction: they are feel/scale
+## values, not derived numbers.
+@export var witness_ceiling_equipment_distance: float = 30.0
+## Beyond this distance (and within witness_ceiling_equipment_distance) the
+## ceiling is EQUIPMENT.
+@export var witness_ceiling_face_distance: float = 10.0
+## Beyond this distance (and within witness_ceiling_face_distance) the
+## ceiling is FACE; within it, IRIS.
+@export var witness_ceiling_iris_distance: float = 5.0
+## Degrees off this NPC's own facing, toward the incident's position, past
+## which attention counts as REDUCED rather than NORMAL — see Attention's own
+## comment on why "facing away" is the one trigger this build can derive.
+@export var witness_attention_angle_deg: float = 90.0
+
+@export_group("Witness Report (attribution.md §6/§7)")
+## Seconds until a PENDING WitnessReport commits — "time until transmission
+## completes", not "time to kill the witness" (attribution.md §6's own
+## distinction: interrupting is one way to spend this window, not the only
+## one). Not tuned per stratum in this slice, per this task's own scope.
+@export var call_report_duration: float = 3.0
+
 ## NPCControllerBase resolves _actor as ActorBase (shared with
 ## PatrolDroneController/DroneBase); this controller only ever drives an
 ## NPCBase and uses NPC-only facing-target methods ActorBase doesn't
@@ -198,6 +244,25 @@ var _warned_missing_incident_registry: bool = false
 ## reported() offers this NPC the Call branch at all.
 var _is_witness: bool = false
 
+## The report currently being transmitted (ReactionState.CALLING), or null
+## outside that state — see _start_calling()/_commit_witness_report()/
+## _cancel_active_witness_report(). Cleared the instant it leaves PENDING.
+var _current_witness_report: WitnessReport = null
+## The incident _current_witness_report is about — kept alongside it purely
+## so _commit_witness_report() has a position to hand _call_it_in(), which
+## takes an Incident, not a WitnessReport (see that method's own header on
+## why it still reports fully attributed).
+var _pending_incident: Incident = null
+
+## Mirrors the inputs _resolve_observation_level() used for the current/last
+## report — debug-only, read by the perception debug panel so it can show
+## why a witness got the level it got (attribution.md §7's debug panel
+## requirement) without WitnessReport itself carrying scaffolding fields the
+## design doesn't call for.
+var _debug_witness_distance: float = -1.0
+var _debug_witness_attention: Attention = Attention.NORMAL
+var _debug_witness_ceiling: WitnessReport.ObservationLevel = WitnessReport.ObservationLevel.NONE
+
 
 func _ready() -> void:
 	super._ready()
@@ -240,6 +305,13 @@ func _decide(delta: float) -> void:
 	## regardless would just be noise; skipping outright is what "the
 	## controller stops deciding" (npc_base.gd's take_hit() comment) means.
 	if _npc.is_knocked_down():
+		## Suppressing a witness is itself an incident (attribution.md §6) —
+		## nothing special needed for THAT, the punch that knocked this NPC
+		## down already reported through player.gd's own punch_landed path.
+		## What this guard covers is the OTHER half: a report already in
+		## flight when the suppression lands must not silently keep counting
+		## down toward COMMITTED while the witness is on the ground.
+		_cancel_active_witness_report()
 		return
 
 	if not _incident_registry:
@@ -403,13 +475,13 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 
 	## Witness/Call check happens before the ordinary Flee/Freeze roll, not
-	## alongside it — a witness who calls still visibly freezes and stares
-	## (reusing that state outright, not a fourth visual behaviour); a
+	## alongside it — a witness who calls still visibly stares at the
+	## incident (CALLING sets the same facing/look target FROZEN does); a
 	## witness who doesn't call this time falls through to the same
-	## probabilistic roll every other NPC uses.
+	## probabilistic roll every other NPC uses. Reporting is no longer
+	## instant — see _start_calling() and docs/attribution.md §7.
 	if _is_witness and randf() < call_probability:
-		_call_it_in(incident)
-		_start_freeze(incident.position)
+		_start_calling(incident)
 		return
 
 	if randf() < _npc.archetype.flee_probability:
@@ -423,8 +495,11 @@ func _on_incident_reported(incident: Incident) -> void:
 ## already does (see incident_registry.gd's own header: "a future witness
 ## reports through the same call" was the design from the start, not a
 ## retrofit). Attribution (does this report name a perpetrator, or only
-## that something happened) is Part 3's job — this still reports fully
-## attributed, same as every producer today, until that lands.
+## that something happened) is docs/attribution.md §5's job, not scheduled —
+## this still reports fully attributed, same as every producer today, until
+## that lands. Only ever called once a WitnessReport has actually COMMITTED
+## (_commit_witness_report()) — see that method and docs/attribution.md §7
+## for why this no longer fires the instant a witness decides to call.
 func _call_it_in(incident: Incident) -> void:
 	if not _incident_registry:
 		return
@@ -462,6 +537,97 @@ func _start_responding(incident_position: Vector3) -> void:
 	_respond_target = incident_position
 
 
+## Witness decided to call (docs/attribution.md §7) — stares at the incident
+## the same way _start_freeze() does (reused, not a new visual behaviour;
+## the Votive is what actually distinguishes CALLING from FROZEN — see the
+## chain-wiring commit) and builds a WitnessReport that sits PENDING until
+## _step_calling() commits or _cancel_active_witness_report() cancels it.
+func _start_calling(incident: Incident) -> void:
+	_reaction_state = ReactionState.CALLING
+	_reaction_timer = 0.0
+	_npc.set_move_intent(Vector3.ZERO, 0.0)
+	_npc.set_facing_target(incident.position)
+	_npc.set_look_target(incident.position)
+	_pending_incident = incident
+	_current_witness_report = _build_witness_report(incident)
+
+
+## Resolves this witness's observation quality for incident (docs/
+## attribution.md §2) and returns a PENDING WitnessReport — never a
+## suspect, see that file's own header.
+func _build_witness_report(incident: Incident) -> WitnessReport:
+	var report := WitnessReport.new()
+	report.witness_id = _npc.get_actor_id()
+	report.observed_at = Time.get_ticks_msec() / 1000.0
+	report.observed_from = _npc.global_position
+	report.observation_level = _resolve_observation_level(incident)
+	report.status = WitnessReport.Status.PENDING
+	return report
+
+
+## Distance ceiling (attribution.md §2's table), then attention (facing away
+## only, see Attention's own comment) lowers it by exactly one step — never
+## raises it, a hard rule per that section, not a tuning choice. Also stashes
+## the intermediate values on _debug_witness_* for the perception debug
+## panel — see those vars' own comment.
+func _resolve_observation_level(incident: Incident) -> WitnessReport.ObservationLevel:
+	var distance := _npc.global_position.distance_to(incident.position)
+	var ceiling := _distance_ceiling(distance)
+	var attention := _resolve_attention(incident)
+
+	_debug_witness_distance = distance
+	_debug_witness_attention = attention
+	_debug_witness_ceiling = ceiling
+
+	if attention == Attention.REDUCED:
+		return _lower_one_step(ceiling)
+	return ceiling
+
+
+func _distance_ceiling(distance: float) -> WitnessReport.ObservationLevel:
+	if distance > witness_ceiling_equipment_distance:
+		return WitnessReport.ObservationLevel.SILHOUETTE
+	if distance > witness_ceiling_face_distance:
+		return WitnessReport.ObservationLevel.EQUIPMENT
+	if distance > witness_ceiling_iris_distance:
+		return WitnessReport.ObservationLevel.FACE
+	return WitnessReport.ObservationLevel.IRIS
+
+
+## Facing away from the incident is the one REDUCED trigger this build can
+## derive — see Attention's own comment. Uses this NPC's own facing versus
+## the incident's position directly (NPCBase.get_facing_direction()), not
+## PerceptionComponent: that component only ever measures facing relative to
+## the PLAYER, and the incident's position is not always the player's
+## current position (the victim may have moved since).
+func _resolve_attention(incident: Incident) -> Attention:
+	var to_incident := incident.position - _npc.global_position
+	to_incident.y = 0.0
+	if to_incident.length() < 0.01:
+		return Attention.NORMAL
+	var facing := _npc.get_facing_direction()
+	var angle := rad_to_deg(facing.angle_to(to_incident.normalized()))
+	return Attention.REDUCED if angle > witness_attention_angle_deg else Attention.NORMAL
+
+
+## One step down the ObservationLevel ladder, floored at NONE — attention
+## never pushes a report below the ladder's own bottom. In practice the
+## floor is never reached here: a witness only ever reaches this path
+## already within earshot_radius, which is well under
+## witness_ceiling_equipment_distance by default, so the ceiling is always
+## at least SILHOUETTE before attention is applied.
+func _lower_one_step(level: WitnessReport.ObservationLevel) -> WitnessReport.ObservationLevel:
+	match level:
+		WitnessReport.ObservationLevel.IRIS:
+			return WitnessReport.ObservationLevel.FACE
+		WitnessReport.ObservationLevel.FACE:
+			return WitnessReport.ObservationLevel.EQUIPMENT
+		WitnessReport.ObservationLevel.EQUIPMENT:
+			return WitnessReport.ObservationLevel.SILHOUETTE
+		_:
+			return WitnessReport.ObservationLevel.NONE
+
+
 ## Dispatches the active reaction — called from _decide() instead of the
 ## ordinary wander/observe-player branch for as long as a reaction is live.
 func _step_reaction(delta: float) -> void:
@@ -472,6 +638,8 @@ func _step_reaction(delta: float) -> void:
 			_step_freeze(delta)
 		ReactionState.RESPONDING:
 			_step_respond(delta)
+		ReactionState.CALLING:
+			_step_calling(delta)
 
 
 func _step_flee(delta: float) -> void:
@@ -514,6 +682,48 @@ func _step_respond(_delta: float) -> void:
 		return
 
 	_npc.set_move_intent(to_target.normalized(), wander_speed_ratio)
+
+
+## PENDING -> COMMITTED once call_report_duration elapses without
+## interruption (docs/attribution.md §6/§7's "time until transmission
+## completes"). Interruption is handled elsewhere — see
+## _cancel_active_witness_report(), reached through the knocked-down guard
+## in _decide(), not through this timer.
+func _step_calling(delta: float) -> void:
+	_reaction_timer += delta
+	if _reaction_timer >= call_report_duration:
+		_commit_witness_report()
+
+
+## The report survived its full transmission window uninterrupted — mark it
+## COMMITTED and only NOW call _call_it_in(), the same attributed
+## IncidentRegistry report every producer in this build makes (see that
+## method's own header on why attribution itself isn't built yet).
+func _commit_witness_report() -> void:
+	if _current_witness_report:
+		_current_witness_report.status = WitnessReport.Status.COMMITTED
+		if _pending_incident:
+			_call_it_in(_pending_incident)
+	_current_witness_report = null
+	_pending_incident = null
+	_end_reaction()
+
+
+## Interrupted before commit (docs/attribution.md §7, test case E: "CANCELLED,
+## nothing in registry") — _call_it_in() is simply never called, so nothing
+## reaches IncidentRegistry. Only acts on a report still PENDING: called
+## every frame this NPC is knocked down (see _decide()'s own guard), so it
+## must be a safe no-op once already cancelled or committed. Does not touch
+## _reaction_state itself past clearing the report — the knocked-down guard
+## that calls this returns immediately afterward regardless of what state was
+## active (CALLING or otherwise), same as before this method existed.
+func _cancel_active_witness_report() -> void:
+	if not _current_witness_report or _current_witness_report.status != WitnessReport.Status.PENDING:
+		return
+	_current_witness_report.status = WitnessReport.Status.CANCELLED
+	_current_witness_report = null
+	_pending_incident = null
+	_reaction_state = ReactionState.NONE
 
 
 ## Returns to ordinary behaviour via a paused idle, not mid-stride — same

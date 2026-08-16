@@ -37,6 +37,37 @@ scope_horizon.md (H4) — без переписывания текста цел�
 
 ---
 
+## 2026-08-16 — Witness observation quality and `WitnessReport` (attribution.md §7, part 1/3)
+
+Witness Call (`NPC_REACTIONS.md` §4) stopped being instant and fully attributed the
+moment a witness rolls it. `idle_npc_controller.gd` gained a new `ReactionState.CALLING`:
+a witness that decides to call resolves an observation quality — a distance ceiling
+(`attribution.md` §2's table, thresholds `@export`) that a binary attention modifier
+(facing away from the incident, the only trigger this build can currently derive) can
+only ever lower by one step, never raise — into a new `WitnessReport`
+(`npc/controllers/witness_report.gd`), then holds it `PENDING` for
+`call_report_duration` seconds before actually reporting. Interrupting the witness
+(any hit that knocks them down) cancels the report instead — nothing reaches
+`IncidentRegistry`. `WitnessReport` has no field a suspect could ever go in
+(`attribution.md` §1's "REPORT is not IDENTIFICATION"), is never saved (in-memory only,
+`IncidentRegistry`'s save format is untouched), and its `observation_level` field is
+written but read by nothing yet — a deferred output for attribution (§5, not
+scheduled), not dead code.
+
+No visual change yet — this is the logic half only. `attribution.md` §7's Votive
+escalation (blue → red/off ×3 → solid red) and the chain wiring that actually drives it
+are the next two commits.
+
+*Свидетельский Call больше не мгновенный и не сразу атрибутированный. Новое
+ReactionState.CALLING резолвит качество наблюдения (потолок по дистанции + внимание,
+только "отвёрнут" реализовано) в WitnessReport и держит его PENDING
+call_report_duration секунд перед фактическим отчётом; прерывание (нокдаун) отменяет
+отчёт. Без визуала — это только логическая половина.*
+- `npc/controllers/idle_npc_controller.gd`, `npc/controllers/witness_report.gd` (new),
+  `CLAUDE.md`
+
+---
+
 ## 2026-08-14 — Pre-demo first-impression pass: TPS turn oscillation, TPS pitch range, stance indicator, bird-eye dead zone
 
 Four fixes ahead of Stan showing the build to an outside viewer, ordered by how much
