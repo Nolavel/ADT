@@ -56,13 +56,25 @@ reading the generated hook files directly, not from documentation. If capture
 stops working, this is the first thing to suspect, and re-running
 `entire configure --absolute-git-hook-path` will **not** fix it.
 
-Practically: Claude Code session capture (transcripts, checkpoints) depends
-entirely on `Prok\entire-cli` being present in **PATH at the time the Claude
-Code process itself was launched**. Renaming/moving the folder, or removing
-it from PATH, breaks capture with no error — the `SessionStart` hook does
-print a warning (`entire CLI is enabled but not installed or not on PATH`),
-but only in the Claude Code session transcript itself, which is exactly the
-thing that then fails to get captured. It is easy to not notice.
+**Codex hooks** (`.codex/hooks.json`, added 2026-08-17 via `entire agent add
+codex`) — the same shape and the same PATH-lookup caveat as the Claude Code
+hooks above (`SessionStart` / `PostToolUse` / `Stop` / `UserPromptSubmit`,
+each a `command -v entire` guard). `entire agent list` shows which agents are
+currently wired (`✓ claude-code`, `✓ codex`); `entire agent add <name>` /
+`entire agent remove <name>` install or uninstall a given agent's hook file.
+`.entire/settings.json`'s `enabled` / `strategy_options.push_sessions` are
+project-level, not per-agent — Codex checkpoints are subject to the same
+"stays local, doesn't auto-push" rule as Claude Code's, with no separate
+setting to check.
+
+Practically: Claude Code (and, as of 2026-08-17, Codex) session capture
+(transcripts, checkpoints) depends entirely on `Prok\entire-cli` being
+present in **PATH at the time the agent process itself was launched**.
+Renaming/moving the folder, or removing it from PATH, breaks capture with no
+error — the `SessionStart` hook does print a warning (`entire CLI is enabled
+but not installed or not on PATH`), but only in that agent's own session
+transcript, which is exactly the thing that then fails to get captured. It is
+easy to not notice.
 
 One more sharp edge found while setting this up: a Windows user-PATH change
 (via System Properties, `setx`, etc.) only lands in the registry — it is not

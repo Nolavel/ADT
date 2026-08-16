@@ -12,6 +12,24 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-17 — Wire Entire checkpoint capture for Codex
+
+Ran `entire agent add codex`, which installed `.codex/hooks.json` (SessionStart /
+PostToolUse / Stop / UserPromptSubmit — same `command -v entire` PATH-lookup shape as
+the existing Claude Code hooks in `.claude/settings.json`). `.entire/settings.json`
+(`enabled: true`, `push_sessions: false`) is unchanged — those settings are
+project-level, not per-agent, so Codex checkpoints are captured locally and do not
+auto-push, same as Claude Code's. Documented in `CLAUDE.md` (Entire section) and
+`docs/ENTIRE_SETUP.md` (new "Codex hooks" paragraph, PATH-lookup note generalized to
+cover both agents).
+
+*Подключён Codex ко второй половине трекинга Entire (`entire agent add codex`) — те же
+хуки и то же поведение с PATH, что у Claude Code; настройка `push_sessions: false`
+общая на проект, отдельно настраивать для Codex не нужно.*
+- `.codex/hooks.json` (new), `CLAUDE.md`, `docs/ENTIRE_SETUP.md`
+
+---
+
 ## 2026-08-17 — Stop Entire checkpoints from auto-pushing to public origin
 
 `github.com/Nolavel/ADT` is public; the `entire/checkpoints/v1` branch Entire pushes

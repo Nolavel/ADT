@@ -41,14 +41,17 @@ There is no separate unit-test framework (no GUT etc.); "testing" a change means
 ## Observability (Entire checkpoints)
 
 This repo has [Entire](https://entire.io) (`entireio/cli`, preview/pre-release
-software) enabled for Claude Code — `.claude/settings.json` and
-`.entire/settings.json` are its config. On a commit made during a captured
-Claude Code session, Entire's Git hooks add an `Entire-Checkpoint` trailer to
-the commit message and store the session transcript, prompts, tool calls, and
-token usage for that commit on a separate `entire/checkpoints/v1` branch —
-*why* a change was made, next to Git's own record of *what* changed. Review
-locally with `entire checkpoint list` / `entire checkpoint explain`, or at
-[entire.io](https://entire.io) once pushed.
+software) enabled for Claude Code and, as of 2026-08-17, Codex —
+`.claude/settings.json`, `.codex/hooks.json`, and `.entire/settings.json` are
+its config (`entire agent list` shows which agents are currently wired;
+`entire agent add <name>` / `entire agent remove <name>` install/uninstall
+one). On a commit made during a captured session, Entire's Git hooks add an
+`Entire-Checkpoint` trailer to the commit message and store the session
+transcript, prompts, tool calls, and token usage for that commit on a
+separate `entire/checkpoints/v1` branch — *why* a change was made, next to
+Git's own record of *what* changed. Review locally with `entire checkpoint
+list` / `entire checkpoint explain`, or at [entire.io](https://entire.io)
+once pushed.
 
 A checkpoint is raw session evidence, not a decision — it does **not**
 replace a `CHANGELOG.md` entry, which stays a deliberately curated record of
