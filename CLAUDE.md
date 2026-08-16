@@ -27,6 +27,7 @@ Startup scene: `res://world/world.tscn`.
 | `input_map.md` | Single source of truth for input bindings |
 | `LICENSE.md` | Proprietary; all rights reserved |
 | `docs/scope_horizon.md` | What is being built **now**, and in what order |
+| `docs/ENTIRE_SETUP.md` | Entire CLI binary location, PATH dependency, git-hook vs Claude-Code-hook wiring, how to check capture is alive |
 
 
 This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled in `project.godot` under `[editor_plugins]`, autoloaded as `_mcp_game_helper`). When the Godot editor is open, prefer the `mcp__godot-ai__*` tools over hand-editing `.tscn`/resource files or shelling out to the Godot CLI:
@@ -58,8 +59,23 @@ or shorten the changelog entry.
 `entire/checkpoints/v1` is Entire's own branch, not a normal feature branch:
 do not check it out to work on it, do not merge it into `main`, do not
 delete/prune/force-push it, and do not run history-rewriting cleanup against
-it. It is pushed to `origin` alongside normal commits (part of an ordinary
-`git push`) — this is expected, not a mistake, and needs no manual action.
+it.
+
+**Checkpoints stay local — auto-push is off.** `origin` (`github.com/Nolavel/ADT`)
+is public, and captured sessions can contain non-public material (narrative
+canon, unresolved design questions, discussion content) that the author
+considers confidential. `.entire/settings.json` sets
+`strategy_options.push_sessions: false` (`entire configure --project
+--skip-push-sessions`), which disables only the pre-push hook's automatic
+push of `entire/checkpoints/v1` — capture itself (recording sessions,
+writing checkpoints, the commit trailer) is unaffected; that's a separate
+`enabled` setting, left `true`. This is a **project** setting, not a local
+one, specifically so a fresh clone (there are two contributors) doesn't
+silently re-enable the leak. Don't re-enable `push_sessions`, and don't push
+`entire/checkpoints/v1` manually, without confirming with the author first.
+Note: `entire status`'s "Checkpoints sync to: origin" line does **not**
+reflect this setting — it names where a push would go if one happened, not
+whether one will; see `docs/ENTIRE_SETUP.md` for how to actually check.
 
 ## Style conventions
 

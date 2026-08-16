@@ -1,0 +1,97 @@
+# Entire CLI — local binary setup
+
+This documents the machine-level half of Entire checkpoint capture: where the
+binary lives and why the wiring to it is silent when it breaks. The
+project-level half (what checkpoints are, the commit trailer, the branch
+convention) is documented in `CLAUDE.md` under "Observability (Entire
+checkpoints)" — read that first. This file is the recovery note for when
+capture quietly stops working.
+
+## Where the binary is
+
+`Prok\entire-cli\` — a sibling of this repository inside the working folder
+(`Prok\`), **outside** the git working tree (`Prok\Prok\`). Confirmed with
+`git status --ignored` / `git check-ignore` run against that path from inside
+the repo: git refuses both, reporting the path as outside the repository
+entirely. It is not tracked, not ignored, not visible to git in any way — it
+cannot end up in this repo's history by accident, and `.gitignore` plays no
+role either way.
+
+- Binary: `entire.exe`, currently **v0.10.0** (`entire --version` /
+  `entire version`) — Go 1.26.5, windows/amd64. Also present:
+  `git-remote-entire.exe` and the release archive/checksums it was extracted
+  from (`entire_windows_amd64.zip`, `checksums.txt`).
+- Do not move this folder. It is not referenced by any path baked into the
+  repo — nothing in `.claude/` or `.entire/` names it directly except the
+  git hooks below.
+
+## Two different wiring mechanisms — this is the part that isn't in the docs
+
+Entire hooks into two separate systems, and they resolve the binary two
+different ways:
+
+**Git hooks** (`.git/hooks/{pre-push,commit-msg,post-commit,post-rewrite,
+prepare-commit-msg}`) — installed with an **absolute path** baked in, e.g.:
+
+```sh
+if [ -f 'C:\Users\USER\Desktop\Prok\entire-cli\entire.exe' ]; then '...\entire.exe' hooks git pre-push "$1"; else :; fi
+```
+
+This is `.entire/settings.local.json`'s `"absolute_git_hook_path": true`
+doing its job (equivalently `entire configure --absolute-git-hook-path`) —
+documented, and exists specifically so GUI git clients (GitHub Desktop, which
+this project's developer pushes from) that don't source a shell profile can
+still find the binary. These hooks work regardless of PATH.
+
+**Claude Code hooks** (`.claude/settings.json`, the `PreToolUse` /
+`PostToolUse` / `SessionStart` / `SessionEnd` / `Stop` /
+`UserPromptSubmit` entries) — every single one is a `sh -c` script that
+starts with `command -v entire >/dev/null 2>&1 || exit 0`. **This is a PATH
+lookup, and `--absolute-git-hook-path` does not touch it** — that flag's name
+and its own `--help` text ("Embed full binary path in **git hooks**") only
+ever promise to cover the git-hook side. There is no equivalent flag for the
+agent-hook side found in `entire configure --help` or the README's option
+table. This split isn't called out anywhere in the README — it was found by
+reading the generated hook files directly, not from documentation. If capture
+stops working, this is the first thing to suspect, and re-running
+`entire configure --absolute-git-hook-path` will **not** fix it.
+
+Practically: Claude Code session capture (transcripts, checkpoints) depends
+entirely on `Prok\entire-cli` being present in **PATH at the time the Claude
+Code process itself was launched**. Renaming/moving the folder, or removing
+it from PATH, breaks capture with no error — the `SessionStart` hook does
+print a warning (`entire CLI is enabled but not installed or not on PATH`),
+but only in the Claude Code session transcript itself, which is exactly the
+thing that then fails to get captured. It is easy to not notice.
+
+One more sharp edge found while setting this up: a Windows user-PATH change
+(via System Properties, `setx`, etc.) only lands in the registry — it is not
+retroactively visible to already-running processes, including whatever
+parent shell/launcher started Claude Code. A stale Claude Code process (or a
+terminal opened before the PATH edit) will keep failing `command -v entire`
+even though `echo $PATH` in a *freshly opened* window shows the folder is
+there. If capture isn't working, check that the current process was actually
+started after the PATH change, not just that the PATH change was made.
+
+## How to check capture is alive
+
+```sh
+command -v entire            # must resolve inside the Claude Code session's own shell, not just a fresh terminal
+entire --version              # expect: Entire CLI 0.10.0
+entire session list           # expect: at least the current session listed, once one has run
+entire status --detailed      # expect: "● Enabled" and "Agents · Claude Code"
+```
+
+If `command -v entire` fails inside a Claude Code tool-shell but succeeds in
+a normal freshly-opened terminal, the Claude Code process itself is running
+with a stale PATH — restart Claude Code (a full process restart, launched
+from a shell/shortcut opened after the PATH change), not just start a new
+session inside the same running instance.
+
+`entire status --detailed` and `entire status --json`'s
+`checkpoint_sync_remote` field describe where a checkpoint push *would* go
+(default: same remote as `origin`, until `checkpoint_remote` is set) — they
+do **not** reflect whether auto-push is enabled at all. Do not use "does the
+sync-target line still say origin" as a signal for whether push is
+happening; see `CLAUDE.md`'s Entire section for the setting that actually
+controls that (`strategy_options.push_sessions`).
