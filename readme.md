@@ -103,8 +103,8 @@ benefit: a session starts with no memory of the last one and has to
 re-derive context from what is written down.
 
 Most code comments are currently in Russian. Translation of the load-bearing
-system headers to English is in progress; see `CONTRIBUTING.md` for which
-files are already readable in English.
+system headers to English is in progress; see `docs/CONTRIBUTING.md` for
+which files are already readable in English.
 
 ## Credits and licences
 

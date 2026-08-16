@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-17 — readme.md: fix inconsistent CONTRIBUTING.md path
+
+The "For collaborators" section referenced the file two different ways in the same
+file: `docs/CONTRIBUTING.md` earlier in the paragraph, bare `CONTRIBUTING.md` (no
+`docs/` prefix, the file does not exist at that path) two sentences later. Made
+consistent with the real location and the paragraph's own earlier reference.
+
+*Опечатка в readme.md: ссылка на CONTRIBUTING.md без префикса docs/, при том что в
+этом же абзаце чуть выше файл упомянут с правильным путём.*
+- `readme.md`
+
+---
+
 ## 2026-08-16 — Votive as a projected plane, not a point light
 
 First playtest of the attribution.md §7 slice found the Votive unreadable: a point
