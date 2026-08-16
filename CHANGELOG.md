@@ -68,6 +68,35 @@ call_report_duration секунд перед фактическим отчёто
 
 ---
 
+## 2026-08-16 — `VotiveProjector`, the Votive's visible layer (attribution.md §7, part 2/3)
+
+New shared component, `core/components/votive_projector/votive_projector.gd` — same
+placement as `HealthComponent`, one instance each in `npc.tscn`/`player.tscn`. State
+(`IDLE`/`TRANSMITTING`/`DARK`) plus a visual representation (a small `OmniLight3D`
+built in code, positioned at temple height from the owner's own `get_eye_height()`)
+and nothing else — no `communication_state`, no `current_call`, no identity binding,
+per `docs/attribution.md` §6's "game code must not let these two touch". Driven every
+physics frame by its owner (`NPCBase`/`player.gd`), same "dumb component" convention
+`NPCAnimationComponent` already uses — never its own `_process()`.
+
+Purely additive and inert this commit: every instance sits `IDLE` (steady blue) with
+nothing yet calling `start_transmitting()`/`go_dark()`. The witness chain built last
+commit and this visual layer get wired together next.
+
+Also settled, in `attribution.md` §6 itself: Votive is not `EquipmentComponent`'s
+business. It's worn always, by everyone, never removed in this iteration — it doesn't
+belong to the "what's held, stowed, drawn" contract equipment will own once H5 exists.
+Revisit that question once H5 lands, with a working chain already in place.
+
+*Новый общий компонент VotiveProjector — состояние (IDLE/TRANSMITTING/DARK) плюс
+визуал, ничего больше. По одному экземпляру в npc.tscn/player.tscn, ведётся
+физическим кадром владельца. Пока инертен — везде IDLE, никто не переключает
+состояние. Зафиксировано: вотив не относится к EquipmentComponent.*
+- `core/components/votive_projector/votive_projector.gd` (new), `npc/npc.tscn`,
+  `npc/npc_base.gd`, `player/player.tscn`, `player/player.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-14 — Pre-demo first-impression pass: TPS turn oscillation, TPS pitch range, stance indicator, bird-eye dead zone
 
 Four fixes ahead of Stan showing the build to an outside viewer, ordered by how much

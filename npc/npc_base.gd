@@ -176,6 +176,13 @@ var _look_target_point: Vector3 = Vector3.ZERO
 ## DebugHealthLabel.
 @onready var _debug_health_label: Label3D = get_node_or_null("DebugHealthLabel")
 
+## Resolved once via @onready, same defensive pattern as _animation/_health.
+## Driven every physics frame below, same "dumb component, owner drives it"
+## convention _animation already follows — see votive_projector.gd's own
+## header. State changes (start_transmitting()/go_idle()/go_dark()) are the
+## controller's call, not this body's; this only keeps its animation ticking.
+@onready var _votive: VotiveProjector = get_node_or_null("VotiveProjector")
+
 
 func _ready() -> void:
 	super._ready()
@@ -204,6 +211,8 @@ func _physics_process(delta: float) -> void:
 	if _animation:
 		_animation.update_animation_blend(delta)
 		_animation.update_head_look(delta)
+	if _votive:
+		_votive.update_projection(delta)
 	if _debug_health_label:
 		_debug_health_label.visible = debug_show_health
 		if debug_show_health:

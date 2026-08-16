@@ -168,6 +168,12 @@ var _pre_move_vertical_speed: float = 0.0
 @onready var animation_player: AnimationPlayer = $player_base_mesh/AnimationPlayer
 @onready var _animation_component: PlayerAnimationComponent = $AnimationComponent
 @onready var _health: HealthComponent = $HealthComponent
+## Same node type npc_base.gd carries (core/components/votive_projector/) —
+## driven every physics frame below, same "dumb component" pattern
+## _animation_component already follows. Nothing drives its state past IDLE
+## today: the player doesn't file witness reports about themselves, see
+## votive_projector.gd's own header.
+@onready var _votive: VotiveProjector = $VotiveProjector
 
 
 ## --- Initialization ---
@@ -231,6 +237,7 @@ func _physics_process(delta: float) -> void:
 	_update_speed(delta)
 	_animation_component.update_animation_blend(delta)
 	_animation_component.update_head_look(delta)
+	_votive.update_projection(delta)
 
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
 		_apply_direct_movement(delta)

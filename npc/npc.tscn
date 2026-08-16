@@ -11,6 +11,7 @@
 [ext_resource type="AnimationLibrary" uid="uid://gc8ocf8k7gwj" path="res://player/animations/libs/rifle_locomotion_pack.res" id="9_1gbpw"]
 [ext_resource type="Script" uid="uid://ck368mdcknxol" path="res://npc/npc_components/animation_component/npc_animation_component.gd" id="10_animation"]
 [ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://core/components/health_component/health_component.gd" id="11_health"]
+[ext_resource type="Script" path="res://core/components/votive_projector/votive_projector.gd" id="12_votive"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_npc"]
 radius = 0.388
@@ -1341,3 +1342,6 @@ debug_log = true
 [node name="DebugHealthLabel" type="Label3D" parent="." unique_id=1900000002]
 visible = false
 billboard = 1
+
+[node name="VotiveProjector" type="Node3D" parent="." unique_id=1900000003]
+script = ExtResource("12_votive")
