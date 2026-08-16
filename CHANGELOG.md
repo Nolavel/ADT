@@ -12,6 +12,41 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-16 — Votive as a projected plane, not a point light
+
+First playtest of the attribution.md §7 slice found the Votive unreadable: a point
+`OmniLight3D` at the temple reads as "this NPC is lit," not "this NPC is
+transmitting" — no direction, no sense of a screen. `VotiveProjector` now builds a
+small self-lit `QuadMesh` floating in front of the face instead (`projection_size`/
+`projection_forward_offset`, both `@export`, ~0.2-0.3 range per Stan's own read),
+unshaded with `cull_mode` `DISABLED` and a `flip_facing` escape hatch — the quad's
+default front-face direction relative to this project's own facing convention
+couldn't be verified without running the editor. `temple_side_offset` is gone: the
+projection is centred in front of the face, not offset to a side, so that field no
+longer meant anything and wasn't kept as dead weight.
+
+**Glow finding, not assumed:** `EnvironmentLightingSystem`'s actual runtime
+`Environment` never sets `glow_enabled` — only an unrelated dev tool
+(`tools/tests/noir_room/`) does, at `glow_hdr_threshold = 1.1`. Enabling glow
+project-wide is a renderer/perf decision this component has no business making on
+its own, so visibility here does not depend on it: `shading_mode` `UNSHADED` reads
+at full brightness regardless of scene lighting or glow. `emission_energy` (`4.0`)
+is still set comfortably above that `1.1` threshold, so the projection blooms for
+free the day glow is actually turned on for the real game, without a second pass
+here.
+
+Side effect worth as much as the Votive fix itself: the quad turns with the NPC's
+own facing, which is the first thing in this build that shows a crowd member's
+facing direction at a glance, at distance, without opening the inspector.
+
+*Вотив читался как «этот NPC подсвечен», а не «передаёт» — точечный свет заменён
+на самосветящийся квадрат перед лицом, разворачивающийся вместе с NPC. Glow в
+реальном окружении игры не включён нигде (только в отдельном dev-инструменте) —
+компонент это не трогает и не зависит от glow для видимости.*
+- `core/components/votive_projector/votive_projector.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-16 — `attribution.md`: Observation → Incident → Report → Attribution design
 
 New design doc (`docs/attribution.md`), Stan's — Observation → Incident → Report →
