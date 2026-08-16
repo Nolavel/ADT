@@ -74,6 +74,12 @@ class_name NPCBase
 ## another BodyMetrics ratio.
 const DEBUG_LABEL_CLEARANCE: float = 0.25
 
+## Body meshes opt in through this group in npc.tscn. Placeholder archetype
+## colour belongs to the body only: a Votive, future weapon, or other
+## component-owned mesh must stay on its own material unless it is explicitly
+## authored as part of the body.
+const GROUP_ARCHETYPE_BODY_MESH: StringName = &"archetype_body_mesh"
+
 ## Total height of this character. Per-instance data, not a constant: NPCs
 ## will vary. Landmark heights come from BodyMetrics ratios.
 @export var body_height: float = 1.8
@@ -462,12 +468,13 @@ func _apply_archetype() -> void:
 	if not archetype:
 		return
 
-	# Silhouette & clothing (placeholder, §4): one flat material across
-	# every mesh part, so the whole rig reads as a single colour instead of
-	# keeping its per-part textures.
+	# Silhouette & clothing (placeholder, §4): one flat material across the
+	# authored body parts, so the whole rig reads as a single colour instead of
+	# keeping its per-part textures. Component-owned geometry must not inherit
+	# this prototype treatment by merely being a descendant of the NPC.
 	var material := StandardMaterial3D.new()
 	material.albedo_color = archetype.placeholder_color
-	for mesh in _find_mesh_instances(self):
+	for mesh in _find_archetype_body_meshes(self):
 		mesh.material_override = material
 
 	# Gait: speed only. Posture/animation-set variation (also named by §3)
@@ -483,14 +490,16 @@ func _apply_archetype() -> void:
 		perception.vision_angle_deg = archetype.vision_angle_deg
 
 
-## Recursively collects every MeshInstance3D under node. The rig nests
-## meshes several levels deep (player_base_mesh/GeneralSkeleton/
-## RetargetModifier3D/OriginalSkeleton/<part>) — hardcoding that path would
-## break the moment the rig is restructured.
-func _find_mesh_instances(node: Node) -> Array[MeshInstance3D]:
+## Recursively collects only body MeshInstance3Ds tagged with
+## GROUP_ARCHETYPE_BODY_MESH. The rig nests those meshes several levels deep
+## (player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/
+## <part>), so hardcoding paths would break on a rig restructure. The opt-in
+## is intentional: forgetting to tag a new body mesh leaves its native
+## material visible, while a new non-body mesh is safe by default.
+func _find_archetype_body_meshes(node: Node) -> Array[MeshInstance3D]:
 	var found: Array[MeshInstance3D] = []
 	for child in node.get_children():
-		if child is MeshInstance3D:
+		if child is MeshInstance3D and child.is_in_group(GROUP_ARCHETYPE_BODY_MESH):
 			found.append(child)
-		found.append_array(_find_mesh_instances(child))
+		found.append_array(_find_archetype_body_meshes(child))
 	return found

@@ -1301,24 +1301,24 @@ bones/64/position = Vector3(1.79469e-11, 0.18754879, 1.1454169e-10)
 bones/64/rotation = Quaternion(5.1820204e-10, -7.5162316e-17, 3.6862874e-18, 1)
 bones/64/scale = Vector3(1, 1, 1)
 
-[node name="Low Poly Jumpsuit" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2020029301]
+[node name="Low Poly Jumpsuit" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" groups=["archetype_body_mesh"] unique_id=2020029301]
 mesh = SubResource("ArrayMesh_jaepv")
 skin = SubResource("Skin_n5oqf")
 
-[node name="DETAILS Low Poly" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=1293944171]
+[node name="DETAILS Low Poly" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" groups=["archetype_body_mesh"] unique_id=1293944171]
 visible = false
 mesh = SubResource("ArrayMesh_swfbx")
 skin = SubResource("Skin_s1mr1")
 
-[node name="Boots Low Poly" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2128489618]
+[node name="Boots Low Poly" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" groups=["archetype_body_mesh"] unique_id=2128489618]
 mesh = SubResource("ArrayMesh_fh8q8")
 skin = SubResource("Skin_axxtu")
 
-[node name="Genesis8Male_Shape" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=232033342]
+[node name="Genesis8Male_Shape" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" groups=["archetype_body_mesh"] unique_id=232033342]
 mesh = SubResource("ArrayMesh_fy1jk")
 skin = SubResource("Skin_kxda8")
 
-[node name="Low Poly Headset" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=1137989010]
+[node name="Low Poly Headset" type="MeshInstance3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" groups=["archetype_body_mesh"] unique_id=1137989010]
 mesh = SubResource("ArrayMesh_1f267")
 skin = SubResource("Skin_8jxud")
 

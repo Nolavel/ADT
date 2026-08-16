@@ -46,8 +46,9 @@ class_name NPCArchetypeData
 @export_group("Silhouette & clothing (§3)")
 ## Prototype-stage stand-in for a mesh/material variant — §4 sanctions flat
 ## colour explicitly ("scaffolding, not the design"). Applied as
-## material_override across every MeshInstance3D under the rig, so the whole
-## silhouette reads as one flat colour.
+## material_override across body meshes tagged `archetype_body_mesh` in
+## npc.tscn, so the whole silhouette reads as one flat colour without
+## recolouring component-owned geometry (Votive, future equipment).
 @export var placeholder_color: Color = Color.WHITE
 
 @export_group("Gait (§3)")

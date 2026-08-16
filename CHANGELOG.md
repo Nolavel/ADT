@@ -12,7 +12,25 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
-## 2026-08-17 — Wire Entire checkpoint capture for Codex
+## 2026-08-17 - Limit archetype colour to authored NPC body meshes
+
+`NPCBase._apply_archetype()` previously walked every descendant
+`MeshInstance3D`, so it overwrote the self-lit quad `VotiveProjector` creates
+in its own `_ready()` before the parent NPC applies its archetype. The flat
+placeholder material now applies only to meshes explicitly tagged
+`archetype_body_mesh` in `npc.tscn`; the five existing rig meshes carry that
+tag. Component-owned geometry is safe by default: an untagged future Votive
+or equipment mesh keeps its own material, while an untagged future body part
+visibly keeps its native material and must be tagged deliberately.
+
+*Цвет архетипа теперь применяется только к явно помеченным мешам тела NPC:
+вотив и будущая экипировка сохраняют собственный материал; новый меш тела
+нужно пометить явно.*
+- `npc/npc_base.gd`, `npc/npc_archetype_data.gd`, `npc/npc.tscn`, `CLAUDE.md`
+
+---
+
+## 2026-08-17 - Wire Entire checkpoint capture for Codex
 
 Ran `entire agent add codex`, which installed `.codex/hooks.json` (SessionStart /
 PostToolUse / Stop / UserPromptSubmit — same `command -v entire` PATH-lookup shape as
