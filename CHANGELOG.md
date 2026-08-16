@@ -12,6 +12,22 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-17 — Document Entire in CLAUDE.md and CONTRIBUTING.md
+
+New "Observability (Entire checkpoints)" section in `CLAUDE.md`: what Entire is here,
+that a checkpoint is raw session evidence and does not replace a `CHANGELOG.md` entry
+(keep writing both), and that `entire/checkpoints/v1` is not a branch to check out,
+merge, or clean up. One line in `docs/CONTRIBUTING.md`'s Workflow section so a
+collaborator who hasn't seen Entire before isn't confused by an unfamiliar branch in
+`git branch -a` or an `Entire-Checkpoint` trailer in a commit message.
+
+*Раздел про Entire в CLAUDE.md (что это, чекпоинт не заменяет CHANGELOG.md, ветку
+чекпоинтов не трогать) и строка в CONTRIBUTING.md, чтобы новый коллаборант не удивился
+незнакомой ветке/трейлеру.*
+- `CLAUDE.md`, `docs/CONTRIBUTING.md`
+
+---
+
 ## 2026-08-17 — Entire enabled for Claude Code (checkpoint capture, preview)
 
 Entire (entire.io) added as an observability layer over agent-assisted commits —

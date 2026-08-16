@@ -106,6 +106,12 @@ Rejected ideas are recorded with a reason rather than discarded.
 - If you had to leave a temporary solution: say so in the PR, with the
   reason and the condition for removing it. Undocumented workarounds are the
   only kind that are refused.
+- Commits made during a captured Claude Code session may carry an
+  `Entire-Checkpoint` trailer, and `git log --all`/`git branch -a` will show
+  an `entire/checkpoints/v1` branch you didn't create. That's
+  [Entire](https://entire.io) (see `CLAUDE.md`'s Observability section) —
+  session context stored alongside the commit it belongs to. Leave that
+  branch alone; it isn't something to merge, rebase onto, or clean up.
 
 ## Contributions and rights
 

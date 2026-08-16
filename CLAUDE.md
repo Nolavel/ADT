@@ -37,6 +37,30 @@ This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled 
 
 There is no separate unit-test framework (no GUT etc.); "testing" a change means running the project (`project_run` / F5 in editor) and watching `logs_read` for the `push_error`/`push_warning`/`print` diagnostics the systems below emit liberally.
 
+## Observability (Entire checkpoints)
+
+This repo has [Entire](https://entire.io) (`entireio/cli`, preview/pre-release
+software) enabled for Claude Code — `.claude/settings.json` and
+`.entire/settings.json` are its config. On a commit made during a captured
+Claude Code session, Entire's Git hooks add an `Entire-Checkpoint` trailer to
+the commit message and store the session transcript, prompts, tool calls, and
+token usage for that commit on a separate `entire/checkpoints/v1` branch —
+*why* a change was made, next to Git's own record of *what* changed. Review
+locally with `entire checkpoint list` / `entire checkpoint explain`, or at
+[entire.io](https://entire.io) once pushed.
+
+A checkpoint is raw session evidence, not a decision — it does **not**
+replace a `CHANGELOG.md` entry, which stays a deliberately curated record of
+*why a change was accepted*, written in the same commit per this file's own
+rule above. Keep writing both; a checkpoint existing is not a reason to skip
+or shorten the changelog entry.
+
+`entire/checkpoints/v1` is Entire's own branch, not a normal feature branch:
+do not check it out to work on it, do not merge it into `main`, do not
+delete/prune/force-push it, and do not run history-rewriting cleanup against
+it. It is pushed to `origin` alongside normal commits (part of an ordinary
+`git push`) — this is expected, not a mistake, and needs no manual action.
+
 ## Style conventions
 
 - `INPUT_MAP.md` is the **single source of truth for input bindings** (verified against `project.godot` 2026-07-29, 29 actions) — update it whenever an action is added/removed/rebound in Project Settings → Input Map (`project.godot` `[input]`).
