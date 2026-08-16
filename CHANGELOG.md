@@ -12,6 +12,28 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-17 — Stop Entire checkpoints from auto-pushing to public origin
+
+`github.com/Nolavel/ADT` is public; the `entire/checkpoints/v1` branch Entire pushes
+alongside normal commits carries full session transcripts, which can include
+non-public discussion content. Set `strategy_options.push_sessions: false` in
+`.entire/settings.json` (`entire configure --project --skip-push-sessions`) — capture
+stays on (`enabled` unchanged), only the pre-push auto-push of the checkpoint branch is
+off. Zero checkpoints existed at the time of the fix, so nothing had leaked. Also
+documented (`docs/ENTIRE_SETUP.md`, new) that `entire status`'s "Checkpoints sync to"
+line doesn't reflect this setting, where the `entire-cli` binary lives relative to the
+repo, that Claude Code's own hooks resolve it via PATH (unlike git's hooks, which bake
+in an absolute path and are unaffected by PATH changes), and that
+`--absolute-git-hook-path` does not cover that PATH-based lookup.
+
+*origin публичный, чекпоинты содержат непубличные транскрипты — отключено
+автоматическое проталкивание ветки чекпоинтов (`push_sessions: false`), запись
+осталась включена. Задокументировано отдельно: где лежит бинарник, чем поиск через
+PATH у хуков Claude Code отличается от абсолютного пути у git-хуков.*
+- `.entire/settings.json`, `CLAUDE.md`, `docs/ENTIRE_SETUP.md`
+
+---
+
 ## 2026-08-17 — Document Entire in CLAUDE.md and CONTRIBUTING.md
 
 New "Observability (Entire checkpoints)" section in `CLAUDE.md`: what Entire is here,
