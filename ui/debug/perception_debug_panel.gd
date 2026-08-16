@@ -33,6 +33,13 @@
 # unlike PatrolDroneController), each NPCBase's knocked-down state, and per
 # drone, why it's in ALERT (incident memory, never a raised stance anymore)
 # and whether its spotlight is lit.
+#
+# WHILE an IdleNPCController is in ReactionState.CALLING (docs/attribution.md
+# §7), also shows why its active WitnessReport got the observation_level it
+# got — distance, attention, the ceiling before attention, and the final
+# result — plus the report's own PENDING/COMMITTED/CANCELLED status and time
+# remaining. This is the only place any of that is visible; the player never
+# sees it, and WitnessReport itself is never logged.
 # =============================================================================
 extends Control
 
@@ -201,10 +208,36 @@ func _describe_idle_controller(
 	var facing_color := "#35ff66" if has_facing else "#777777"
 	var facing_text := "YES" if has_facing else "no"
 
-	return "state: %s   visible %.1fs   facing_target: [color=%s]%s[/color]   body angle %.0f°" % [
+	var line := "state: %s   visible %.1fs   facing_target: [color=%s]%s[/color]   body angle %.0f°" % [
 		controller.get_state_name(), controller.get_visible_time(),
 		facing_color, facing_text, observation.angle_deg,
 	]
+
+	if controller.has_active_witness_report():
+		line += "\n" + _describe_witness_report(controller)
+
+	return line
+
+
+## docs/attribution.md §7's debug panel format, adapted to this panel's own
+## layout — WITNESS (the inputs _resolve_observation_level() used) and
+## REPORT (the resolved WitnessReport's own state). "actor UNRESOLVED" is a
+## fixed label, not read off anything: WitnessReport has no field a suspect
+## could go in (see witness_report.gd's own header), so this line exists
+## purely to make that boundary visible to whoever is reading the panel.
+func _describe_witness_report(controller: IdleNPCController) -> String:
+	var remaining := controller.get_witness_report_remaining()
+	var remaining_text := "  (%.1fs remaining)" % remaining if remaining >= 0.0 else ""
+	return (
+		"  WITNESS\n"
+		+ "    distance   %.1f m\n" % controller.get_witness_distance()
+		+ "    attention  %s\n" % controller.get_witness_attention_name()
+		+ "    ceiling    %s\n" % controller.get_witness_ceiling_name()
+		+ "    result     %s\n" % controller.get_witness_observation_level_name()
+		+ "  REPORT\n"
+		+ "    actor      UNRESOLVED\n"
+		+ "    status     %s%s" % [controller.get_witness_report_status_name(), remaining_text]
+	)
 
 
 ## ALERT is always held by incident memory now, never a raised stance — see

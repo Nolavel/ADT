@@ -97,6 +97,48 @@ Revisit that question once H5 lands, with a working chain already in place.
 
 ---
 
+## 2026-08-16 — Witness chain wired to VotiveProjector, debug panel (attribution.md §7, part 3/3)
+
+Closes the vertical slice. `idle_npc_controller.gd`'s CALLING reaction now drives its
+sibling `VotiveProjector`: `start_transmitting(call_report_duration)` on entry,
+`go_idle()` on commit, `go_dark()`/`go_idle()` on the knocked-down guard as the witness
+goes down and gets back up (any knocked-down NPC's terminal blacks out now, not only one
+mid-report — a natural reading of "unconscious", not part of the chain itself).
+`perception_debug_panel.gd` gained a WITNESS/REPORT block (distance, attention, ceiling,
+resolved level, status, time remaining, plus a literal `actor UNRESOLVED` line) for
+whichever NPC is currently CALLING — `attribution.md` §7's own required format, the
+only place any of this is visible.
+
+**Recursion, checked rather than assumed:** suppressing a witness is itself an incident
+(the punch that knocks them down already reports through `player.gd`'s own
+`punch_landed` → `IncidentRegistry.report()`, unconditional, existing since H1) —
+nothing new was needed for that half. What this pass adds is that a report already
+`PENDING` when the suppression lands gets `CANCELLED`, not silently orphaned. Two/three
+iterations (witness A reports on the player hitting B; player hits A to suppress it;
+that assault is itself witnessed by C, who may start a report about A's beating; hitting
+C to suppress that repeats the pattern) terminate on their own — each step consumes one
+witness (knocked down, `is_knocked_down()` already blocks `_on_incident_reported()` and
+`_decide()` from reacting further) and the population is finite. No infinite loop, no
+new guard needed; `IncidentRegistry`'s own `max_incidents`/`max_incident_age` bound the
+worst case regardless.
+
+**Boundaries respected, not crossed:** `PerceptionComponent` was only read from (facing/
+position), never modified — attention's "facing away" trigger is computed directly
+against `NPCBase.get_facing_direction()` and the incident's own position, not through
+that component. `IncidentRegistry`'s save format is untouched — `WitnessReport` is
+never persisted. No navigation was added or fixed — `_step_calling()` doesn't move the
+NPC at all, same as `_step_freeze()`.
+
+*Цепочка свидетеля теперь управляет VotiveProjector (transmit/idle/dark по состояниям),
+добавлен блок WITNESS/REPORT в отладочной панели. Рекурсия (подавление свидетеля - само
+инцидент) проверена, а не просто заявлена: конечна, т.к. каждый шаг расходует одного
+свидетеля из конечной популяции; новых защит не потребовалось. Границы (PerceptionComponent,
+формат сохранения реестра, навигация) не нарушены.*
+- `npc/controllers/idle_npc_controller.gd`, `ui/debug/perception_debug_panel.gd`,
+  `CLAUDE.md`
+
+---
+
 ## 2026-08-14 — Pre-demo first-impression pass: TPS turn oscillation, TPS pitch range, stance indicator, bird-eye dead zone
 
 Four fixes ahead of Stan showing the build to an outside viewer, ordered by how much

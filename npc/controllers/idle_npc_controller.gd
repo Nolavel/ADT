@@ -68,6 +68,13 @@
 # method, _step_calling() and _cancel_active_witness_report(). Attribution
 # itself (docs/attribution.md §5) is not built: _call_it_in() still reports
 # fully attributed once a report commits, same as every producer today.
+#
+# The sibling VotiveProjector (core/components/votive_projector/) is driven
+# from here, not from itself — _start_calling() tells it to start_transmit-
+# ting(call_report_duration), _commit_witness_report() tells it go_idle(),
+# and the knocked-down guard in _decide() tells it go_dark()/go_idle() as
+# this NPC goes down and gets back up. VotiveProjector owns no timing or
+# decision logic of its own; see that file's header.
 # =============================================================================
 extends NPCControllerBase
 class_name IdleNPCController
@@ -197,6 +204,21 @@ var _npc: NPCBase = null
 ## necessarily have one forever, e.g. background crowd fillers later).
 var _perception: PerceptionComponent = null
 
+## Resolved once in _ready(), same sibling-lookup pattern as _perception.
+## Drives the visible half of a CALLING reaction (_start_calling()/
+## _commit_witness_report()) and blacks out while knocked down (_decide()'s
+## own guard) — see votive_projector.gd's own header for why this node owns
+## no timing or decision logic of its own.
+var _votive: VotiveProjector = null
+
+## True for as long as this NPC has been continuously knocked down — set the
+## instant _decide() sees is_knocked_down(), cleared (once) the frame it
+## first sees the opposite. Exists purely so _votive.go_idle() fires exactly
+## once on getting up, not every frame afterward — calling go_idle() every
+## frame while NOT knocked down would stomp a legitimately TRANSMITTING
+## state the instant a later CALLING reaction started.
+var _was_knocked_down: bool = false
+
 ## Seconds the player has been continuously visible. Reset to 0 the instant
 ## the player is no longer seen — this is "how long has this sighting
 ## lasted," not a running total.
@@ -272,7 +294,8 @@ func _ready() -> void:
 	for child in _npc.get_children():
 		if child is PerceptionComponent:
 			_perception = child
-			break
+		elif child is VotiveProjector:
+			_votive = child
 
 	_wander_origin = _npc.global_position
 	_obstacle_ray = RayCast3D.new()
@@ -311,8 +334,19 @@ func _decide(delta: float) -> void:
 		## What this guard covers is the OTHER half: a report already in
 		## flight when the suppression lands must not silently keep counting
 		## down toward COMMITTED while the witness is on the ground.
+		_was_knocked_down = true
 		_cancel_active_witness_report()
+		if _votive:
+			_votive.go_dark()
 		return
+
+	if _was_knocked_down:
+		## Just got up — one-shot transition back to the visible baseline.
+		## See _was_knocked_down's own comment for why this can't just be
+		## "call go_idle() every frame we're not knocked down".
+		_was_knocked_down = false
+		if _votive:
+			_votive.go_idle()
 
 	if not _incident_registry:
 		_try_resolve_incident_registry()
@@ -378,6 +412,51 @@ func get_state_name() -> String:
 ## a reaction, same convention as get_state_name() above.
 func get_reaction_state_name() -> String:
 	return ReactionState.keys()[_reaction_state]
+
+
+# ── Witness/report debug getters (attribution.md §7's debug panel) ─────────
+# Read by perception_debug_panel.gd. Small single-purpose getters, same
+# encapsulation convention get_alert_memory_remaining()/is_spotlight_active()
+# use on PatrolDroneController, rather than exposing _current_witness_report
+# or the private _debug_witness_* fields directly.
+
+func has_active_witness_report() -> bool:
+	return _current_witness_report != null
+
+
+func get_witness_report_status_name() -> String:
+	return WitnessReport.Status.keys()[_current_witness_report.status] \
+			if _current_witness_report else "n/a"
+
+
+## Seconds left before a PENDING report commits, or -1.0 outside CALLING —
+## same "-1.0 means n/a" convention get_alert_memory_remaining() uses.
+func get_witness_report_remaining() -> float:
+	if _reaction_state != ReactionState.CALLING:
+		return -1.0
+	return maxf(0.0, call_report_duration - _reaction_timer)
+
+
+## Distance the CURRENT/LAST report's observation quality was resolved
+## against — see _debug_witness_distance's own comment.
+func get_witness_distance() -> float:
+	return _debug_witness_distance
+
+
+func get_witness_attention_name() -> String:
+	return Attention.keys()[_debug_witness_attention]
+
+
+## Distance-ceiling result BEFORE the attention modifier — compare against
+## get_witness_observation_level_name() (the report's own, attention-adjusted
+## final value) to see whether attention actually lowered it.
+func get_witness_ceiling_name() -> String:
+	return WitnessReport.ObservationLevel.keys()[_debug_witness_ceiling]
+
+
+func get_witness_observation_level_name() -> String:
+	return WitnessReport.ObservationLevel.keys()[_current_witness_report.observation_level] \
+			if _current_witness_report else "n/a"
 
 
 func _decide_wander(delta: float) -> void:
@@ -550,6 +629,8 @@ func _start_calling(incident: Incident) -> void:
 	_npc.set_look_target(incident.position)
 	_pending_incident = incident
 	_current_witness_report = _build_witness_report(incident)
+	if _votive:
+		_votive.start_transmitting(call_report_duration)
 
 
 ## Resolves this witness's observation quality for incident (docs/
@@ -706,6 +787,8 @@ func _commit_witness_report() -> void:
 			_call_it_in(_pending_incident)
 	_current_witness_report = null
 	_pending_incident = null
+	if _votive:
+		_votive.go_idle()
 	_end_reaction()
 
 
