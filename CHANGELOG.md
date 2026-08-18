@@ -71,6 +71,22 @@ mask drift they shared is what `CollisionLayers` solves instead.
 
 ---
 
+## 2026-08-18 - Add witness incident telemetry
+
+`IdleNPCController` now emits a concise `[WitnessTelemetry]` event block per
+live incident: every hearing-range NPC is named with its range/cone outcome,
+witness status and Call roll, including rejected candidates. The range/cone
+calculation was extracted into one typed result shared by the Call gate and
+the log, so the explanation cannot diverge from the actual decision. Start,
+cancellation (with remaining time), and committed transmission events log
+separately. The export defaults on for the current vertical-slice playtest.
+
+*Добавлена событийная телеметрия решений свидетелей: видны все кандидаты и
+причина каждого отказа, без покадрового спама.*
+- `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-17 - Limit archetype colour to authored NPC body meshes
 
 `NPCBase._apply_archetype()` previously walked every descendant

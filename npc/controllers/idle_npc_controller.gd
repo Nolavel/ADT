@@ -64,7 +64,7 @@
 #
 # WITNESS CALL (docs/attribution.md §7) no longer reports the instant a
 # witness rolls Call. Becoming a caller requires actually having seen the
-# incident — _is_incident_in_vision_cone() (range + cone against
+# incident — _evaluate_incident_vision() (range + cone against
 # PerceptionComponent's own vision_range/vision_angle_deg, no line-of-sight
 # raycast) gates entry into ReactionState.CALLING; a witness whose back was
 # turned falls through to the ordinary Flee/Freeze roll instead, same as any
@@ -86,6 +86,12 @@
 # and the knocked-down guard in _decide() tells it go_dark()/go_idle() as
 # this NPC goes down and gets back up. VotiveProjector owns no timing or
 # decision logic of its own; see that file's header.
+#
+# INCIDENT TELEMETRY is an event trace, not a second debug panel: one block
+# is emitted synchronously for each live incident and is silent between
+# incidents. The range/cone result feeding the trace is the exact same typed
+# result _on_incident_reported() consumes; do not duplicate that calculation
+# into a log-only branch that can drift from the actual Call decision.
 # =============================================================================
 extends NPCControllerBase
 class_name IdleNPCController
@@ -100,6 +106,20 @@ enum State { IDLE, WALKING }
 ## call_report_duration before it actually commits — see _step_calling().
 enum ReactionState { NONE, FLEEING, FROZEN, RESPONDING, CALLING }
 
+
+class IncidentVision:
+	var distance: float = INF
+	var angle_deg: float = 180.0
+	var is_seen: bool = false
+	var rejection: String = "no-perception"
+
+
+class IncidentTelemetryEntry:
+	var incident_id: int = 0
+	var sequence: int = 0
+	var in_hearing_range: int = 0
+	var transmitting: int = 0
+
 ## Distance to the wander target that counts as "arrived."
 const WANDER_ARRIVAL_RADIUS: float = 0.5
 ## How far ahead the obstacle raycast checks, metres.
@@ -112,6 +132,10 @@ const OBSTACLE_RAY_HEIGHT: float = 1.0
 ## CollisionLayers.OBSTACLE (wall only) — floor is what an NPC walks on,
 ## not an obstacle to walking.
 const OBSTACLE_MASK: int = CollisionLayers.OBSTACLE
+const INCIDENT_TELEMETRY_PREFIX: String = "[WitnessTelemetry]"
+
+static var _next_telemetry_sequence: int = 1
+static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 
 @export_group("Wander")
 ## Radius of the random-point area around where this NPC started.
@@ -154,6 +178,12 @@ const OBSTACLE_MASK: int = CollisionLayers.OBSTACLE
 ## once — same idiom and same default as
 ## PatrolDroneController.incident_registry_search_timeout.
 @export var incident_registry_search_timeout: float = 5.0
+
+@export_group("Debug")
+## Event-only trace for the witness decision path. On by default while the
+## vertical slice is being judged; disable only when ordinary playtest output
+## needs to be quiet. This does not alter any reaction probabilities.
+@export var incident_telemetry_enabled: bool = true
 
 @export_group("Witness (NPC_REACTIONS.md §4)")
 ## Fraction of the population that gets the witness flag — rolled once per
@@ -312,7 +342,7 @@ func _ready() -> void:
 	_obstacle_ray.position = Vector3(0.0, 0.9, 0.0)
 	_obstacle_ray.target_position = Vector3(0.0, 0.0, 1.5)
 	_obstacle_ray.collision_mask = OBSTACLE_MASK
-	_npc.add_child(_obstacle_ray)
+	#_npc.add_child(_obstacle_ray)
 
 	_wander_state = State.IDLE
 	_pause_timer = wander_pause_time
@@ -546,23 +576,32 @@ func _try_resolve_incident_registry() -> void:
 ## for the priority/pre-emption rules and why this is probabilistic rather
 ## than a fixed per-archetype rule.
 func _on_incident_reported(incident: Incident) -> void:
-	if not _npc or _npc.is_knocked_down():
+	if not _npc:
+		return
+	var telemetry := _begin_incident_telemetry(incident)
+	if _npc.is_knocked_down():
+		_log_incident_rejection(telemetry, "SKIP knocked-down")
 		return
 	if _reaction_state != ReactionState.NONE:
 		## Already reacting to something — a second, unrelated incident
 		## doesn't interrupt or restart the current one. Keeps the state
 		## machine simple; nothing in NPC_REACTIONS.md §4 asks for
 		## interruption.
+		_log_incident_rejection(telemetry, "SKIP already-reacting")
 		return
 	if not _npc.archetype:
 		## No archetype, no reaction bias to roll against — same "unset is a
 		## no-op" contract NPCBase._apply_archetype() already uses.
+		_log_incident_rejection(telemetry, "SKIP no-archetype")
 		return
 
-	if _npc.global_position.distance_to(incident.position) > earshot_radius:
+	var vision := _evaluate_incident_vision(incident)
+	if vision.distance > earshot_radius:
 		return
+	telemetry.in_hearing_range += 1
 
 	if _npc.archetype.responds_by_approaching:
+		_log_incident_candidate(telemetry, vision, "RESPOND patrolman")
 		_start_responding(incident.position)
 		return
 
@@ -573,7 +612,7 @@ func _on_incident_reported(incident: Incident) -> void:
 	## probabilistic roll every other NPC uses. Reporting is no longer
 	## instant — see _start_calling() and docs/attribution.md §7.
 	##
-	## _is_incident_in_vision_cone() is a hard gate, not a modifier: a witness
+## _evaluate_incident_vision() is a hard gate, not a modifier: a witness
 	## whose back is turned did not see anything and does not become a
 	## caller over it, however the probability roll would have landed — see
 	## that method's own header and attribution.md §2 on why "didn't see"
@@ -581,9 +620,32 @@ func _on_incident_reported(incident: Incident) -> void:
 	## case. earshot_radius above still gates whether this NPC reacts AT ALL
 	## (Flee/Freeze/Call) — that stays hearing-based, unchanged; only Call
 	## additionally requires having actually seen it.
-	if _is_witness and _is_incident_in_vision_cone(incident) and randf() < call_probability:
-		_start_calling(incident)
-		return
+	if not vision.is_seen:
+		_log_incident_candidate(
+			telemetry, vision, "REJECT %s" % vision.rejection
+		)
+	elif not _is_witness:
+		_log_incident_candidate(telemetry, vision, "SEES  REJECT not-witness")
+	else:
+		var call_roll := randf()
+		if call_roll < call_probability:
+			_log_incident_candidate(
+				telemetry, vision,
+				"SEES  ceiling %s  WITNESS  roll %.2f < %.2f  CALL" % [
+					WitnessReport.ObservationLevel.keys()[_distance_ceiling(vision.distance)],
+					call_roll, call_probability,
+				]
+			)
+			telemetry.transmitting += 1
+			_start_calling(incident)
+			return
+		_log_incident_candidate(
+			telemetry, vision,
+			"SEES  ceiling %s  WITNESS  roll %.2f >= %.2f  REJECT call" % [
+				WitnessReport.ObservationLevel.keys()[_distance_ceiling(vision.distance)],
+				call_roll, call_probability,
+			]
+		)
 
 	if randf() < _npc.archetype.flee_probability:
 		_start_flee(incident.position)
@@ -653,6 +715,12 @@ func _start_calling(incident: Incident) -> void:
 	_current_witness_report = _build_witness_report(incident)
 	if _votive:
 		_votive.start_transmitting(call_report_duration)
+	if incident_telemetry_enabled:
+		print(
+			"%s transmission start: %s, %.1fs expected" % [
+				INCIDENT_TELEMETRY_PREFIX, _npc.name, call_report_duration,
+			]
+		)
 
 
 ## Resolves this witness's observation quality for incident (docs/
@@ -674,7 +742,7 @@ func _build_witness_report(incident: Incident) -> WitnessReport:
 ## away means the witness did not see the incident at all, not that they saw
 ## it worse (attribution.md §2's own corrected split — "didn't see" vs. "saw,
 ## but worse" are different cases, and this build only has a mechanic for the
-## first). _is_incident_in_vision_cone() is that gate now, checked in
+## first). _evaluate_incident_vision() is that gate now, checked in
 ## _on_incident_reported() before this is ever called — a report is only
 ## ever built for a witness already confirmed to have seen the incident, so
 ## there is nothing left here to lower. Real REDUCED triggers (talking,
@@ -719,22 +787,34 @@ func _distance_ceiling(distance: float) -> WitnessReport.ObservationLevel:
 ## reusing its mask here; that reason is gone, but nothing in the design
 ## calls for occlusion in this check either way, so it still doesn't have
 ## one.
-func _is_incident_in_vision_cone(incident: Incident) -> bool:
+func _evaluate_incident_vision(incident: Incident) -> IncidentVision:
+	var result := IncidentVision.new()
 	if not _perception:
-		return false
+		return result
 
 	var eye_pos := _npc.global_position + Vector3(0.0, _npc.get_eye_height(), 0.0)
-	if eye_pos.distance_to(incident.position) > _perception.vision_range:
-		return false
+	result.distance = eye_pos.distance_to(incident.position)
+	if result.distance > _perception.vision_range:
+		result.rejection = "range (max %.1f)" % _perception.vision_range
+		return result
 
 	var horizontal_to_incident := incident.position - eye_pos
 	horizontal_to_incident.y = 0.0
 	if horizontal_to_incident.length() < 0.001:
-		return true
+		result.is_seen = true
+		result.angle_deg = 0.0
+		result.rejection = ""
+		return result
 
 	var facing := _npc.get_facing_direction()
-	var angle := rad_to_deg(facing.angle_to(horizontal_to_incident.normalized()))
-	return angle <= _perception.vision_angle_deg * 0.5
+	result.angle_deg = rad_to_deg(facing.angle_to(horizontal_to_incident.normalized()))
+	if result.angle_deg > _perception.vision_angle_deg * 0.5:
+		result.rejection = "cone (max %.0f)" % (_perception.vision_angle_deg * 0.5)
+		return result
+
+	result.is_seen = true
+	result.rejection = ""
+	return result
 
 
 ## Dispatches the active reaction — called from _decide() instead of the
@@ -813,6 +893,13 @@ func _commit_witness_report() -> void:
 		_current_witness_report.status = WitnessReport.Status.COMMITTED
 		if _pending_incident:
 			_call_it_in(_pending_incident)
+		if incident_telemetry_enabled:
+			print(
+				"%s transmission committed: %s, observation %s, registry ASSAULT" % [
+					INCIDENT_TELEMETRY_PREFIX, _npc.name,
+					WitnessReport.ObservationLevel.keys()[_current_witness_report.observation_level],
+				]
+			)
 	_current_witness_report = null
 	_pending_incident = null
 	if _votive:
@@ -832,6 +919,13 @@ func _cancel_active_witness_report() -> void:
 	if not _current_witness_report or _current_witness_report.status != WitnessReport.Status.PENDING:
 		return
 	_current_witness_report.status = WitnessReport.Status.CANCELLED
+	if incident_telemetry_enabled:
+		print(
+			"%s transmission cancelled: %s, knocked down, %.1fs remaining" % [
+				INCIDENT_TELEMETRY_PREFIX, _npc.name,
+				maxf(call_report_duration - _reaction_timer, 0.0),
+			]
+		)
 	_current_witness_report = null
 	_pending_incident = null
 	_reaction_state = ReactionState.NONE
@@ -846,3 +940,59 @@ func _end_reaction() -> void:
 	_npc.clear_facing_target()
 	_npc.clear_look_target()
 	_start_pause()
+
+
+func _begin_incident_telemetry(incident: Incident) -> IncidentTelemetryEntry:
+	var incident_id := incident.get_instance_id()
+	var existing := _find_incident_telemetry(incident_id)
+	if existing:
+		return existing
+
+	var entry := IncidentTelemetryEntry.new()
+	entry.incident_id = incident_id
+	entry.sequence = _next_telemetry_sequence
+	_next_telemetry_sequence += 1
+	_telemetry_entries.append(entry)
+	if incident_telemetry_enabled:
+		print(
+			"%s INCIDENT #%d  %s  pos(%.1f, %.1f, %.1f)  t=%.2fh" % [
+				INCIDENT_TELEMETRY_PREFIX, entry.sequence, Incident.Kind.keys()[incident.kind],
+				incident.position.x, incident.position.y, incident.position.z, incident.timestamp,
+			]
+		)
+		call_deferred("_finish_incident_telemetry", incident_id)
+	return entry
+
+
+func _finish_incident_telemetry(incident_id: int) -> void:
+	var entry := _find_incident_telemetry(incident_id)
+	if not entry:
+		return
+	if incident_telemetry_enabled:
+		print("%s   in hearing range: %d" % [INCIDENT_TELEMETRY_PREFIX, entry.in_hearing_range])
+		print("%s -> transmitting: %d" % [INCIDENT_TELEMETRY_PREFIX, entry.transmitting])
+	_telemetry_entries.erase(entry)
+
+
+func _find_incident_telemetry(incident_id: int) -> IncidentTelemetryEntry:
+	for entry in _telemetry_entries:
+		if entry.incident_id == incident_id:
+			return entry
+	return null
+
+
+func _log_incident_rejection(_entry: IncidentTelemetryEntry, outcome: String) -> void:
+	if incident_telemetry_enabled:
+		print("%s   %s  %s" % [INCIDENT_TELEMETRY_PREFIX, _npc.name, outcome])
+
+
+func _log_incident_candidate(
+	_entry: IncidentTelemetryEntry, vision: IncidentVision, outcome: String
+) -> void:
+	if incident_telemetry_enabled:
+		print(
+			"%s   %s  d=%.1f  ang=%.0f  %s" % [
+				INCIDENT_TELEMETRY_PREFIX, _npc.name,
+				vision.distance, vision.angle_deg, outcome,
+			]
+		)
