@@ -16,11 +16,11 @@ class_name PerceptionComponent
 @export var vision_range: float = 90.0
 @export var vision_angle_deg: float = 180.0
 
-## Layers this component's line-of-sight raycast collides with: floor (2)
-## and wall (3) — the exact same mask the camera's own occlusion raycast
-## uses (on_foot_camera_component.gd, _update_camera_position()). Reusing
-## it, not inventing a second wall/floor mask convention.
-const LINE_OF_SIGHT_MASK: int = (1 << 1) | (1 << 2)
+## Layers this component's line-of-sight raycast collides with: floor and
+## wall — the exact same mask the camera's own occlusion raycast uses
+## (on_foot_camera_component.gd, _update_camera_position()). Reusing it,
+## not inventing a second wall/floor mask convention.
+const LINE_OF_SIGHT_MASK: int = CollisionLayers.FLOOR | CollisionLayers.WALL
 
 ## Used only if the player node has no get_chest_height() — a safe non-zero
 ## ray-target height instead of aiming at the player's feet. Matches the

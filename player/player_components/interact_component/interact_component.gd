@@ -11,10 +11,6 @@ class_name InteractComponent
 ##Подбираемые и переносимые объекты:
 ##PickupItem﻿ (можно параметром отмечать «can_carry», «can_store_in_inventory», «can_throw»).
 
-## Слой 10 (бит 9) — Interactables. Держать в синхроне с Project Settings
-## → Layer Names → 3D Physics.
-const INTERACTABLES_COLLISION_MASK: int = 512
-
 @onready var player: CharacterBody3D = get_parent() ## cсылка на игрока
 @onready var dymamic_cursor_ui: MouseCursorUI = $"../DynamicCursorUI"
 ## в случае если захотим визуально что-то менять с курсором при интерактивности
@@ -37,10 +33,9 @@ var closest_distance: float = INF
 var detected_count: int = 0
 
 func _ready() -> void:
-	player_focus_cast.collision_mask = INTERACTABLES_COLLISION_MASK
 	## вкл допом программно
 	player_focus_cast.enabled = true
-	player_focus_cast.collision_mask = 512  # 10-й слой (Interactables)
+	player_focus_cast.collision_mask = CollisionLayers.INTERACTABLES
 	player_focus_cast.collide_with_areas = true
 	player_focus_cast.collide_with_bodies = true
 	
@@ -258,8 +253,8 @@ func _drop_item() -> void:
 	item.global_position = player.global_position + forward * 1.5
 	
 	# Восстанавливаем слои физики (чтобы он мог стукаться)
-	item.collision_layer = 8 # Physics Layer
-	item.collision_mask = 10 # Physics Mask
+	item.collision_layer = CollisionLayers.PHYSICS_OBJECTS
+	item.collision_mask = CollisionLayers.INTERACTION
 	
 	## Сила броска
 	var throw_force = forward * 2.5 + Vector3.UP * 1.0 ## можно больше поставить

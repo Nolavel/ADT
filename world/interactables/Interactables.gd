@@ -45,14 +45,14 @@ var is_detected: bool = false      ## Обнаружен ли ShapeCast'ом
 
 func _ready() -> void:
 	## 1. Настройка физики RigidBody
-	collision_layer = 8 
-	collision_mask = 10 
+	collision_layer = CollisionLayers.PHYSICS_OBJECTS
+	collision_mask = CollisionLayers.INTERACTION ## floor + PhysicsObjects — see that constant's own comment on the missing wall bit
 	contact_monitor = false
 	max_contacts_reported = 0
-	
+
 	## 2. Настройка зоны взаимодействия (Area3D)
 	if interaction_area:
-		interaction_area.collision_layer = 512 ## Layer 10
+		interaction_area.collision_layer = CollisionLayers.INTERACTABLES
 		interaction_area.collision_mask = 0
 
 ## ============================================================================

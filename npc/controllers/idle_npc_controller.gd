@@ -107,10 +107,9 @@ const OBSTACLE_CHECK_DISTANCE: float = 1.5
 ## most walls. Not derived from BodyMetrics: a single fixed offset is
 ## enough for a straight-ahead bump check, not worth a new getter.
 const OBSTACLE_RAY_HEIGHT: float = 1.0
-## Wall only (not floor) — same layer PerceptionComponent's own
-## LINE_OF_SIGHT_MASK calls "wall (3)"; floor is what an NPC walks on, not
-## an obstacle to walking.
-const OBSTACLE_MASK: int = 1 << 2
+## CollisionLayers.OBSTACLE (wall only) — floor is what an NPC walks on,
+## not an obstacle to walking.
+const OBSTACLE_MASK: int = CollisionLayers.OBSTACLE
 
 @export_group("Wander")
 ## Radius of the random-point area around where this NPC started.

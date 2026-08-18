@@ -364,7 +364,7 @@ func _update_3d_ui_state(delta: float) -> void:
 	
 	var direct_space := space.direct_space_state
 	var params := PhysicsRayQueryParameters3D.create(from, to)
-	params.collision_mask = 1 << 19  # Слой 20 (3D_GUI)
+	params.collision_mask = CollisionLayers.CURSOR_UI
 	
 	var result := direct_space.intersect_ray(params)
 	

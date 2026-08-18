@@ -699,7 +699,7 @@ func _update_camera_position(delta):
 			var space_state := camera.get_world_3d().direct_space_state
 			var occlusion_height := _target_metric_height(&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK)
 			var eye_pos := target.global_position + Vector3(0, occlusion_height, 0)
-			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, (1 << 1) | (1 << 2))
+			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, CollisionLayers.FLOOR | CollisionLayers.WALL)
 			query.collide_with_areas = false
 			var hit := space_state.intersect_ray(query)
 			if hit:

@@ -33,7 +33,7 @@ extends Node3D
 ## НАСТРОЙКИ RAYCAST
 @export_group("Raycast Detection")
 @export var raycast_length: float = 5.0 ## Длина лучей для определения пола
-@export var raycast_collision_mask: int = 4 ## Маска коллизии (слой 2 = ground)
+@export var raycast_collision_mask: int = CollisionLayers.WALL ## Маска коллизии (слой 2 = ground)
 
 ## === ВНУТРЕННИЕ ПЕРЕМЕННЫЕ ===
 var parent_object: InteractableObject = null
