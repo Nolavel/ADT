@@ -253,9 +253,11 @@ toggle_key_hints={
 
 [layer_names]
 
+3d_physics/layer_1="Characters"
 3d_physics/layer_2="floor"
 3d_physics/layer_3="wall"
 3d_physics/layer_4="PhysicsObjects"
+3d_physics/layer_9="Drones"
 3d_physics/layer_10="Interactables"
 3d_physics/layer_11="TransportTriggers"
 3d_physics/layer_20="3D_GUI"
