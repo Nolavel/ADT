@@ -28,6 +28,7 @@ Startup scene: `res://world/world.tscn`.
 | `LICENSE.md` | Proprietary; all rights reserved |
 | `docs/scope_horizon.md` | What is being built **now**, and in what order |
 | `docs/ENTIRE_SETUP.md` | Entire CLI binary location, PATH dependency, git-hook vs Claude-Code-hook wiring, how to check capture is alive |
+| `docs/COLLISION_LAYERS.md` | Single source of truth for 3D physics layers and the named query-mask profiles built from them |
 
 
 This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled in `project.godot` under `[editor_plugins]`, autoloaded as `_mcp_game_helper`). When the Godot editor is open, prefer the `mcp__godot-ai__*` tools over hand-editing `.tscn`/resource files or shelling out to the Godot CLI:
@@ -87,6 +88,7 @@ whether one will; see `docs/ENTIRE_SETUP.md` for how to actually check.
 - **New comments are written in English.** Existing comments are largely Russian and are being translated header by header; do not add more Russian.
 - **Standing instruction when editing an existing script:** before changing it, check it against `docs/GDSCRIPT_STYLE.md` — static typing, declaration order, naming, banner header on systems, `TODO(scope):` form. If the file deviates, say so and offer the correction as a separate step. Do not silently reformat, and do not bundle a style pass into a behaviour change.
 - **Do not create placeholder scripts or empty directories** for work that has not started. Planned scope belongs in `docs/planned_scope.md`. An empty file in the tree reads as a promise.
+- **Collision layers and masks are set through `core/physics/collision_layers.gd` (`CollisionLayers`), never as a bare integer literal**, in both code and scenes. `docs/COLLISION_LAYERS.md` is the single source of truth for the layer table and the reasoning behind each named query profile (`SIGHT`, `CAMERA_OCCLUSION`, `OBSTACLE`, `GROUND`, `INTERACTION`, `CURSOR_UI`). A `.tscn` can't reference a script constant, so a scene-level mask is documented in that file's table instead of converted. A new layer is named in `project.godot`'s `[layer_names]`, given a constant in `CollisionLayers`, and given a row in `docs/COLLISION_LAYERS.md`, all in the same commit — never one without the other two.
  
 ## Architecture
 

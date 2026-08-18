@@ -12,6 +12,65 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-18 - Name collision layers, add CollisionLayers, fix three mask bugs
+
+Six physical query sites were each re-deriving floor/wall bit combinations by
+hand, with no shared name for what any of them meant — `project.godot`'s
+`[layer_names]` left layers 1 and 9 unnamed (occupied by player/NPC bodies by
+default, and the police drone body, respectively; named `Characters` and
+`Drones`). Added `docs/COLLISION_LAYERS.md` as the single source of truth for
+the layer table (who's on each layer, who queries it — filled in from the
+actual scenes/scripts, not assumed) and `core/physics/collision_layers.gd`
+(`CollisionLayers`, no autoload, same pattern as `Smoothing`/`BodyMetrics`)
+defining named query profiles (`SIGHT`, `CAMERA_OCCLUSION`, `OBSTACLE`,
+`GROUND`, `INTERACTION`, `CURSOR_UI`) on top of the raw layer bits. Converted
+every bare-literal mask found (perception, camera occlusion, NPC obstacle
+avoidance, the interactable RigidBody's own mask, the player's interactable
+focus cast, and — found along the way — the 3D cursor's UI hover raycast) to
+read from `CollisionLayers` instead.
+
+Three real bugs surfaced while doing this, fixed in the same pass:
+`IdleNPCController`'s obstacle-avoidance ray was built but never parented
+into the scene tree, so it never actually collided — wander/flee/respond all
+share the check and were all silently un-obstructed; checked why it had been
+left that way and found an earlier task's brief had explicitly ruled out
+navigation changes, not a finding that avoidance broke wandering, so wired it
+in. `InteractiveVisualIndicator`'s ground-detection raycast mask was wall,
+contradicting its own "layer 2 = ground" comment — now floor.
+`PerceptionComponent` and the camera's occlusion raycast used to share one
+undifferentiated floor+wall mask; split apart now that each has its own
+profile — perception drops floor (`SIGHT` is wall-only, fixing an
+already-flagged "open, undiagnosed defect" where sight checks failed on
+slopes/stairs), the camera keeps both. `Interactables.gd`'s own
+floor+PhysicsObjects mask (missing wall — why a thrown item doesn't stop at
+a wall) was left as found; its rationale isn't recoverable from the code and
+this pass didn't invent one.
+
+Also recorded `RaycastService` in `docs/planned_scope.md`'s "Not started, not
+stubbed" — six one-line queries don't justify a facade over them yet; the
+mask drift they shared is what `CollisionLayers` solves instead.
+
+*Названы физические слои 1 (`Characters`) и 9 (`Drones`); добавлены
+`docs/COLLISION_LAYERS.md` и `CollisionLayers` с именованными профилями
+запросов; код переведён с магических чисел на них. Попутно найдены и
+исправлены три бага: не работавший обход препятствий у NPC (луч не был
+добавлен в дерево сцены), неверная маска у индикатора направления пола, и
+слипшиеся маски восприятия/камеры (у восприятия теперь нет пола — это чинит
+уже отмеченный ранее дефект с проверкой видимости на лестницах и уклонах).*
+- `project.godot`, `docs/COLLISION_LAYERS.md`, `core/physics/collision_layers.gd`,
+  `npc/npc_components/perception_component/perception_component.gd`,
+  `camera/camera_component/on_foot_camera_component.gd`,
+  `npc/controllers/idle_npc_controller.gd`,
+  `world/interactables/interactables.gd`, `world/interactables/interactive_visual_indicator.gd`,
+  `player/player_components/interact_component/interact_component.gd`,
+  `ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd`,
+  `docs/planned_scope.md`, `CLAUDE.md`, `docs/CONTRIBUTING.md`
+- Behaviour changes worth confirming by running the game, separately from the
+  rest of this pass: NPC obstacle avoidance actually engaging now, and
+  perception's sight checks no longer failing through floor on slopes/stairs.
+
+---
+
 ## 2026-08-17 - Limit archetype colour to authored NPC body meshes
 
 `NPCBase._apply_archetype()` previously walked every descendant

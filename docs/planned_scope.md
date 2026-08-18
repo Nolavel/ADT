@@ -242,3 +242,10 @@ Named here so the absence is deliberate rather than overlooked:
   aim-down-sights animation data lives in `player/animations/libs/
   rifle_aim.res` and `rifle_aim_1.res` instead; don't assume `new5/` has
   content because it's mounted.
+- **`RaycastService`.** A thin facade over the physics space — uniform
+  query execution, self-exclusion, null handling — deliberately not built.
+  There are six query sites today; a facade over six one-liners is a layer
+  that removes nothing. The mask drift those sites did share is solved by
+  `CollisionLayers` instead. Revisit when a third query domain appears
+  beyond perception and camera — weapons, climbing or vehicle landing —
+  and the facade has something to generalise.

@@ -74,6 +74,12 @@ and breaking them fails silently, not loudly.
   marker hand-owned.
 - **`../input_map.md`** must be updated in the same commit as any input
   action added, removed or rebound.
+- **Collision layers/masks go through `core/physics/collision_layers.gd`
+  (`CollisionLayers`), never a bare integer literal.** `COLLISION_LAYERS.md`
+  is the single source of truth for the layer table and the reasoning
+  behind each named query profile. A new layer is named in `project.godot`,
+  given a constant in `CollisionLayers`, and given a row in
+  `COLLISION_LAYERS.md`, all in the same commit.
 - **No new autoloads.**
 - **Attribute everything borrowed** — assets, references, code — in
   `CREDITS.md`, in the same commit that adds it.
