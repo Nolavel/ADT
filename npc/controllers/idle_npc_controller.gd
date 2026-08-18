@@ -11,13 +11,15 @@
 # retarget immediately and keep going, the same immediate pick-a-new-point
 # response PatrolDroneController's patrol uses on arrival. A pause
 # (wander_pause_time) only happens on reaching an actual destination, not
-# on bouncing off a wall. NOTE: _obstacle_ray is built in _ready() but never
-# actually parented into the tree (see that line's own comment) — a
-# RayCast3D outside the tree never updates, so is_colliding() always reads
-# false today. This was already true of wander before this file grew an
-# incident reaction that reuses the same check; flagged here rather than
-# fixed, since fixing it is a navigation change this task's own brief rules
-# out ("не берись чинить навигацию попутно").
+# on bouncing off a wall. _obstacle_ray is now parented into the tree in
+# _ready() and actually collides (CollisionLayers.OBSTACLE, wall only). It
+# was built but deliberately left unparented — is_colliding() always read
+# false, so wander's own obstacle avoidance (and Flee/Respond's, which reuse
+# the same check) was inert — by an earlier task whose own brief explicitly
+# ruled out navigation changes ("не берись чинить навигацию попутно"), not
+# because wiring it in was found to break wandering; nothing found while
+# doing so here suggests it does, but confirm by running the game (an NPC
+# should now visibly retarget off a wall instead of walking into it).
 #
 # Every frame it also asks its sibling PerceptionComponent for a plain
 # observation and decides what it means: the moment the player is seen,
@@ -309,8 +311,8 @@ func _ready() -> void:
 	_obstacle_ray = RayCast3D.new()
 	_obstacle_ray.position = Vector3(0.0, 0.9, 0.0)
 	_obstacle_ray.target_position = Vector3(0.0, 0.0, 1.5)
-	_obstacle_ray.collision_mask = 3
-	#_npc.add_child(_obstacle_ray)
+	_obstacle_ray.collision_mask = OBSTACLE_MASK
+	_npc.add_child(_obstacle_ray)
 
 	_wander_state = State.IDLE
 	_pause_timer = wander_pause_time
@@ -709,10 +711,14 @@ func _distance_ceiling(distance: float) -> WitnessReport.ObservationLevel:
 ## PerceptionComponent's public vision_range/vision_angle_deg exports rather
 ## than calling into it: that component's own API only ever answers "can
 ## this actor see the PLAYER right now," which isn't the question here.
-## Deliberately no line-of-sight raycast — PerceptionComponent's own
-## LINE_OF_SIGHT_MASK includes the floor layer, an open, undiagnosed defect
-## in that component; wiring an occlusion check into this gate would inherit
-## that bug rather than answer "does this NPC see the incident."
+## Deliberately no line-of-sight raycast — this gate only ever asked for
+## range + cone (attribution.md §2 doesn't call for occlusion here), not a
+## stand-in fix for one. PerceptionComponent's own LINE_OF_SIGHT_MASK used
+## to include the floor layer (an open, undiagnosed defect — since fixed,
+## see CollisionLayers.SIGHT), which was the original reason to avoid
+## reusing its mask here; that reason is gone, but nothing in the design
+## calls for occlusion in this check either way, so it still doesn't have
+## one.
 func _is_incident_in_vision_cone(incident: Incident) -> bool:
 	if not _perception:
 		return false

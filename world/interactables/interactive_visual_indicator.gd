@@ -33,7 +33,11 @@ extends Node3D
 ## НАСТРОЙКИ RAYCAST
 @export_group("Raycast Detection")
 @export var raycast_length: float = 5.0 ## Длина лучей для определения пола
-@export var raycast_collision_mask: int = CollisionLayers.WALL ## Маска коллизии (слой 2 = ground)
+## CollisionLayers.GROUND (floor only). Was CollisionLayers.WALL (the
+## project's own layer 3), contradicting this line's own "layer 2 = ground"
+## comment — these rays exist to find the floor after a throw may have
+## tumbled the object into any orientation, not a nearby wall.
+@export var raycast_collision_mask: int = CollisionLayers.GROUND
 
 ## === ВНУТРЕННИЕ ПЕРЕМЕННЫЕ ===
 var parent_object: InteractableObject = null

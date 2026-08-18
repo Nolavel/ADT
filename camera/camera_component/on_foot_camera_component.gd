@@ -696,10 +696,16 @@ func _update_camera_position(delta):
 			camera.h_offset = lerp(camera.h_offset, target_h_offset, Smoothing.damp_factor(8.0, delta))
 
 			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
+			# CollisionLayers.CAMERA_OCCLUSION (floor + wall) — deliberately
+			# wider than PerceptionComponent's own CollisionLayers.SIGHT
+			# (wall only): the camera swings low behind the character and
+			# would sink through the deck without floor in the mask. The two
+			# used to share one undifferentiated mask; they now diverge on
+			# purpose, not by accident.
 			var space_state := camera.get_world_3d().direct_space_state
 			var occlusion_height := _target_metric_height(&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK)
 			var eye_pos := target.global_position + Vector3(0, occlusion_height, 0)
-			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, CollisionLayers.FLOOR | CollisionLayers.WALL)
+			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, CollisionLayers.CAMERA_OCCLUSION)
 			query.collide_with_areas = false
 			var hit := space_state.intersect_ray(query)
 			if hit:
