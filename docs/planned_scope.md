@@ -249,3 +249,15 @@ Named here so the absence is deliberate rather than overlooked:
   `CollisionLayers` instead. Revisit when a third query domain appears
   beyond perception and camera — weapons, climbing or vehicle landing —
   and the facade has something to generalise.
+
+- ** Inter-block and vertical connections
+  World data describes blocks but not what connects them. `block_id` is flat: there is
+  no level index, no elevator, no traversal link between two blocks. For a vertical
+  city this is the load-bearing absence — a mission phrased as "get from Doggerland to
+  Manifold through the lift in block 12" has no data to stand on.
+
+- **Prerequisite:** a mission or traversal feature that actually needs to address a
+  location by level rather than by block. Until then this is speculation about shape.
+
+- **Why it is written down now anyway:** retrofitting a level index touches missions,
+  navigation, NPC schedules and save records at once. Cheap to add while those are few.
