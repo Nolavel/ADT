@@ -174,6 +174,43 @@ actual gap; OBSERVE (H3) and WHAT BECAME KNOWN (H4) were.
 
 ---
 
+ **Sequenced last on purpose.** It is the most visible item and the one most likely
+ to be started first out of enthusiasm. It depends on H5, and — the newer reason,
+ see H3's own rationale above — it answers ACT, which was never this build's
+ actual gap; OBSERVE (H3) and WHAT BECAME KNOWN (H4) were.
+ 
+### H7. Persistent entity state
+
+**Why here, and why not later:** three systems implement the save contract today
+(`GameClockSystem`, `IncidentRegistry`, `LodgingSystem`). Nothing else survives a
+block unload — an opened door closes, a killed NPC returns, a dropped item is gone.
+That is invisible while the world is empty and fatal at the first mission, which is
+by definition a sentence about world state persisting between two visits.
+
+The contract itself already exists and is proven on two payloads, one trivial and
+one hard. What is missing is the layer between it and the world: something that
+holds "`door_warehouse_04` is open" as a fact independent of the Node representing
+that door, and reapplies it when the block streams back in.
+
+Requires classifying every world object into one of four lifecycles, which is most
+of the actual work — the registry is small once the classification exists:
+
+| Lifecycle | Rule | Example |
+|---|---|---|
+| Ephemeral | recreated on load, no state kept | passer-by |
+| Persistent | state outlives unload | door, container, named NPC |
+| Simulated | recomputed cheaply while unloaded | hover traffic |
+| Global | independent of any block | game clock, incidents |
+
+The cost of deferring is not the registry — it is that every object added before it
+has to be retrofitted one at a time.
+
+**Definition of Done:** open a door, kill a named NPC, drop an item; walk far enough
+that the block unloads; come back. All three are as you left them. Same after a
+save/load cycle.
+
+---
+
 ## A note on automated tests
 
 Both external architecture reviews (August 2026) flagged the absence of automated
