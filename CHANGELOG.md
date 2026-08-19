@@ -12,6 +12,29 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-19 - Fix: NPC obstacle-avoidance raycast never entered the tree
+
+`IdleNPCController._obstacle_ray` was built in `_ready()` but its
+`_npc.add_child(_obstacle_ray)` call had been commented out, so
+`is_colliding()` always read false — wander, Flee and Respond all share this
+check, so obstacle avoidance was inert everywhere it's used, and NPCs walked
+into walls. Root cause: `IdleNPCController` is a child of `NPCBase` in
+`npc.tscn`, so its `_ready()` runs while the NPC subtree is still entering
+the tree, and `NPCBase` (the ancestor being added to) is still "busy setting
+up children" at that point — a plain `add_child()` onto it fails outright.
+Fixed with `_npc.call_deferred("add_child", _obstacle_ray)`, the same
+pattern already used by `world.gd`'s `WORLD_UI_SCENES` loop, `menu_system.gd`
+and `zoom_ruler_system.gd` for the identical ordering problem (see this
+file's 2026-08-1X `PlayerHUD` crash entry). Rewrote the file's header, which
+had claimed the ray was already working.
+
+*Луч обхода препятствий у NPC никогда не добавлялся в дерево — исправлено
+через call_deferred("add_child", ...), та же проблема порядка готовности,
+что и раньше у PlayerHUD.*
+- `npc/controllers/idle_npc_controller.gd`
+
+---
+
 ## 2026-08-18 - Name collision layers, add CollisionLayers, fix three mask bugs
 
 Six physical query sites were each re-deriving floor/wall bit combinations by

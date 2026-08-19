@@ -11,15 +11,27 @@
 # retarget immediately and keep going, the same immediate pick-a-new-point
 # response PatrolDroneController's patrol uses on arrival. A pause
 # (wander_pause_time) only happens on reaching an actual destination, not
-# on bouncing off a wall. _obstacle_ray is now parented into the tree in
-# _ready() and actually collides (CollisionLayers.OBSTACLE, wall only). It
-# was built but deliberately left unparented — is_colliding() always read
-# false, so wander's own obstacle avoidance (and Flee/Respond's, which reuse
-# the same check) was inert — by an earlier task whose own brief explicitly
-# ruled out navigation changes ("не берись чинить навигацию попутно"), not
-# because wiring it in was found to break wandering; nothing found while
-# doing so here suggests it does, but confirm by running the game (an NPC
-# should now visibly retarget off a wall instead of walking into it).
+# on bouncing off a wall. _obstacle_ray is built in code in _ready() (see
+# that method's own comment on why it isn't an npc.tscn node) and parented
+# to _npc via _npc.call_deferred("add_child", _obstacle_ray), not a plain
+# add_child() call. IdleNPCController is itself a child of NPCBase in
+# npc.tscn, so this controller's _ready() runs while the NPC subtree is
+# still entering the tree — NPCBase (the ancestor _obstacle_ray is being
+# parented to) is still "busy setting up children" at that point, and a
+# direct add_child() onto it fails outright (Godot: "Parent node is busy
+# setting up children, add_child() failed"). This is the same ordering
+# problem world.gd's WORLD_UI_SCENES loop, menu_system.gd and
+# zoom_ruler_system.gd already work around with call_deferred("add_child",
+# ...) — see CHANGELOG.md's PlayerHUD crash entry for the same failure mode
+# hitting a different node. Deferring means it lands after the whole
+# frame's ready propagation has settled, which holds regardless of whether
+# this NPC is a static instance in world.tscn or instanced at runtime into
+# a streamed block — both go through the same tree-entry batch. A prior
+# pass had this call written but commented out (see git history) — that
+# left is_colliding() always false, so wander's own obstacle avoidance (and
+# Flee/Respond's, which reuse the same check) was inert; confirm the fix by
+# running the game (an NPC should now visibly retarget off a wall instead
+# of walking into it).
 #
 # Every frame it also asks its sibling PerceptionComponent for a plain
 # observation and decides what it means: the moment the player is seen,
@@ -342,7 +354,7 @@ func _ready() -> void:
 	_obstacle_ray.position = Vector3(0.0, 0.9, 0.0)
 	_obstacle_ray.target_position = Vector3(0.0, 0.0, 1.5)
 	_obstacle_ray.collision_mask = OBSTACLE_MASK
-	#_npc.add_child(_obstacle_ray)
+	_npc.call_deferred("add_child", _obstacle_ray)
 
 	_wander_state = State.IDLE
 	_pause_timer = wander_pause_time
@@ -836,10 +848,8 @@ func _step_flee(delta: float) -> void:
 	if _reaction_timer >= flee_duration:
 		_end_reaction()
 		return
-	## Same obstacle check _step_wander() uses, and just as inert today —
-	## see the file header on _obstacle_ray never actually being parented
-	## into the tree. Written for when that's fixed, not pretending it
-	## works now.
+	## Same obstacle check _step_wander() uses — see the file header on
+	## _obstacle_ray's deferred add_child().
 	if _obstacle_ray and _obstacle_ray.is_colliding():
 		_flee_direction = _flee_direction.rotated(Vector3.UP, randf_range(0.5, 1.5))
 	_npc.set_move_intent(_flee_direction, flee_speed_ratio)
