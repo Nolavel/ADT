@@ -346,8 +346,14 @@ func _ready() -> void:
 	for child in _npc.get_children():
 		if child is PerceptionComponent:
 			_perception = child
-		elif child is VotiveProjector:
-			_votive = child
+
+	## Not the get_children() scan above: VotiveProjector now sits under a
+	## BoneAttachment3D bound to the head bone (votive_projector.gd's own
+	## header), not directly under _npc, so it is no longer a direct child to
+	## scan for by type. Scene-unique name (%) lookup finds it regardless of
+	## nesting depth — same fix npc_base.gd's/player.gd's own _votive
+	## resolution needed for the same reason.
+	_votive = _npc.get_node_or_null("%VotiveProjector") as VotiveProjector
 
 	_wander_origin = _npc.global_position
 	_obstacle_ray = RayCast3D.new()

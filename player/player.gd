@@ -172,8 +172,11 @@ var _pre_move_vertical_speed: float = 0.0
 ## driven every physics frame below, same "dumb component" pattern
 ## _animation_component already follows. Nothing drives its state past IDLE
 ## today: the player doesn't file witness reports about themselves, see
-## votive_projector.gd's own header.
-@onready var _votive: VotiveProjector = $VotiveProjector
+## votive_projector.gd's own header. Looked up by scene-unique name (%),
+## not $VotiveProjector, since it now sits under a BoneAttachment3D bound to
+## the head bone rather than directly under this node — see
+## votive_projector.gd's own header on why.
+@onready var _votive: VotiveProjector = %VotiveProjector
 
 
 ## --- Initialization ---

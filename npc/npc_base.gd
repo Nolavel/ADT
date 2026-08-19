@@ -223,7 +223,10 @@ var _debug_action_source: Node = null
 ## convention _animation already follows — see votive_projector.gd's own
 ## header. State changes (start_transmitting()/go_idle()/go_dark()) are the
 ## controller's call, not this body's; this only keeps its animation ticking.
-@onready var _votive: VotiveProjector = get_node_or_null("VotiveProjector")
+## Looked up by scene-unique name (%), not a direct-child path, since it now
+## sits under a BoneAttachment3D bound to the head bone rather than directly
+## under this node — see votive_projector.gd's own header on why.
+@onready var _votive: VotiveProjector = get_node_or_null("%VotiveProjector")
 
 
 func _ready() -> void:

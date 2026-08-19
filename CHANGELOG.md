@@ -50,6 +50,29 @@ on state change, not every frame, unlike the health label.
 что NPC делает прямо сейчас, обновляется по смене состояния.*
 - `npc/npc_base.gd`, `npc/controllers/idle_npc_controller.gd`, `npc/npc.tscn`, `CLAUDE.md`
 
+**Mount VotiveProjector on the head bone instead of the body root.** The
+projection used to be offset from the root's own facing, so it never
+reflected head-look — wrong, since attribution.md §6's Votive is meant to
+read as "this NPC is looking at you." Both rigs retarget through
+`GeneralSkeleton` (drives the `AnimationPlayer`) into `OriginalSkeleton`
+(what every visible mesh is actually skinned to, and what the existing
+head-look `LookAtModifier3D` already targets) — `VotiveProjector` now
+parents under a `BoneAttachment3D` bound to `OriginalSkeleton`'s `"Head"`
+bone (bone index 5) in both `npc.tscn` and `player.tscn`. `player.tscn`
+already carried an unused `BoneAttachment3D` at that exact bone, leftover
+from an earlier, interrupted pass at this same task; `npc.tscn` gained a
+matching one. Replaced the old owner-`get_eye_height()` duck-typed
+positioning with `bone_local_offset`/`bone_rotation_compensation_deg`
+(both `@export`, tuned by eye — a bone's local axes rarely match this
+node's -Z-forward assumption). Since the node no longer sits directly
+under the body root, `NPCBase`/`player.gd`/`IdleNPCController` all now
+resolve it via scene-unique name (`%VotiveProjector`) instead of a
+direct-child path.
+
+*Вотив теперь крепится к кости головы (BoneAttachment3D на OriginalSkeleton),
+а не смещением от корня — проекция следует за поворотом головы.*
+- `core/components/votive_projector/votive_projector.gd`, `npc/npc.tscn`, `npc/npc_base.gd`, `npc/controllers/idle_npc_controller.gd`, `player/player.tscn`, `player/player.gd`, `CLAUDE.md`
+
 ---
 
 ## 2026-08-18 - Name collision layers, add CollisionLayers, fix three mask bugs

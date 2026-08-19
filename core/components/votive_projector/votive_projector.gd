@@ -54,14 +54,42 @@
 # static, applied once at the moment they're entered, nothing to animate
 # per frame.
 #
-# Positioning is computed once in _ready() from the owner's own
-# get_eye_height() (duck-typed, same pattern PerceptionComponent's
-# _target_chest_height() uses) rather than authored per scene instance — one
-# formula for player and NPC alike, correct regardless of body_height. The
-# quad itself is built in code (a MeshInstance3D child), not hand-placed in
-# the .tscn, so this stays a single new top-level node in npc.tscn/
-# player.tscn rather than a skeleton/bone edit to those large generated
-# scenes.
+# PLACEMENT (revised — this node is now mounted on the head bone, not
+# offset from the body root). The projection used to be positioned in
+# _ready() from the owner's own duck-typed get_eye_height(), which meant the
+# quad tracked the ROOT's facing, not the HEAD's — wrong once head-look
+# (NPCAnimationComponent's LookAtModifier3D) turns the head independently of
+# the body, since attribution.md §6's Votive is supposed to read as "this
+# NPC is looking at you," and a body-relative offset cannot show that. This
+# node is now parented under a BoneAttachment3D bound to the "Head" bone
+# (both npc.tscn and player.tscn), so its position/rotation are already
+# relative to the live head pose — get_eye_height()/mount_height_fallback/
+# eye_height_offset/projection_forward_offset (the old duck-typed-owner
+# math) are gone; there is no owner to duck-type against once the parent is
+# a BoneAttachment3D.
+#
+# WHICH SKELETON. Both rigs retarget through two nested Skeleton3Ds:
+# GeneralSkeleton (the one AnimationPlayer/AnimationTree actually drives)
+# feeds a child RetargetModifier3D, which writes the retargeted pose onto
+# OriginalSkeleton — and OriginalSkeleton is the one every visible
+# MeshInstance3D is skinned to. The existing LookAtModifier3D that actually
+# turns the head (npc_animation_component.gd's _setup_head_look(),
+# player_animation_component.gd's own equivalent) is already bound to
+# OriginalSkeleton's "Head" bone (bone index 5 in both rigs) for exactly
+# that reason — it is the skeleton whose pose is what the player actually
+# sees. The BoneAttachment3D this node hangs from is bound to the same bone
+# on the same skeleton. player.tscn already carried an orphaned
+# BoneAttachment3D at that exact path/bone (bone_idx 5, "Head") with nothing
+# parented under it — leftover scaffolding from the earlier, interrupted
+# pass at this same task; reused here rather than adding a second one.
+#
+# BONE AXES. A bone's local frame does not generally line up with this
+# node's own -Z-forward assumption (typically a bone's local +Y runs along
+# its own length, toward its child, not toward the character's forward) —
+# a property of how this rig's bones are authored, not a defect, and one
+# that (like flip_facing) could not be verified without running the editor.
+# bone_local_offset/bone_rotation_compensation_deg are both @export for that
+# reason — tuned by eye once attached, not derived here.
 # =============================================================================
 extends Node3D
 class_name VotiveProjector
@@ -69,16 +97,22 @@ class_name VotiveProjector
 enum State { IDLE, TRANSMITTING, DARK }
 
 @export_group("Placement")
-## Used only if the parent has no get_eye_height() (duck-typed, not a type
-## check) — an order-of-magnitude fallback, not a real body measurement.
-@export var mount_height_fallback: float = 1.6
-## The projection sits slightly below eye level, not at it.
-@export var eye_height_offset: float = 0.05
-## How far in front of the face the projection floats — attribution.md §6's
-## "in front of the face", not at the temple itself (the temple is where the
-## terminal is WORN; the projection is what it shows). Stan tunes by eye,
-## hence @export, not a constant — 0.2-0.3 is the expected range.
-@export var projection_forward_offset: float = 0.25
+## Local offset from the head bone's own origin (this node's parent is a
+## BoneAttachment3D bound to "Head" — see the file header), in the bone's
+## own local axes. Attribution.md §6's "in front of the face", not at the
+## temple itself (the temple is where the terminal is WORN; the projection
+## is what it shows) — but "in front" is only meaningful once
+## bone_rotation_compensation_deg has straightened this node's local axes
+## out to match the character's own forward/up, so the two are tuned
+## together, by eye. Replaces the old owner-eye-height math (mount_height_
+## fallback/eye_height_offset/projection_forward_offset), which assumed a
+## body-root parent this node no longer has.
+@export var bone_local_offset: Vector3 = Vector3(0.0, 0.0, 0.25)
+## Compensates for the head bone's own local axis convention not matching
+## this node's local -Z-forward assumption — see the file header's "bone
+## axes" note. A property of this rig's bones, not a defect; tuned by eye
+## once attached.
+@export var bone_rotation_compensation_deg: Vector3 = Vector3.ZERO
 
 @export_group("Projection")
 ## Side length of the square. Deliberately larger than a realistic HUD
@@ -119,7 +153,8 @@ var _material: StandardMaterial3D = null
 
 
 func _ready() -> void:
-	_position_in_front_of_face()
+	position = bone_local_offset
+	rotation_degrees = bone_rotation_compensation_deg
 
 	var quad := QuadMesh.new()
 	quad.size = Vector2(projection_size, projection_size)
@@ -183,17 +218,6 @@ func go_dark() -> void:
 
 func get_state() -> State:
 	return _state
-
-
-## Centred in front of the face, not offset to either side — the temple is
-## where the terminal is WORN, but what a viewer needs to read is the
-## projection, floating in front of the face like the design describes.
-func _position_in_front_of_face() -> void:
-	var owner_body := get_parent()
-	var mount_height := mount_height_fallback
-	if owner_body and owner_body.has_method(&"get_eye_height"):
-		mount_height = float(owner_body.call(&"get_eye_height")) - eye_height_offset
-	position = Vector3(0.0, mount_height, projection_forward_offset)
 
 
 func _apply_idle_visual() -> void:
