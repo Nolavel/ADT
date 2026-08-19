@@ -73,6 +73,12 @@ class_name NPCBase
 ## interface offset, not a body measurement, so it lives here rather than as
 ## another BodyMetrics ratio.
 const DEBUG_LABEL_CLEARANCE: float = 0.25
+## Additional clearance stacking DebugActionLabel above DebugHealthLabel's own
+## position, not another independent offset from head-top — keeps the two
+## labels from overlapping when both debug_show_health and debug_show_action
+## are on at once, and DebugActionLabel is the one that can run to two lines
+## (word + reason), so it gets the higher slot.
+const DEBUG_ACTION_LABEL_CLEARANCE: float = 0.35
 
 ## Body meshes opt in through this group in npc.tscn. Placeholder archetype
 ## colour belongs to the body only: a Votive, future weapon, or other
@@ -124,6 +130,15 @@ const GROUP_ARCHETYPE_BODY_MESH: StringName = &"archetype_body_mesh"
 ## attaching a debugger. Off by default; while false the label stays
 ## hidden and its text is not recomputed at all.
 @export var debug_show_health: bool = false
+## Shows a second floating Label3D, stacked above DebugHealthLabel, with a
+## short word for what this NPC is doing right now (see
+## _resolve_debug_action_text()'s own comment for the vocabulary) — the only
+## way today to tell "the reaction didn't fire" apart from "it fired but has
+## no visible effect yet". Independent @export from debug_show_health: the
+## two get switched on at different times (verifying a reaction vs.
+## verifying damage). Off by default; while false the label stays hidden and
+## nothing is recomputed.
+@export var debug_show_action: bool = false
 
 ## Movement intent for this frame, written by whatever controller drives
 ## this NPC. direction is expected normalised and horizontal (Y ignored);
@@ -166,6 +181,22 @@ var _facing_target_point: Vector3 = Vector3.ZERO
 var _has_look_target: bool = false
 var _look_target_point: Vector3 = Vector3.ZERO
 
+## Cached text from the last DebugActionLabel refresh, so
+## _update_debug_action_label() only touches .text (and only recomputes the
+## billboard-visible string) on an actual state change instead of every
+## physics frame — unlike the health label, which is cheap to re-stringify
+## every frame regardless. See that method's own comment.
+var _debug_action_label_text: String = ""
+
+## The first child (if any) that answers get_debug_action_text() — resolved
+## once in _ready() by capability (has_method()), not by name or class, so
+## NPCBase still never needs to know which controller class drives it (see
+## the file header). Null is a valid, silent outcome: an NPC whose
+## controller doesn't implement this optional debug method just shows
+## nothing beyond DOWN/IDLE — same "unset is a no-op" contract archetype
+## uses.
+var _debug_action_source: Node = null
+
 ## Resolved once via @onready. Null (and silently skipped by
 ## _physics_process()) if the scene has no AnimationComponent — same
 ## defensive pattern the old $Head lookup used to have.
@@ -182,6 +213,11 @@ var _look_target_point: Vector3 = Vector3.ZERO
 ## DebugHealthLabel.
 @onready var _debug_health_label: Label3D = get_node_or_null("DebugHealthLabel")
 
+## Resolved once via @onready, same defensive pattern as _debug_health_label.
+## Null (and debug_show_action silently has no effect) if the scene has no
+## DebugActionLabel.
+@onready var _debug_action_label: Label3D = get_node_or_null("DebugActionLabel")
+
 ## Resolved once via @onready, same defensive pattern as _animation/_health.
 ## Driven every physics frame below, same "dumb component, owner drives it"
 ## convention _animation already follows — see votive_projector.gd's own
@@ -197,6 +233,14 @@ func _ready() -> void:
 		push_warning("[NPCBase] HealthComponent not found - knockdowns will loop forever, no terminal DOWN phase")
 	if _debug_health_label:
 		_debug_health_label.position.y = get_head_top_height() + DEBUG_LABEL_CLEARANCE
+	if _debug_action_label:
+		_debug_action_label.position.y = (
+			get_head_top_height() + DEBUG_LABEL_CLEARANCE + DEBUG_ACTION_LABEL_CLEARANCE
+		)
+	for child in get_children():
+		if child.has_method(&"get_debug_action_text"):
+			_debug_action_source = child
+			break
 	_apply_archetype()
 
 
@@ -223,6 +267,10 @@ func _physics_process(delta: float) -> void:
 		_debug_health_label.visible = debug_show_health
 		if debug_show_health:
 			_update_debug_health_label()
+	if _debug_action_label:
+		_debug_action_label.visible = debug_show_action
+		if debug_show_action:
+			_update_debug_action_label()
 
 
 ## Movement intent for this frame, written by whatever controller drives this
@@ -373,6 +421,31 @@ func _update_debug_health_label() -> void:
 		]
 	else:
 		_debug_health_label.text = "no HealthComponent  %s" % phase_text
+
+
+## Refreshes DebugActionLabel's text — but only writes .text when the
+## resolved string actually changed, unlike _update_debug_health_label()
+## above, which re-stringifies unconditionally every frame it's shown (see
+## debug_show_action's own comment on why this label is event-driven).
+## Reads only state that already exists elsewhere: is_knocked_down() (this
+## body's own knockdown flag) for DOWN, or the optional
+## get_debug_action_text() a controller may implement for everything else
+## (see _debug_action_source's own comment) — this never stores its own copy
+## of "what is this NPC doing."
+func _update_debug_action_label() -> void:
+	var text := _resolve_debug_action_text()
+	if text == _debug_action_label_text:
+		return
+	_debug_action_label_text = text
+	_debug_action_label.text = text
+
+
+func _resolve_debug_action_text() -> String:
+	if is_knocked_down():
+		return "DOWN"
+	if _debug_action_source:
+		return String(_debug_action_source.call(&"get_debug_action_text"))
+	return "IDLE"
 
 
 ## Character metric getters — same names as player.gd, so callers that duck

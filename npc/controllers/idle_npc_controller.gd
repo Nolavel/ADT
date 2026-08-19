@@ -454,6 +454,38 @@ func get_visible_time() -> float:
 	return _visible_time
 
 
+## Debug-only: a short word plus an optional one-line reason, joined by
+## "\n" — read by NPCBase's DebugActionLabel (debug_show_action), duck-typed
+## via has_method() so NPCBase never depends on this controller by name or
+## class (see NPCBase._debug_action_source's own comment). Reads only state
+## this controller already computes for its own decisions (_reaction_state,
+## _wander_state, _visible_time); nothing here exists solely to answer this
+## question.
+##
+## Vocabulary: WALK, IDLE, LOOK, FLEE, CALL — DOWN is NPCBase's own
+## knockdown flag and is resolved there without ever reaching this method.
+## FROZEN and RESPONDING deliberately share a word with the ordinary
+## "looking at the player" / "wandering" cases they look identical to from
+## outside (a stare, a walk toward a point) — the reason line is what tells
+## them apart, not a seventh/eighth word; the label is meant to be read at a
+## glance, not parsed like a sentence.
+func get_debug_action_text() -> String:
+	match _reaction_state:
+		ReactionState.FLEEING:
+			return "FLEE"
+		ReactionState.FROZEN:
+			return "LOOK\nincident"
+		ReactionState.RESPONDING:
+			return "WALK\nresponding"
+		ReactionState.CALLING:
+			return "CALL\nwitness"
+
+	if _visible_time > 0.0:
+		return "LOOK\nsaw"
+
+	return "WALK" if _wander_state == State.WALKING else "IDLE"
+
+
 ## Human-readable state for debug tooling (perception_debug_panel.gd), same
 ## convention as PatrolDroneController.get_state_name().
 func get_state_name() -> String:

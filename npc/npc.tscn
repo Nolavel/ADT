@@ -1345,3 +1345,7 @@ billboard = 1
 
 [node name="VotiveProjector" type="Node3D" parent="." unique_id=1900000003]
 script = ExtResource("12_votive")
+
+[node name="DebugActionLabel" type="Label3D" parent="." unique_id=1900000004]
+visible = false
+billboard = 1

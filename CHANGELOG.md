@@ -33,6 +33,23 @@ had claimed the ray was already working.
 что и раньше у PlayerHUD.*
 - `npc/controllers/idle_npc_controller.gd`
 
+**Add a debug action label above NPCs.** `NPCBase.debug_show_action` shows a
+second `Label3D` (`DebugActionLabel`, stacked above `DebugHealthLabel`) with
+a short word for what the NPC is doing right now — `WALK`/`IDLE`/`LOOK`/
+`FLEE`/`CALL`/`DOWN`, plus an optional one-line reason (`saw`, `incident`,
+`responding`, `witness`) — so a reaction that fired but has no visible
+effect yet can be told apart from one that never fired at all.
+`IdleNPCController.get_debug_action_text()` supplies the word/reason for
+everything but `DOWN` (resolved directly from `is_knocked_down()`);
+`NPCBase` finds it by capability (`has_method()`), resolved once in
+`_ready()`, the same opt-in idiom the save contract and `on_world_ready()`
+already use — the body still never names a controller class. Updates only
+on state change, not every frame, unlike the health label.
+
+*Добавлена вторая отладочная метка над NPC — короткое слово + причина,
+что NPC делает прямо сейчас, обновляется по смене состояния.*
+- `npc/npc_base.gd`, `npc/controllers/idle_npc_controller.gd`, `npc/npc.tscn`, `CLAUDE.md`
+
 ---
 
 ## 2026-08-18 - Name collision layers, add CollisionLayers, fix three mask bugs
