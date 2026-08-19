@@ -12,6 +12,38 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-19 - Add a crowd witness debug mode
+
+The honest witness numbers (`witness_density` 0.15, `call_probability` 0.6,
+per-archetype `vision_range` 6–20m) are correct by design — Doggerland is
+meant to be a city where almost nobody reports anything — but that also
+means a playtest only sees a Call once every three or four punches, which
+made the whole chain hard to verify by eye (see the incident telemetry
+added earlier the same day: the mechanic works, the numbers are just rare).
+Added `WitnessDebugSystem` (`core/world/witness_debug_system/`, a new
+`WORLD_SYSTEM_SCRIPTS` entry), toggled live for the entire crowd by a new
+hotkey (`toggle_witness_debug`, `[`), off by default, printing an unmissable
+`push_warning()` naming every overridden value on both enable and disable.
+While enabled: `witness_density`/`call_probability` read as `1.0`;
+`vision_range`/`earshot_radius` are scaled by two independent `@export`
+multipliers (both default `3.0`) rather than one shared multiplier, since
+sight and hearing are different channels and tying them together could hide
+a channel-specific bug. Never mutates the `.tres` archetypes or
+`IdleNPCController`'s own exported values — `IdleNPCController` reads
+through four new `_effective_*()` getters instead, so the reaction-selection
+logic itself (`_on_incident_reported()`/`_evaluate_incident_vision()`) never
+learns the debug mode exists, per this task's own requirement. `_is_witness`
+(rolled once per NPC at spawn) can't be retroactively re-rolled by a
+mid-session toggle, so `_effective_is_witness()` overrides the CHECK at the
+moment a candidacy is evaluated instead.
+
+*Добавлен режим отладки толпы свидетелей — один хоткей ("[") подменяет
+плотность/вероятность/дальность на всю толпу вживую, честные числа в
+.tres и экспортах не трогаются.*
+- `core/world/witness_debug_system/witness_debug_system.gd`, `npc/controllers/idle_npc_controller.gd`, `world/world.gd`, `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-19 - Fix: NPC obstacle-avoidance raycast never entered the tree
 
 `IdleNPCController._obstacle_ray` was built in `_ready()` but its

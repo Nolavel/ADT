@@ -104,6 +104,18 @@
 # incidents. The range/cone result feeding the trace is the exact same typed
 # result _on_incident_reported() consumes; do not duplicate that calculation
 # into a log-only branch that can drift from the actual Call decision.
+#
+# WITNESS DEBUG MODE (core/world/witness_debug_system/) is a playtest-only
+# override of witness_density/call_probability/vision-range/earshot_radius,
+# toggled live for the whole crowd via InputSystems.witness_debug_toggled
+# ("["). The honest exported values above are never mutated — every read
+# site that can be overridden goes through an _effective_*() getter instead
+# (_effective_vision_range()/_effective_earshot_radius()/
+# _effective_call_probability()/_effective_is_witness()), so this file's own
+# decision logic never branches on whether the debug mode exists; see
+# witness_debug_system.gd's own header for the full reasoning, including why
+# _is_witness — rolled once at spawn — needs a check-time override rather
+# than a re-roll.
 # =============================================================================
 extends NPCControllerBase
 class_name IdleNPCController
@@ -298,6 +310,14 @@ var _incident_registry_search_time: float = 0.0
 ## instance instead of every frame the registry stays unresolved.
 var _warned_missing_incident_registry: bool = false
 
+## Resolved lazily via a group lookup, same pattern and same reason as
+## _incident_registry above — this controller never receives a WorldContext.
+## Null is a normal, silent state (no timeout warning like
+## _incident_registry's own): a missing WitnessDebugSystem just means the
+## playtest override isn't available yet, not a bug. See
+## witness_debug_system.gd's own header and _witness_debug_active() below.
+var _witness_debug: WitnessDebugSystem = null
+
 ## Rolled once in _ready() against witness_density — NOT re-rolled per
 ## incident (NPC_REACTIONS.md §4 is explicit: static on the NPC, not thrown
 ## fresh each time, so a save survives it and "the same passer-by" stays
@@ -374,6 +394,7 @@ func _ready() -> void:
 	## does favour this instance. _decide() is what actually guarantees
 	## resolution, same split PatrolDroneController uses.
 	_try_resolve_incident_registry()
+	_try_resolve_witness_debug()
 
 
 func _decide(delta: float) -> void:
@@ -405,6 +426,9 @@ func _decide(delta: float) -> void:
 		_was_knocked_down = false
 		if _votive:
 			_votive.go_idle()
+
+	if not _witness_debug:
+		_try_resolve_witness_debug()
 
 	if not _incident_registry:
 		_try_resolve_incident_registry()
@@ -622,6 +646,60 @@ func _try_resolve_incident_registry() -> void:
 	_incident_registry.incident_reported.connect(_on_incident_reported)
 
 
+## Same lazy-resolve shape as _try_resolve_incident_registry() above, minus
+## the timeout warning — see _witness_debug's own comment on why an
+## unresolved WitnessDebugSystem is a silent, expected state rather than
+## something worth nagging about.
+func _try_resolve_witness_debug() -> void:
+	if _witness_debug:
+		return
+	_witness_debug = get_tree().get_first_node_in_group(
+		WitnessDebugSystem.GROUP_WITNESS_DEBUG_SYSTEM
+	) as WitnessDebugSystem
+
+
+## True while WitnessDebugSystem is resolved AND enabled — the one place
+## this controller's decision logic (_on_incident_reported(),
+## _evaluate_incident_vision()) would otherwise need to know the debug mode
+## exists. It doesn't: they call the four _effective_*() getters below
+## instead of witness_density/call_probability/earshot_radius/_perception.
+## vision_range directly, and this helper (plus those four getters) is the
+## ONLY place that reads this flag — see witness_debug_system.gd's own
+## header on why that split was a hard requirement, not a style choice.
+func _witness_debug_active() -> bool:
+	return _witness_debug != null and _witness_debug.enabled
+
+
+## Substitutes _perception.vision_range for the incident-vision check only
+## (PerceptionComponent.vision_range itself is never written — see
+## witness_debug_system.gd's header on why sensing stays untouched).
+func _effective_vision_range() -> float:
+	var base := _perception.vision_range if _perception else 0.0
+	return base * _witness_debug.vision_range_multiplier if _witness_debug_active() else base
+
+
+## Substitutes earshot_radius.
+func _effective_earshot_radius() -> float:
+	return earshot_radius * _witness_debug.earshot_radius_multiplier \
+			if _witness_debug_active() else earshot_radius
+
+
+## Substitutes call_probability — forced to a flat certainty rather than a
+## multiplier, see witness_debug_system.gd's header on why the two exported
+## fields it replaces (density/probability) don't get multiplier treatment
+## the way the two distance fields do.
+func _effective_call_probability() -> float:
+	return 1.0 if _witness_debug_active() else call_probability
+
+
+## Substitutes _is_witness — reads the debug flag at the moment a candidacy
+## is actually evaluated rather than re-rolling the one-time spawn flag, see
+## witness_debug_system.gd's header on why that's the correct fix for a mode
+## that can be toggled after every NPC has already initialized.
+func _effective_is_witness() -> bool:
+	return true if _witness_debug_active() else _is_witness
+
+
 ## Rolls this NPC's reaction to a live incident report — see the file header
 ## for the priority/pre-emption rules and why this is probabilistic rather
 ## than a fixed per-archetype rule.
@@ -646,7 +724,7 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 
 	var vision := _evaluate_incident_vision(incident)
-	if vision.distance > earshot_radius:
+	if vision.distance > _effective_earshot_radius():
 		return
 	telemetry.in_hearing_range += 1
 
@@ -674,16 +752,17 @@ func _on_incident_reported(incident: Incident) -> void:
 		_log_incident_candidate(
 			telemetry, vision, "REJECT %s" % vision.rejection
 		)
-	elif not _is_witness:
+	elif not _effective_is_witness():
 		_log_incident_candidate(telemetry, vision, "SEES  REJECT not-witness")
 	else:
 		var call_roll := randf()
-		if call_roll < call_probability:
+		var effective_call_probability := _effective_call_probability()
+		if call_roll < effective_call_probability:
 			_log_incident_candidate(
 				telemetry, vision,
 				"SEES  ceiling %s  WITNESS  roll %.2f < %.2f  CALL" % [
 					WitnessReport.ObservationLevel.keys()[_distance_ceiling(vision.distance)],
-					call_roll, call_probability,
+					call_roll, effective_call_probability,
 				]
 			)
 			telemetry.transmitting += 1
@@ -693,7 +772,7 @@ func _on_incident_reported(incident: Incident) -> void:
 			telemetry, vision,
 			"SEES  ceiling %s  WITNESS  roll %.2f >= %.2f  REJECT call" % [
 				WitnessReport.ObservationLevel.keys()[_distance_ceiling(vision.distance)],
-				call_roll, call_probability,
+				call_roll, effective_call_probability,
 			]
 		)
 
@@ -844,8 +923,9 @@ func _evaluate_incident_vision(incident: Incident) -> IncidentVision:
 
 	var eye_pos := _npc.global_position + Vector3(0.0, _npc.get_eye_height(), 0.0)
 	result.distance = eye_pos.distance_to(incident.position)
-	if result.distance > _perception.vision_range:
-		result.rejection = "range (max %.1f)" % _perception.vision_range
+	var vision_range := _effective_vision_range()
+	if result.distance > vision_range:
+		result.rejection = "range (max %.1f)" % vision_range
 		return result
 
 	var horizontal_to_incident := incident.position - eye_pos
