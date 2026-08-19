@@ -42,6 +42,20 @@ moment a candidacy is evaluated instead.
 .tres и экспортах не трогаются.*
 - `core/world/witness_debug_system/witness_debug_system.gd`, `npc/controllers/idle_npc_controller.gd`, `world/world.gd`, `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`
 
+**Complete incident telemetry with the Flee/Freeze outcome.** A candidate
+that got a `REJECT not-witness` (or a vision rejection, or lost the Call
+roll) line used to have its story cut off there — the code always falls
+through to the ordinary Flee/Freeze roll afterward, but nothing said which
+way it landed, so a developer reading the log couldn't tell "the roll
+didn't happen" from "it happened but has no visible effect." Added
+`_log_incident_outcome()`, printed right after that roll for every
+candidate that reaches it — confirmed by reading the code that this path
+always resolves to `FLEE` or `FROZEN`, never silently to nothing.
+
+*Телеметрия инцидентов теперь показывает итог броска Flee/Freeze для каждого
+кандидата, а не обрывается на причине отказа от звонка.*
+- `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
 ---
 
 ## 2026-08-19 - Fix: NPC obstacle-avoidance raycast never entered the tree

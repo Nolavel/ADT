@@ -103,7 +103,11 @@
 # is emitted synchronously for each live incident and is silent between
 # incidents. The range/cone result feeding the trace is the exact same typed
 # result _on_incident_reported() consumes; do not duplicate that calculation
-# into a log-only branch that can drift from the actual Call decision.
+# into a log-only branch that can drift from the actual Call decision. Every
+# candidate that reaches the shared Flee/Freeze roll gets an explicit
+# outcome line (_log_incident_outcome()) — the REJECT/SEES line
+# _log_incident_candidate() prints happens before that roll and cannot say
+# what happened next.
 #
 # WITNESS DEBUG MODE (core/world/witness_debug_system/) is a playtest-only
 # override of witness_density/call_probability/vision-range/earshot_radius,
@@ -778,8 +782,10 @@ func _on_incident_reported(incident: Incident) -> void:
 
 	if randf() < _npc.archetype.flee_probability:
 		_start_flee(incident.position)
+		_log_incident_outcome(telemetry, "FLEE")
 	else:
 		_start_freeze(incident.position)
+		_log_incident_outcome(telemetry, "FROZEN")
 
 
 ## Witness Call — NPC_REACTIONS.md §4: "reports the incident." Reuses
@@ -1124,3 +1130,16 @@ func _log_incident_candidate(
 				vision.distance, vision.angle_deg, outcome,
 			]
 		)
+
+
+## What a candidate that fell through to the ordinary Flee/Freeze roll
+## actually ended up doing — printed as its own line right after whichever
+## REJECT/SEES line _log_incident_candidate() already produced, since that
+## line is written before the roll happens and can't be appended to after
+## the fact. Every candidate that reaches this point (in earshot, not
+## knocked down, not already reacting, has an archetype) always resolves to
+## one of these two — there is no silent "no reaction" among logged
+## candidates once _on_incident_reported() gets this far.
+func _log_incident_outcome(_entry: IncidentTelemetryEntry, outcome: String) -> void:
+	if incident_telemetry_enabled:
+		print("%s   %s  -> %s" % [INCIDENT_TELEMETRY_PREFIX, _npc.name, outcome])
