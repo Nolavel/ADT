@@ -154,6 +154,11 @@ class IncidentTelemetryEntry:
 	var sequence: int = 0
 	var in_hearing_range: int = 0
 	var transmitting: int = 0
+	## Reason label ("already-reacting", "knocked-down", "no-archetype") ->
+	## how many NPCs were skipped for it — see _log_incident_rejection()'s
+	## own comment on why these are counted, not printed by name.
+	var skip_counts: Dictionary = {}
+	var skip_total: int = 0
 
 ## Distance to the wander target that counts as "arrived."
 const WANDER_ARRIVAL_RADIUS: float = 0.5
@@ -1312,9 +1317,24 @@ func _finish_incident_telemetry(incident_id: int) -> void:
 	if not entry:
 		return
 	if incident_telemetry_enabled:
+		if entry.skip_total > 0:
+			print("%s   skipped: %d (%s)" % [
+				INCIDENT_TELEMETRY_PREFIX, entry.skip_total, _format_skip_counts(entry.skip_counts)
+			])
 		print("%s   in hearing range: %d" % [INCIDENT_TELEMETRY_PREFIX, entry.in_hearing_range])
 		print("%s -> transmitting: %d" % [INCIDENT_TELEMETRY_PREFIX, entry.transmitting])
 	_telemetry_entries.erase(entry)
+
+
+## "already-reacting 13, knocked-down 1" — Dictionary insertion order is the
+## order reasons were first seen for this incident, which in practice is
+## also NPC iteration order; stable enough for a debug trace, no explicit
+## sort needed.
+func _format_skip_counts(skip_counts: Dictionary) -> String:
+	var parts: Array[String] = []
+	for reason: String in skip_counts:
+		parts.append("%s %d" % [reason, skip_counts[reason]])
+	return ", ".join(parts)
 
 
 func _find_incident_telemetry(incident_id: int) -> IncidentTelemetryEntry:
@@ -1324,9 +1344,19 @@ func _find_incident_telemetry(incident_id: int) -> IncidentTelemetryEntry:
 	return null
 
 
-func _log_incident_rejection(_entry: IncidentTelemetryEntry, outcome: String) -> void:
-	if incident_telemetry_enabled:
-		print("%s   %s  %s" % [INCIDENT_TELEMETRY_PREFIX, _npc.name, outcome])
+## outcome is one of "SKIP knocked-down" / "SKIP already-reacting" / "SKIP
+## no-archetype" — an NPC that never reached the earshot gate at all, so the
+## range/cone verdict the rest of this trace exists to show does not apply
+## to it (per this task's own instruction: print by name only NPCs that were
+## actually evaluated). Counted into entry.skip_counts instead of printed
+## per NPC — _finish_incident_telemetry() prints the one summary line once
+## the incident is done being evaluated.
+func _log_incident_rejection(entry: IncidentTelemetryEntry, outcome: String) -> void:
+	if not incident_telemetry_enabled:
+		return
+	var reason := outcome.trim_prefix("SKIP ")
+	entry.skip_counts[reason] = int(entry.skip_counts.get(reason, 0)) + 1
+	entry.skip_total += 1
 
 
 func _log_incident_candidate(
