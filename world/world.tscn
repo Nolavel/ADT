@@ -95,11 +95,11 @@ debug_show_health = true
 debug_show_action = true
 
 [node name="Patrolman1" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000017 instance=ExtResource("6_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 215, 2, -75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 123.61426, 2, -75)
 archetype = ExtResource("11_patrolman")
 
 [node name="Patrolman2" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000018 instance=ExtResource("6_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 228, 2, -145)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 110.61084, 2, -145)
 archetype = ExtResource("11_patrolman")
 
 [node name="PoliceDrone" parent="StreamContainer" unique_id=826820068 instance=ExtResource("4_sc4t8")]

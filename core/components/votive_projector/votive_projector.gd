@@ -107,7 +107,7 @@ enum State { IDLE, TRANSMITTING, DARK }
 ## together, by eye. Replaces the old owner-eye-height math (mount_height_
 ## fallback/eye_height_offset/projection_forward_offset), which assumed a
 ## body-root parent this node no longer has.
-@export var bone_local_offset: Vector3 = Vector3(0.0, 0.0, 0.25)
+@export var bone_local_offset: Vector3 = Vector3(0.0, 0.0, 0.45)
 ## Compensates for the head bone's own local axis convention not matching
 ## this node's local -Z-forward assumption — see the file header's "bone
 ## axes" note. A property of this rig's bones, not a defect; tuned by eye
