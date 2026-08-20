@@ -3,8 +3,10 @@
 #
 # NPC counterpart to PlayerAnimationComponent (player/player_components/
 # animation_component/), simplified to what an NPC actually needs: no
-# stances, no combat branch, just an idle<->walk crossfade by speed_ratio
-# and a procedural head look. Same contract shape as that file: the
+# stances, no combat branch, just a signed idle/walk/run/backward blend by
+# speed_ratio and facing (see update_animation_blend()'s own comment — the
+# two-phase flee reaction, NPC_REACTIONS.md §4, is what backward is for) and
+# a procedural head look. Same contract shape as that file: the
 # component reads the body ONLY through _npc (get_parent()), never writes
 # into it beyond animation, and has no _process/_physics_process of its
 # own — update_animation_blend()/update_head_look() are called explicitly
@@ -25,15 +27,29 @@ extends Node
 class_name NPCAnimationComponent
 
 ## Locomotion clips — the same peaceful (PlayerState.Stance.PEACE) clips
-## player_animation_component.gd uses for its own idle/forward points.
-## ANIM_WALK is the only "moving" clip this project has (no separate
-## walk-pace clip; the player's own forward point reuses it too, at a
-## nearer blend radius purely to read as slower) — see that file's own
-## comment on why. There is no NPC equivalent of a run tier: NPCBase's
-## movement intent has no speed tier past walk_speed, so a 2-point
-## BlendSpace1D (idle at 0, walk at 1) is enough.
+## player_animation_component.gd uses for its own idle/forward/retreat
+## points, same address convention that file already documents: MeleeLib is
+## mounted with an empty prefix (bare names, e.g. LightIdle), ShooterLib
+## under new4/, and the library player_animation_component.gd calls
+## ANIM_COMBAT_RETREAT's source (rifle_locomotion_pack.res) is mounted under
+## new3/ — all three verified against npc.tscn's own AnimationPlayer, which
+## mounts the identical six libraries under the identical aliases
+## player.tscn's does (libraries/, new1..new5) — an NPC has everything the
+## player has, nothing library-gated between the two rigs.
 const ANIM_IDLE: StringName = &"LightIdle"
 const ANIM_WALK: StringName = &"new4/sneak-walk"
+## Movement-direction-relative-to-facing pair added for the two-phase flee
+## reaction (idle_npc_controller.gd's BACKING_AWAY/RUNNING, NPC_REACTIONS.md
+## §4 extension) — see update_animation_blend()'s own comment for how a
+## signed blend position picks between these and ANIM_WALK. Same clips
+## player_animation_component.gd already uses and has proven playable on
+## this rig family: ANIM_BACKWARD is that file's own ANIM_COMBAT_RETREAT
+## clip (new3/, its own comment covers the library), ANIM_RUN is its
+## ANIM_PEACE_SPRINT — declared there but never actually wired into either
+## of the player's own blend spaces (see that file's comment on why), so
+## this is that clip's first real use anywhere in the project.
+const ANIM_BACKWARD: StringName = &"new3/legs_locomotion_run_backward_2"
+const ANIM_RUN: StringName = &"new4/run_067"
 
 ## Knockdown/lie/getup clips, ShooterLib (new4/) — "knockdown", "ko-idle-
 ## loop" and "ko-getup", not the root-prefixed "root-knockdown"/"ko-root-
@@ -65,11 +81,22 @@ const HEAD_LOOK_DISTANCE: float = 5.0
 const HEAD_LOOK_SMOOTH: float = 8.0
 
 @export_group("Locomotion")
-## Smoothing.damp_factor() rate for the idle<->walk blend position. Not
+## Smoothing.damp_factor() rate for the locomotion blend position. Not
 ## strictly required by the spec, but a hard snap between NPCBase's
 ## instantaneous speed_ratio steps (an idle controller pausing/resuming
 ## wander) would pop visibly with no smoothing at all.
 @export var speed_blend_smoothing: float = 8.0
+## Where ANIM_WALK sits on the locomotion blend axis — same "distance from
+## centre" role player_animation_component.gd's own walk_blend_radius plays
+## for its forward point. ANIM_RUN sits at the axis's outer positive edge
+## (1.0) and ANIM_BACKWARD at the outer negative edge (-1.0), so neither
+## needs its own threshold export: a speed_ratio between this and 1.0 blends
+## walk into run, same mechanism (blend-vector magnitude carries speed) this
+## project's player animation tree already uses. A transition threshold, not
+## a playback-rate multiplier — see update_animation_blend()'s own comment
+## on why per-clip TimeScale nodes were considered and not used here. A feel
+## value, tuned by eye.
+@export var walk_blend_radius: float = 0.5
 
 @export_group("Head Look Limits")
 ## Same defaults as player_animation_component.gd's own — a feel value
@@ -101,16 +128,53 @@ func _ready() -> void:
 	_setup_head_look()
 
 
-## Blend position comes straight from NPCBase's own speed_ratio (already
-## clamped 0..1 there) — smoothed here only to avoid a visible pop between
+## Blend position is now SIGNED (-1..1, see _setup_animation_tree()'s widened
+## locomotion axis) — smoothed here only to avoid a visible pop between
 ## instantaneous controller steps, see speed_blend_smoothing's own comment.
 func update_animation_blend(delta: float) -> void:
 	if not _anim_tree:
 		return
 	_blend_position = lerp(
-		_blend_position, _npc.get_move_speed_ratio(), Smoothing.damp_factor(speed_blend_smoothing, delta)
+		_blend_position, _target_blend_position(), Smoothing.damp_factor(speed_blend_smoothing, delta)
 	)
 	_anim_tree.set("parameters/locomotion/blend_position", _blend_position)
+
+
+## Positive is moving in the direction the body is actually facing (walk/
+## run); negative is moving opposite it — the flee backpedal
+## (idle_npc_controller.gd's BACKING_AWAY), the one case in this project
+## where NPCBase.set_move_intent()'s face_direction=false lets the body face
+## somewhere other than where it's walking. Deliberately reads NPCBase's own
+## CharacterBody3D.velocity (already public, no new getter needed) against
+## get_facing_direction(), rather than adding a signed-direction contract to
+## NPCBase/the controller — this task's own brief said not to touch either.
+## Magnitude still comes from get_move_speed_ratio(), so an ordinary forward
+## walk/run (face_direction always true there) is completely unaffected;
+## this only ever goes negative during a backpedal.
+##
+## Per-clip playback-RATE tuning (an AnimationNodeTimeScale wrapping
+## ANIM_BACKWARD/ANIM_RUN) was considered and dropped: unlike a top-level
+## BlendTree node (action_oneshot, punch_oneshot — proven, addressable via a
+## plain "parameters/<name>/..." path elsewhere in this project), a node
+## nested INSIDE a blend space's own point is addressed through that blend
+## space's own internal parameter path, which player_animation_component.gd
+## already flags as unverifiable without running the editor (see its own
+## comment on why a BlendSpace1D nested inside a 2D point wasn't built for
+## exactly this reason). walk_blend_radius (how much of the axis ANIM_WALK
+## occupies before ANIM_RUN/ANIM_BACKWARD start mixing in) is the safe
+## equivalent tunable — a plain add_blend_point() position, the same
+## mechanism player_animation_component.gd's own walk_blend_radius already
+## uses successfully.
+func _target_blend_position() -> float:
+	var speed_ratio := _npc.get_move_speed_ratio()
+	if speed_ratio < 0.01:
+		return 0.0
+	var horizontal_velocity := Vector3(_npc.velocity.x, 0.0, _npc.velocity.z)
+	if horizontal_velocity.length() < 0.01:
+		return speed_ratio
+	if _npc.get_facing_direction().dot(horizontal_velocity.normalized()) < 0.0:
+		return -speed_ratio
+	return speed_ratio
 
 
 ## Aims the LookAtModifier3D at NPCBase's current look target (whatever
@@ -192,9 +256,9 @@ func is_action_playing() -> bool:
 	return bool(_anim_tree.get("parameters/action_oneshot/active"))
 
 
-## Locomotion (idle<->walk BlendSpace1D, see ANIM_WALK's own comment on why
-## there is no third/run point) with the fall/lie/getup sequence layered on
-## top via AnimationNodeOneShot, same technique and reason as
+## Locomotion (idle/walk/run/backward BlendSpace1D, see the widened-axis
+## comment further down) with the fall/lie/getup sequence layered on top via
+## AnimationNodeOneShot, same technique and reason as
 ## player_animation_component.gd's punch_oneshot: this project has no
 ## upper-body-only blending yet, so a knocked-down NPC briefly plays a
 ## full-body clip instead of locomotion, which is fine because NPCBase stops
@@ -211,12 +275,28 @@ func _setup_animation_tree() -> void:
 	idle.animation = ANIM_IDLE
 	var walk := AnimationNodeAnimation.new()
 	walk.animation = ANIM_WALK
+	var run := AnimationNodeAnimation.new()
+	run.animation = ANIM_RUN
+	var backward := AnimationNodeAnimation.new()
+	backward.animation = ANIM_BACKWARD
 
+	## Widened from a 2-point (idle/walk) space to 4, all still collinear on
+	## one axis — same shape player_animation_component.gd's own forward axis
+	## uses (idle at centre, walk at a radius, run at the outer edge), just
+	## without that file's strafe/diagonal points, which nothing here asks
+	## for (see this task's own "keep the NPC tree simple" instruction).
+	## BACKWARD occupies the axis's other half entirely, at its own outer
+	## edge (-1.0) — a linear BlendSpace1D has no triangulation to go wrong
+	## the way player_animation_component.gd's 2D space's own collinear-point
+	## comment worries about, so this is the safer of the two shapes, not
+	## just the simpler one.
 	var locomotion := AnimationNodeBlendSpace1D.new()
-	locomotion.min_space = 0.0
+	locomotion.min_space = -1.0
 	locomotion.max_space = 1.0
+	locomotion.add_blend_point(backward, -1.0)
 	locomotion.add_blend_point(idle, 0.0)
-	locomotion.add_blend_point(walk, 1.0)
+	locomotion.add_blend_point(walk, walk_blend_radius)
+	locomotion.add_blend_point(run, 1.0)
 
 	## Placeholder clip at setup time — never played until play_knockdown()/
 	## play_lying()/play_getup() assigns and fires it.
