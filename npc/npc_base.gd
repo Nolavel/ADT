@@ -145,6 +145,14 @@ const GROUP_ARCHETYPE_BODY_MESH: StringName = &"archetype_body_mesh"
 ## speed_ratio is 0..1, a fraction of walk_speed.
 var _move_direction: Vector3 = Vector3.ZERO
 var _move_speed_ratio: float = 0.0
+## True while movement direction should also drive body rotation — the
+## default, and every caller before the two-phase flee backpedal (NPC_
+## REACTIONS.md §4) left it there. False is the backpedal case:
+## set_move_intent()'s direction still has to move the body backward, but
+## rotation must keep tracking a facing target (the player) instead — see
+## set_move_intent()'s own comment and _face_move_direction() below, whose
+## header already anticipated this exact override before anything used it.
+var _move_faces_direction: bool = true
 
 ## FALLING plays the knockdown clip, LYING holds the looping idle clip,
 ## GETTING_UP plays the getup clip — see _update_knockdown() for the
@@ -279,9 +287,14 @@ func _physics_process(delta: float) -> void:
 ## Movement intent for this frame, written by whatever controller drives this
 ## NPC. The body integrates it; it never decides what the intent should be.
 ## direction is expected normalised and horizontal; speed_ratio is 0..1.
-func set_move_intent(direction: Vector3, speed_ratio: float) -> void:
+## face_direction defaults to true (the only behaviour before the two-phase
+## flee backpedal existed) — pass false to keep moving in `direction` while
+## letting a facing target (set_facing_target()) drive rotation instead, see
+## _face_move_direction()'s own comment.
+func set_move_intent(direction: Vector3, speed_ratio: float, face_direction: bool = true) -> void:
 	_move_direction = direction
 	_move_speed_ratio = clampf(speed_ratio, 0.0, 1.0)
+	_move_faces_direction = face_direction
 
 
 ## Read by NPCAnimationComponent to drive the idle<->walk blend — the same
@@ -515,14 +528,15 @@ func has_facing_target() -> bool:
 
 ## Turns the body to face _move_direction while moving; otherwise turns
 ## toward _facing_target_point if one is set (see set_facing_target()).
-## Movement always wins: an NPC that is walking somewhere faces where it's
-## walking, never a facing target — otherwise it would visibly walk
-## sideways or backwards while "looking" elsewhere. Not exercised yet
-## (nothing sets a facing target while _move_direction is nonzero), but the
-## priority is worth having in place before it is.
+## Movement wins over a facing target by default: an NPC that is walking
+## somewhere faces where it's walking, never a facing target — otherwise it
+## would visibly walk sideways or backwards while "looking" elsewhere. The
+## exception is _move_faces_direction == false (set_move_intent()'s
+## face_direction param) — the flee backpedal case, where the body must
+## move backward while still facing whatever set_facing_target() points at.
 func _face_move_direction(delta: float) -> void:
 	var target_angle: float
-	if _move_direction.length() > 0.01:
+	if _move_direction.length() > 0.01 and _move_faces_direction:
 		target_angle = atan2(_move_direction.x, _move_direction.z)
 	elif _has_facing_target:
 		var to_target := _facing_target_point - global_position

@@ -134,6 +134,13 @@ enum State { IDLE, WALKING }
 ## call_report_duration before it actually commits — see _step_calling().
 enum ReactionState { NONE, FLEEING, FROZEN, RESPONDING, CALLING }
 
+## FLEEING's own two sub-phases (NPC_REACTIONS.md §4 extension). BACKING_AWAY
+## is the witness realising the aggressor knows it saw something — it backs
+## away while still watching the player; RUNNING is giving up on watching
+## and just getting away. See _start_flee()/_step_flee_backing_away()/
+## _step_flee_running().
+enum FleePhase { BACKING_AWAY, RUNNING }
+
 
 class IncidentVision:
 	var distance: float = INF
@@ -160,6 +167,18 @@ const OBSTACLE_RAY_HEIGHT: float = 1.0
 ## CollisionLayers.OBSTACLE (wall only) — floor is what an NPC walks on,
 ## not an obstacle to walking.
 const OBSTACLE_MASK: int = CollisionLayers.OBSTACLE
+## _obstacle_ray's rest target_position — local +Z, the same "check what's
+## ahead of the body's own facing" sense every other user of the ray relies
+## on (wander, respond, the RUNNING flee phase).
+const OBSTACLE_RAY_FORWARD: Vector3 = Vector3(0.0, 0.0, OBSTACLE_CHECK_DISTANCE)
+## _obstacle_ray's target_position while BACKING_AWAY. The ray is fixed to
+## the NPC's own local space, and during a backpedal the body's local +Z
+## points AT the player (set_facing_target(), not the movement direction —
+## see _face_move_direction()'s own comment on why), so the ordinary forward
+## ray would be checking toward the threat instead of toward the ground the
+## NPC is actually about to step onto. Local -Z is "behind the body," which
+## during a backpedal is exactly the direction of travel.
+const OBSTACLE_RAY_BACKWARD: Vector3 = Vector3(0.0, 0.0, -OBSTACLE_CHECK_DISTANCE)
 const INCIDENT_TELEMETRY_PREFIX: String = "[WitnessTelemetry]"
 
 static var _next_telemetry_sequence: int = 1
@@ -193,13 +212,40 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 @export var earshot_radius: float = 25.0
 ## Seconds spent fleeing before returning to ordinary wander.
 @export var flee_duration: float = 4.0
-## Speed ratio while fleeing — faster than an ordinary wander pace on
-## purpose; a walk away from a fight should read as more urgent than a
-## stroll.
+## Speed ratio during the RUNNING phase (phase 2) — faster than an ordinary
+## wander pace on purpose; running away from a fight should read as more
+## urgent than a stroll. Also the fastest of the two flee phases, on
+## purpose — see backpedal_speed_ratio's own comment for why that has to be
+## slower, not just different.
 @export var flee_speed_ratio: float = 1.0
 ## Seconds spent frozen (staring at the incident) before returning to
 ## ordinary wander.
 @export var freeze_duration: float = 4.0
+
+@export_group("Flee — two phases (NPC_REACTIONS.md §4 extension)")
+## Speed ratio during the BACKING_AWAY phase (phase 1) — deliberately slower
+## than flee_speed_ratio: a witness backing away while still watching the
+## threat is cautious, not yet sprinting. The gap between this and
+## flee_speed_ratio is also what stands in for "phase 2 reads as faster"
+## with no run animation to switch to — see npc_animation_component.gd's
+## own note on why there is no run clip; NPCBase has no speed tier above
+## walk_speed either, so both phases still top out there.
+@export var backpedal_speed_ratio: float = 0.45
+## Distance to the player below which BACKING_AWAY gives way to RUNNING
+## regardless of anything else — the threat is now close enough that
+## backing away from it stops being viable and it is time to actually run.
+## A feel value.
+@export var backpedal_distance_threshold: float = 4.0
+## Seconds BACKING_AWAY may run before forcing RUNNING even if the player
+## hasn't closed the distance — guards against an indefinite backpedal if
+## the player happens to hold pace without ever closing in. A feel value.
+@export var backpedal_max_duration: float = 2.5
+## Cosine threshold for "is the player's movement aimed at me" — the player
+## walking somewhere else nearby must not read as approaching every witness
+## in earshot (see the file's own "стоящий на месте игрок" requirement,
+## extended here to "moving elsewhere" too). ~0.3 is roughly a 70-degree
+## cone centred on the direction from the player to this NPC. A feel value.
+@export var approach_alignment_threshold: float = 0.3
 
 @export_group("Respond (Patrolman, NPC_REACTIONS.md §4)")
 ## Distinct from wander_speed_ratio — brisk and purposeful, not a stroll.
@@ -309,9 +355,17 @@ var _reaction_state: ReactionState = ReactionState.NONE
 ## Seconds spent in the current reaction state — reset to 0 whenever a new
 ## reaction starts, compared against flee_duration/freeze_duration.
 var _reaction_timer: float = 0.0
-## Fixed at the moment FLEEING starts (away from the incident position) —
-## not re-derived every frame, since the incident itself doesn't move.
+## Away-from-target direction driving FLEEING's movement. Fixed at the
+## moment RUNNING starts (away from the incident position, which doesn't
+## move); recomputed every frame during BACKING_AWAY instead (away from the
+## player's own live position — see _step_flee_backing_away()).
 var _flee_direction: Vector3 = Vector3.ZERO
+## Which of FleePhase this FLEEING reaction is currently in — see
+## _start_flee()/_enter_flee_phase().
+var _flee_phase: FleePhase = FleePhase.RUNNING
+## Seconds spent in the CURRENT flee phase — reset on every phase change,
+## compared against backpedal_max_duration.
+var _flee_phase_timer: float = 0.0
 ## Where a RESPONDING (Patrolman-only) NPC is walking to.
 var _respond_target: Vector3 = Vector3.ZERO
 ## True once a RESPONDING Patrolman has closed to respond_arrival_distance
@@ -400,7 +454,7 @@ func _ready() -> void:
 	_wander_origin = _npc.global_position
 	_obstacle_ray = RayCast3D.new()
 	_obstacle_ray.position = Vector3(0.0, 0.9, 0.0)
-	_obstacle_ray.target_position = Vector3(0.0, 0.0, 1.5)
+	_obstacle_ray.target_position = OBSTACLE_RAY_FORWARD
 	_obstacle_ray.collision_mask = OBSTACLE_MASK
 	_npc.call_deferred("add_child", _obstacle_ray)
 
@@ -524,7 +578,7 @@ func get_visible_time() -> float:
 func get_debug_action_text() -> String:
 	match _reaction_state:
 		ReactionState.FLEEING:
-			return "FLEE"
+			return "FLEE\nbackpedal" if _flee_phase == FleePhase.BACKING_AWAY else "FLEE"
 		ReactionState.FROZEN:
 			return "LOOK\nincident"
 		ReactionState.RESPONDING:
@@ -836,14 +890,62 @@ func _call_it_in(incident: Incident) -> void:
 	)
 
 
+## Phase 1 (BACKING_AWAY) only opens if the player is approaching RIGHT NOW
+## — a player merely standing nearby must not summon a backing-away crowd
+## (this task's own requirement). A witness that rolls Flee while the
+## player isn't approaching skips the theatrics and goes straight to
+## RUNNING; away-from-incident-position is still a sound flee direction
+## either way, since the incident (not necessarily the player's current
+## position) is what it's fleeing.
 func _start_flee(incident_position: Vector3) -> void:
 	var away := _npc.global_position - incident_position
 	away.y = 0.0
 	_flee_direction = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
 	_reaction_state = ReactionState.FLEEING
 	_reaction_timer = 0.0
-	_npc.clear_look_target()
-	_npc.clear_facing_target()
+	_enter_flee_phase(FleePhase.BACKING_AWAY if _is_player_approaching() else FleePhase.RUNNING)
+
+
+## Switches FLEEING's active sub-phase and does the one-time setup each side
+## needs — RUNNING clears the stare (facing/look target) BACKING_AWAY sets
+## every frame and points _obstacle_ray back at the body's own forward;
+## BACKING_AWAY points the ray backward instead, since during a backpedal
+## local +Z faces the player, not the direction of travel (see
+## OBSTACLE_RAY_BACKWARD's own comment).
+func _enter_flee_phase(phase: FleePhase) -> void:
+	_flee_phase = phase
+	_flee_phase_timer = 0.0
+	if not _obstacle_ray:
+		return
+	if phase == FleePhase.BACKING_AWAY:
+		_obstacle_ray.target_position = OBSTACLE_RAY_BACKWARD
+	else:
+		_obstacle_ray.target_position = OBSTACLE_RAY_FORWARD
+		_npc.clear_facing_target()
+		_npc.clear_look_target()
+
+
+## Whether the player's own movement is currently aimed at this NPC — the
+## gate for BOTH opening BACKING_AWAY (_start_flee()) and staying in it
+## (_step_flee_backing_away()). Reads player.gd's CharacterBody3D.velocity
+## directly rather than sampling this NPC's distance to the player across
+## frames: velocity answers "is it approaching me" from the very first
+## frame of a reaction, with no one-frame warm-up a distance-delta approach
+## would need. Standing still (near-zero velocity) is never approaching,
+## matching this task's own "стоящий на месте игрок" requirement.
+func _is_player_approaching() -> bool:
+	var player_node := get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if not player_node:
+		return false
+	var to_npc := _npc.global_position - player_node.global_position
+	to_npc.y = 0.0
+	if to_npc.length() < 0.01:
+		return true
+	var player_velocity := player_node.velocity
+	player_velocity.y = 0.0
+	if player_velocity.length() < 0.01:
+		return false
+	return player_velocity.normalized().dot(to_npc.normalized()) > approach_alignment_threshold
 
 
 func _start_freeze(incident_position: Vector3) -> void:
@@ -1001,8 +1103,63 @@ func _step_flee(delta: float) -> void:
 	if _reaction_timer >= flee_duration:
 		_end_reaction()
 		return
-	## Same obstacle check _step_wander() uses — see the file header on
-	## _obstacle_ray's deferred add_child().
+
+	match _flee_phase:
+		FleePhase.BACKING_AWAY:
+			_step_flee_backing_away(delta)
+		FleePhase.RUNNING:
+			_step_flee_running(delta)
+
+
+## Phase 1: backs away from the player's own live position while facing it
+## (set_facing_target(), with set_move_intent()'s face_direction=false so
+## the body doesn't turn to face the way it's walking — see npc_base.gd's
+## own comment on that override). Falls through to RUNNING the moment any
+## one of three things happens: the player closes to
+## backpedal_distance_threshold (backing away stopped being viable), this
+## phase has run backpedal_max_duration (a stall guard), or the player
+## stops approaching (the one cue that justified backpedaling in the first
+## place is gone).
+func _step_flee_backing_away(delta: float) -> void:
+	_flee_phase_timer += delta
+
+	var player_node := get_tree().get_first_node_in_group("player") as Node3D
+	if not player_node:
+		_enter_flee_phase(FleePhase.RUNNING)
+		return
+
+	var player_pos := player_node.global_position
+	var away := _npc.global_position - player_pos
+	away.y = 0.0
+	var dist := away.length()
+
+	if dist < backpedal_distance_threshold \
+			or _flee_phase_timer >= backpedal_max_duration \
+			or not _is_player_approaching():
+		_enter_flee_phase(FleePhase.RUNNING)
+		return
+
+	if dist > 0.01:
+		_flee_direction = away.normalized()
+
+	_npc.set_facing_target(player_pos)
+	_npc.set_look_target(player_pos)
+
+	if _obstacle_ray and _obstacle_ray.is_colliding():
+		## Backing into something — no navigation to route a backward step
+		## around it (see the file header), so give up on the theatrics and
+		## just run instead of pushing through a wall backward.
+		_enter_flee_phase(FleePhase.RUNNING)
+		return
+
+	_npc.set_move_intent(_flee_direction, backpedal_speed_ratio, false)
+
+
+## Phase 2: same behaviour _step_flee() always had — same obstacle check
+## _step_wander() uses (see the file header on _obstacle_ray's deferred
+## add_child()), retargeting off a wall by rotating _flee_direction rather
+## than stopping.
+func _step_flee_running(_delta: float) -> void:
 	if _obstacle_ray and _obstacle_ray.is_colliding():
 		_flee_direction = _flee_direction.rotated(Vector3.UP, randf_range(0.5, 1.5))
 	_npc.set_move_intent(_flee_direction, flee_speed_ratio)
@@ -1117,6 +1274,14 @@ func _end_reaction() -> void:
 	_reaction_state = ReactionState.NONE
 	_npc.clear_facing_target()
 	_npc.clear_look_target()
+	## Defensive, not load-bearing on the happy path: every _enter_flee_
+	## phase(RUNNING) call already restores this, but flee_duration can end
+	## the reaction while still BACKING_AWAY (_step_flee() checks the
+	## overall duration before dispatching to either phase), which would
+	## otherwise leave the ray pointed backward for whatever ordinary
+	## wander/respond/run behaviour picks this NPC up next.
+	if _obstacle_ray:
+		_obstacle_ray.target_position = OBSTACLE_RAY_FORWARD
 	_start_pause()
 
 
