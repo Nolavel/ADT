@@ -201,6 +201,19 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## ordinary wander.
 @export var freeze_duration: float = 4.0
 
+@export_group("Respond (Patrolman, NPC_REACTIONS.md §4)")
+## Distinct from wander_speed_ratio — brisk and purposeful, not a stroll.
+## Still a fraction of walk_speed like every other speed knob here: NPCBase
+## has no run tier (see npc_animation_component.gd's own note on why there
+## is no run clip to switch to), so "brisker" tops out at walk_speed*1.0,
+## same ceiling wander/flee already live under.
+@export var respond_speed_ratio: float = 0.85
+## Distance from the target at which a responding Patrolman stops, instead
+## of closing all the way to WANDER_ARRIVAL_RADIUS (0.5m) — investigating a
+## scene reads as holding back a couple of metres, not walking up nose to
+## nose with whoever/whatever is there. A feel value.
+@export var respond_arrival_distance: float = 2.0
+
 @export_group("Incident Registry")
 ## Seconds to keep retrying the group lookup before giving up and warning
 ## once — same idiom and same default as
@@ -301,6 +314,11 @@ var _reaction_timer: float = 0.0
 var _flee_direction: Vector3 = Vector3.ZERO
 ## Where a RESPONDING (Patrolman-only) NPC is walking to.
 var _respond_target: Vector3 = Vector3.ZERO
+## True once a RESPONDING Patrolman has closed to respond_arrival_distance
+## and stopped — see _step_respond(). Distinguishes "still walking there"
+## from "arrived and holding" for get_debug_action_text() and gates the
+## arrival hold's own timer.
+var _respond_arrived: bool = false
 
 ## Resolved lazily via a group lookup, retried from _decide() until it
 ## succeeds — same reasoning and same pattern as
@@ -510,7 +528,7 @@ func get_debug_action_text() -> String:
 		ReactionState.FROZEN:
 			return "LOOK\nincident"
 		ReactionState.RESPONDING:
-			return "WALK\nresponding"
+			return "LOOK\nresponding" if _respond_arrived else "WALK\nresponding"
 		ReactionState.CALLING:
 			return "CALL\nwitness"
 
@@ -734,6 +752,15 @@ func _on_incident_reported(incident: Incident) -> void:
 
 	if _npc.archetype.responds_by_approaching:
 		_log_incident_candidate(telemetry, vision, "RESPOND patrolman")
+		## Always the incident position, never the player, even when a
+		## witness's report would put the player at FACE/IRIS quality:
+		## Incident (incident_registry/incident.gd) carries no observation
+		## level at all, and WitnessReport — the one class that resolves
+		## one — is never attached to the Incident or the registry (see
+		## witness_report.gd's own header: "written and read by nothing
+		## else in this build"). A responding Patrolman has no channel to
+		## learn a report's quality without a new one being added — an
+		## open contract question, not something to wire around here.
 		_start_responding(incident.position)
 		return
 
@@ -832,7 +859,9 @@ func _start_freeze(incident_position: Vector3) -> void:
 
 func _start_responding(incident_position: Vector3) -> void:
 	_reaction_state = ReactionState.RESPONDING
+	_reaction_timer = 0.0
 	_respond_target = incident_position
+	_respond_arrived = false
 
 
 ## Witness decided to call (docs/attribution.md §7) — stares at the incident
@@ -987,15 +1016,30 @@ func _step_freeze(delta: float) -> void:
 
 ## Patrolman only (see _on_incident_reported()). Walks straight at the
 ## incident position, same "goal point, arrive" shape _step_wander() uses,
-## reusing WANDER_ARRIVAL_RADIUS rather than a second near-identical
-## constant that would mean the same thing.
-func _step_respond(_delta: float) -> void:
+## at respond_speed_ratio (brisker than an ordinary wander) and stopping at
+## respond_arrival_distance (further out than WANDER_ARRIVAL_RADIUS — an
+## investigating Patrolman holds back, doesn't walk up nose to nose). On
+## arrival this NPC just stops and stares at the target for freeze_duration
+## — reusing that same hold length rather than a third near-identical
+## export, since nothing about this task calls for combat behaviour on
+## arrival, only visible acknowledgement that it got there.
+func _step_respond(delta: float) -> void:
+	if _respond_arrived:
+		_reaction_timer += delta
+		if _reaction_timer >= freeze_duration:
+			_end_reaction()
+		return
+
 	var to_target := _respond_target - _npc.global_position
 	to_target.y = 0.0
 	var dist := to_target.length()
 
-	if dist < WANDER_ARRIVAL_RADIUS:
-		_end_reaction()
+	if dist <= respond_arrival_distance:
+		_respond_arrived = true
+		_reaction_timer = 0.0
+		_npc.set_move_intent(Vector3.ZERO, 0.0)
+		_npc.set_facing_target(_respond_target)
+		_npc.set_look_target(_respond_target)
 		return
 
 	if _obstacle_ray and _obstacle_ray.is_colliding():
@@ -1004,7 +1048,7 @@ func _step_respond(_delta: float) -> void:
 		_end_reaction()
 		return
 
-	_npc.set_move_intent(to_target.normalized(), wander_speed_ratio)
+	_npc.set_move_intent(to_target.normalized(), respond_speed_ratio)
 
 
 ## PENDING -> COMMITTED once call_report_duration elapses without
