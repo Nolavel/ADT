@@ -85,10 +85,14 @@ archetype = ExtResource("9_commuter")
 [node name="Clerk1" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000015 instance=ExtResource("6_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 240, 2, -115)
 archetype = ExtResource("10_clerk")
+debug_show_health = true
+debug_show_action = true
 
 [node name="Clerk2" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000016 instance=ExtResource("6_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 203, 2, -100)
 archetype = ExtResource("10_clerk")
+debug_show_health = true
+debug_show_action = true
 
 [node name="Patrolman1" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000017 instance=ExtResource("6_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 215, 2, -75)
