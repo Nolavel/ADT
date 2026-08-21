@@ -102,6 +102,44 @@
 # this NPC goes down and gets back up. VotiveProjector owns no timing or
 # decision logic of its own; see that file's header.
 #
+# CALL INTERRUPTION BY PROXIMITY (NPC_REACTIONS.md §4 extension) is a second
+# way to keep a report from ever reaching IncidentRegistry, alongside the
+# existing knockdown path: _step_calling() checks _is_player_approaching()
+# every frame it's PENDING, and if the player is closing in on a still-
+# transmitting witness, _abort_call_for_flee() cancels the report
+# (_cancel_active_witness_report(), same CANCELLED status, different reason
+# string) and hands off straight into the ordinary FLEEING state machine —
+# deliberately the SAME two-phase backpedal-then-run below, not a second
+# implementation of it.
+#
+# THE TWO-PHASE FLEE ITSELF is now direction/duration-corrected from an
+# earlier pass: BACKING_AWAY is a FIXED duration (backpedal_duration), not
+# gated by distance to the player or by the player still approaching — only
+# losing track of the player node or backing into geometry ends it early.
+# RUNNING's own direction (_flee_direction) is fixed exactly once, at the
+# moment _enter_flee_phase() turns into RUNNING, away from
+# _flee_threat_position (the incident, or wherever the player was when a
+# memory-triggered flee started — see below) — never recomputed per frame,
+# and never toward the player's own position the way BACKING_AWAY's tracking
+# is. RUNNING itself is now distance-gated (flee_far_distance, "tens of
+# metres") rather than duration-gated; flee_duration is a per-phase safety
+# cap on RUNNING alone now, not the whole reaction's timer, in case geometry
+# traps an NPC short of that distance. See _set_flee_direction_from_threat().
+#
+# WITNESS MEMORY (NPC_REACTIONS.md §4 extension) is unrelated to any of the
+# above being a WitnessReport producer: _remembers_player is set the moment
+# ANY archetype's vision.is_seen comes back true in _on_incident_reported()
+# — "увидел — запомнил" — regardless of what that NPC does about the
+# incident next (Call/Flee/Freeze/Respond), and is never cleared. From then
+# on, _decide()'s ordinary observe-player branch skips straight to
+# _start_flee(observation.position, false) the instant the player is seen
+# again, incident or not — allow_backpedal=false, since recognising a
+# remembered threat isn't a fresh startle worth watching first. The flag
+# lives on this controller, a child of the NPC, so it disappears with the
+# NPC on block unload — deliberately not durable in IncidentRegistry, which
+# is what the CITY has on record, not what one passer-by personally
+# remembers.
+#
 # INCIDENT TELEMETRY is an event trace, not a second debug panel: one block
 # is emitted synchronously for each live incident and is silent between
 # incidents. The range/cone result feeding the trace is the exact same typed
@@ -206,8 +244,13 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## player. A feel value, not per-archetype — NPC_REACTIONS.md ties reaction
 ## BIAS to archetype (§4, via flee_probability) but never hearing range.
 @export var earshot_radius: float = 25.0
-## Seconds spent fleeing before returning to ordinary wander.
-@export var flee_duration: float = 4.0
+## Safety cap on the RUNNING phase alone (seconds), not the whole reaction
+## any more — geometry can trap an NPC close to the threat with nowhere
+## straight to run, so this guarantees RUNNING still ends eventually even if
+## flee_far_distance is never actually covered. Generous on purpose: at
+## flee_speed_ratio 1.0 and a typical walk_speed, covering flee_far_distance
+## (default 40m) takes on the order of 15s in the open.
+@export var flee_duration: float = 20.0
 ## Speed ratio during the RUNNING phase (phase 2) — faster than an ordinary
 ## wander pace on purpose; running away from a fight should read as more
 ## urgent than a stroll. Also the fastest of the two flee phases, on
@@ -229,20 +272,25 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## positive edge plays the run clip. NPCBase itself has no speed tier above
 ## walk_speed either, so both phases still top out there.
 @export var backpedal_speed_ratio: float = 0.45
-## Distance to the player below which BACKING_AWAY gives way to RUNNING
-## regardless of anything else — the threat is now close enough that
-## backing away from it stops being viable and it is time to actually run.
-## A feel value.
-@export var backpedal_distance_threshold: float = 4.0
-## Seconds BACKING_AWAY may run before forcing RUNNING even if the player
-## hasn't closed the distance — guards against an indefinite backpedal if
-## the player happens to hold pace without ever closing in. A feel value.
-@export var backpedal_max_duration: float = 2.5
+## Fixed duration of the BACKING_AWAY phase — this task's own "фиксированная
+## длительность... не по дистанции — по времени" requirement: unlike an
+## earlier version, nothing here shortens it if the player closes distance
+## or stops approaching mid-backpedal. The only early exits left are losing
+## track of the player node entirely or backing into solid geometry — see
+## _step_flee_backing_away().
+@export var backpedal_duration: float = 2.0
+## How far RUNNING must put this NPC from _flee_threat_position before the
+## reaction ends — "far", this task's own words, "tens of metres, not five".
+## Distance-gated on purpose, not duration-gated (see flee_duration's own
+## comment on why that field is now a safety cap, not the primary limit).
+@export var flee_far_distance: float = 40.0
 ## Cosine threshold for "is the player's movement aimed at me" — the player
 ## walking somewhere else nearby must not read as approaching every witness
 ## in earshot (see the file's own "стоящий на месте игрок" requirement,
 ## extended here to "moving elsewhere" too). ~0.3 is roughly a 70-degree
 ## cone centred on the direction from the player to this NPC. A feel value.
+## Also the gate _step_calling() uses to decide whether a mid-transmission
+## witness abandons the report and flees — see _abort_call_for_flee().
 @export var approach_alignment_threshold: float = 0.3
 
 @export_group("Respond (Patrolman, NPC_REACTIONS.md §4)")
@@ -322,6 +370,17 @@ var _was_knocked_down: bool = false
 ## lasted," not a running total.
 var _visible_time: float = 0.0
 
+## Set once and never cleared, the moment this NPC actually sees an incident
+## (_on_incident_reported(), any archetype — see that method's own comment).
+## NPC_REACTIONS.md §4 extension: "увидел — запомнил" — once true, ordinary
+## player-sighting in _decide() no longer freezes/turns toward the player,
+## it flees on sight instead, with no incident needed. Lives on this
+## controller, which is a child of the NPC — gone the instant the NPC itself
+## is, same as every other per-instance decision-layer field here; NOT
+## carried into IncidentRegistry (that registry is what the CITY has on
+## record, this is what one passer-by personally remembers).
+var _remembers_player: bool = false
+
 var _wander_state: State = State.IDLE
 ## Centre of the wander area — captured once in _ready(), same "anchored to
 ## where it started" convention as PatrolDroneController's patrol square.
@@ -338,16 +397,28 @@ var _reaction_state: ReactionState = ReactionState.NONE
 ## Seconds spent in the current reaction state — reset to 0 whenever a new
 ## reaction starts, compared against flee_duration/freeze_duration.
 var _reaction_timer: float = 0.0
-## Away-from-target direction driving FLEEING's movement. Fixed at the
-## moment RUNNING starts (away from the incident position, which doesn't
-## move); recomputed every frame during BACKING_AWAY instead (away from the
-## player's own live position — see _step_flee_backing_away()).
+## The fixed point this FLEEING reaction is running from — an incident's
+## position (_start_flee() from _on_incident_reported()/
+## _abort_call_for_flee()) or the player's own position at the moment
+## memory-triggered flight starts (_decide()'s _remembers_player branch).
+## Set once, at _start_flee(), and never moved afterward — see
+## _set_flee_direction_from_threat()'s own comment.
+var _flee_threat_position: Vector3 = Vector3.ZERO
+## Away-from-_flee_threat_position direction driving RUNNING's movement —
+## recomputed once whenever _enter_flee_phase() actually turns into RUNNING
+## (NPC_REACTIONS.md §4 extension: "направление берётся один раз при
+## развороте", never per frame). BACKING_AWAY instead recomputes this every
+## frame toward the player's own live position — see
+## _step_flee_backing_away() — since backing away has to actually track a
+## moving threat; only the final RUNNING direction is fixed.
 var _flee_direction: Vector3 = Vector3.ZERO
 ## Which of FleePhase this FLEEING reaction is currently in — see
 ## _start_flee()/_enter_flee_phase().
 var _flee_phase: FleePhase = FleePhase.RUNNING
 ## Seconds spent in the CURRENT flee phase — reset on every phase change,
-## compared against backpedal_max_duration.
+## compared against backpedal_duration (BACKING_AWAY) or flee_duration, now
+## a per-phase safety cap rather than the whole reaction's own timer
+## (RUNNING — see _step_flee_running()).
 var _flee_phase_timer: float = 0.0
 ## Where a RESPONDING (Patrolman-only) NPC is walking to.
 var _respond_target: Vector3 = Vector3.ZERO
@@ -492,6 +563,15 @@ func _decide(delta: float) -> void:
 		_npc.clear_look_target()
 		_npc.clear_facing_target()
 		_decide_wander(delta)
+		return
+
+	if _remembers_player:
+		## This NPC witnessed an incident once and never forgot — no fresh
+		## incident needed, just seeing the player again is enough (this
+		## task's own "сразу бежит, без всякого инцидента" requirement).
+		## allow_backpedal=false: this isn't a fresh startle that might still
+		## be worth watching first, it's recognition — straight to RUNNING.
+		_start_flee(observation.position, false)
 		return
 
 	## Stops in place the instant it notices someone — see the file header.
@@ -709,6 +789,13 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 	telemetry.in_hearing_range += 1
 
+	if vision.is_seen:
+		## NPC_REACTIONS.md §4 extension: witnessing an incident at all is
+		## remembered forever, regardless of archetype or what this NPC does
+		## about it next (Call/Flee/Freeze/Respond) — "увидел — запомнил",
+		## this task's own words. See _remembers_player's own comment.
+		_remembers_player = true
+
 	if _npc.archetype.responds_by_approaching:
 		_log_incident_candidate(telemetry, vision, "RESPOND patrolman")
 		## Always the incident position, never the player, even when a
@@ -787,31 +874,51 @@ func _call_it_in(incident: Incident) -> void:
 	)
 
 
-## Phase 1 (BACKING_AWAY) only opens if the player is approaching RIGHT NOW
-## — a player merely standing nearby must not summon a backing-away crowd
-## (this task's own requirement). A witness that rolls Flee while the
-## player isn't approaching skips the theatrics and goes straight to
-## RUNNING; away-from-incident-position is still a sound flee direction
-## either way, since the incident (not necessarily the player's current
-## position) is what it's fleeing.
-func _start_flee(incident_position: Vector3) -> void:
-	var away := _npc.global_position - incident_position
-	away.y = 0.0
-	_flee_direction = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
+## Phase 1 (BACKING_AWAY) only opens if allow_backpedal is true AND the
+## player is approaching RIGHT NOW — a player merely standing nearby must
+## not summon a backing-away crowd (this task's own requirement). A witness
+## that flees while the player isn't approaching, or with allow_backpedal
+## false (memory-triggered flight — see _decide()'s _remembers_player
+## branch, which isn't a fresh startle and skips the theatrics outright),
+## goes straight to RUNNING. threat_position is fixed for the whole
+## reaction (see _set_flee_direction_from_threat()), so RUNNING always ends
+## up heading away from it, not from wherever the player happened to be
+## standing when the backpedal ended.
+func _start_flee(threat_position: Vector3, allow_backpedal: bool = true) -> void:
+	_flee_threat_position = threat_position
+	_set_flee_direction_from_threat()
 	_reaction_state = ReactionState.FLEEING
 	_reaction_timer = 0.0
-	_enter_flee_phase(FleePhase.BACKING_AWAY if _is_player_approaching() else FleePhase.RUNNING)
+	var start_backing_away := allow_backpedal and _is_player_approaching()
+	_enter_flee_phase(FleePhase.BACKING_AWAY if start_backing_away else FleePhase.RUNNING)
+
+
+## _flee_direction, away from _flee_threat_position — the fixed point this
+## flee reaction is running from. Called once by _start_flee() and again,
+## once, whenever _enter_flee_phase() actually turns into RUNNING (whether
+## that happens immediately or after a BACKING_AWAY that spent its own
+## duration tracking the player's live position instead — see that phase's
+## own comment). Never called per frame during RUNNING itself: this task's
+## own "убегает от места инцидента, а не от игрока... направление берётся
+## один раз при развороте" requirement.
+func _set_flee_direction_from_threat() -> void:
+	var away := _npc.global_position - _flee_threat_position
+	away.y = 0.0
+	_flee_direction = away.normalized() if away.length() > 0.01 else Vector3.FORWARD
 
 
 ## Switches FLEEING's active sub-phase and does the one-time setup each side
-## needs — RUNNING clears the stare (facing/look target) BACKING_AWAY sets
-## every frame and points _obstacle_ray back at the body's own forward;
-## BACKING_AWAY points the ray backward instead, since during a backpedal
-## local +Z faces the player, not the direction of travel (see
-## OBSTACLE_RAY_BACKWARD's own comment).
+## needs — RUNNING clears the stare (facing/look target), points
+## _obstacle_ray back at the body's own forward, and recomputes
+## _flee_direction once from _flee_threat_position (overwriting whatever
+## BACKING_AWAY may have left it as); BACKING_AWAY points the ray backward
+## instead, since during a backpedal local +Z faces the player, not the
+## direction of travel (see OBSTACLE_RAY_BACKWARD's own comment).
 func _enter_flee_phase(phase: FleePhase) -> void:
 	_flee_phase = phase
 	_flee_phase_timer = 0.0
+	if phase == FleePhase.RUNNING:
+		_set_flee_direction_from_threat()
 	if not _obstacle_ray:
 		return
 	if phase == FleePhase.BACKING_AWAY:
@@ -997,10 +1104,6 @@ func _step_reaction(delta: float) -> void:
 
 func _step_flee(delta: float) -> void:
 	_reaction_timer += delta
-	if _reaction_timer >= flee_duration:
-		_end_reaction()
-		return
-
 	match _flee_phase:
 		FleePhase.BACKING_AWAY:
 			_step_flee_backing_away(delta)
@@ -1011,12 +1114,11 @@ func _step_flee(delta: float) -> void:
 ## Phase 1: backs away from the player's own live position while facing it
 ## (set_facing_target(), with set_move_intent()'s face_direction=false so
 ## the body doesn't turn to face the way it's walking — see npc_base.gd's
-## own comment on that override). Falls through to RUNNING the moment any
-## one of three things happens: the player closes to
-## backpedal_distance_threshold (backing away stopped being viable), this
-## phase has run backpedal_max_duration (a stall guard), or the player
-## stops approaching (the one cue that justified backpedaling in the first
-## place is gone).
+## own comment on that override). A FIXED duration, not distance-gated (this
+## task's own "не по дистанции — по времени" requirement) — the only early
+## exits left are losing track of the player node entirely or backing into
+## solid geometry; ends on backpedal_duration regardless of how close the
+## player still is or whether it's still approaching.
 func _step_flee_backing_away(delta: float) -> void:
 	_flee_phase_timer += delta
 
@@ -1025,18 +1127,14 @@ func _step_flee_backing_away(delta: float) -> void:
 		_enter_flee_phase(FleePhase.RUNNING)
 		return
 
-	var player_pos := player_node.global_position
-	var away := _npc.global_position - player_pos
-	away.y = 0.0
-	var dist := away.length()
-
-	if dist < backpedal_distance_threshold \
-			or _flee_phase_timer >= backpedal_max_duration \
-			or not _is_player_approaching():
+	if _flee_phase_timer >= backpedal_duration:
 		_enter_flee_phase(FleePhase.RUNNING)
 		return
 
-	if dist > 0.01:
+	var player_pos := player_node.global_position
+	var away := _npc.global_position - player_pos
+	away.y = 0.0
+	if away.length() > 0.01:
 		_flee_direction = away.normalized()
 
 	_npc.set_facing_target(player_pos)
@@ -1052,11 +1150,21 @@ func _step_flee_backing_away(delta: float) -> void:
 	_npc.set_move_intent(_flee_direction, backpedal_speed_ratio, false)
 
 
-## Phase 2: same behaviour _step_flee() always had — same obstacle check
-## _step_wander() uses (see the file header on _obstacle_ray's deferred
-## add_child()), retargeting off a wall by rotating _flee_direction rather
-## than stopping.
-func _step_flee_running(_delta: float) -> void:
+## Phase 2: runs away from _flee_threat_position (not the player — see
+## _set_flee_direction_from_threat()) until flee_far_distance is covered, or
+## flee_duration elapses regardless — a per-phase safety cap now, not the
+## whole reaction's own timer, since geometry can trap an NPC close to the
+## threat with nowhere straight to run. Same obstacle check _step_wander()
+## uses (see the file header on _obstacle_ray's deferred add_child()),
+## retargeting off a wall by rotating _flee_direction rather than stopping.
+func _step_flee_running(delta: float) -> void:
+	_flee_phase_timer += delta
+	if _npc.global_position.distance_to(_flee_threat_position) >= flee_far_distance:
+		_end_reaction()
+		return
+	if _flee_phase_timer >= flee_duration:
+		_end_reaction()
+		return
 	if _obstacle_ray and _obstacle_ray.is_colliding():
 		_flee_direction = _flee_direction.rotated(Vector3.UP, randf_range(0.5, 1.5))
 	_npc.set_move_intent(_flee_direction, flee_speed_ratio)
@@ -1107,10 +1215,16 @@ func _step_respond(delta: float) -> void:
 
 ## PENDING -> COMMITTED once call_report_duration elapses without
 ## interruption (docs/attribution.md §6/§7's "time until transmission
-## completes"). Interruption is handled elsewhere — see
-## _cancel_active_witness_report(), reached through the knocked-down guard
-## in _decide(), not through this timer.
+## completes"). Two interruption paths: the knocked-down guard in _decide()
+## (_cancel_active_witness_report(), unchanged), and — this task's own
+## "клерк начинает звонок и дистанция до игрока уменьшается" trigger —
+## the player closing in on a still-transmitting witness, checked here every
+## frame via _is_player_approaching() (the same helper/threshold the
+## generic Flee reaction's own backpedal gate uses).
 func _step_calling(delta: float) -> void:
+	if _is_player_approaching():
+		_abort_call_for_flee()
+		return
 	_reaction_timer += delta
 	if _reaction_timer >= call_report_duration:
 		_commit_witness_report()
@@ -1142,25 +1256,45 @@ func _commit_witness_report() -> void:
 ## Interrupted before commit (docs/attribution.md §7, test case E: "CANCELLED,
 ## nothing in registry") — _call_it_in() is simply never called, so nothing
 ## reaches IncidentRegistry. Only acts on a report still PENDING: called
-## every frame this NPC is knocked down (see _decide()'s own guard), so it
-## must be a safe no-op once already cancelled or committed. Does not touch
-## _reaction_state itself past clearing the report — the knocked-down guard
-## that calls this returns immediately afterward regardless of what state was
-## active (CALLING or otherwise), same as before this method existed.
-func _cancel_active_witness_report() -> void:
+## every frame this NPC is knocked down (see _decide()'s own guard) and once
+## from _abort_call_for_flee(), so it must be a safe no-op once already
+## cancelled or committed. Does not touch _reaction_state itself past
+## clearing the report — every caller sets its own state right afterward
+## (the knocked-down guard doesn't change it at all; _abort_call_for_flee()
+## moves straight to FLEEING via _start_flee()).
+func _cancel_active_witness_report(reason: String = "knocked down") -> void:
 	if not _current_witness_report or _current_witness_report.status != WitnessReport.Status.PENDING:
 		return
 	_current_witness_report.status = WitnessReport.Status.CANCELLED
 	if incident_telemetry_enabled:
 		print(
-			"%s transmission cancelled: %s, knocked down, %.1fs remaining" % [
-				INCIDENT_TELEMETRY_PREFIX, _npc.name,
+			"%s transmission cancelled: %s, %s, %.1fs remaining" % [
+				INCIDENT_TELEMETRY_PREFIX, _npc.name, reason,
 				maxf(call_report_duration - _reaction_timer, 0.0),
 			]
 		)
 	_current_witness_report = null
 	_pending_incident = null
 	_reaction_state = ReactionState.NONE
+
+
+## The player is closing in on a witness mid-transmission — abandons the
+## report (same CANCELLED path a knockdown already gives) and flees, reusing
+## the ordinary FLEEING state machine so the backpedal-then-run shape is the
+## same for every trigger, not a second implementation (this file's own
+## precedent: don't invent a second solution to an already-solved shape).
+## go_idle(), not go_dark(): the terminal isn't suppressed, it just isn't
+## transmitting any more — go_dark() stays reserved for the knocked-down
+## case (_decide()'s own guard). Always opens with BACKING_AWAY: this is
+## only ever called because the player IS approaching (the caller already
+## checked), so _start_flee()'s own "skip the backpedal if not approaching"
+## branch never actually applies here.
+func _abort_call_for_flee() -> void:
+	var threat_position := _pending_incident.position if _pending_incident else _npc.global_position
+	_cancel_active_witness_report("player approaching")
+	if _votive:
+		_votive.go_idle()
+	_start_flee(threat_position)
 
 
 ## Returns to ordinary behaviour via a paused idle, not mid-stride — same
@@ -1171,10 +1305,10 @@ func _end_reaction() -> void:
 	_reaction_state = ReactionState.NONE
 	_npc.clear_facing_target()
 	_npc.clear_look_target()
-	## Defensive, not load-bearing on the happy path: every _enter_flee_
-	## phase(RUNNING) call already restores this, but flee_duration can end
-	## the reaction while still BACKING_AWAY (_step_flee() checks the
-	## overall duration before dispatching to either phase), which would
+	## Defensive, not load-bearing on the happy path: every
+	## _enter_flee_phase(RUNNING) call already restores this before RUNNING
+	## can ever end the reaction, but a safety net in case some future path
+	## ever calls _end_reaction() while still BACKING_AWAY — which would
 	## otherwise leave the ray pointed backward for whatever ordinary
 	## wander/respond/run behaviour picks this NPC up next.
 	if _obstacle_ray:

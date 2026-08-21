@@ -29,6 +29,48 @@ attribution system.
 
 ---
 
+## 2026-08-21 - Witness reaction: proximity interrupts a call, and witnesses remember
+
+Two additions to `idle_npc_controller.gd`'s incident reaction, both extending
+`NPC_REACTIONS.md` §4:
+
+**Call interruption by proximity.** `_step_calling()` now checks
+`_is_player_approaching()` every frame a report is `PENDING`; if the player
+is closing in on a still-transmitting witness, `_abort_call_for_flee()`
+cancels the report (same `CANCELLED` path a knockdown already gives, via
+`_cancel_active_witness_report(reason)`, now parameterized instead of a
+hardcoded "knocked down" string) and hands off into the ordinary `FLEEING`
+state machine — reusing it, not a second implementation.
+
+**The two-phase Flee reaction itself was corrected** to match the task's
+own spec: `BACKING_AWAY` is now a fixed `backpedal_duration` (2s), not
+gated by distance to the player or by the player still approaching
+(`backpedal_distance_threshold` removed); `RUNNING`'s direction
+(`_flee_direction`) is now computed exactly once, at the moment
+`_enter_flee_phase()` turns into `RUNNING`, away from a fixed
+`_flee_threat_position` — never toward the player and never recomputed per
+frame; `RUNNING` now ends once `flee_far_distance` (40m default) is
+covered, with `flee_duration` repurposed as a per-phase safety cap
+(default raised 4.0 → 20.0) rather than the whole reaction's own timer.
+
+**Witness memory.** `_remembers_player`, set once and never cleared the
+moment ANY archetype's `vision.is_seen` comes back true in
+`_on_incident_reported()` (any witness, not only a caller) — from then on,
+`_decide()`'s ordinary observe-player branch skips straight to
+`_start_flee(observation.position, false)` the instant the player is seen
+again, no incident required. Lives on the controller (a child of the NPC),
+so it disappears on block unload — deliberately not moved into
+`IncidentRegistry`.
+
+*Реакция свидетеля: приближение игрока прерывает звонок (тот же CANCELLED,
+что и нокдаун), двухфазный побег исправлен под спецификацию (пятение по
+времени, бег по дистанции, направление фиксируется один раз), и свидетели
+теперь запоминают игрока навсегда — флаг живёт на контроллере, не в
+IncidentRegistry.*
+- `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-21 - Fix stale "no run animation" comments
 
 No code change: `NPCAnimationComponent`'s locomotion blend was already
