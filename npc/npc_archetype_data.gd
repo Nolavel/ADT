@@ -17,11 +17,12 @@
 # so that swap touches only the colour step, not this resource or the other
 # two channels.
 #
-# Witness (§2) has no field here. It carries no visual identity of its own —
-# only a flag layered onto an instance of one of these five archetypes,
-# later (H4, docs/scope_horizon.md) — and adding a field for it now would be
-# exactly the kind of promise CONTRIBUTING.md's placeholder rule warns
-# against.
+# Witness (§2) still has no visual-identity field here — that remains a flag
+# layered onto an instance of one of these five archetypes, later (H4,
+# docs/scope_horizon.md). is_witness_caller (below) is a narrower thing: not
+# identity, just whether this archetype ever reports what it witnesses —
+# replacing the population-wide witness_density/call_probability pair that
+# used to live on IdleNPCController with a deterministic per-archetype trait.
 # =============================================================================
 extends Resource
 class_name NPCArchetypeData
@@ -84,3 +85,12 @@ class_name NPCArchetypeData
 ## is its own behaviour, not a third crowd reaction. A patrolman already
 ## responds institutionally by going there, so it never also calls it in.
 @export var responds_by_approaching: bool = false
+## Whether this archetype ever calls in an incident it witnesses
+## (docs/attribution.md §7) — deterministic, not a roll: replaces the old
+## population-wide witness_density/call_probability pair that used to live
+## on IdleNPCController. Clerk is the only archetype with this set true
+## today; everyone else never becomes a caller, however clearly they saw
+## the incident. `responds_by_approaching` above takes priority over this
+## for Patrolman (see that field's own comment) — the two are mutually
+## exclusive in practice, not because either checks the other.
+@export var is_witness_caller: bool = false

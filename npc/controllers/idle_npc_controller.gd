@@ -75,12 +75,15 @@
 # constant here, so retuning it never means touching this file.
 #
 # WITNESS CALL (docs/attribution.md §7) no longer reports the instant a
-# witness rolls Call. Becoming a caller requires actually having seen the
-# incident — _evaluate_incident_vision() (range + cone against
-# PerceptionComponent's own vision_range/vision_angle_deg, no line-of-sight
-# raycast) gates entry into ReactionState.CALLING; a witness whose back was
-# turned falls through to the ordinary Flee/Freeze roll instead, same as any
-# non-witness. Only past that gate does _build_witness_report() resolve a
+# calling archetype notices the incident. Whether an NPC ever calls at all
+# is a deterministic archetype trait (NPCArchetypeData.is_witness_caller,
+# true only for Clerk today) — not a population-wide roll. Becoming a
+# caller also requires actually having seen the incident —
+# _evaluate_incident_vision() (range + cone against PerceptionComponent's
+# own vision_range/vision_angle_deg, no line-of-sight raycast) gates entry
+# into ReactionState.CALLING; an NPC whose back was turned falls through to
+# the ordinary Flee/Freeze roll instead, same as any archetype that doesn't
+# call at all. Only past that gate does _build_witness_report() resolve a
 # distance ceiling (docs/attribution.md §2) into a WitnessReport, held
 # PENDING for call_report_duration seconds before _commit_witness_report()
 # actually calls IncidentRegistry — see that method, _step_calling() and
@@ -117,8 +120,8 @@ enum State { IDLE, WALKING }
 ## NONE = ordinary wander/observe-player behaviour applies. The other four
 ## pre-empt it entirely for as long as they're active — see the file header.
 ## CALLING (docs/attribution.md section 7) replaces what used to be an
-## instant, fully-attributed report on the spot: a witness that rolls Call
-## now resolves an observation quality and holds a WitnessReport PENDING for
+## instant, fully-attributed report on the spot: a caller now resolves an
+## observation quality and holds a WitnessReport PENDING for
 ## call_report_duration before it actually commits — see _step_calling().
 enum ReactionState { NONE, FLEEING, FROZEN, RESPONDING, CALLING }
 
@@ -265,21 +268,6 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## needs to be quiet. This does not alter any reaction probabilities.
 @export var incident_telemetry_enabled: bool = true
 
-@export_group("Witness (NPC_REACTIONS.md §4)")
-## Fraction of the population that gets the witness flag — rolled once per
-## NPC in _ready(), not re-rolled per incident (see _is_witness's own
-## comment for why). ONE number for the whole population on purpose: §4
-## gives the flag a density, not a per-archetype rate, and
-## npc_archetypes.md §5 already treats population composition as scene
-## data, not an archetype property — this follows that same split. Retune
-## density by changing this default; do not add a per-archetype override.
-@export_range(0.0, 1.0) var witness_density: float = 0.15
-## Given a witness NPC reacts to an incident at all, the chance it calls
-## rather than just fleeing/freezing like everyone else — a witness doesn't
-## always report, same "bias, not a rule" principle flee_probability
-## already applies to Flee vs. Freeze.
-@export_range(0.0, 1.0) var call_probability: float = 0.6
-
 @export_group("Witness Observation Quality (attribution.md §2)")
 ## Beyond this distance the ceiling is SILHOUETTE — the maximum achievable
 ## once a witness is confirmed to have actually seen the incident at all
@@ -379,14 +367,6 @@ var _incident_registry_search_time: float = 0.0
 ## instance instead of every frame the registry stays unresolved.
 var _warned_missing_incident_registry: bool = false
 
-## Rolled once in _ready() against witness_density — NOT re-rolled per
-## incident (NPC_REACTIONS.md §4 is explicit: static on the NPC, not thrown
-## fresh each time, so a save survives it and "the same passer-by" stays
-## meaningful if anything later needs that). No visual tell by design (§2):
-## nothing here reads this to change appearance, only whether _on_incident_
-## reported() offers this NPC the Call branch at all.
-var _is_witness: bool = false
-
 ## The report currently being transmitted (ReactionState.CALLING), or null
 ## outside that state — see _start_calling()/_commit_witness_report()/
 ## _cancel_active_witness_report(). Cleared the instant it leaves PENDING.
@@ -445,10 +425,6 @@ func _ready() -> void:
 
 	_wander_state = State.IDLE
 	_pause_timer = wander_pause_time
-
-	## Once per instance, at spawn — see _is_witness's own comment on why
-	## not per incident.
-	_is_witness = randf() < witness_density
 
 	## Very likely to fail here (see the file header on why) — kept anyway,
 	## harmless, and resolves immediately in the rare case ordering ever
@@ -746,47 +722,39 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 
 	## Witness/Call check happens before the ordinary Flee/Freeze roll, not
-	## alongside it — a witness who calls still visibly stares at the
-	## incident (CALLING sets the same facing/look target FROZEN does); a
-	## witness who doesn't call this time falls through to the same
-	## probabilistic roll every other NPC uses. Reporting is no longer
-	## instant — see _start_calling() and docs/attribution.md §7.
+	## alongside it — an NPC that calls still visibly stares at the incident
+	## (CALLING sets the same facing/look target FROZEN does); an NPC whose
+	## archetype doesn't call falls through to the same probabilistic
+	## Flee/Freeze roll every other NPC uses. Reporting is no longer instant
+	## — see _start_calling() and docs/attribution.md §7.
 	##
-## _evaluate_incident_vision() is a hard gate, not a modifier: a witness
-	## whose back is turned did not see anything and does not become a
-	## caller over it, however the probability roll would have landed — see
-	## that method's own header and attribution.md §2 on why "didn't see"
-	## and "saw, but worse" used to be the same case and are not the same
-	## case. earshot_radius above still gates whether this NPC reacts AT ALL
-	## (Flee/Freeze/Call) — that stays hearing-based, unchanged; only Call
-	## additionally requires having actually seen it.
+	## Whether an NPC calls at all is a deterministic archetype trait
+	## (NPCArchetypeData.is_witness_caller, true only for Clerk today), not a
+	## population-wide density/probability roll — see that field's own
+	## comment for why. _evaluate_incident_vision() is still a hard gate, not
+	## a modifier: an NPC whose back is turned did not see anything and does
+	## not become a caller over it, whatever its archetype — see that
+	## method's own header and attribution.md §2 on why "didn't see" and
+	## "saw, but worse" are not the same case. earshot_radius above still
+	## gates whether this NPC reacts AT ALL (Flee/Freeze/Call) — that stays
+	## hearing-based, unchanged; only Call additionally requires having
+	## actually seen it.
 	if not vision.is_seen:
 		_log_incident_candidate(
 			telemetry, vision, "REJECT %s" % vision.rejection
 		)
-	elif not _is_witness:
-		_log_incident_candidate(telemetry, vision, "SEES  REJECT not-witness")
+	elif not _npc.archetype.is_witness_caller:
+		_log_incident_candidate(telemetry, vision, "SEES  REJECT archetype")
 	else:
-		var call_roll := randf()
-		var effective_call_probability := call_probability
-		if call_roll < effective_call_probability:
-			_log_incident_candidate(
-				telemetry, vision,
-				"SEES  ceiling %s  WITNESS  roll %.2f < %.2f  CALL" % [
-					WitnessReport.ObservationLevel.keys()[_distance_ceiling(vision.distance)],
-					call_roll, effective_call_probability,
-				]
-			)
-			telemetry.transmitting += 1
-			_start_calling(incident)
-			return
 		_log_incident_candidate(
 			telemetry, vision,
-			"SEES  ceiling %s  WITNESS  roll %.2f >= %.2f  REJECT call" % [
+			"SEES  ceiling %s  CALL" % [
 				WitnessReport.ObservationLevel.keys()[_distance_ceiling(vision.distance)],
-				call_roll, effective_call_probability,
 			]
 		)
+		telemetry.transmitting += 1
+		_start_calling(incident)
+		return
 
 	if randf() < _npc.archetype.flee_probability:
 		_start_flee(incident.position)

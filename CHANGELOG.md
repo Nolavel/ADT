@@ -29,6 +29,27 @@ attribution system.
 
 ---
 
+## 2026-08-21 - Witness Call becomes a deterministic archetype trait
+
+Removed `IdleNPCController.witness_density`/`call_probability` and the
+per-NPC `_is_witness` flag rolled once at spawn — replaced by
+`NPCArchetypeData.is_witness_caller` (`false` by default, `true` only on
+`Clerk`). Whether an NPC ever calls in what it witnesses is now a property
+of its archetype, not a population-wide roll: `_on_incident_reported()` no
+longer rolls `call_probability` against a random draw — a calling archetype
+that clears the vision gate always calls; a non-calling archetype (or one
+that didn't actually see the incident) falls through to the ordinary
+Flee/Freeze roll, unchanged. `Patrolman`'s `responds_by_approaching` is
+unaffected — it still bypasses both the Call check and the Flee/Freeze roll
+entirely. Incident telemetry now logs a non-calling archetype as
+`REJECT archetype` instead of `REJECT not-witness`.
+*Звонок свидетеля теперь детерминированное свойство архетипа (только
+Clerk), а не популяционный бросок кубика — witness_density/call_probability
+убраны.*
+- `npc/npc_archetype_data.gd`, `data/npc_archetypes/clerk.tres`, `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-21 - Remove the crowd witness debug mode
 
 `WitnessDebugSystem` (added 2026-08-19) subsidized numbers instead of proving
