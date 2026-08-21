@@ -221,10 +221,12 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 @export_group("Flee — two phases (NPC_REACTIONS.md §4 extension)")
 ## Speed ratio during the BACKING_AWAY phase (phase 1) — deliberately slower
 ## than flee_speed_ratio: a witness backing away while still watching the
-## threat is cautious, not yet sprinting. The gap between this and
-## flee_speed_ratio is also what stands in for "phase 2 reads as faster"
-## with no run animation to switch to — see npc_animation_component.gd's
-## own note on why there is no run clip; NPCBase has no speed tier above
+## threat is cautious, not yet sprinting. NPCAnimationComponent's locomotion
+## blend is signed and widened to ANIM_BACKWARD/ANIM_RUN (see that file's own
+## header), so the gap between this and flee_speed_ratio now also reads as a
+## real clip change, not just a speed change: BACKING_AWAY's negative blend
+## position plays the backward clip, RUNNING's speed_ratio at the outer
+## positive edge plays the run clip. NPCBase itself has no speed tier above
 ## walk_speed either, so both phases still top out there.
 @export var backpedal_speed_ratio: float = 0.45
 ## Distance to the player below which BACKING_AWAY gives way to RUNNING
@@ -246,9 +248,9 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 @export_group("Respond (Patrolman, NPC_REACTIONS.md §4)")
 ## Distinct from wander_speed_ratio — brisk and purposeful, not a stroll.
 ## Still a fraction of walk_speed like every other speed knob here: NPCBase
-## has no run tier (see npc_animation_component.gd's own note on why there
-## is no run clip to switch to), so "brisker" tops out at walk_speed*1.0,
-## same ceiling wander/flee already live under.
+## has no second base speed tier above walk_speed (unlike the player's own
+## walk/run split), so "brisker" tops out at walk_speed*1.0, same ceiling
+## wander/flee already live under.
 @export var respond_speed_ratio: float = 0.85
 ## Distance from the target at which a responding Patrolman stops, instead
 ## of closing all the way to WANDER_ARRIVAL_RADIUS (0.5m) — investigating a

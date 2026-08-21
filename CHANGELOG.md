@@ -29,6 +29,23 @@ attribution system.
 
 ---
 
+## 2026-08-21 - Fix stale "no run animation" comments
+
+No code change: `NPCAnimationComponent`'s locomotion blend was already
+widened from a 2-point idle/walk `BlendSpace1D` to a signed 4-point
+idle/walk/run/backward one, and the two-phase flee reaction already reads
+correctly off it (`63c9c18`, prior session) — but three comments in
+`idle_npc_controller.gd` and one in `CLAUDE.md` still claimed "no run
+animation"/"no run clip" and were never updated at the time, exactly the
+kind of drift `CLAUDE.md`'s own workflow rule warns about. Fixed the
+wording only; `ANIM_BACKWARD`/`ANIM_RUN` (`npc_animation_component.gd`)
+were already wired and did not need touching.
+*Правка устаревших комментариев — анимации бега/пятения уже подключены
+раньше, но комментарии этого не отражали.*
+- `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-21 - Witness Call becomes a deterministic archetype trait
 
 Removed `IdleNPCController.witness_density`/`call_probability` and the
