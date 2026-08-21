@@ -29,6 +29,24 @@ attribution system.
 
 ---
 
+## 2026-08-21 - Remove the crowd witness debug mode
+
+`WitnessDebugSystem` (added 2026-08-19) subsidized numbers instead of proving
+the mechanic — a diagnostic that made the chain easy to trigger on demand
+told nothing about whether the honest, rare numbers actually worked, and
+having a second, debug-only code path (the four `_effective_*()` getters on
+`IdleNPCController`) was extra surface for no lasting benefit. Removed
+outright: the file, its `WORLD_SYSTEM_SCRIPTS` entry, the `toggle_witness_debug`
+action (`[`, now unbound), the `InputSystems.witness_debug_toggled` signal,
+and the four `_effective_*()` getters — `IdleNPCController` reads
+`_perception.vision_range`/`earshot_radius`/`call_probability`/`_is_witness`
+directly again, same as before the debug mode existed.
+*Убран режим отладки толпы свидетелей — он подменял числа вместо проверки
+механики; тот же четырёхпутевой геттер убран, чтение снова прямое.*
+- `core/world/witness_debug_system/` (deleted), `npc/controllers/idle_npc_controller.gd`, `world/world.gd`, `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-19 - Add a crowd witness debug mode
 
 The honest witness numbers (`witness_density` 0.15, `call_probability` 0.6,

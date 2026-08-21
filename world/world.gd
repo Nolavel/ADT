@@ -62,7 +62,6 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	WorldBorderDebugSystem,
 	WorldBorderGuardSystem,
 	IncidentRegistry,            # ← what the city has on record; actors report, don't remember
-	WitnessDebugSystem,          # ← playtest-only override of witness numbers, toggled by "["
 	LodgingSystem,                # ← durable per-room record; survives block unloading like IncidentRegistry
 	SaveSystem                   # ← walks the systems above and moves dictionaries to/from disk; last on purpose
 ]

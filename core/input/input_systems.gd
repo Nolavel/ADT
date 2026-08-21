@@ -40,12 +40,6 @@ signal map_pressed()
 signal stream_debug_toggled()
 ## Toggle for the NPC perception debug panel (action "toggle_perception_debug").
 signal perception_debug_toggled()
-## Toggle for WitnessDebugSystem (action "toggle_witness_debug") — a
-## playtest-only override of witness numbers, not a UI panel. InputSystems
-## only relays the press, same as every other action here; WitnessDebugSystem
-## itself decides what the press means and owns the actual state (see that
-## file's own header).
-signal witness_debug_toggled()
 
 ## --- Debug save/load (H1, docs/scope_horizon.md) ---
 ## A permanent developer tool, not a stand-in for the in-fiction save
@@ -250,8 +244,6 @@ func _handle_ui_hotkeys() -> void:
 		stream_debug_toggled.emit()
 	if Input.is_action_just_pressed("toggle_perception_debug"):
 		perception_debug_toggled.emit()
-	if Input.is_action_just_pressed("toggle_witness_debug"):
-		witness_debug_toggled.emit()
 
 
 ## ============================================

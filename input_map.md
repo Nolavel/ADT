@@ -15,7 +15,7 @@ Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
 methods. Exceptions: `core/map_source/`, `map_camera/` — editor tooling that
 reads raw `KEY_*` deliberately.
 
-Action count: **37** — 33 live, 4 reserved and unread.
+Action count: **36** — 32 live, 4 reserved and unread.
 
 ---
 
@@ -28,7 +28,6 @@ Active regardless of `PlayerState.mode`.
 | `pause` | `Esc` | Open / close pause menu; owns `get_tree().paused` via `PlayerState` | Меню паузы |
 | `toggle_stream_debug` | `\` | Toggle the streaming debug panel (observer only) | Панель отладки стриминга |
 | `toggle_perception_debug` | `]` | Toggle the NPC perception debug panel (observer only) | Панель отладки восприятия NPC |
-| `toggle_witness_debug` | `[` | Toggle `WitnessDebugSystem` — forces witness_density/call_probability to 1.0 and multiplies vision/earshot range for the whole crowd, for playtesting the witness chain. NOT the shipped numbers — see `CLAUDE.md` | Режим отладки толпы свидетелей — не боевые числа |
 | `debug_save` | `K` | Debug save to slot 0 (`SaveSystem`) — permanent developer tool, not the in-fiction save mechanism | Отладочное сохранение |
 | `debug_load` | `L` | Debug load from slot 0 (`SaveSystem`) | Отладочная загрузка |
 | `toggle_key_hints` | `H` | Show/hide the key-hints HUD panel (`InputSystems.key_hints_enabled`) | Показать/скрыть панель подсказок |
