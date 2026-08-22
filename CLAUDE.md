@@ -29,6 +29,7 @@ Startup scene: `res://world/world.tscn`.
 | `docs/scope_horizon.md` | What is being built **now**, and in what order |
 | `docs/ENTIRE_SETUP.md` | Entire CLI binary location, PATH dependency, git-hook vs Claude-Code-hook wiring, how to check capture is alive |
 | `docs/COLLISION_LAYERS.md` | Single source of truth for 3D physics layers and the named query-mask profiles built from them |
+| `docs/visual_language.md` | **How the game looks and states things** — the comic/noir frame, the onomatopoeia rules, and how the comic layer relates to archetype readability, BlackRock and the Votive. Artist- and animator-facing. |
 
 
 This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled in `project.godot` under `[editor_plugins]`, autoloaded as `_mcp_game_helper`). When the Godot editor is open, prefer the `mcp__godot-ai__*` tools over hand-editing `.tscn`/resource files or shelling out to the Godot CLI:

@@ -12,6 +12,36 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - docs/visual_language.md: write the comic frame down
+
+New artist- and animator-facing document, not a section inside an existing
+one. The criterion was where a concept artist would find it: every existing
+doc is a systems or design specification addressed to whoever implements the
+loop, and a visual-identity rule buried in `NPC_REACTIONS.md` §2 is a rule
+nobody drawing the game will ever read. It is the repository's first
+document about *look* rather than mechanism.
+
+States the comic frame as a frame around the noir rather than a replacement
+(same high contrast, same hard shadow, same "one big detail instead of an
+explanation"); the onomatopoeia rule (voice of the panel, never of the
+author — it names an event and never advises, which is what keeps it
+compatible with `core_loop.md`'s "the city does not explain itself"); the
+hard word-on-EVENT-never-STATE rule with the arithmetic behind it; the
+distance gate and the simultaneous-word ceiling as art direction rather than
+optimisation; sound as a separate layer; and the vocabulary as data.
+
+Cross-linked from `npc_archetypes.md` §3 and `NPC_REACTIONS.md` §2, since an
+artist arrives at readability first. One correction while linking: the flat
+archetype colours are named as **scaffolding**, per `npc_archetypes.md` §4's
+own wording, not as an established visual decision to build on.
+
+*Написан docs/visual_language.md — отдельный документ для художника, а не
+раздел в спецификации: комикс как рамка поверх нуара, правило «слово на
+событие, не на состояние», гейты как часть языка, звук отдельным слоем.*
+- `docs/visual_language.md`, `docs/npc_archetypes.md`, `docs/NPC_REACTIONS.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 - The player gets comic words too
 
 Five new defs (`player_hurt`/`player_death`/`player_winded`/`player_spent`/
