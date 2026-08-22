@@ -205,6 +205,13 @@ var _debug_action_label_text: String = ""
 ## uses.
 var _debug_action_source: Node = null
 
+## ComicEffectSystem, resolved lazily by group the same way IdleNPCController
+## resolves IncidentRegistry — this body is a static scene instance and never
+## receives a WorldContext, and Godot's bottom-up _ready() ordering means the
+## system may not exist yet the first time we look. Null is a silent no-op:
+## a floating word is decoration, never a precondition for taking a hit.
+var _comic_effects: ComicEffectSystem = null
+
 ## Resolved once via @onready. Null (and silently skipped by
 ## _physics_process()) if the scene has no AnimationComponent — same
 ## defensive pattern the old $Head lookup used to have.
@@ -328,6 +335,7 @@ func take_hit(from_position: Vector3, damage: float = 25.0) -> void:
 	clear_facing_target()
 	if _animation:
 		_animation.play_knockdown()
+	_try_spawn_comic_effect(&"npc_knockdown")
 
 
 ## Read by the controller (idle_npc_controller.gd's _decide()) to stop
@@ -422,6 +430,19 @@ func _enter_down_phase() -> void:
 	_knockdown_phase_timer = 0.0
 	if _animation and not was_lying:
 		_animation.play_lying()
+	_try_spawn_comic_effect(&"npc_death")
+
+
+## Resolves ComicEffectSystem on first use and asks it for one word above
+## this body. The system owns the distance gate and the active-count cap, so
+## there is nothing to check here beyond "does the system exist yet".
+func _try_spawn_comic_effect(id: StringName) -> void:
+	if _comic_effects == null:
+		_comic_effects = get_tree().get_first_node_in_group(
+				ComicEffectSystem.GROUP_COMIC_EFFECT_SYSTEM
+		) as ComicEffectSystem
+	if _comic_effects:
+		_comic_effects.try_spawn(id, global_position, self)
 
 
 ## Refreshes DebugHealthLabel's text. Only called while debug_show_health is

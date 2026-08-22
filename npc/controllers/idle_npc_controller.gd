@@ -357,6 +357,12 @@ var _perception: PerceptionComponent = null
 ## no timing or decision logic of its own.
 var _votive: VotiveProjector = null
 
+## ComicEffectSystem, resolved lazily by group — the same scheme this file
+## already uses for IncidentRegistry, and for the same reason: a static
+## scene instance never receives a WorldContext. Null is a silent no-op;
+## the floating word is decoration on top of a reaction, never its trigger.
+var _comic_effects: ComicEffectSystem = null
+
 ## True for as long as this NPC has been continuously knocked down — set the
 ## instant _decide() sees is_knocked_down(), cleared (once) the frame it
 ## first sees the opposite. Exists purely so _votive.go_idle() fires exactly
@@ -761,6 +767,21 @@ func _try_resolve_incident_registry() -> void:
 	_incident_registry.incident_reported.connect(_on_incident_reported)
 
 
+## Resolves ComicEffectSystem on first use and asks it for one word above
+## this NPC. Deliberately not routed through NPCBase: the body spawns the
+## words it owns (knockdown, death), the decision layer spawns the ones it
+## owns (flee, freeze, call), and neither learns about the other's. The
+## system owns the distance gate and the active-count cap, so there is
+## nothing to check here beyond "does the system exist yet".
+func _try_spawn_comic_effect(id: StringName) -> void:
+	if _comic_effects == null:
+		_comic_effects = get_tree().get_first_node_in_group(
+			ComicEffectSystem.GROUP_COMIC_EFFECT_SYSTEM
+		) as ComicEffectSystem
+	if _comic_effects and _npc:
+		_comic_effects.try_spawn(id, _npc.global_position, _npc)
+
+
 ## Rolls this NPC's reaction to a live incident report — see the file header
 ## for the priority/pre-emption rules and why this is probabilistic rather
 ## than a fixed per-archetype rule.
@@ -891,6 +912,7 @@ func _start_flee(threat_position: Vector3, allow_backpedal: bool = true) -> void
 	_reaction_timer = 0.0
 	var start_backing_away := allow_backpedal and _is_player_approaching()
 	_enter_flee_phase(FleePhase.BACKING_AWAY if start_backing_away else FleePhase.RUNNING)
+	_try_spawn_comic_effect(&"npc_flee")
 
 
 ## _flee_direction, away from _flee_threat_position — the fixed point this
@@ -961,6 +983,7 @@ func _start_freeze(incident_position: Vector3) -> void:
 	## branch already uses for a deliberate turn rather than a glance.
 	_npc.set_facing_target(incident_position)
 	_npc.set_look_target(incident_position)
+	_try_spawn_comic_effect(&"npc_freeze")
 
 
 func _start_responding(incident_position: Vector3) -> void:
@@ -985,6 +1008,7 @@ func _start_calling(incident: Incident) -> void:
 	_current_witness_report = _build_witness_report(incident)
 	if _votive:
 		_votive.start_transmitting(call_report_duration)
+	_try_spawn_comic_effect(&"npc_call")
 	if incident_telemetry_enabled:
 		print(
 			"%s transmission start: %s, %.1fs expected" % [
