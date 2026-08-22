@@ -12,6 +12,23 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 — readme.md: the Status line no longer denies what is built
+
+The one-line status still read "Combat, AI, missions and saving are not
+[implemented]" — written before the stance/punch/knockdown pass, the NPC and
+drone controllers, the witness/incident chain and `SaveSystem` all landed. A
+reader's first paragraph was flatly contradicted by the rest of the repo.
+Rewritten to name those as first slices, and to keep the genuinely unbuilt
+list honest: missions, metro and lift transport, and `attribution.md` §5's
+attribution system.
+
+*Строка Status в readme.md утверждала, что боя, ИИ и сохранений нет — всё
+это уже собрано первыми срезами. Переписана; в списке нереализованного
+остались миссии, метро/лифты и система атрибуции.*
+- `readme.md`
+
+---
+
 ## 2026-08-19 - Add a crowd witness debug mode
 
 The honest witness numbers (`witness_density` 0.15, `call_probability` 0.6,
