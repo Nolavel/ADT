@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ComicEffectDef" format=3]
+
+[ext_resource type="Script" path="res://core/ui/comic_effect/comic_effect_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"npc_flee"
+texts = PackedStringArray("RUN", "AAH", "NO", "GO", "AWAY", "HAAH", "SCRAM")
+weights = PackedFloat32Array()
+color = Color(0.95, 0.82, 0.45, 1)
+font_size = 28
+duration = 0.85
+rise_px = 32.0
+radius = 24.0

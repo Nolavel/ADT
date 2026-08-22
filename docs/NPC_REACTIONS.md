@@ -67,6 +67,12 @@ more here than an NPC that plans well.
 
 ## 2. Readability — the crowd must be legible without UI
 
+> How a reaction is *stated* on screen — the comic onomatopoeia layer, its
+> word-on-event rule and its distance gate — is in
+> `docs/visual_language.md`. This section is about the crowd being readable
+> at all; that one is about the frame's own voice.
+
+
 `npc_archetypes.md` §3 is the fuller, more recent version of this section —
 six named archetypes built against these channels, plus placeholder colours
 for prototyping before meshes exist. Kept here for the reasoning behind why

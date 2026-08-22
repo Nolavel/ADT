@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ComicEffectDef" format=3]
+
+[ext_resource type="Script" path="res://core/ui/comic_effect/comic_effect_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"player_death"
+texts = PackedStringArray("…", "OUT", "BLACK")
+weights = PackedFloat32Array()
+color = Color(0.66, 0.68, 0.74, 1)
+font_size = 26
+duration = 1.3
+rise_px = 32.0
+radius = 5.0

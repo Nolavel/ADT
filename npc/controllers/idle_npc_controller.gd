@@ -1263,6 +1263,7 @@ func _commit_witness_report() -> void:
 		_current_witness_report.status = WitnessReport.Status.COMMITTED
 		if _pending_incident:
 			_call_it_in(_pending_incident)
+			_try_spawn_comic_effect(&"npc_transmit")
 		if incident_telemetry_enabled:
 			print(
 				"%s transmission committed: %s, observation %s, registry ASSAULT" % [

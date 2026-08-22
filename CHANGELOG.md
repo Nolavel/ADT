@@ -12,6 +12,134 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - docs/visual_language.md: write the comic frame down
+
+New artist- and animator-facing document, not a section inside an existing
+one. The criterion was where a concept artist would find it: every existing
+doc is a systems or design specification addressed to whoever implements the
+loop, and a visual-identity rule buried in `NPC_REACTIONS.md` §2 is a rule
+nobody drawing the game will ever read. It is the repository's first
+document about *look* rather than mechanism.
+
+States the comic frame as a frame around the noir rather than a replacement
+(same high contrast, same hard shadow, same "one big detail instead of an
+explanation"); the onomatopoeia rule (voice of the panel, never of the
+author — it names an event and never advises, which is what keeps it
+compatible with `core_loop.md`'s "the city does not explain itself"); the
+hard word-on-EVENT-never-STATE rule with the arithmetic behind it; the
+distance gate and the simultaneous-word ceiling as art direction rather than
+optimisation; sound as a separate layer; and the vocabulary as data.
+
+Cross-linked from `npc_archetypes.md` §3 and `NPC_REACTIONS.md` §2, since an
+artist arrives at readability first. One correction while linking: the flat
+archetype colours are named as **scaffolding**, per `npc_archetypes.md` §4's
+own wording, not as an established visual decision to build on.
+
+*Написан docs/visual_language.md — отдельный документ для художника, а не
+раздел в спецификации: комикс как рамка поверх нуара, правило «слово на
+событие, не на состояние», гейты как часть языка, звук отдельным слоем.*
+- `docs/visual_language.md`, `docs/npc_archetypes.md`, `docs/NPC_REACTIONS.md`, `CLAUDE.md`
+
+---
+
+## 2026-08-22 - The player gets comic words too
+
+Five new defs (`player_hurt`/`player_death`/`player_winded`/`player_spent`/
+`player_combat`) and their wiring in `player.gd`. Until now the comic layer
+only spoke for the crowd; the player's own body was silent, which made the
+device read as something that happens to NPCs rather than a voice the frame
+has.
+
+Every hook is an EDGE, deliberately, since the word-on-event rule is the
+one thing that keeps this layer from becoming noise: a health DECREASE seen
+through `health_changed` (tracked with `_last_health_seen` — `HealthComponent`
+has no `damaged` signal, and growing one to feed a decoration would be the
+wrong direction of dependency), `sprint_allowed_changed(false)` for running
+out of wind, `stamina_depleted()` for having none left, `died()`, and
+`stance_changed` on entering `COMBAT` only. None of them polls a state.
+
+`player_combat` takes its hue from `StanceIndicator.combat_color` so the
+floating word and the HUD badge read as one statement, lightened enough to
+stay legible unbacked over the world.
+
+*Игрок тоже получил слова: ранение, смерть, одышка, пустая стамина и вход в
+COMBAT. Все крючки — на фронт события, не на состояние.*
+- `data/comic_effects/player_*.tres`, `data/comic_effects/catalog.tres`, `player/player.gd`, `CLAUDE.md`
+
+---
+
+## 2026-08-22 - Wire the last two comic effects, npc_hit and npc_transmit
+
+Both were registered and called from nowhere.
+
+`npc_hit` goes on `NPCBase.take_hit()`'s other branch — the hit that lands
+on a body already down, damaging it (and able to finish it off) without
+starting a new knockdown. The early `return` sitting between the two
+branches is what guarantees a single hit never produces both words.
+
+`npc_transmit` marks the moment the report actually reaches
+`IncidentRegistry` (`_commit_witness_report()`), **not** the start of
+transmission as first specified. `_start_calling()` decides to call and
+calls `_votive.start_transmitting()` in the same frame, so a `npc_transmit`
+placed there would stack a second word on the same head in the same frame,
+right next to `npc_call`. Commit time is the only genuinely distinct event
+in the chain; the alternative — somewhere mid-countdown — would be a state,
+not an event, and states are exactly what the comic layer must not narrate.
+
+*Подключены оставшиеся два эффекта. npc_hit — на попадание по уже лежащему
+телу (одна ветка, поэтому два слова с одного удара невозможны).
+npc_transmit перенесён с начала передачи на момент фактической отправки
+отчёта: начало передачи и решение звонить — один и тот же кадр.*
+- `npc/npc_base.gd`, `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
+## 2026-08-22 - Widen the comic vocabulary to 6-7 words per event
+
+Two or three variants per event made repeats obvious within a single fight.
+Every pool is now seven, except `npc_death`, deliberately left at three
+(…, SILENCE, STILL): the quiet at the end works because there is almost
+nothing to say, and a seven-word death pool would talk over it.
+
+Tone held to short, capitalised, no exclamation marks — the word registers
+what happened and never tells the player what to do or feel. `npc_freeze`
+gained a bare `?`, the most comic-page-native token available and the one
+that reads as bewilderment without a syllable.
+
+*Словари расширены до семи вариантов на событие; смерть намеренно оставлена
+на трёх — тишина работает за счёт скудости.*
+- `data/comic_effects/*.tres`
+
+---
+
+## 2026-08-22 - Comic effect defs move from code into data/comic_effects/
+
+The seven defs seeded by `_load_default_defs()` are now seven `.tres` files
+gathered by a `ComicEffectCatalog` (`data/comic_effects/`, one file per
+event) — same shape as `data/key_hints.tres`, one file per item like
+`data/npc_archetypes/`. `_load_default_defs()`/`_register_simple()` deleted
+rather than left unused. The comic layer is a visual language of this
+project, not a debug tool, so it will keep growing; growing it must not mean
+editing GDScript.
+
+Found by path (`CATALOG_PATH`), not by an `@export` and not by scanning the
+folder. `ComicEffectSystem` is built with `.new()` from
+`WORLD_SYSTEM_SCRIPTS` and has no inspector, which rules out the `@export`
+route `KeyHintsPanel` uses; a `DirAccess` scan is worse than it looks, since
+an exported build converts `.tres` to binary behind `.remap` and a runtime
+search for `*.tres` would quietly return a full set in the editor and an
+empty one in a shipped build. Failure stays non-fatal: a missing catalog or
+an empty `texts` pool warns and leaves that id unspawnable, exactly as
+before. Also dropped the dead `last` parameter from `_pick_weighted()`.
+
+*Определения комикс-эффектов вынесены из кода в data/comic_effects/ —
+по .tres на событие плюс каталог. Каталог грузится по пути: у системы,
+создаваемой через .new(), нет инспектора, а скан папки ломается в
+экспортированной сборке.*
+- `core/ui/comic_effect/comic_effect_catalog.gd`, `core/ui/comic_effect/comic_effect_system.gd`, `data/comic_effects/*.tres`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 - ComicEffectSystem: floating reaction words
 
 New `WORLD_SYSTEM_SCRIPTS` entry (`core/ui/comic_effect/`, three files:

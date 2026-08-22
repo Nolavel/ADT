@@ -77,6 +77,11 @@ would clear sightlines and the crowd would become a puzzle.
 
 ## 3. Channels
 
+> The comic onomatopoeia layer is a **different** channel from these and is
+> documented separately in `docs/visual_language.md` — these four say *who
+> someone is*, continuously; a comic word says *what just happened*, once.
+
+
 No profiler overlay, no scan mode, no highlight. Four channels:
 
 | Channel | Carries | Implementation |
