@@ -325,6 +325,11 @@ func take_hit(from_position: Vector3, damage: float = 25.0) -> void:
 		_health.apply_damage(damage)
 
 	if _knocked_down:
+		# A hit landing on a body already down. It still damages (above) and
+		# can still finish the NPC off, but it starts no new knockdown — so
+		# it gets the lighter word instead. The early return is what keeps
+		# one hit from ever producing both npc_hit and npc_knockdown.
+		_try_spawn_comic_effect(&"npc_hit")
 		return
 	_knocked_down = true
 	_knockdown_phase = KnockdownPhase.FALLING

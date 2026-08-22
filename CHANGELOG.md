@@ -12,6 +12,32 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - Wire the last two comic effects, npc_hit and npc_transmit
+
+Both were registered and called from nowhere.
+
+`npc_hit` goes on `NPCBase.take_hit()`'s other branch — the hit that lands
+on a body already down, damaging it (and able to finish it off) without
+starting a new knockdown. The early `return` sitting between the two
+branches is what guarantees a single hit never produces both words.
+
+`npc_transmit` marks the moment the report actually reaches
+`IncidentRegistry` (`_commit_witness_report()`), **not** the start of
+transmission as first specified. `_start_calling()` decides to call and
+calls `_votive.start_transmitting()` in the same frame, so a `npc_transmit`
+placed there would stack a second word on the same head in the same frame,
+right next to `npc_call`. Commit time is the only genuinely distinct event
+in the chain; the alternative — somewhere mid-countdown — would be a state,
+not an event, and states are exactly what the comic layer must not narrate.
+
+*Подключены оставшиеся два эффекта. npc_hit — на попадание по уже лежащему
+телу (одна ветка, поэтому два слова с одного удара невозможны).
+npc_transmit перенесён с начала передачи на момент фактической отправки
+отчёта: начало передачи и решение звонить — один и тот же кадр.*
+- `npc/npc_base.gd`, `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 - Widen the comic vocabulary to 6-7 words per event
 
 Two or three variants per event made repeats obvious within a single fight.
