@@ -12,6 +12,54 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - Morph icons: a spring-driven glyph for gesture widgets
+
+The pause handle and the revolver hammer are grab-and-throw widgets with no
+visual state of their own — nothing on screen said "you have hold of this".
+`ui/widgets/morphs/` adds one: three dots that spring between a line at rest
+and a turning circle while held, drawn in `_draw()` with no child nodes.
+
+Stan supplied the solver, the glyph and three controller patches; the patches
+went in essentially verbatim (they are additive — `_set_phase()` replacing bare
+assignments, a `phase_changed` signal, an optional third `setup()` argument),
+including one genuine fix carried in them: `strike()` now enters `RETURNING`
+before flying home, where the phase used to stay `STRIKING` the whole way.
+
+Two things were changed from what was supplied, both agreed first:
+
+**`MorphIcon` as the declared type.** The originals typed against
+`ThreeDotsMorph`, which would have made the stated goal — "a new morph script,
+controllers unchanged" — false: a second glyph could not have been passed
+without editing all three controllers. Added a base class in the same shape
+`ActorBase` already uses, owning the `Mode` vocabulary, the three named
+shortcuts, `get_mode()`, and a static `find_in()` that replaced the duplicated
+`_find_morph()`. `ThreeDotsMorph` now overrides exactly one method,
+`set_mode()`.
+
+**`SpringPoint.MAX_STEP`.** Semi-implicit Euler at `DAMPING 22` is stable only
+below roughly 0.09s per step. At 55 FPS the margin is five-fold, but this build
+streams world content on threads with a per-frame instantiation budget, and
+past that bound the solver does not degrade — it diverges and the dots leave
+the screen. Clamping makes a long frame play slightly slow instead. Stiffness
+and damping stay constants: identity with the motion study they came from is
+the reason they are constants.
+
+Scene wiring is manual and not done here — attaching a `Morph` child under
+`btn_drag_handle` and `%Hammer` is an editor job, described in
+`docs/MORPHS_INTEGRATION.md`. Until then nothing changes: a missing morph is
+the ordinary silent case. `ui/settings/setting.gd` is a third host that could
+take one and currently does not.
+
+*Добавлен слой morph-иконок: три точки, пружинно переходящие между линией
+покоя и вращающимся кругом захвата. Патчи Стана легли почти дословно; изменены
+две вещи — тип в контроллерах поднят до базового MorphIcon (иначе второй
+morph потребовал бы правки контроллеров, вопреки заявленной цели) и в
+SpringPoint добавлен кламп шага, иначе на просадке кадра решатель расходится.
+Привязка в сценах — вручную в редакторе.*
+- `ui/widgets/morphs/morph_icon.gd`, `ui/widgets/morphs/spring_point.gd`, `ui/widgets/morphs/three_dots_morph.gd`, `ui/widgets/toss/drag_handle_controller.gd`, `ui/main_menu/revolver_hammer_controller.gd`, `ui/main_menu/revolver_menu.gd`, `core/controllers/menu_controller/menu_controller.gd`, `docs/MORPHS_INTEGRATION.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 - Witness dispatch: a report now brings the city
 
 The H3/H4 playtest ran the witness chain end to end and it worked — and

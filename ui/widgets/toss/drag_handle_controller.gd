@@ -10,11 +10,19 @@
 # Рассчитан на НЕПОДВИЖНУЮ россыпь целей: выбор идёт по направлению и
 # расстоянию. Для барабана главного меню он не подходит — там цель одна и она
 # двигается, поэтому у барабана свой контроллер (revolver_hammer_controller.gd).
+#
+# Morph (optional): a MorphIcon parented under the handle, driven from Phase:
+#   IDLE / FLYING → LINE
+#   DRAGGING      → CIRCLE
+# Typed against the MorphIcon base, never a concrete morph — a second morph
+# is a new script under ui/widgets/morphs/ and nothing here changes.
 # =============================================================================
 extends Node
 class_name DragHandleController
 
 signal target_interacted(target: DragTargetButton)
+## Emitted whenever the internal phase changes. Useful for external visuals.
+signal phase_changed(phase: int)
 
 @export var nearest_radius: float = 130.0
 ## RU: Минимальная скорость толчка (px/сек), чтобы засчитать направление
@@ -30,6 +38,8 @@ const SAMPLE_WINDOW: float = 0.09
 
 var handle: Control
 var targets: Array[DragTargetButton] = []
+## Optional morph icon. Null is the normal, silent case.
+var morph: MorphIcon = null
 
 var _phase: int = Phase.IDLE
 var _handle_home: Vector2 = Vector2.ZERO
@@ -40,10 +50,12 @@ var _velocity: Vector2 = Vector2.ZERO
 ## ENG: Blocks grabbing while screens are transitioning
 var _locked: bool = false
 
+
 # -----------------------------------------------------------------------------
 
-func setup(p_handle: Control, p_targets: Array) -> void:
+func setup(p_handle: Control, p_targets: Array, p_morph: MorphIcon = null) -> void:
 	handle = p_handle
+	morph = p_morph
 	targets.clear()
 	for t in p_targets:
 		if t is DragTargetButton:
@@ -51,6 +63,7 @@ func setup(p_handle: Control, p_targets: Array) -> void:
 	_handle_home = handle.position
 	handle.button_down.connect(_on_handle_down)
 	handle.button_up.connect(_on_handle_up)
+	_sync_morph()
 
 
 func _process(delta: float) -> void:
@@ -63,6 +76,11 @@ func set_locked(value: bool) -> void:
 	if handle != null:
 		handle.disabled = value
 
+
+func get_phase() -> int:
+	return _phase
+
+
 # -----------------------------------------------------------------------------
 # ## RU: Захват и протяжка / ENG: Grab and drag
 # -----------------------------------------------------------------------------
@@ -70,7 +88,7 @@ func set_locked(value: bool) -> void:
 func _on_handle_down() -> void:
 	if _locked or _phase == Phase.FLYING:
 		return
-	_phase = Phase.DRAGGING
+	_set_phase(Phase.DRAGGING)
 	_grab_offset = handle.get_global_mouse_position() - handle.global_position
 	handle.z_index = 100
 	_samples.clear()
@@ -108,6 +126,7 @@ func _on_handle_up() -> void:
 	else:
 		_clear_targets()
 		reset_handle()
+
 
 # -----------------------------------------------------------------------------
 # ## RU: Выбор цели / ENG: Target selection
@@ -154,12 +173,13 @@ func _nearest_target(point: Vector2) -> DragTargetButton:
 			best = t
 	return best
 
+
 # -----------------------------------------------------------------------------
 # ## RU: Полёт / ENG: Flight
 # -----------------------------------------------------------------------------
 
 func _fly_to(target: DragTargetButton) -> void:
-	_phase = Phase.FLYING
+	_set_phase(Phase.FLYING)
 	handle.disabled = true
 
 	for t in targets:
@@ -179,12 +199,13 @@ func _fly_to(target: DragTargetButton) -> void:
 	##     Позицию сбросит reset_handle() при следующем открытии виджета.
 	## ENG: the handle stays where it landed — no return home.
 	##      reset_handle() restores it when the widget is reopened.
-	_phase = Phase.IDLE
+	_set_phase(Phase.IDLE)
 	handle.z_index = 0
 	handle.disabled = false
 	_clear_targets()
 
 	target_interacted.emit(target)
+
 
 # -----------------------------------------------------------------------------
 
@@ -217,7 +238,7 @@ func _clear_targets() -> void:
 ## RU: Вернуть хэндл на исходное место. Вызывать при открытии виджета.
 ## ENG: Return the handle to its home slot. Call when the widget opens.
 func reset_handle(instant: bool = false) -> void:
-	_phase = Phase.IDLE
+	_set_phase(Phase.IDLE)
 	handle.z_index = 0
 	handle.disabled = false
 	_clear_targets()
@@ -227,3 +248,25 @@ func reset_handle(instant: bool = false) -> void:
 	var tw: Tween = handle.create_tween()
 	tw.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(handle, "position", _handle_home, 0.3)
+
+
+# -----------------------------------------------------------------------------
+# ## ENG: Phase + morph sync
+# -----------------------------------------------------------------------------
+
+func _set_phase(p: int) -> void:
+	if p == _phase:
+		return
+	_phase = p
+	phase_changed.emit(_phase)
+	_sync_morph()
+
+
+func _sync_morph() -> void:
+	if morph == null:
+		return
+	match _phase:
+		Phase.DRAGGING, Phase.FLYING:
+			morph.to_circle()
+		_:
+			morph.to_line()

@@ -12,6 +12,12 @@
 #
 # Куда лететь — спрашивает снаружи через Callable, чтобы не знать ни про
 # барабан, ни про камору.
+#
+# Morph (optional): a MorphIcon parented under the hammer, driven from Phase:
+#   IDLE / RETURNING  → LINE
+#   PULLED / STRIKING → CIRCLE
+# Typed against the MorphIcon base, never a concrete morph — a second morph
+# is a new script under ui/widgets/morphs/ and nothing here changes.
 # =============================================================================
 extends Node
 class_name RevolverHammerController
@@ -23,6 +29,8 @@ signal pulled()
 signal aim_changed(valid: bool)
 ## RU: Курок долетел до каморы. Выстрел вешать сюда.
 signal struck()
+## Emitted whenever the internal phase changes.
+signal phase_changed(phase: int)
 
 ## RU: Минимальный путь курка от дома, px. Короче — жеста не было,
 ##     курок возвращается домой и не стреляет.
@@ -42,6 +50,8 @@ signal struck()
 enum Phase { IDLE, PULLED, STRIKING, RETURNING }
 
 var hammer: Button
+## Optional morph icon. Null is the normal, silent case.
+var morph: MorphIcon = null
 
 var _phase: int = Phase.IDLE
 var _home: Vector2 = Vector2.ZERO
@@ -54,12 +64,14 @@ var _locked: bool = false
 var _destination: Callable = Callable()
 
 
-func setup(p_hammer: Button, p_destination: Callable) -> void:
+func setup(p_hammer: Button, p_destination: Callable, p_morph: MorphIcon = null) -> void:
 	hammer = p_hammer
 	_destination = p_destination
+	morph = p_morph
 	_home = hammer.position
 	hammer.button_down.connect(_on_hammer_down)
 	hammer.button_up.connect(_on_hammer_up)
+	_sync_morph()
 
 
 ## RU: Перезахват домашней точки. Звать при ресайзе окна: курок закреплён
@@ -94,12 +106,17 @@ func set_locked(value: bool) -> void:
 	if hammer != null:
 		hammer.disabled = value
 
+
+func get_phase() -> int:
+	return _phase
+
+
 # -----------------------------------------------------------------------------
 
 func _on_hammer_down() -> void:
 	if _locked or _phase != Phase.IDLE:
 		return
-	_phase = Phase.PULLED
+	_set_phase(Phase.PULLED)
 	_grab_offset = hammer.get_global_mouse_position() - hammer.global_position
 	_pull_start = hammer.global_position
 	_aim_valid = false
@@ -121,11 +138,11 @@ func _on_hammer_up() -> void:
 		return
 
 	## RU: Жеста не было — курок возвращается домой, камора остаётся ждать.
-	_phase = Phase.RETURNING
+	_set_phase(Phase.RETURNING)
 	_aim_valid = false
 	aim_changed.emit(false)
 	await _return_home()
-	_phase = Phase.IDLE
+	_set_phase(Phase.IDLE)
 	hammer.z_index = 0
 
 
@@ -153,7 +170,7 @@ func strike() -> void:
 		push_error("RevolverHammerController: не задан Callable назначения.")
 		return
 
-	_phase = Phase.STRIKING
+	_set_phase(Phase.STRIKING)
 	_aim_valid = false
 	hammer.disabled = true
 
@@ -166,9 +183,10 @@ func strike() -> void:
 	struck.emit()
 
 	await hammer.get_tree().create_timer(hold_time).timeout
+	_set_phase(Phase.RETURNING)
 	await _return_home()
 
-	_phase = Phase.IDLE
+	_set_phase(Phase.IDLE)
 	hammer.z_index = 0
 	hammer.disabled = _locked
 
@@ -178,3 +196,25 @@ func _return_home() -> void:
 	tw.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(hammer, "position", _home, return_time)
 	await tw.finished
+
+
+# -----------------------------------------------------------------------------
+# ## ENG: Phase + morph sync
+# -----------------------------------------------------------------------------
+
+func _set_phase(p: int) -> void:
+	if p == _phase:
+		return
+	_phase = p
+	phase_changed.emit(_phase)
+	_sync_morph()
+
+
+func _sync_morph() -> void:
+	if morph == null:
+		return
+	match _phase:
+		Phase.PULLED, Phase.STRIKING:
+			morph.to_circle()
+		_:
+			morph.to_line()
