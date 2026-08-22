@@ -375,6 +375,27 @@ police, identity archives and behavioural profiling.
 
 ---
 
+### What a committed report now does
+
+Committing is no longer a bookkeeping event. A report that reaches
+`IncidentRegistry` marked as a witness transmission dispatches the city to
+the place it names: every drone breaks patrol and flies there from wherever
+it is, and any responding archetype (Patrolman) runs to it — neither gated
+by the distance that governs what a unit notices on its own. See
+`NPC_REACTIONS.md` §4.
+
+This is the first thing in the build that makes the three seconds of
+transmission cost something to the player, and therefore the first thing
+that makes suppressing a witness mid-transmission a decision rather than a
+curiosity.
+
+It is deliberately *not* yet differentiated by observation quality.
+`observation_level` is still resolved, carried on the `WitnessReport`, and
+read by nobody — the responders come, but they come the same way for a
+report that saw a face and one that saw a coat. Making the response differ
+by what was actually observed is §5's work, and it is the shortest path from
+this page's model to a mechanic the player can play against.
+
 ## 8. Terminology
 
 | Term | Means |

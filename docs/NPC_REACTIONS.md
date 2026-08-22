@@ -158,6 +158,35 @@ secret the player has to reverse-engineer and becomes something the player
 reads and reacts to in the moment. See that page for the shape this now
 takes.
 
+#### Who learns about an incident, and how far it travels
+
+Two separate channels, and keeping them apart is what gives a witness value.
+
+| Channel | Reaches | Who |
+|---|---|---|
+| **Noticed it directly** | Own perception radius — drone 60 m, NPC 25 m | Whoever happened to be near |
+| **Told, via a committed Votive report** | The whole city, no distance limit | Every drone; every responding archetype |
+
+An ordinary bystander only ever reacts to the first: they do not learn about
+a mugging across town, and their Flee/Freeze roll stays bound to earshot. The
+second channel is what a report *is* — a witness spending three visible
+seconds on their Votive is spending them to reach units that could not
+possibly have seen anything.
+
+The consequence the player should be able to feel: **a punch nobody calls in
+stays local.** One nearby drone might notice, or nothing happens at all. A
+punch a Clerk calls in brings drones across the map and Patrolmen at a run.
+The difference between those two outcomes is the entire point of §4's
+witness, and until dispatch existed it was invisible in play.
+
+Implementation note: the channel is carried on the incident itself
+(`Incident.Source`), not inferred from who called `report()`. Catch-up
+queries — a drone scanning as it patrols, or state restored from a save —
+stay on the first channel only; being told something is a thing that happens
+now, not something replayed out of a file.
+
+---
+
 ### 4a. Intent, before anything has happened
 
 A responder reacts to two different things, and they are not the same rung.
