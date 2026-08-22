@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dfwf7kcxmq81i" path="res://ui/main_menu/revolver_menu.gd" id="1_menu"]
 [ext_resource type="Script" uid="uid://cj842yi8umgy2" path="res://ui/main_menu/revolver_slot_button.gd" id="2_slot"]
+[ext_resource type="Script" path="res://ui/widgets/morphs/three_dots_morph.gd" id="9_morph"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
@@ -117,4 +118,12 @@ offset_right = 32.0
 offset_bottom = 32.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "PULL"
+
+[node name="Morph" type="Control" parent="Hammer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9_morph")

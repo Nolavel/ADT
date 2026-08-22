@@ -12,6 +12,37 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - Attach the morphs: both gesture widgets now drive a glyph
+
+The morph layer landed with no scene wiring, so nothing drove it — the code
+was correct and invisible. Both hosts now carry a `Morph` child running
+`three_dots_morph.gd`, found by `MorphIcon.find_in()` at `setup()`.
+
+One trap caught while doing it: `btn_drag_handle`'s anchors describe an 8x8
+rect, and every pixel beyond that came from its `text = "( )"`. Clearing the
+text as the guide said would have collapsed the pause handle into a nearly
+unclickable target, so the button gained `custom_minimum_size = Vector2(36,
+36)` in the same edit. `%Hammer` is 64x64 by its own offsets and needed no
+equivalent.
+
+Both `.tscn` files were edited as text — the godot-ai MCP server needs an open
+editor and there is none here. The edits are a leaf `Control` child plus one
+`ext_resource` each, written without a `uid` (Godot fills that in on first
+save; `perception_debug_panel.gd` is already referenced the same way). Verify
+in the editor before trusting them.
+
+Note for play: clearing `%Hammer`'s `text = "PULL"` removes the only words
+telling a first-time player what the hammer is for. The morph is now the whole
+affordance.
+
+*Морфы привязаны к обеим сценам. По дороге поймана ловушка: паузный хэндл
+держался на размере своего текста, и его очистка схлопнула бы кнопку —
+добавлен custom_minimum_size. Сцены правлены как текст, MCP-сервер Godot
+требует открытого редактора; проверить в редакторе.*
+- `ui/ingame_menu/in_game_menu.tscn`, `ui/main_menu/revolver_menu.tscn`, `docs/MORPHS_INTEGRATION.md`
+
+---
+
 ## 2026-08-22 - Morph icons: a spring-driven glyph for gesture widgets
 
 The pause handle and the revolver hammer are grab-and-throw widgets with no

@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://b6mfhcygfx02b" path="res://core/controllers/menu_controller/menu_controller.gd" id="1_x1j37"]
 [ext_resource type="PackedScene" uid="uid://c4bne6src32qd" path="res://ui/settings/settings.tscn" id="2_jc5ie"]
 [ext_resource type="Script" uid="uid://cmsb2tc8h5hh6" path="res://ui/widgets/toss/drag_target_button.gd" id="2_minnd"]
+[ext_resource type="Script" path="res://ui/widgets/morphs/three_dots_morph.gd" id="9_morph"]
 
 [node name="InGameMenu" type="Control" unique_id=629233379]
 layout_mode = 3
@@ -79,6 +80,7 @@ text = "last save"
 script = ExtResource("2_minnd")
 
 [node name="btn_drag_handle" type="Button" parent="." unique_id=578386606]
+custom_minimum_size = Vector2(36, 36)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -91,4 +93,16 @@ offset_right = 4.0
 offset_bottom = 4.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "( )"
+
+[node name="Morph" type="Control" parent="btn_drag_handle"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("9_morph")
+spacing = 9.0
+dot_radius = 3.0
+circle_radius = 9.0
+wave_amp = 5.0
