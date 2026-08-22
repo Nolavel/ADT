@@ -162,6 +162,18 @@ var _was_on_floor: bool = false
 ## itself — it has to be captured a step ahead of time.
 var _pre_move_vertical_speed: float = 0.0
 
+## ComicEffectSystem, resolved lazily by group — same scheme NPCBase and
+## IdleNPCController use, and for the same reason: player.tscn is
+## instantiated by world.gd before the systems finish coming up, and this
+## node never receives a WorldContext of its own. Null is a silent no-op.
+var _comic_effects: ComicEffectSystem = null
+
+## Last health reading seen through health_changed, so a DECREASE can be
+## told from a heal or from the initial paint. HealthComponent has no
+## "damaged" signal of its own, and adding one for a decoration would be
+## the wrong direction of dependency.
+var _last_health_seen: float = -1.0
+
 ## --- Components ---
 @onready var navigation_component: NavigationComponent = $NavComponent
 @onready var stamina_manager: StaminaComponent = $StaminaComponent
@@ -192,6 +204,17 @@ func _ready() -> void:
 		push_warning("StaminaManager not found - stamina system will not work")
 
 	_health.died.connect(_on_died)
+
+	## Comic layer, event-driven throughout: every one of these is an EDGE
+	## (took damage, sprint just became unavailable, stamina just hit the
+	## floor, stance just flipped), never a per-frame reading of a state —
+	## see docs/visual_language.md, a word marks an event and never a
+	## condition.
+	_health.health_changed.connect(_on_health_changed_for_comic)
+	if stamina_manager:
+		stamina_manager.sprint_allowed_changed.connect(_on_sprint_allowed_changed_for_comic)
+		stamina_manager.stamina_depleted.connect(_on_stamina_depleted_for_comic)
+	PlayerState.stance_changed.connect(_on_stance_changed_for_comic)
 
 	## Reuses InputSystems' existing primary_click_pressed signal instead of
 	## adding a new one. ClickToMoveSystem, the signal's other subscriber, is
@@ -581,6 +604,46 @@ func _on_died() -> void:
 	_animation_component.play_death()
 	set_movement_enabled(false)
 	_is_dead = true
+	_try_spawn_comic_effect(&"player_death")
+
+
+## Comic layer handlers. Each is one edge; none of them reads a state per
+## frame. See docs/visual_language.md for the rule and player.gd's own
+## _ready() for why these are separate from the gameplay subscriptions
+## already on the same signals.
+func _on_health_changed_for_comic(current: float, _maximum: float) -> void:
+	var dropped := _last_health_seen >= 0.0 and current < _last_health_seen
+	_last_health_seen = current
+	if dropped and not _is_dead:
+		_try_spawn_comic_effect(&"player_hurt")
+
+
+func _on_sprint_allowed_changed_for_comic(is_allowed: bool) -> void:
+	if not is_allowed:
+		_try_spawn_comic_effect(&"player_winded")
+
+
+func _on_stamina_depleted_for_comic() -> void:
+	_try_spawn_comic_effect(&"player_spent")
+
+
+func _on_stance_changed_for_comic(
+		_old_stance: PlayerState.Stance,
+		new_stance: PlayerState.Stance
+	) -> void:
+	if new_stance == PlayerState.Stance.COMBAT:
+		_try_spawn_comic_effect(&"player_combat")
+
+
+## Resolves ComicEffectSystem on first use and asks it for one word above
+## the player. The system owns the distance gate and the active-count cap.
+func _try_spawn_comic_effect(id: StringName) -> void:
+	if _comic_effects == null:
+		_comic_effects = get_tree().get_first_node_in_group(
+			ComicEffectSystem.GROUP_COMIC_EFFECT_SYSTEM
+		) as ComicEffectSystem
+	if _comic_effects:
+		_comic_effects.try_spawn(id, global_position, self)
 
 
 ## Cuts the stamina CEILING in CRITICAL rather than blocking running

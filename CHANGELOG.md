@@ -12,6 +12,32 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - The player gets comic words too
+
+Five new defs (`player_hurt`/`player_death`/`player_winded`/`player_spent`/
+`player_combat`) and their wiring in `player.gd`. Until now the comic layer
+only spoke for the crowd; the player's own body was silent, which made the
+device read as something that happens to NPCs rather than a voice the frame
+has.
+
+Every hook is an EDGE, deliberately, since the word-on-event rule is the
+one thing that keeps this layer from becoming noise: a health DECREASE seen
+through `health_changed` (tracked with `_last_health_seen` — `HealthComponent`
+has no `damaged` signal, and growing one to feed a decoration would be the
+wrong direction of dependency), `sprint_allowed_changed(false)` for running
+out of wind, `stamina_depleted()` for having none left, `died()`, and
+`stance_changed` on entering `COMBAT` only. None of them polls a state.
+
+`player_combat` takes its hue from `StanceIndicator.combat_color` so the
+floating word and the HUD badge read as one statement, lightened enough to
+stay legible unbacked over the world.
+
+*Игрок тоже получил слова: ранение, смерть, одышка, пустая стамина и вход в
+COMBAT. Все крючки — на фронт события, не на состояние.*
+- `data/comic_effects/player_*.tres`, `data/comic_effects/catalog.tres`, `player/player.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 - Wire the last two comic effects, npc_hit and npc_transmit
 
 Both were registered and called from nowhere.
