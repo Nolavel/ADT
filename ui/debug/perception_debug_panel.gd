@@ -61,6 +61,7 @@ var _game_clock: GameClockSystem = null
 func _ready() -> void:
 	_build_ui()
 	InputSystems.perception_debug_toggled.connect(_on_toggle)
+	visible = false
 
 
 func on_world_ready(context: WorldContext) -> void:

@@ -22,7 +22,6 @@ menu_pause_pitch_deg = null
 menu_pause_transition_duration = null
 shake_enabled_in_game_only = null
 shake_area = null
-iso_debug_enabled = true
 
 [node name="CameraSettings" type="Control" parent="." unique_id=811898119]
 layout_mode = 3
