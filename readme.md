@@ -5,7 +5,10 @@ Solo project, in active development. Not a shipping game — a prototype.
 
 **Engine:** Godot 4.7 · Forward+ renderer · GDScript
 **Status:** prototype. World streaming, player movement, camera and hover
-transport are implemented. Combat, AI, missions and saving are not.
+transport are implemented. Melee combat and stances, ambient NPCs with
+perception and the witness/incident chain, and saving to a slot are in as
+first slices. Missions, metro and lift transport, and the attribution
+system that would act on a reported incident are not.
 
 > Нуарный опенворлд-прототип в вертикальном городе Блэкрок.
 > Соло-проект в активной разработке.
