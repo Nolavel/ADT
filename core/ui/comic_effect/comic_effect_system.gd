@@ -12,10 +12,12 @@
 # spawn a word. Pool + MAX_ACTIVE keep the cost fixed under the ~55 FPS
 # target. Anti-repeat avoids the same string on consecutive spawns of one id.
 #
-# Default defs cover H4 witness / reaction vocabulary (knockdown, freeze,
-# flee, call, death). Register more via register_def() or replace the seed
-# list with a Resource load later — the seed exists so the system is useful
-# the frame it is added, without a data-file dependency on day one.
+# The vocabulary is DATA, not code: every ComicEffectDef lives as its own
+# .tres under data/comic_effects/, gathered by a ComicEffectCatalog. The
+# comic layer is a visual language of this project, not a debug tool, so it
+# will keep growing — adding a word, or a whole event, must never require
+# touching this file. register_def() stays as the runtime seam for anything
+# that wants to add a def without editing the catalog.
 # =============================================================================
 class_name ComicEffectSystem
 extends Node
@@ -30,6 +32,16 @@ const MAX_ACTIVE: int = 8
 const DEFAULT_OFFSET: Vector3 = Vector3(0.0, 1.6, 0.0)
 ## Above typical HUD layers (world.gd UI canvas uses 40).
 const CANVAS_LAYER_INDEX: int = 45
+
+## Where the vocabulary lives. Loaded by PATH, deliberately, not through an
+## @export the way KeyHintsPanel reaches KeyHintsCatalog: this system is
+## built with .new() from world.gd's WORLD_SYSTEM_SCRIPTS and so has no
+## inspector for anyone to assign a catalog in. Scanning the folder with
+## DirAccess was the other candidate and is worse: an exported build turns
+## .tres into binary and routes it through .remap, so a runtime search for
+## "*.tres" finds a full set in the editor and an empty one in a shipped
+## build — the failure would only ever show up after packaging.
+const CATALOG_PATH: String = "res://data/comic_effects/catalog.tres"
 
 var _camera: Camera3D = null
 var _player: Node3D = null
@@ -50,7 +62,7 @@ func on_world_ready(context: WorldContext) -> void:
 	_camera = context.camera
 	_build_layer()
 	_build_pool()
-	_load_default_defs()
+	_load_catalog()
 
 
 func register_def(def: ComicEffectDef) -> void:
@@ -118,70 +130,26 @@ func _attach_label(label: ComicEffectLabel) -> void:
 		_layer.add_child(label)
 
 
-func _load_default_defs() -> void:
-	# H4 reaction vocabulary. Short, low-exclamation — closer to noir than
-	# Scott-Pilgrim onomatopoeia. Tune texts in place or replace with a
-	# Resource load later.
-	_register_simple(
-		&"npc_knockdown",
-		PackedStringArray(["THUD", "DOWN", "FLOP"]),
-		Color(0.92, 0.78, 0.55, 1.0),
-		28, 0.85, 22.0
-	)
-	_register_simple(
-		&"npc_hit",
-		PackedStringArray(["OOF", "UGH", "GHH"]),
-		Color(0.90, 0.70, 0.50, 1.0),
-		24, 0.65, 18.0
-	)
-	_register_simple(
-		&"npc_death",
-		PackedStringArray(["…", "SILENCE"]),
-		Color(0.70, 0.72, 0.78, 1.0),
-		24, 1.1, 18.0
-	)
-	_register_simple(
-		&"npc_freeze",
-		PackedStringArray(["…", "STARE", "HUH"]),
-		Color(0.82, 0.88, 0.95, 1.0),
-		24, 0.9, 22.0
-	)
-	_register_simple(
-		&"npc_flee",
-		PackedStringArray(["RUN", "AAH", "NO"]),
-		Color(0.95, 0.82, 0.45, 1.0),
-		28, 0.85, 24.0
-	)
-	_register_simple(
-		&"npc_call",
-		PackedStringArray(["CALL", "REPORT"]),
-		Color(0.55, 0.78, 0.95, 1.0),
-		26, 1.0, 26.0
-	)
-	_register_simple(
-		&"npc_transmit",
-		PackedStringArray(["…", "SIGNAL"]),
-		Color(0.50, 0.80, 0.95, 1.0),
-		22, 0.8, 26.0
-	)
-
-
-func _register_simple(
-		id: StringName,
-		texts: PackedStringArray,
-		color: Color,
-		font_size: int,
-		duration: float,
-		radius: float
-	) -> void:
-	var def := ComicEffectDef.new()
-	def.id = id
-	def.texts = texts
-	def.color = color
-	def.font_size = font_size
-	def.duration = duration
-	def.radius = radius
-	_defs[id] = def
+## Reads the catalog once, at world-ready. A missing file, an unreadable
+## one, or a def with an empty texts pool are all non-fatal by design: the
+## comic layer is decoration over events that must keep happening either
+## way, so every failure here warns and leaves that id simply unspawnable
+## (try_spawn() already treats an unknown or empty def as a no-op).
+func _load_catalog() -> void:
+	var catalog := load(CATALOG_PATH) as ComicEffectCatalog
+	if catalog == null:
+		push_warning(
+			"[ComicEffectSystem] no catalog at %s — no words will spawn" % CATALOG_PATH
+		)
+		return
+	for def in catalog.effects:
+		if def == null:
+			continue
+		if def.texts.is_empty():
+			push_warning(
+				"[ComicEffectSystem] def '%s' has an empty texts pool — never spawns" % def.id
+			)
+		register_def(def)
 
 
 func _pick_text(def: ComicEffectDef) -> String:
@@ -200,7 +168,7 @@ func _pick_text(def: ComicEffectDef) -> String:
 	# Weighted path only when weights match length; otherwise uniform.
 	var pick: String
 	if def.weights.size() == texts.size():
-		pick = _pick_weighted(candidates, def, last)
+		pick = _pick_weighted(candidates, def)
 	else:
 		pick = candidates[randi() % candidates.size()]
 
@@ -208,7 +176,7 @@ func _pick_text(def: ComicEffectDef) -> String:
 	return pick
 
 
-func _pick_weighted(candidates: PackedStringArray, def: ComicEffectDef, last: String) -> String:
+func _pick_weighted(candidates: PackedStringArray, def: ComicEffectDef) -> String:
 	# Build weight list only for candidates (excludes last when possible).
 	var weights: Array[float] = []
 	var total: float = 0.0

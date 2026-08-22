@@ -12,6 +12,34 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - Comic effect defs move from code into data/comic_effects/
+
+The seven defs seeded by `_load_default_defs()` are now seven `.tres` files
+gathered by a `ComicEffectCatalog` (`data/comic_effects/`, one file per
+event) — same shape as `data/key_hints.tres`, one file per item like
+`data/npc_archetypes/`. `_load_default_defs()`/`_register_simple()` deleted
+rather than left unused. The comic layer is a visual language of this
+project, not a debug tool, so it will keep growing; growing it must not mean
+editing GDScript.
+
+Found by path (`CATALOG_PATH`), not by an `@export` and not by scanning the
+folder. `ComicEffectSystem` is built with `.new()` from
+`WORLD_SYSTEM_SCRIPTS` and has no inspector, which rules out the `@export`
+route `KeyHintsPanel` uses; a `DirAccess` scan is worse than it looks, since
+an exported build converts `.tres` to binary behind `.remap` and a runtime
+search for `*.tres` would quietly return a full set in the editor and an
+empty one in a shipped build. Failure stays non-fatal: a missing catalog or
+an empty `texts` pool warns and leaves that id unspawnable, exactly as
+before. Also dropped the dead `last` parameter from `_pick_weighted()`.
+
+*Определения комикс-эффектов вынесены из кода в data/comic_effects/ —
+по .tres на событие плюс каталог. Каталог грузится по пути: у системы,
+создаваемой через .new(), нет инспектора, а скан папки ломается в
+экспортированной сборке.*
+- `core/ui/comic_effect/comic_effect_catalog.gd`, `core/ui/comic_effect/comic_effect_system.gd`, `data/comic_effects/*.tres`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 - ComicEffectSystem: floating reaction words
 
 New `WORLD_SYSTEM_SCRIPTS` entry (`core/ui/comic_effect/`, three files:

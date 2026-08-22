@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ComicEffectCatalog" format=3]
+
+[ext_resource type="Script" path="res://core/ui/comic_effect/comic_effect_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://core/ui/comic_effect/comic_effect_def.gd" id="1_def"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_knockdown.tres" id="2_npc_knockdown"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_hit.tres" id="3_npc_hit"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_death.tres" id="4_npc_death"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_freeze.tres" id="5_npc_freeze"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_flee.tres" id="6_npc_flee"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_call.tres" id="7_npc_call"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_transmit.tres" id="8_npc_transmit"]
+
+[resource]
+script = ExtResource("1_catalog")
+effects = Array[ExtResource("1_def")]([ExtResource("2_npc_knockdown"), ExtResource("3_npc_hit"), ExtResource("4_npc_death"), ExtResource("5_npc_freeze"), ExtResource("6_npc_flee"), ExtResource("7_npc_call"), ExtResource("8_npc_transmit")])

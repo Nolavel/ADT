@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ComicEffectDef" format=3]
+
+[ext_resource type="Script" path="res://core/ui/comic_effect/comic_effect_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"npc_call"
+texts = PackedStringArray("CALL", "REPORT")
+weights = PackedFloat32Array()
+color = Color(0.55, 0.78, 0.95, 1)
+font_size = 26
+duration = 1.0
+rise_px = 32.0
+radius = 26.0
