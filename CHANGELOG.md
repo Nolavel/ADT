@@ -12,6 +12,37 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - ComicEffectSystem: floating reaction words
+
+New `WORLD_SYSTEM_SCRIPTS` entry (`core/ui/comic_effect/`, three files:
+`ComicEffectDef` / `ComicEffectLabel` / `ComicEffectSystem`) drawing a
+screen-space word above an event — unprojected from a world point every
+frame via `Camera3D.unproject_position()`, so it orbits with the camera
+instead of sitting at a fixed viewport spot. Pure visual; explicitly not
+audio, and `ComicEffectDef` must not grow a sound field.
+
+Three deliberate constraints: a distance gate (`ComicEffectDef.radius`,
+from the player — an event beyond it never spawns anything, so a fight
+fifty metres away doesn't litter the screen), a fixed pool (12 labels,
+8 active max, reused rather than freed) for a flat cost against the ~55 FPS
+target, and per-id anti-repeat. Resolved by consumers through
+`GROUP_COMIC_EFFECT_SYSTEM` the same way `IncidentRegistry` is — no static
+facade, since no other system entry has one.
+
+Wired at five sites, split by ownership: `NPCBase` spawns `npc_knockdown`
+(on the hit that starts a knockdown) and `npc_death` (`_enter_down_phase()`);
+`IdleNPCController` spawns `npc_flee`/`npc_freeze`/`npc_call` from its
+`_start_*` reaction entries. `npc_hit`/`npc_transmit` are seeded but unused.
+
+*Добавлена система всплывающих слов-реакций над NPC — чисто визуальная, не
+звук. Дистанционный гейт, пул фиксированного размера и анти-повтор; систему
+находят через группу, как IncidentRegistry. Подключена в пяти точках:
+падение и смерть — со стороны тела, бегство/ступор/звонок — со стороны
+контроллера.*
+- `core/ui/comic_effect/comic_effect_def.gd`, `core/ui/comic_effect/comic_effect_label.gd`, `core/ui/comic_effect/comic_effect_system.gd`, `world/world.gd`, `npc/npc_base.gd`, `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-22 — readme.md: the Status line no longer denies what is built
 
 The one-line status still read "Combat, AI, missions and saving are not
