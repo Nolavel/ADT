@@ -13,3 +13,4 @@ vision_range = 16.0
 vision_angle_deg = 100.0
 flee_probability = 0.3
 responds_by_approaching = false
+is_witness_caller = true

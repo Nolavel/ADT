@@ -29,6 +29,104 @@ attribution system.
 
 ---
 
+## 2026-08-21 - Witness reaction: proximity interrupts a call, and witnesses remember
+
+Two additions to `idle_npc_controller.gd`'s incident reaction, both extending
+`NPC_REACTIONS.md` §4:
+
+**Call interruption by proximity.** `_step_calling()` now checks
+`_is_player_approaching()` every frame a report is `PENDING`; if the player
+is closing in on a still-transmitting witness, `_abort_call_for_flee()`
+cancels the report (same `CANCELLED` path a knockdown already gives, via
+`_cancel_active_witness_report(reason)`, now parameterized instead of a
+hardcoded "knocked down" string) and hands off into the ordinary `FLEEING`
+state machine — reusing it, not a second implementation.
+
+**The two-phase Flee reaction itself was corrected** to match the task's
+own spec: `BACKING_AWAY` is now a fixed `backpedal_duration` (2s), not
+gated by distance to the player or by the player still approaching
+(`backpedal_distance_threshold` removed); `RUNNING`'s direction
+(`_flee_direction`) is now computed exactly once, at the moment
+`_enter_flee_phase()` turns into `RUNNING`, away from a fixed
+`_flee_threat_position` — never toward the player and never recomputed per
+frame; `RUNNING` now ends once `flee_far_distance` (40m default) is
+covered, with `flee_duration` repurposed as a per-phase safety cap
+(default raised 4.0 → 20.0) rather than the whole reaction's own timer.
+
+**Witness memory.** `_remembers_player`, set once and never cleared the
+moment ANY archetype's `vision.is_seen` comes back true in
+`_on_incident_reported()` (any witness, not only a caller) — from then on,
+`_decide()`'s ordinary observe-player branch skips straight to
+`_start_flee(observation.position, false)` the instant the player is seen
+again, no incident required. Lives on the controller (a child of the NPC),
+so it disappears on block unload — deliberately not moved into
+`IncidentRegistry`.
+
+*Реакция свидетеля: приближение игрока прерывает звонок (тот же CANCELLED,
+что и нокдаун), двухфазный побег исправлен под спецификацию (пятение по
+времени, бег по дистанции, направление фиксируется один раз), и свидетели
+теперь запоминают игрока навсегда — флаг живёт на контроллере, не в
+IncidentRegistry.*
+- `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
+## 2026-08-21 - Fix stale "no run animation" comments
+
+No code change: `NPCAnimationComponent`'s locomotion blend was already
+widened from a 2-point idle/walk `BlendSpace1D` to a signed 4-point
+idle/walk/run/backward one, and the two-phase flee reaction already reads
+correctly off it (`63c9c18`, prior session) — but three comments in
+`idle_npc_controller.gd` and one in `CLAUDE.md` still claimed "no run
+animation"/"no run clip" and were never updated at the time, exactly the
+kind of drift `CLAUDE.md`'s own workflow rule warns about. Fixed the
+wording only; `ANIM_BACKWARD`/`ANIM_RUN` (`npc_animation_component.gd`)
+were already wired and did not need touching.
+*Правка устаревших комментариев — анимации бега/пятения уже подключены
+раньше, но комментарии этого не отражали.*
+- `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
+## 2026-08-21 - Witness Call becomes a deterministic archetype trait
+
+Removed `IdleNPCController.witness_density`/`call_probability` and the
+per-NPC `_is_witness` flag rolled once at spawn — replaced by
+`NPCArchetypeData.is_witness_caller` (`false` by default, `true` only on
+`Clerk`). Whether an NPC ever calls in what it witnesses is now a property
+of its archetype, not a population-wide roll: `_on_incident_reported()` no
+longer rolls `call_probability` against a random draw — a calling archetype
+that clears the vision gate always calls; a non-calling archetype (or one
+that didn't actually see the incident) falls through to the ordinary
+Flee/Freeze roll, unchanged. `Patrolman`'s `responds_by_approaching` is
+unaffected — it still bypasses both the Call check and the Flee/Freeze roll
+entirely. Incident telemetry now logs a non-calling archetype as
+`REJECT archetype` instead of `REJECT not-witness`.
+*Звонок свидетеля теперь детерминированное свойство архетипа (только
+Clerk), а не популяционный бросок кубика — witness_density/call_probability
+убраны.*
+- `npc/npc_archetype_data.gd`, `data/npc_archetypes/clerk.tres`, `npc/controllers/idle_npc_controller.gd`, `CLAUDE.md`
+
+---
+
+## 2026-08-21 - Remove the crowd witness debug mode
+
+`WitnessDebugSystem` (added 2026-08-19) subsidized numbers instead of proving
+the mechanic — a diagnostic that made the chain easy to trigger on demand
+told nothing about whether the honest, rare numbers actually worked, and
+having a second, debug-only code path (the four `_effective_*()` getters on
+`IdleNPCController`) was extra surface for no lasting benefit. Removed
+outright: the file, its `WORLD_SYSTEM_SCRIPTS` entry, the `toggle_witness_debug`
+action (`[`, now unbound), the `InputSystems.witness_debug_toggled` signal,
+and the four `_effective_*()` getters — `IdleNPCController` reads
+`_perception.vision_range`/`earshot_radius`/`call_probability`/`_is_witness`
+directly again, same as before the debug mode existed.
+*Убран режим отладки толпы свидетелей — он подменял числа вместо проверки
+механики; тот же четырёхпутевой геттер убран, чтение снова прямое.*
+- `core/world/witness_debug_system/` (deleted), `npc/controllers/idle_npc_controller.gd`, `world/world.gd`, `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-19 - Add a crowd witness debug mode
 
 The honest witness numbers (`witness_density` 0.15, `call_probability` 0.6,
