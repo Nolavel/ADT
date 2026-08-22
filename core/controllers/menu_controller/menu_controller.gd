@@ -3,6 +3,10 @@
 # ## RU: Корень паузного меню. Кнопки активируются только через drag-handle.
 # ## ENG: Pause menu root. Buttons are activated via drag-handle only.
 # process_mode = ALWAYS (выставляется снаружи при инстанцировании)
+#
+# Morph: btn_drag_handle may host a MorphIcon child. Found by
+# MorphIcon.find_in() and handed to DragHandleController.setup(); absent is
+# the ordinary case and changes nothing.
 # =============================================================================
 extends Control
 
@@ -26,13 +30,12 @@ func _ready() -> void:
 
 	PlayerState.mode_changed.connect(_on_player_state_mode_changed)
 	_drag.process_mode = Node.PROCESS_MODE_ALWAYS
-	_drag.setup(drag_handle, [continue_button, quit_button, settings_button, last_save])
+
+	var morph: MorphIcon = MorphIcon.find_in(drag_handle)
+	_drag.setup(drag_handle, [continue_button, quit_button, settings_button, last_save], morph)
 	_drag.target_interacted.connect(_on_target_interacted)
 	add_child(_drag)   ## RU: обязательно — контроллеру нужен _process
 
-
-#func _process(delta: float) -> void:
-	#_drag.process(delta)
 
 func _on_target_interacted(target: DragTargetButton) -> void:
 	match target:
@@ -40,6 +43,7 @@ func _on_target_interacted(target: DragTargetButton) -> void:
 		quit_button:     _on_quit_pressed()
 		settings_button: _open_settings()
 		last_save:       print("💾 Загрузка последнего сейва — не реализовано")
+
 
 func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
 	if new_mode == PlayerState.Mode.MENU:
@@ -52,8 +56,10 @@ func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
 	elif visible:
 		_fade_out()
 
+
 func _on_continue_pressed() -> void:
 	PlayerState.close_menu()
+
 
 func _on_quit_pressed() -> void:
 	drag_handle.disabled = true
@@ -61,6 +67,7 @@ func _on_quit_pressed() -> void:
 	await _fade_out()
 	await get_tree().create_timer(1.0, true).timeout
 	get_tree().quit()
+
 
 func _fade_in() -> void:
 	_drag.reset_handle(true)
@@ -70,12 +77,14 @@ func _fade_in() -> void:
 	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 	tween.tween_property(self, "modulate:a", 1.0, 0.3)
 
+
 func _fade_out() -> void:
 	var tween := create_tween()
 	tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tween.tween_property(self, "modulate:a", 0.0, 0.3)
 	await tween.finished
 	visible = false
+
 
 # -----------------------------------------------------------------------------
 # ## RU: Настройки / ENG: Settings
@@ -103,6 +112,7 @@ func _open_settings() -> void:
 
 	await _fade_out()
 	await _settings.fade_in()
+
 
 func _close_settings() -> void:
 	if not _in_settings:

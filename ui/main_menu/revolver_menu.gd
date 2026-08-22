@@ -98,7 +98,9 @@ func _ready() -> void:
 		return
 
 	_hammer_controller = RevolverHammerController.new()
-	_hammer_controller.setup(_hammer, _front_chamber_center)
+	## Optional glyph on the hammer — absent is the ordinary case, and the
+	## controller treats null as "no morph" rather than an error.
+	_hammer_controller.setup(_hammer, _front_chamber_center, MorphIcon.find_in(_hammer))
 	_hammer_controller.aim_changed.connect(_on_hammer_aim_changed)
 	_hammer_controller.struck.connect(_on_hammer_struck)
 	add_child(_hammer_controller)   ## RU: обязательно — контроллеру нужен _process
