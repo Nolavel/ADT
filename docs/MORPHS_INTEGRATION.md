@@ -35,8 +35,8 @@ Any widget whose controller passes a morph into `setup()`. Today:
 
 | Host | Controller | Wired |
 |---|---|---|
-| `btn_drag_handle` in `ui/ingame_menu/in_game_menu.tscn` | `DragHandleController` via `MenuController` | yes |
-| `%Hammer` in `ui/main_menu/revolver_menu.tscn` | `RevolverHammerController` via `revolver_menu.gd` | yes |
+| `btn_drag_handle` in `ui/ingame_menu/in_game_menu.tscn` | `DragHandleController` via `MenuController` | yes, node attached |
+| `%Hammer` in `ui/main_menu/revolver_menu.tscn` | `RevolverHammerController` via `revolver_menu.gd` | yes, node attached |
 | `btn_drag_handle` in `ui/settings/settings.tscn` | `DragHandleController` via `setting.gd` | not yet — the third argument is simply not passed |
 
 **A morph is optional everywhere.** `find_in()` returning null is the ordinary
@@ -55,8 +55,16 @@ that wants to read it. No new autoloads, no changes to `PlayerState`,
 
 ## 3. Scene wiring — pause menu (`ui/ingame_menu/in_game_menu.tscn`)
 
-1. Select `btn_drag_handle` (the centre handle, currently text `"( )"`).
-2. Clear its text (or set text = `""`).
+> Already done in the scene. Kept as the recipe for the next host, and for
+> the one trap it contains — step 2.
+
+
+1. Select `btn_drag_handle` (the centre handle, text was `"( )"`).
+2. Clear its text — **and give the button a `custom_minimum_size`.** This is
+   the trap: the handle's own anchors describe an 8x8 rect, and everything
+   larger than that came from the text. Clear the text with nothing standing
+   in for it and the button collapses to a nearly unclickable target. It is
+   set to `Vector2(36, 36)` here, matching the morph.
 3. Optionally make the button flat / transparent so only the morph shows:
    - Theme overrides or `flat = true`, modulate as needed.
 4. Add a child **Control** node:
@@ -87,7 +95,12 @@ InGameMenu
 
 ## 4. Scene wiring — main menu (`ui/main_menu/revolver_menu.tscn`)
 
-The hammer is `%Hammer` (Button). Same pattern:
+> Already done in the scene. The hammer's `text = "PULL"` was cleared, which
+> removes the only words that told a first-time player what to do with it —
+> the morph is now the whole affordance. Worth a look in play.
+
+The hammer is `%Hammer` (Button), 64x64 by its own offsets, so unlike the
+pause handle it needs no minimum size. Same pattern:
 
 1. Select `%Hammer`.
 2. Clear text if any.
