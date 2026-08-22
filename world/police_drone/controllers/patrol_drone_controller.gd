@@ -24,10 +24,32 @@
 # a reason to summon a patrol — that used to be ALERT's own trigger, and it
 # read as the city watching a pose rather than an event. ALERT is reserved
 # for a fixed fact on record: it triggers on IncidentRegistry.
-# incident_reported (core/world/incident_registry/), when the incident
-# happened within alert_incident_radius of the drone — the same registry
+# incident_reported (core/world/incident_registry/) — the same registry
 # player.gd's punch reports to — and always wins over OBSERVE regardless of
 # what the live stance/visibility read says that frame.
+#
+# HOW that fact arrives splits into TWO CHANNELS, and they are not the same
+# provocation (Incident.Source):
+#
+#   DIRECT          — the act itself entered the record. Gated on
+#                     alert_incident_radius: this drone noticed something
+#                     happen near it. Local, and unchanged.
+#   WITNESS_REPORT  — a Votive transmission committed, i.e. the CITY was
+#                     told. Not gated on distance at all: every drone is
+#                     dispatched and flies to the named place from wherever
+#                     it is (dispatch_on_witness_report, _decide_dispatch()).
+#
+# That split is what makes a witness worth having. A punch nobody calls in
+# stays a local matter that one nearby drone might notice; a punch a witness
+# transmits brings the city. Before it existed, a committed report had no
+# observable consequence anywhere in the build.
+#
+# A dispatched drone actually TRAVELS — _decide_dispatch() runs ahead of
+# alert_memory_time's tolerance in _decide_alert(), because that tolerance
+# is about not twitching over a dropped perception frame and has nothing to
+# say about a drone that was told to be somewhere and has not arrived. On
+# arrival the dispatch clears and the ordinary tolerance/search behaviour
+# takes over, anchored on the incident.
 #
 # incident_reported alone only covers facts reported WHILE this drone is
 # already listening — it says nothing about facts already on record from
@@ -222,6 +244,18 @@ enum State { PATROL, OBSERVE, ALERT }
 ## feel/scale value: wide enough that a drone patrolling nearby plausibly
 ## notices, not so wide every drone in the district converges on one punch.
 @export var alert_incident_radius: float = 60.0
+## Whether a committed WITNESS REPORT dispatches this drone regardless of
+## distance. alert_incident_radius above is unchanged and stays this
+## drone's OWN noticing range — the two are separate channels, and this one
+## is what makes reporting worth anything: a punch nobody calls in stays a
+## local matter, a punch a witness transmits brings the city. See
+## Incident.Source and NPC_REACTIONS.md §4.
+##
+## Only the LIVE incident_reported signal dispatches. The catch-up queries
+## (_check_existing_incidents(), all three of its call sites) deliberately
+## stay radius-bound — a day-old report restored from a save must not
+## scramble every drone in the city the moment the player presses load.
+@export var dispatch_on_witness_report: bool = true
 ## Seconds ALERT and OBSERVE tolerate the player being out of sight/lowered
 ## before reacting — NOT how long the resulting reaction lasts, see the file
 ## header on why those used to be the same number and stopped being one.
@@ -474,6 +508,15 @@ var _search_target: Vector3 = Vector3.ZERO
 ## earlier, unrelated ALERT episode is never reused.
 var _has_search_target: bool = false
 
+## Where a dispatch is sending this drone, and whether one is in flight.
+## Distinct from _search_target: a dispatch is a single fixed destination
+## the drone commits to crossing the map for, while a search target is one
+## of many random points sampled around an anchor once it has arrived.
+## Cleared on arrival (PATROL_ARRIVAL_RADIUS), after which the ordinary
+## tolerance/search behaviour takes over anchored on the incident.
+var _dispatch_target: Vector3 = Vector3.ZERO
+var _has_dispatch_target: bool = false
+
 ## Captured once in _ready() — the patrol square's centre and rotation, same
 ## convention as the old police_drone.gd (a local square anchored to where
 ## the drone started, not world axes).
@@ -635,12 +678,26 @@ func _try_resolve_incident_registry() -> void:
 func _on_incident_reported(incident: Incident) -> void:
 	if not _drone:
 		return
-	if incident.position.distance_to(_drone.global_position) > alert_incident_radius:
+	## Two channels, deliberately not one radius (Incident.Source):
+	## DIRECT is this drone noticing something within its own
+	## alert_incident_radius, WITNESS_REPORT is the city being told and
+	## dispatching everyone, from anywhere. Only the live signal dispatches
+	## — see dispatch_on_witness_report's own comment on why the catch-up
+	## queries must not.
+	var dispatched: bool = dispatch_on_witness_report \
+			and incident.source == Incident.Source.WITNESS_REPORT
+	if not dispatched \
+			and incident.position.distance_to(_drone.global_position) > alert_incident_radius:
 		return
-	_trigger_alert(incident.position)
+	_trigger_alert(incident.position, dispatched)
 
 
 ## Catch-up query shared by THREE distinct hooks — see each call site below
+## for which covers what. All three stay RADIUS-BOUND and never dispatch,
+## whatever Source the records they find carry: dispatch is a response to
+## being told something NOW, and replaying it from a restored save would
+## scramble every drone in the city over a day-old report the moment the
+## player presses load. Only the live incident_reported signal dispatches.
 ## for which covers what, and read all three before touching any one of
 ## them; none is redundant with either of the others:
 ##
@@ -746,8 +803,19 @@ func _on_incidents_restored() -> void:
 ## already been seen at least once, their real last-known position is used
 ## instead and incident_position is ignored — a live sighting is always a
 ## better anchor than the incident that merely provoked the escalation.
-func _trigger_alert(incident_position: Vector3) -> void:
-	if not _has_tracked_player_position:
+func _trigger_alert(incident_position: Vector3, is_dispatch: bool = false) -> void:
+	if is_dispatch:
+		## A dispatch names the place. It must overwrite any stale sighting
+		## outright, unlike the local case below: the guard there exists so
+		## a drone that HAS seen the player keeps searching where it last
+		## saw them rather than at a second-hand coordinate, which is right
+		## for something it noticed itself and wrong for being told where
+		## to go.
+		_tracked_player_position = incident_position
+		_has_tracked_player_position = true
+		_dispatch_target = incident_position
+		_has_dispatch_target = true
+	elif not _has_tracked_player_position:
 		_tracked_player_position = incident_position
 		_has_tracked_player_position = true
 	_alert_memory_timer = 0.0
@@ -827,7 +895,15 @@ func _enter_state(new_state: State) -> void:
 		## Discard any search target left over from an earlier, unrelated
 		## ALERT episode — _decide_search() picks a fresh one, anchored to
 		## wherever _tracked_player_position is NOW, on its first call.
+		## _has_dispatch_target is deliberately NOT cleared here:
+		## _trigger_alert() sets it immediately before calling this, and a
+		## dispatch outlives the state entry that carried it.
 		_has_search_target = false
+	if new_state != State.ALERT:
+		## Leaving ALERT abandons any trip still in flight — whatever ended
+		## the alert (found the player, search expired) is a better reason
+		## to be somewhere than a coordinate from a report.
+		_has_dispatch_target = false
 
 
 ## OBSERVE: watches from observe_hover_distance, unhurried. See the shared
@@ -849,7 +925,22 @@ func _decide_observe(observation: PlayerObservation, delta: float) -> void:
 ## record should look like.
 func _decide_alert(observation: PlayerObservation, delta: float) -> void:
 	if observation != null and observation.is_seen:
+		## Seeing the player outranks everything, including a trip in
+		## progress — arriving at a coordinate matters less than the person
+		## who is right there. The dispatch flag survives, so losing sight
+		## again resumes the trip rather than restarting the whole alert.
 		_decide_hold_and_watch(observation, alert_hover_distance, alert_speed, delta)
+		return
+	if _has_dispatch_target:
+		## En route. Deliberately ahead of the alert_memory_time tolerance
+		## below: that tolerance exists to keep a drone from lurching into
+		## a search over one dropped frame of perception, and it has
+		## nothing to say about a drone that was told to be somewhere and
+		## has not got there yet. Without this branch the drone would hover
+		## through its own tolerance and then "search" from wherever it
+		## happened to be standing, which is what made a dispatched drone
+		## look like it was ignoring the report.
+		_decide_dispatch()
 		return
 	if _alert_memory_timer < alert_memory_time:
 		## Within tolerance — hold position rather than start searching
@@ -1138,6 +1229,25 @@ func _pick_new_patrol_point() -> void:
 ## already key off _state == State.ALERT and observation.is_seen
 ## independently of this movement, so search only changes where the drone
 ## flies, not what its lights do.
+## Flies a straight line to the place a report named, at alert_speed, and
+## clears the dispatch on arrival — after which _decide_alert() falls
+## through to the ordinary tolerance/search behaviour, now anchored on the
+## incident because _trigger_alert() seeded _tracked_player_position with
+## it. Same fly-to-a-point shape as _decide_search() below, against a fixed
+## destination instead of a resampled one; PATROL_ARRIVAL_RADIUS is reused
+## as the arrival threshold rather than inventing a third one.
+func _decide_dispatch() -> void:
+	var to_target := _dispatch_target - _drone.global_position
+	to_target.y = 0.0
+	if to_target.length() < PATROL_ARRIVAL_RADIUS:
+		_has_dispatch_target = false
+		_drone.set_move_intent(Vector3.ZERO, 0.0)
+		return
+
+	_drone.set_move_intent(to_target.normalized(), _speed_ratio(alert_speed))
+	_drone.set_look_target(_dispatch_target)
+
+
 func _decide_search(_delta: float) -> void:
 	if not _has_search_target \
 			or _drone.global_position.distance_to(_search_target) < PATROL_ARRIVAL_RADIUS:

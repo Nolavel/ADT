@@ -150,12 +150,25 @@ func on_world_ready(context: WorldContext) -> void:
 ## Records a fact: the actor behind perpetrator_id did kind at position, now.
 ## Prunes aged-out and overflow entries before emitting, so subscribers never
 ## see a list about to be trimmed out from under them.
-func report(perpetrator_id: StringName, kind: Incident.Kind, position: Vector3) -> void:
+##
+## `source` says HOW the city learned of it (Incident.Source) and is
+## trailing-defaulted to DIRECT so an existing call site keeps its exact
+## meaning: player.gd's punch is the world registering an act, not a report
+## anyone filed. A committed Votive transmission passes WITNESS_REPORT, and
+## THAT is the one consumers dispatch on citywide — see Incident.Source's
+## own comment for why the two channels are kept apart.
+func report(
+		perpetrator_id: StringName,
+		kind: Incident.Kind,
+		position: Vector3,
+		source: Incident.Source = Incident.Source.DIRECT
+	) -> void:
 	var incident := Incident.new()
 	incident.perpetrator_id = perpetrator_id
 	incident.kind = kind
 	incident.position = position
 	incident.timestamp = _now()
+	incident.source = source
 	_incidents.append(incident)
 	_prune()
 	incident_reported.emit(incident)
@@ -220,6 +233,7 @@ func get_save_data() -> Dictionary:
 			"kind": int(incident.kind),
 			"position": [incident.position.x, incident.position.y, incident.position.z],
 			"timestamp": incident.timestamp,
+			"source": int(incident.source),
 		})
 	return {"incidents": saved_incidents}
 
@@ -244,6 +258,13 @@ func load_save_data(data: Dictionary) -> void:
 			float(saved_position[0]), float(saved_position[1]), float(saved_position[2])
 		)
 		incident.timestamp = float(entry.get("timestamp", 0.0))
+		## Defaulted read, not a version bump: a save written before Source
+		## existed restores as DIRECT, which is the correct reading of it
+		## (nothing in that file ever claimed a report). SaveSystem refuses
+		## a version it doesn't recognise outright and has no migration
+		## path, so bumping over a field that degrades this cleanly would
+		## throw away working saves for nothing.
+		incident.source = int(entry.get("source", Incident.Source.DIRECT)) as Incident.Source
 		_incidents.append(incident)
 	_prune()
 	incidents_restored.emit()

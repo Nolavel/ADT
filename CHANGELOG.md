@@ -12,6 +12,62 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - Witness dispatch: a report now brings the city
+
+The H3/H4 playtest ran the witness chain end to end and it worked — and
+found that a committed report had **no observable consequence anywhere in
+the build**. Three separate causes, one shape: the fact reached
+`IncidentRegistry` and nothing acted on it.
+
+**The victim forgot.** `_on_incident_reported()` opens with a knocked-down
+guard, and the victim is on the ground in the same frame its own assault is
+reported — so it returned before `_remembers_player` was ever set. Every
+bystander remembered the player; the one NPC with the best reason to run got
+up and stared, waiting for the next punch. Now set on the knockdown edge in
+`_decide()` instead: being put on the ground is first-hand knowledge, needs
+no cone maths, and covers a punch the NPC never saw coming.
+
+**Drones never came.** Two faults stacked: `alert_incident_radius` (60m) with
+drones standing 150–400m from the crowd, so none was ever provoked; and
+`_decide_alert()` with no visible player calling `_decide_hold_and_watch()`,
+which issues `set_move_intent(Vector3.ZERO, 0.0)` — an alerted drone hovered
+in place and could not travel to an incident at all.
+
+**Patrolmen never came.** `responds_by_approaching` sits behind
+`earshot_radius` (25m); the two Patrolmen in `world.tscn` stand 65–120m away
+and simply did not hear it.
+
+The fix is not a radius tweak but a second channel, carried on the fact
+itself. `Incident.Source` (`DIRECT`/`WITNESS_REPORT`) says HOW the city
+learned of something. A unit's own perception radius — drone 60m, NPC 25m —
+is unchanged and answers "did I notice this myself". A committed Votive
+transmission reaches the whole city: every drone is dispatched and now
+actually flies to the named point (`_decide_dispatch()`, ahead of
+`alert_memory_time`'s tolerance, which is about not twitching over a dropped
+perception frame and says nothing about a drone that hasn't arrived), and a
+responding archetype bypasses `earshot_radius` and runs
+(`respond_speed_ratio` 0.85 → 1.0, the blend space's actual run point).
+Ordinary bystanders get no bypass — Flee/Freeze/Call stay hearing-bound.
+
+Only the LIVE signal dispatches; all catch-up queries stay radius-bound, or a
+day-old report restored from a save would scramble the whole city on load.
+Save format gained `"source"` with NO version bump — it reads back with a
+`DIRECT` default, which is the correct reading of a file written before the
+field existed, and `SaveSystem` refuses an unrecognised version outright.
+
+Also `flee_far_distance` 40 → 80: at 40m a fleeing NPC was still comfortably
+on screen when it stopped, reading as the panic wearing off rather than as
+escape.
+
+*Донос теперь имеет последствие. Найдены три причины: жертва не запоминала
+(ранний выход по нокдауну), дроны не долетали (радиус 60м и зависание на
+месте), патрульные не слышали (25м). Введён Incident.Source: собственный
+радиус восприятия остаётся как был, а переданный вотивом отчёт поднимает
+весь город — дроны летят, патрульные бегут.*
+- `core/world/incident_registry/incident.gd`, `core/world/incident_registry/incident_registry.gd`, `npc/controllers/idle_npc_controller.gd`, `world/police_drone/controllers/patrol_drone_controller.gd`, `CLAUDE.md`, `docs/NPC_REACTIONS.md`, `docs/attribution.md`
+
+---
+
 ## 2026-08-22 - docs/visual_language.md: write the comic frame down
 
 New artist- and animator-facing document, not a section inside an existing

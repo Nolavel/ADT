@@ -249,7 +249,8 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## straight to run, so this guarantees RUNNING still ends eventually even if
 ## flee_far_distance is never actually covered. Generous on purpose: at
 ## flee_speed_ratio 1.0 and a typical walk_speed, covering flee_far_distance
-## (default 40m) takes on the order of 15s in the open.
+## (default 80m) takes on the order of 8-15s in the open, so this stays a
+## cap on a trapped NPC rather than the thing that normally ends RUNNING.
 @export var flee_duration: float = 20.0
 ## Speed ratio during the RUNNING phase (phase 2) — faster than an ordinary
 ## wander pace on purpose; running away from a fight should read as more
@@ -283,7 +284,12 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## reaction ends — "far", this task's own words, "tens of metres, not five".
 ## Distance-gated on purpose, not duration-gated (see flee_duration's own
 ## comment on why that field is now a safety cap, not the primary limit).
-@export var flee_far_distance: float = 40.0
+##
+## Raised 40 -> 80 after the H3/H4 playtest: at 40m a fleeing NPC was still
+## comfortably on screen when it stopped and went back to wandering, which
+## read as the panic wearing off rather than as escape. Someone running for
+## their life leaves.
+@export var flee_far_distance: float = 80.0
 ## Cosine threshold for "is the player's movement aimed at me" — the player
 ## walking somewhere else nearby must not read as approaching every witness
 ## in earshot (see the file's own "стоящий на месте игрок" requirement,
@@ -294,12 +300,15 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 @export var approach_alignment_threshold: float = 0.3
 
 @export_group("Respond (Patrolman, NPC_REACTIONS.md §4)")
-## Distinct from wander_speed_ratio — brisk and purposeful, not a stroll.
-## Still a fraction of walk_speed like every other speed knob here: NPCBase
-## has no second base speed tier above walk_speed (unlike the player's own
-## walk/run split), so "brisker" tops out at walk_speed*1.0, same ceiling
-## wander/flee already live under.
-@export var respond_speed_ratio: float = 0.85
+## A dispatched Patrolman RUNS — someone was assaulted and the city was
+## told, which is not an occasion for a brisk walk. 1.0 is the run point of
+## NPCAnimationComponent's own blend space and the same value
+## flee_speed_ratio uses, so the clip matches the intent rather than
+## playing a fast walk. Still a fraction of walk_speed like every other
+## speed knob here: NPCBase has no second base speed tier above walk_speed
+## (unlike the player's own walk/run split), so walk_speed*1.0 is the
+## ceiling wander/flee already live under.
+@export var respond_speed_ratio: float = 1.0
 ## Distance from the target at which a responding Patrolman stops, instead
 ## of closing all the way to WANDER_ARRIVAL_RADIUS (0.5m) — investigating a
 ## scene reads as holding back a couple of metres, not walking up nose to
@@ -529,6 +538,15 @@ func _decide(delta: float) -> void:
 		## flight when the suppression lands must not silently keep counting
 		## down toward COMMITTED while the witness is on the ground.
 		_was_knocked_down = true
+		## Being put on the ground is first-hand knowledge and must not be
+		## lost to _on_incident_reported()'s own knocked-down guard, which
+		## returns BEFORE _remembers_player is ever reached — the victim is
+		## down in the same frame its own assault is reported, so every
+		## bystander used to remember the player while the one NPC with the
+		## best reason to ran got up and stared. Set here rather than
+		## there: this needs no cone maths and no incident at all, and it
+		## also covers a punch from a player this NPC never saw coming.
+		_remembers_player = true
 		_cancel_active_witness_report()
 		if _votive:
 			_votive.go_dark()
@@ -806,7 +824,20 @@ func _on_incident_reported(incident: Incident) -> void:
 		return
 
 	var vision := _evaluate_incident_vision(incident)
-	if vision.distance > earshot_radius:
+	## Two separate channels, NPC_REACTIONS.md §4 / Incident.Source.
+	##
+	## earshot_radius is this NPC's OWN noticing range and gates the whole
+	## ordinary crowd reaction — a bystander does not learn about a mugging
+	## across town, and that stays exactly as it was.
+	##
+	## A committed Votive report is the other channel: it reached the city,
+	## so a responding archetype (Patrolman) is dispatched to it from any
+	## distance. This is the ONLY bypass — a dispatched Patrolman still runs
+	## the same _start_responding() path below, and no ordinary archetype
+	## gets one, so Flee/Freeze/Call remain hearing-bound.
+	var dispatched: bool = incident.source == Incident.Source.WITNESS_REPORT \
+			and _npc.archetype.responds_by_approaching
+	if vision.distance > earshot_radius and not dispatched:
 		return
 	telemetry.in_hearing_range += 1
 
@@ -890,8 +921,17 @@ func _call_it_in(incident: Incident) -> void:
 	var player_node := get_tree().get_first_node_in_group("player")
 	if not (player_node and player_node.has_method(&"get_actor_id")):
 		return
+	## Source.WITNESS_REPORT, not the default DIRECT: this is a Votive
+	## transmission that ran its full duration and committed, and it is the
+	## channel the city dispatches on from any distance. The punch that
+	## started all this already entered the record as DIRECT through
+	## player.gd's own path — the two are deliberately separate facts, not
+	## one fact reported twice. See Incident.Source's own comment.
 	_incident_registry.report(
-		StringName(player_node.call(&"get_actor_id")), Incident.Kind.ASSAULT, incident.position
+		StringName(player_node.call(&"get_actor_id")),
+		Incident.Kind.ASSAULT,
+		incident.position,
+		Incident.Source.WITNESS_REPORT
 	)
 
 
