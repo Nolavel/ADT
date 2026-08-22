@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_def")
 id = &"npc_knockdown"
-texts = PackedStringArray("THUD", "DOWN", "FLOP")
+texts = PackedStringArray("THUD", "WHUMP", "THUMP", "DOWN", "DROP", "FLOP", "CRUMP")
 weights = PackedFloat32Array()
 color = Color(0.92, 0.78, 0.55, 1)
 font_size = 28

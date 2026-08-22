@@ -12,6 +12,24 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-22 - Widen the comic vocabulary to 6-7 words per event
+
+Two or three variants per event made repeats obvious within a single fight.
+Every pool is now seven, except `npc_death`, deliberately left at three
+(…, SILENCE, STILL): the quiet at the end works because there is almost
+nothing to say, and a seven-word death pool would talk over it.
+
+Tone held to short, capitalised, no exclamation marks — the word registers
+what happened and never tells the player what to do or feel. `npc_freeze`
+gained a bare `?`, the most comic-page-native token available and the one
+that reads as bewilderment without a syllable.
+
+*Словари расширены до семи вариантов на событие; смерть намеренно оставлена
+на трёх — тишина работает за счёт скудости.*
+- `data/comic_effects/*.tres`
+
+---
+
 ## 2026-08-22 - Comic effect defs move from code into data/comic_effects/
 
 The seven defs seeded by `_load_default_defs()` are now seven `.tres` files

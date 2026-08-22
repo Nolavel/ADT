@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_def")
 id = &"npc_hit"
-texts = PackedStringArray("OOF", "UGH", "GHH")
+texts = PackedStringArray("OOF", "UGH", "GHH", "HFF", "NGH", "GASP", "HUFF")
 weights = PackedFloat32Array()
 color = Color(0.9, 0.7, 0.5, 1)
 font_size = 24
