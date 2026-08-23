@@ -12,6 +12,50 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - Record the Equipment / Inventory / Interact direction
+
+Documentation only, no code: H3 and H4 are still open and this project builds
+one horizon at a time, so H5 stays closed. The direction existed only in
+conversation, and three findings made writing it down worth doing now rather
+than at H5.
+
+`InteractComponent` owns item-flow that is not its job — it holds
+`@onready var inventory: InventoryComponent` and decides an item's fate itself
+in `_store_to_inventory()`. Equipment belongs between the two, and the seam
+needs naming before anyone widens Interact further.
+
+A slot holding an `ItemResource` reference would be **unsaveable by
+construction**: `SaveSystem`'s payload rule is dictionaries, arrays and
+primitives only. Recorded as a hard rule — `item_id: StringName` resolved
+through a registry, and the three save-contract methods from the first commit,
+not retrofitted. The open sub-problem is recorded too rather than solved:
+`SaveSystem` walks `WORLD_SYSTEM_SCRIPTS` only, so no player component has a
+route into a save today.
+
+The clothing technique was wrong in the sketch and the repository already holds
+the right one. Trousers on a `BoneAttachment3D` follow one bone rigidly and
+will not bend at the knee; `Low Poly Jumpsuit` in `player.tscn` is a
+`MeshInstance3D` skinned to the whole `OriginalSkeleton`, and that is the
+pattern. Bone attachment stays for rigid props — its one existing use is the
+Votive on `Head`. Two traps recorded alongside it: the default body is **not**
+naked (five meshes on `OriginalSkeleton`, so a naked baseline hides rather than
+adds), and an equipment mesh must never carry the `archetype_body_mesh` group
+or `_apply_archetype()` will paint over its material.
+
+The canonical item model — volume, concealment, visibility — is deliberately
+NOT recorded. It predates this page, is not recoverable from the repository,
+and Stan chose to defer the question rather than have a half-remembered version
+written down as canon.
+
+*Записано направление Interact → Equipment → Inventory: кода ноль, H5 закрыт до
+закрытия H3/H4. Ключевое — слот обязан хранить StringName, а не ссылку на
+ресурс, иначе экипировка несериализуема by construction; и одежда — это
+скиннингованный меш, а не BoneAttachment3D, иначе штаны не согнутся в колене.
+Модель предмета намеренно не записана.*
+- `docs/planned_scope.md`
+
+---
+
 ## 2026-08-22 - Attach the morphs: both gesture widgets now drive a glyph
 
 The morph layer landed with no scene wiring, so nothing drove it — the code
