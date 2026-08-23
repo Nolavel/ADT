@@ -9,10 +9,12 @@
 # Хранение: массив стеков { "item": ItemResource, "count": int }.
 # Стакуем по item.id до item.max_stack.
 #
-# NOTE: a stack holds the ItemResource itself, which is why this component is
-# not saveable as it stands — SaveSystem's payload rule is dictionaries,
-# arrays and primitives only. Ids are StringName now (ItemCatalog resolves
-# them), so the fix is available; making it actually persist is its own step.
+# Saving: a stack holds the ItemResource itself, which the save contract
+# forbids in a payload (dictionaries, arrays and primitives only). So
+# get_save_data() writes { id, count } pairs and load_save_data() resolves the
+# ids back through ItemCatalog — the reason that catalog exists. The route
+# into the file is PlayerPersistenceSystem: SaveSystem walks world systems,
+# never the player's children.
 #
 # Подключение: дочерняя нода игрока (player.tscn), рядом с InteractComponent.
 # InteractComponent получает ссылку через $"../InventoryComponent".
@@ -91,6 +93,57 @@ func get_total_weight() -> float:
 ## Снимок содержимого для будущего UI/сейва (копия, не внутренние данные).
 func get_stacks() -> Array[Dictionary]:
 	return _stacks.duplicate(true)
+
+
+## -----------------------------------------------------------------------------
+## Save contract (core/world/save_system/) — reached through
+## PlayerPersistenceSystem, which is what walks the player's components.
+## -----------------------------------------------------------------------------
+
+func get_save_key() -> StringName:
+	return &"inventory"
+
+
+## { id, count } pairs, never the ItemResource itself. `id` is written as a
+## plain String because JSON has no StringName; load_save_data() converts it
+## back.
+func get_save_data() -> Dictionary:
+	var saved: Array = []
+	for stack in _stacks:
+		var item: ItemResource = stack["item"]
+		if item == null:
+			continue
+		saved.append({"id": String(item.id), "count": int(stack["count"])})
+	return {"stacks": saved}
+
+
+## Replaces the contents outright rather than merging — a load is a full
+## restore of this inventory, not a delivery of extra goods.
+##
+## Deliberately silent: item_added is NOT emitted per restored stack. Nothing
+## was added, the inventory simply is what it is again, and a future UI that
+## needs to repaint after a load should get its own signal for that rather
+## than misread a restore as a pickup. Same distinction IncidentRegistry draws
+## with incidents_restored.
+##
+## An id the catalog cannot resolve is dropped, and ItemCatalog.get_item()
+## warns about it — the alternative is a stack holding null, which every
+## reader here would then have to guard against forever.
+##
+## Weight is not re-checked. The file is authoritative about what was carried;
+## refusing to restore it because max_carry_weight has since been lowered
+## would silently destroy the player's belongings.
+func load_save_data(data: Dictionary) -> void:
+	_stacks.clear()
+	for entry_variant in data.get("stacks", []) as Array:
+		var entry := entry_variant as Dictionary
+		var item := ItemCatalog.get_item(StringName(entry.get("id", "")))
+		if item == null:
+			continue
+		var count := int(entry.get("count", 0))
+		if count <= 0:
+			continue
+		_stacks.append({"item": item, "count": count})
 
 
 func _find_stack_with_room(item: ItemResource) -> Dictionary:

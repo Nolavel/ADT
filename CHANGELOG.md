@@ -64,6 +64,46 @@ session; verify with `project_run`/`logs_read`.
 
 ---
 
+## 2026-08-23 - PlayerPersistenceSystem: the player's components reach a save (H5 S1)
+
+`SaveSystem` walks `WorldContext.systems` and nothing else. That is correct —
+it is a list of world systems, not a search of the scene tree — but it meant a
+component hanging off the player had no route into a save at all, and
+equipment was going to hit that wall the moment it needed to persist. Proven
+now, on the component that already exists, rather than discovered later on the
+one that doesn't.
+
+`PlayerPersistenceSystem` (`core/world/player_persistence/`) is that route and
+deliberately the only one: `SaveSystem`'s contract does not widen, a second
+system implements it on the player's behalf. Keeping "the player has
+components" out of `SaveSystem` is what lets it stay a thing that moves
+dictionaries. Payload nests one level, each component stating its own key
+under the same no-class-names rule as the top level.
+
+`SaveSystem._implements_save_contract()` became the public static
+`implements_save_contract()`. Two files now ask that question, and stating the
+contract twice is how two definitions of it start to drift.
+
+`InventoryComponent` is the first consumer and the proof: it writes
+`{id, count}` pairs instead of the `ItemResource` the payload rule forbids, and
+resolves them back through `ItemCatalog` — which is precisely why S0 came
+first. Four decisions recorded in its own comments rather than left to be
+rediscovered: a load replaces contents outright; `item_added` is deliberately
+NOT emitted per restored stack, because nothing was added (the same
+distinction `incidents_restored` draws); an unresolvable id is dropped rather
+than stored as a null every reader would have to guard; and
+`max_carry_weight` is not re-checked on load, since refusing to restore what
+was carried because capacity has since been lowered would silently destroy the
+player's belongings.
+
+*Компоненты игрока получили маршрут в сейв: SaveSystem обходит только список
+мировых систем и в дерево сцены не заглядывает. Отдельная система-мост, а не
+расширение контракта. Проверено на инвентаре — он теперь пишет пары
+{id, count} и разрешает их через ItemCatalog из S0.*
+- `core/world/player_persistence/player_persistence_system.gd`, `core/world/save_system/save_system.gd`, `player/player_components/inventory_component/inventory_component.gd`, `world/world.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - Correct the slot model: garments carry the pockets
 
 Two things this page said earlier today were wrong, and both were mine.
