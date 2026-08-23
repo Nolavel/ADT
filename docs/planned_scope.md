@@ -135,6 +135,70 @@ silently, an enum fails at parse time. Same rule `ActorBase.actor_id`,
 Note against that rule: `ItemResource.id` is currently a plain `String`.
 Reconciling it is part of the item-registry work, not a separate cleanup.
 
+### The slot layout
+
+Six slots. **Each is a single socket holding one item** — not a grid.
+
+| Slot | Holds |
+|---|---|
+| Trouser pocket × 2 | one item each |
+| Jacket pocket × 2 | one item each — **this is where a pistol is concealed** |
+| Back — pack | container equipment; a backpack brings its own slots with it |
+| Back — unique | one item, restricted (see the readability rule below) |
+
+Whether something fits is answered by a size class on the item against the
+slot's capacity. No packing, no rotation, no cell grid. This is a deliberate
+rejection of the grid-inventory model: the interesting question in this game is
+*what is visible on a person*, not how neatly a bag tessellates.
+
+### No belt holster. Ever.
+
+A pistol is concealed in the jacket, and only there.
+
+**A belt holster must never be added.** It is a visible statement to the world,
+and it would hand the player concealment for free where the design wants it to
+cost a jacket slot. Recorded as a hard "do not add" alongside `PlayerState`'s
+removed `TOPDOWN`, not as a preference.
+
+### Drawing a weapon and stance are one state
+
+Drawing a weapon in the world sets `Stance.COMBAT`. Holstering returns to
+`Stance.PEACE`. Toggling to `PEACE` by hand holsters the weapon. **Symmetric
+both ways** — you cannot hold a drawn pistol and claim to be peaceful, and you
+cannot be at ease with one in your hand.
+
+Three consequences:
+
+- `set_stance()` gains a **second caller**. Today `core/input/input_systems.gd`
+  is the only one. Equipment becomes the second, and still goes through
+  `set_stance()` — never a direct assignment, the existing rule.
+- **No loop, and no guard flag needed.** `set_stance()` already returns early
+  when the value is unchanged, so stance → holster → stance terminates on its
+  own. Stated here so nobody adds a flag against a problem that does not exist.
+- `CLAUDE.md` currently calls stance "a declared intent, not equipment". That
+  becomes half-false once equipment drives it, and the line needs **refining,
+  not deleting**: stance stays a declaration — drawing a weapon *is* a
+  declaration, and the whole point is that it cannot be made quietly. Edited in
+  the same commit as the code, not before it.
+
+### The item gains exactly two properties
+
+Both `enum`, neither a string nor a bare int:
+
+- **Size class** — answers "does this fit that socket".
+- **How it reads to an observer** — conceals under clothing / ordinary / reads
+  as a threat. The unique back slot refuses the last one. This is what makes
+  *"a machine gun on the back gives away your intent"* expressible at all: the
+  rule is about what the city sees, so it cannot live anywhere except on the
+  item.
+
+Chosen over a per-slot whitelist deliberately. A whitelist would answer this
+one rule and then be thrown away; the same readability property is what NPC
+reaction and Iris Access will read later.
+
+This is **the smallest possible piece** of the item model below — one axis,
+added because an agreed rule needs it, not the full design.
+
 ### Clothing is skinned, not bone-attached
 
 An equipment mesh is a `MeshInstance3D` skinned to the whole skeleton, made
@@ -146,7 +210,14 @@ The precedent is already in `player.tscn`: `Low Poly Jumpsuit` is skinned to
 `OriginalSkeleton` — the retarget *target* skeleton every visible mesh is
 skinned to — and deforms with it. `BoneAttachment3D` is used exactly once in
 this project, for the Votive on the `Head` bone, and that is the kind of thing
-it is for: a pistol in the hand, a holster, a pack.
+it is for.
+
+**Both techniques are needed, and they are not interchangeable:**
+
+| What | How | Why |
+|---|---|---|
+| Clothing — trousers, jacket, boots | Skinned `MeshInstance3D`, `visible` toggled | Has to deform with the body |
+| Rigid props — drawn pistol, pack, the unique back item | `BoneAttachment3D` | Follows one bone, which is exactly right for something that does not bend |
 
 Two things to know before the first mesh goes in:
 
@@ -160,13 +231,35 @@ Two things to know before the first mesh goes in:
   mesh carrying that group; a tagged jacket would lose its own material to the
   archetype's placeholder colour.
 
+### The rig gap — art, not code
+
+**There are no separate trousers and jacket.** `Low Poly Jumpsuit` is one mesh
+covering torso and legs; only the boots, the headset and a hidden
+`DETAILS Low Poly` are separate. Two honest consequences:
+
+- Until real garments are authored, the jumpsuit is the default outfit and
+  carries all four pockets. The slots are logical and can exist now; the
+  visuals cannot be independent yet.
+- **"Conceal the pistol in the jacket" has no distinct jacket to conceal it
+  in.** The rule is agreed and stands. Whether a bare torso means no concealed
+  carry at all is a consequence to face when the garment exists, not something
+  to invent around now.
+
 ### Still undecided
 
-The canonical item model — physical volume, concealment, how visible a carried
-thing is and to whom — is **not recorded here**, deliberately. It predates this
-page, lives outside the repository, and settling it is a separate decision that
-has to happen before the first equipment commit, because slots cannot be
-designed around properties nobody has agreed on.
+Two axes of the item model are settled above. The rest is not, and the gap is
+deliberate rather than overlooked:
+
+- **The rest of the item model** — physical volume, strata fit, anything beyond
+  size class and observer readability. It predates this page and lives outside
+  the repository.
+- **Where the layout resource lives.** `register_slot()` with no caller is an
+  unfinished contract; see the section above on checking existing conventions
+  first.
+- **Whether a backpack's own slots are also single sockets** or something else.
+- **What the body mesh looks like** with the jumpsuit hidden.
+- **The player-component route into `SaveSystem`**, which walks
+  `WORLD_SYSTEM_SCRIPTS` entries only.
 
 ---
 
