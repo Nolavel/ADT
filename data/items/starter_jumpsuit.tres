@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="ItemResource" format=3]
+
+[ext_resource type="Script" path="res://core/items/item_resource.gd" id="1_item"]
+[ext_resource type="Script" path="res://core/items/garment_data.gd" id="2_garment"]
+[ext_resource type="Script" path="res://core/equipment/equipment_slot_definition.gd" id="3_slotdef"]
+
+[sub_resource type="Resource" id="Resource_chest_left"]
+script = ExtResource("3_slotdef")
+id = &"chest_left"
+display_name = "Left chest pocket"
+max_size = 0
+refuses_threatening = false
+
+[sub_resource type="Resource" id="Resource_chest_right"]
+script = ExtResource("3_slotdef")
+id = &"chest_right"
+display_name = "Right chest pocket"
+max_size = 0
+refuses_threatening = false
+
+[sub_resource type="Resource" id="Resource_thigh_left"]
+script = ExtResource("3_slotdef")
+id = &"thigh_left"
+display_name = "Left thigh pocket"
+max_size = 0
+refuses_threatening = false
+
+[sub_resource type="Resource" id="Resource_thigh_right"]
+script = ExtResource("3_slotdef")
+id = &"thigh_right"
+display_name = "Right thigh pocket"
+max_size = 0
+refuses_threatening = false
+
+[sub_resource type="Resource" id="Resource_jumpsuit_garment"]
+script = ExtResource("2_garment")
+body_slot_id = &"torso"
+pockets = Array[ExtResource("3_slotdef")]([SubResource("Resource_chest_left"), SubResource("Resource_chest_right"), SubResource("Resource_thigh_left"), SubResource("Resource_thigh_right")])
+
+[resource]
+script = ExtResource("1_item")
+id = &"starter_jumpsuit"
+display_name = "Work Jumpsuit"
+weight = 2.0
+max_stack = 1
+can_throw = false
+can_use_in_hands = false
+size_class = 1
+readability = 1
+garment = SubResource("Resource_jumpsuit_garment")

@@ -3,7 +3,9 @@
 [ext_resource type="Script" path="res://core/items/item_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" path="res://core/items/item_resource.gd" id="1_item"]
 [ext_resource type="Resource" path="res://data/items/test_can.tres" id="2_test_can"]
+[ext_resource type="Resource" path="res://data/items/starter_jumpsuit.tres" id="3_starter_jumpsuit"]
+[ext_resource type="Resource" path="res://data/items/starter_boots.tres" id="4_starter_boots"]
 
 [resource]
 script = ExtResource("1_catalog")
-items = Array[ExtResource("1_item")]([ExtResource("2_test_can")])
+items = Array[ExtResource("1_item")]([ExtResource("2_test_can"), ExtResource("3_starter_jumpsuit"), ExtResource("4_starter_boots")])

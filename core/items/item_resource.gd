@@ -35,3 +35,14 @@ class_name ItemResource
 @export_group("Capabilities")
 @export var can_throw: bool = false
 @export var can_use_in_hands: bool = false
+
+@export_group("Equipment")
+## Does this fit a given socket — see ItemTraits.SizeClass.
+@export var size_class: ItemTraits.SizeClass = ItemTraits.SizeClass.POCKET
+## How this reads to someone looking at the player — see
+## ItemTraits.Readability. THREATENING is refused by any slot that would put
+## it on open display.
+@export var readability: ItemTraits.Readability = ItemTraits.Readability.ORDINARY
+## Set only on wearable items. Null — the ordinary case — means this is not a
+## garment, same "unset is a no-op" contract NPCBase.archetype uses.
+@export var garment: GarmentData = null

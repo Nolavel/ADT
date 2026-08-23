@@ -12,6 +12,45 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - Equipment slot data, no component yet (H5 S2)
+
+Third step of H5. Data only — nothing reads any of it, and that is the point:
+the shape has to be settled before a component is written against it.
+
+`ItemTraits` holds the two enums an item and a slot both speak: `SizeClass`
+(POCKET/CARRIED/BULKY) and `Readability`
+(CONCEALABLE/ORDINARY/THREATENING). Its own script rather than fields on
+`ItemResource`, for a concrete reason — `EquipmentSlotDefinition` names a size
+class, `ItemResource` reaches `GarmentData`, `GarmentData` reaches slot
+definitions; putting the enums on `ItemResource` closes that into a cycle
+GDScript resolves badly.
+
+`EquipmentSlotDefinition` describes one socket and serves as both a body slot
+and a pocket, because they are the same thing: a place that holds exactly one
+item with a limit on what may go there. `refuses_threatening` is true on
+`back_unique` and nowhere else — a rifle across the back is a statement the
+player should make deliberately, not a storage decision.
+
+`EquipmentLayout` (`data/equipment/player_layout.tres`) closes the open
+question of who registers slots: a Resource on the character, not constants in
+a component. It describes the **body** only. Pockets are not in it — slot
+count belongs to the garment, so `GarmentData` names its body slot by id and
+carries its own pockets. That split is what makes clothing replaceable, and it
+is why concealed carry is granted by the garment rather than by the character.
+
+Two starter garments authored so the data is real rather than empty classes.
+The jumpsuit occupies `torso` and carries all four pockets — it is one garment
+covering torso and legs, which is also the honest reflection of the rig, where
+no separate trouser and jacket meshes exist.
+
+*Данные слотов H5: словарь размеров и читаемости отдельным скриптом (иначе
+цикл в разрешении классов), одно определение сокета и для тела, и для
+кармана, раскладка тела ресурсом на персонаже, а карманы — на самой одежде.
+Компонента ещё нет.*
+- `core/items/item_traits.gd`, `core/items/garment_data.gd`, `core/items/item_resource.gd`, `core/equipment/equipment_slot_definition.gd`, `core/equipment/equipment_layout.gd`, `data/equipment/player_layout.tres`, `data/items/starter_*.tres`, `data/items/catalog.tres`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - A missed swing is seen; a punch commits to who it was thrown at
 
 Two combat/reaction gaps, closed surgically.
