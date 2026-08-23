@@ -12,6 +12,54 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - EquipmentComponent: the rules, without the wiring (H5 S3)
+
+Fourth step of H5, and the first that does something. Logic and persistence
+only — no meshes, no bones, no stance; those are later steps and keeping them
+out is what makes this one reviewable.
+
+Two levels, matching S2's data. Body slots come from the `EquipmentLayout`
+assigned in the inspector. Pockets are derived **live** from whatever garments
+are worn — `_find_pocket()` re-derives every time rather than caching a table,
+because what is worn changes and a stale pocket table is the kind of bug that
+hides.
+
+Two refusals carry the design, and both are refusals rather than conveniences:
+
+**`equip()` into an occupied slot refuses and never swaps.** An implicit swap
+has to put the old garment somewhere, and a component that knows nothing about
+inventory could only drop it — silently destroying the player's clothes to
+save the caller one line. The caller unequips first and deals with what comes
+back. That is what "you cannot replace a thing until the old one has somewhere
+to go" means in code.
+
+**`unequip()` refuses while the garment's own pockets still hold something.**
+Those pockets leave with the garment, so their contents would have nowhere to
+be. Same rule as the body slot, one level down.
+
+`Refusal` is an enum rather than a bool so a caller can tell the player
+something true — TOO_LARGE and READS_AS_THREAT are different sentences.
+
+Holds ids, never `ItemResource` references, which is what makes it saveable at
+all. `load_save_data()` restores body slots **before** pockets — that order is
+load-bearing, a pocket exists only while its garment is worn — and re-validates
+every entry against the current layout and catalog rather than trusting the
+file: a garment removed from the game must not resurrect as an entry nothing
+can address.
+
+The character starts dressed: `starter_garment_ids` puts the jumpsuit and boots
+on in `_ready()`, and a restored save overwrites that wholesale, which is the
+correct precedence.
+
+*Компонент экипировки: два уровня, карманы выводятся из надетого вживую.
+Занятый слот отказывает вместо подмены, а вещь не снимается, пока её карманы
+не пусты — оба отказа и есть правило «нельзя заменить, пока старому не нашлось
+места». Хранит id, поэтому сохраняем; при загрузке тело восстанавливается
+раньше карманов.*
+- `player/player_components/equipment_component/equipment_component.gd`, `player/player.tscn`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - Equipment slot data, no component yet (H5 S2)
 
 Third step of H5. Data only — nothing reads any of it, and that is the point:
