@@ -14,7 +14,8 @@
 [ext_resource type="Resource" path="res://data/comic_effects/player_winded.tres" id="11_player_winded"]
 [ext_resource type="Resource" path="res://data/comic_effects/player_spent.tres" id="12_player_spent"]
 [ext_resource type="Resource" path="res://data/comic_effects/player_combat.tres" id="13_player_combat"]
+[ext_resource type="Resource" path="res://data/comic_effects/npc_swing_noticed.tres" id="14_npc_swing_noticed"]
 
 [resource]
 script = ExtResource("1_catalog")
-effects = Array[ExtResource("1_def")]([ExtResource("2_npc_knockdown"), ExtResource("3_npc_hit"), ExtResource("4_npc_death"), ExtResource("5_npc_freeze"), ExtResource("6_npc_flee"), ExtResource("7_npc_call"), ExtResource("8_npc_transmit"), ExtResource("9_player_hurt"), ExtResource("10_player_death"), ExtResource("11_player_winded"), ExtResource("12_player_spent"), ExtResource("13_player_combat")])
+effects = Array[ExtResource("1_def")]([ExtResource("2_npc_knockdown"), ExtResource("3_npc_hit"), ExtResource("4_npc_death"), ExtResource("5_npc_freeze"), ExtResource("6_npc_flee"), ExtResource("7_npc_call"), ExtResource("8_npc_transmit"), ExtResource("9_player_hurt"), ExtResource("10_player_death"), ExtResource("11_player_winded"), ExtResource("12_player_spent"), ExtResource("13_player_combat"), ExtResource("14_npc_swing_noticed")])

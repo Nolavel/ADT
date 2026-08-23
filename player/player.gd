@@ -26,6 +26,13 @@ signal state_changed(new_state: MovementState)
 ## the only subscriber today (see its on_world_ready()), listening without
 ## player.gd needing to know it exists.
 signal punch_landed(position: Vector3)
+## Emitted once per punch that resolved WITHOUT connecting — the swing is a
+## visible act, not a fact about the city, so it deliberately does NOT reach
+## IncidentRegistry: nothing is recorded, nothing is attributed, nothing
+## survives the frame. IdleNPCController is the only subscriber today,
+## connecting to it the same lazy way it resolves IncidentRegistry (see that
+## file's _try_connect_player_swing()); player.gd never learns who listened.
+signal punch_missed(position: Vector3)
 
 ## --- Movement State ---
 enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
@@ -86,6 +93,24 @@ const ACTOR_ID: StringName = &"player"
 ## this project yet), so it reads as sliding. Standing still is also what
 ## makes the attack a decision rather than a click spam.
 @export var punch_max_speed: float = 0.5
+## Reach of the wind-up's INTENT search, as a multiple of punch_reach. The
+## intent target is who this punch was thrown at — resolved once, at the
+## moment the button is accepted — and the body turns toward them while the
+## swing winds up, so an NPC that steps aside during punch_hit_delay is
+## still swung at rather than swung past. Slightly wider than punch_reach on
+## purpose: the player aimed at a person, not at a volume, and the hit check
+## itself is unchanged, so a target that fully leaves the cone or the reach
+## still makes this a miss.
+@export var punch_intent_reach_multiplier: float = 1.4
+## Full angular width of the intent search, degrees, centred on facing.
+## Wider than punch_angle_deg for the same reason the reach is longer.
+@export var punch_intent_angle_deg: float = 120.0
+## Rate the body turns toward the intent target during the wind-up. Smoothed
+## rather than snapped (unlike _face_punch_target()'s instant ISOMETRIC turn,
+## which has to be exact before the hit check reads facing): this correction
+## is meant to be visible as the character committing to a swing. Tuned to
+## land most of the turn inside punch_hit_delay, not to guarantee a hit.
+@export var punch_intent_turn_smoothing: float = 18.0
 
 @export_group("Jump/Gravity")
 ## Apex height = jump_force^2 / (2 * gravity). At 6.0/20.0 that's 0.9m, half
@@ -128,6 +153,12 @@ var wants_to_run: bool = false  # the player wants to run (even if they can't)
 var _is_punching: bool = false
 var _punch_timer: float = 0.0
 var _punch_hit_resolved: bool = false
+## Instance id of the NPC this punch was thrown at, 0 when the swing was
+## aimed at nobody. An id, not a Node reference: the target can be freed
+## mid-wind-up by its own block streaming out, and an id makes that a
+## checked lookup (is_instance_id_valid()) instead of a dangling reference
+## this node would otherwise be keeping alive for the length of a swing.
+var _punch_intent_id: int = 0
 
 ## Injected by ClickToMoveSystem.register_player() at world-init time (see
 ## that file's on_world_ready()) — a separate route from the WorldContext
@@ -678,6 +709,21 @@ func _on_health_band_changed(band: HealthComponent.Band) -> void:
 ## and reads as sliding. A moving click is ignored silently — there is no
 ## feedback system in this project to tell the player why, and this isn't
 ## the place to invent one.
+##
+## A punch resolves one of two ways, and BOTH are announced. It connects:
+## take_hit() on the target, punch_landed, and (through IncidentRegistry's
+## own subscription) a fact the city now holds. It misses: punch_missed, a
+## signal that reaches whichever NPCs happened to be watching and dies with
+## the frame — see that signal's own comment on why an air swing must never
+## reach the registry.
+##
+## The swing also remembers who it was aimed at. _start_punch() resolves an
+## INTENT target once, up front (_acquire_punch_intent()), and the body
+## turns toward them for the length of the wind-up (_face_punch_intent()),
+## because punch_hit_delay is long enough for a walking NPC to step out of
+## a cone the player was correctly aiming at when they clicked. The hit
+## check itself is untouched — this improves the odds of a fair punch
+## landing, it does not guarantee one.
 func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
@@ -722,8 +768,53 @@ func _start_punch() -> void:
 	_is_punching = true
 	_punch_timer = 0.0
 	_punch_hit_resolved = false
+	_acquire_punch_intent()
 	set_movement_enabled(false)
 	_animation_component.play_punch()
+
+
+## Who this punch was thrown at, decided once, at the moment the button is
+## accepted — before punch_hit_delay has had a chance to make the answer
+## stale. Runs after _face_punch_target() in ISOMETRIC (see
+## _on_primary_click_pressed()'s call order), so the search is already
+## centred on the click direction there; in TPS the body is facing the
+## camera and there is nothing to correct first.
+func _acquire_punch_intent() -> void:
+	var target := _find_punch_target(
+		punch_reach * punch_intent_reach_multiplier, punch_intent_angle_deg
+	)
+	_punch_intent_id = target.get_instance_id() if target else 0
+
+
+## Live NPC behind _punch_intent_id, or null once it is gone — a target that
+## streamed out mid-swing simply stops being aimed at, it does not cancel
+## the punch (the swing was already thrown).
+func _get_punch_intent_target() -> NPCBase:
+	if _punch_intent_id == 0 or not is_instance_id_valid(_punch_intent_id):
+		return null
+	return instance_from_id(_punch_intent_id) as NPCBase
+
+
+## Turns the body toward the intent target while the swing winds up. Same
+## atan2(x, z) convention as _face_punch_target()/get_facing_direction(),
+## and the same Smoothing.damp_factor() form _face_camera() uses, so the
+## rate means the same thing here as everywhere else. Safe to run in both
+## view modes: movement is locked for the whole punch, so nothing else is
+## writing rotation.y while this does.
+func _face_punch_intent(delta: float) -> void:
+	var target := _get_punch_intent_target()
+	if target == null:
+		return
+
+	var to_target := target.global_position - global_position
+	to_target.y = 0.0
+	if to_target.length() < 0.001:
+		return
+
+	var target_angle := atan2(to_target.x, to_target.z)
+	rotation.y = lerp_angle(
+		rotation.y, target_angle, Smoothing.damp_factor(punch_intent_turn_smoothing, delta)
+	)
 
 
 ## Called from _physics_process() even while movement is locked — see that
@@ -733,6 +824,12 @@ func _update_punch(delta: float) -> void:
 	## skip the completion check for one frame, see that branch's comment.
 	var is_first_frame := _punch_timer <= 0.0
 	_punch_timer += delta
+
+	if not _punch_hit_resolved:
+		## Wind-up only. Once the hit has resolved the swing is over as far
+		## as aiming goes, and letting the body keep tracking would turn a
+		## missed punch into a slow pirouette.
+		_face_punch_intent(delta)
 
 	if not _punch_hit_resolved and _punch_timer >= punch_hit_delay:
 		_punch_hit_resolved = true
@@ -747,6 +844,7 @@ func _update_punch(delta: float) -> void:
 
 	if not _animation_component.is_punch_active():
 		_is_punching = false
+		_punch_intent_id = 0
 		set_movement_enabled(true)
 
 
@@ -757,14 +855,22 @@ func _update_punch(delta: float) -> void:
 ## npc_base.gd's own header on why that contract is NPC-only, not
 ## ActorBase-wide).
 func _resolve_punch_hit() -> void:
-	var target := _find_punch_target()
+	var target := _find_punch_target(punch_reach, punch_angle_deg)
 	if target == null:
+		## An air swing is still something a bystander can see, so it is
+		## announced — but only as a signal, never through IncidentRegistry:
+		## nothing happened that the city could have a record of.
+		punch_missed.emit(global_position)
 		return
 	target.take_hit(global_position)
 	punch_landed.emit(target.global_position)
 
 
-func _find_punch_target() -> NPCBase:
+## Nearest NPC inside a forward cone. Parameterised because the same search
+## answers two different questions with two different tolerances: the hit
+## check (punch_reach/punch_angle_deg, unchanged) and the wind-up's intent
+## search (see _acquire_punch_intent()).
+func _find_punch_target(reach: float, angle_deg: float) -> NPCBase:
 	var facing := get_facing_direction()
 	var best: NPCBase = null
 	var best_dist := INF
@@ -777,11 +883,11 @@ func _find_punch_target() -> NPCBase:
 		var to_target := npc.global_position - global_position
 		to_target.y = 0.0
 		var dist := to_target.length()
-		if dist > punch_reach or dist < 0.001:
+		if dist > reach or dist < 0.001:
 			continue
 
 		var angle := rad_to_deg(facing.angle_to(to_target.normalized()))
-		if angle > punch_angle_deg * 0.5:
+		if angle > angle_deg * 0.5:
 			continue
 
 		if dist < best_dist:
