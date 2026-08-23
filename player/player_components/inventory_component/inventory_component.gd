@@ -9,6 +9,11 @@
 # Хранение: массив стеков { "item": ItemResource, "count": int }.
 # Стакуем по item.id до item.max_stack.
 #
+# NOTE: a stack holds the ItemResource itself, which is why this component is
+# not saveable as it stands — SaveSystem's payload rule is dictionaries,
+# arrays and primitives only. Ids are StringName now (ItemCatalog resolves
+# them), so the fix is available; making it actually persist is its own step.
+#
 # Подключение: дочерняя нода игрока (player.tscn), рядом с InteractComponent.
 # InteractComponent получает ссылку через $"../InventoryComponent".
 # =============================================================================
@@ -53,7 +58,7 @@ func try_add(item: ItemResource) -> bool:
 
 
 ## Забрать одну штуку по id. null — предмета нет.
-func take(item_id: String) -> ItemResource:
+func take(item_id: StringName) -> ItemResource:
 	for i in _stacks.size():
 		var stack := _stacks[i]
 		if (stack["item"] as ItemResource).id != item_id:
@@ -68,7 +73,7 @@ func take(item_id: String) -> ItemResource:
 	return null
 
 
-func get_count(item_id: String) -> int:
+func get_count(item_id: StringName) -> int:
 	var total := 0
 	for stack in _stacks:
 		if (stack["item"] as ItemResource).id == item_id:

@@ -14,9 +14,15 @@ extends Resource
 class_name ItemResource
 
 @export_group("Identity")
-## Уникальный строковый id ("medkit", "pistol_m9"). По нему сравниваем
-## и стакаем; имя файла .tres договорились держать равным id.
-@export var id: String = ""
+## Уникальный id ("medkit", "pistol_m9"). По нему сравниваем и стакаем;
+## имя файла .tres договорились держать равным id.
+##
+## StringName, not String — this is an identity, the same kind
+## ActorBase.actor_id already is, and it is what ItemCatalog keys on.
+## (BlockBase.id is still a plain String; that predates this and is not
+## being changed here.) An existing .tres storing a plain string still
+## loads: Godot converts on read and rewrites it as &"..." on the next save.
+@export var id: StringName = &""
 @export var display_name: String = "Item"
 
 @export_group("Inventory")
