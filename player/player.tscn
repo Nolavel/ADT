@@ -40,6 +40,7 @@
 [ext_resource type="Script" path="res://core/components/votive_projector/votive_projector.gd" id="38_votive"]
 [ext_resource type="Script" path="res://player/player_components/equipment_component/equipment_component.gd" id="39_equipment"]
 [ext_resource type="Resource" path="res://data/equipment/player_layout.tres" id="39_layout"]
+[ext_resource type="Script" path="res://player/player_components/equipment_visuals_component/equipment_visuals_component.gd" id="40_eqvisuals"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
 radius = 0.38763407
@@ -1495,4 +1496,13 @@ script = ExtResource("38_votive")
 [node name="EquipmentComponent" type="Node" parent="."]
 script = ExtResource("39_equipment")
 layout = ExtResource("39_layout")
+debug_log = true
+
+[node name="RightHandAttachment" type="BoneAttachment3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton"]
+unique_name_in_owner = true
+bone_name = "RightHand"
+bone_idx = 34
+
+[node name="EquipmentVisualsComponent" type="Node" parent="."]
+script = ExtResource("40_eqvisuals")
 debug_log = true

@@ -27,3 +27,17 @@ class_name GarmentData
 ## The pockets this garment brings. Empty is valid and means exactly what it
 ## says: a garment you cannot put anything in.
 @export var pockets: Array[EquipmentSlotDefinition] = []
+
+## The skinned MeshInstance3D that IS this garment on screen, named rather
+## than pathed. A NodePath would be scene-specific and would not survive
+## being read by an NPC; the name is a convention both rigs already satisfy
+## (npc.tscn carries the same five mesh names as player.tscn).
+##
+## Clothing is a skinned mesh whose visibility is toggled, never a
+## BoneAttachment3D child — a bone attachment follows one bone rigidly, which
+## is right for a prop and wrong for trousers, which bend at the knee.
+##
+## Empty means "no visual yet", which is the honest state of a garment whose
+## mesh has not been authored. One name, not a list: nothing today needs two,
+## and a list would be a placeholder ahead of its own producer.
+@export var mesh_node_name: StringName = &""

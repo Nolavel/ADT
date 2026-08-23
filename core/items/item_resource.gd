@@ -46,3 +46,9 @@ class_name ItemResource
 ## Set only on wearable items. Null — the ordinary case — means this is not a
 ## garment, same "unset is a no-op" contract NPCBase.archetype uses.
 @export var garment: GarmentData = null
+## The mesh shown in the hand while this item is drawn. A Mesh resource
+## rather than a scene, so holding something costs one field instead of a
+## .tscn per item. Null means the drawn STATE is still correct and nothing
+## appears on screen — which is the honest position for every item until
+## someone models it.
+@export var held_mesh: Mesh = null
