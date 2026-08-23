@@ -12,6 +12,43 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - Correct the slot model: garments carry the pockets
+
+Two things this page said earlier today were wrong, and both were mine.
+
+**Slot count belongs to the garment, not the character.** The six-slot table
+implied a fixed layout on the player. It is two levels: the character has body
+slots (legs, torso, feet, back-pack, back-unique) that take garments, and each
+garment contributes its own item slots. "Two trouser pockets, two jacket
+pockets" describes those particular garments — a different jacket brings a
+different number, and a jacket with no pockets is a legitimate jacket. This
+generalises the rule already agreed for the backpack from one special case to
+how all clothing works, which is what makes clothing replaceable at all. It
+also sharpens the pistol rule: the jacket is what grants concealed carry, so
+taking it off takes the capability with it.
+
+Consequence recorded for the layout resource: it describes **body slots**;
+pocket counts live on the garment items. The earlier framing would have baked
+the pockets into the player.
+
+**There is no "naked baseline".** The character starts dressed and stays that
+way — boots are boots, and the jumpsuit stands in for trousers and jacket until
+separate garments exist. Starter clothing is equipped items by default, not an
+absence. The observation about the five meshes on `OriginalSkeleton` stands;
+the conclusion drawn from it did not.
+
+Work proceeds against the meshes that exist, treating the character as
+genuinely wearing these things rather than approximating them. Separate garment
+meshes and a backpack mesh are an art task, and the logic does not wait on them.
+
+*Исправлена модель слотов: карманы приносит одежда, а не персонаж — два
+уровня, тело держит вещи, вещи держат карманы. И никакого «naked baseline»:
+болванчик одет, комбинезон подменяет штаны с курткой, пока нет отдельных
+мешей.*
+- `docs/planned_scope.md`
+
+---
+
 ## 2026-08-23 - ItemCatalog: an item id can finally be resolved (H5 S0)
 
 First code of the H5 sequence, and deliberately not the component. H5's whole

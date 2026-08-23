@@ -135,19 +135,27 @@ silently, an enum fails at parse time. Same rule `ActorBase.actor_id`,
 Note against that rule: `ItemResource.id` is currently a plain `String`.
 Reconciling it is part of the item-registry work, not a separate cleanup.
 
-### The slot layout
+### The slot layout — two levels
 
-Six slots. **Each is a single socket holding one item** — not a grid.
+**Slot count is a property of the garment, not of the character.** This is the
+correction that makes clothing replaceable at all, and it generalises the rule
+already agreed for the backpack from one special case to how all clothing
+works.
 
-| Slot | Holds |
-|---|---|
-| Trouser pocket × 2 | one item each |
-| Jacket pocket × 2 | one item each — **this is where a pistol is concealed** |
-| Back — pack | container equipment; a backpack brings its own slots with it |
-| Back — unique | one item, restricted (see the readability rule below) |
+| Level | Holds | Fixed? |
+|---|---|---|
+| **Body slots** — legs, torso, feet, back-pack, back-unique | garments and equipment | yes, they are the character |
+| **Item slots** — pockets | one item each | **no** — contributed by whatever garment occupies a body slot |
 
-Whether something fits is answered by a size class on the item against the
-slot's capacity. No packing, no rotation, no cell grid. This is a deliberate
+So "two trouser pockets, two jacket pockets" describes *those particular
+garments*. A different jacket brings a different number, and a jacket with no
+pockets is a legitimate jacket. The pistol is concealed in a jacket pocket,
+which means the jacket is what grants concealed carry — take it off and the
+capability leaves with it.
+
+**Each item slot is a single socket holding one item** — not a grid. Whether
+something fits is answered by a size class on the item against the socket's
+capacity. No packing, no rotation, no cell grid. This is a deliberate
 rejection of the grid-inventory model: the interesting question in this game is
 *what is visible on a person*, not how neatly a bag tessellates.
 
@@ -221,11 +229,13 @@ it is for.
 
 Two things to know before the first mesh goes in:
 
-- **The default body is not naked.** `OriginalSkeleton` already carries
-  `Genesis8Male_Shape` (the body) plus `Low Poly Jumpsuit`, `Boots Low Poly`,
-  `DETAILS Low Poly` and `Low Poly Headset`. A naked baseline means hiding
-  meshes, not adding them — and it exposes whatever the body mesh looks like
-  underneath.
+- **The character starts dressed, and stays that way.** `OriginalSkeleton`
+  already carries `Genesis8Male_Shape` (the body) plus `Low Poly Jumpsuit`,
+  `Boots Low Poly`, `DETAILS Low Poly` and `Low Poly Headset`. There is no
+  "naked baseline" to build toward — an earlier version of this page said
+  otherwise and was wrong. Starter clothing is *equipped items by default*,
+  not an absence: boots are boots, and the jumpsuit stands in for trousers
+  and jacket until separate garments exist.
 - **An equipment mesh must not be tagged `archetype_body_mesh.`**
   `NPCBase._apply_archetype()` paints a flat `material_override` across every
   mesh carrying that group; a tagged jacket would lose its own material to the
@@ -237,13 +247,17 @@ Two things to know before the first mesh goes in:
 covering torso and legs; only the boots, the headset and a hidden
 `DETAILS Low Poly` are separate. Two honest consequences:
 
-- Until real garments are authored, the jumpsuit is the default outfit and
-  carries all four pockets. The slots are logical and can exist now; the
-  visuals cannot be independent yet.
-- **"Conceal the pistol in the jacket" has no distinct jacket to conceal it
-  in.** The rule is agreed and stands. Whether a bare torso means no concealed
-  carry at all is a consequence to face when the garment exists, not something
-  to invent around now.
+- **Work proceeds against the meshes that exist.** The jumpsuit stands in for
+  the trouser and jacket garments and carries their pockets; the real boots
+  are the foot garment. Attachment is intuitive-by-default — the character is
+  treated as genuinely wearing these things, not as approximating them. The
+  logic must not wait on art.
+- **"Conceal the pistol in the jacket" has no distinct jacket yet.** The rule
+  is agreed and stands; today the stand-in garment carries it. Whether a bare
+  torso means no concealed carry at all is a consequence to face when a real
+  jacket exists, not something to invent around now.
+- Separate garment meshes, and a backpack mesh, are an art task. Garments are
+  replaceable by design, so nothing here is authored assuming a specific one.
 
 ### Still undecided
 
@@ -255,7 +269,9 @@ deliberate rather than overlooked:
   the repository.
 - **Where the layout resource lives.** `register_slot()` with no caller is an
   unfinished contract; see the section above on checking existing conventions
-  first.
+  first. Note the two levels: the layout resource describes **body slots**,
+  while pocket counts belong to the garment items — the earlier framing would
+  have baked the pockets into the player.
 - **Whether a backpack's own slots are also single sockets** or something else.
 - **What the body mesh looks like** with the jumpsuit hidden.
 - **The player-component route into `SaveSystem`**, which walks
