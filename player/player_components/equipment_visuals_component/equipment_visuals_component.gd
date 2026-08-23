@@ -17,6 +17,12 @@
 #   HELD ITEM    a MeshInstance3D built under a BoneAttachment3D on the hand.
 #                Rigid, which is exactly right for something that does not
 #                bend.
+#
+# EQUIPMENT IS AUTHORITATIVE over the visibility the scene authored. A garment
+# mesh is hidden unless something worn actually names it — refresh_all() sweeps
+# every mesh the catalog knows about before showing anything. Without that
+# sweep the scene's own `visible = true` would survive an empty equipment
+# component, and the two would only agree by coincidence.
 # =============================================================================
 extends Node
 class_name EquipmentVisualsComponent
@@ -52,6 +58,10 @@ var _equipment: EquipmentComponent = null
 ## Which mesh a body slot last showed, so it can be hidden again without
 ## asking the item that is no longer there. Overwritten, never cleared.
 var _slot_meshes: Dictionary = {}
+## Every mesh name any garment in the catalog claims, collected once. The
+## catalog is immutable, so this cannot go stale; it exists so the sweep in
+## refresh_all() does not walk every item on every call.
+var _garment_mesh_names: Array[StringName] = []
 var _hand_attachment: Node3D = null
 ## The MeshInstance3D currently in the hand, built on draw and freed on
 ## holster. Built rather than pre-made and hidden: an item's mesh is per-item
@@ -72,6 +82,7 @@ func _ready() -> void:
 	if _hand_attachment == null:
 		push_warning("[EquipmentVisuals] no hand attachment at %s — held items stay invisible" % hand_attachment_path)
 
+	_collect_garment_mesh_names()
 	_equipment.slot_changed.connect(_on_slot_changed)
 	_equipment.drawn_changed.connect(_on_drawn_changed)
 	## Applied once at start rather than waiting for the next change: the
@@ -89,6 +100,7 @@ func refresh_all() -> void:
 		return
 	if _equipment.layout == null:
 		return
+	_hide_all_garment_meshes()
 	for body_slot in _equipment.layout.body_slots:
 		if body_slot != null:
 			_apply_body_slot(body_slot.id)
@@ -148,6 +160,34 @@ func _apply_body_slot(slot_id: StringName) -> void:
 	if debug_log:
 		print("[EquipmentVisuals] %s -> %s visible" % [slot_id, item.garment.mesh_node_name])
 
+
+## Hides every mesh any garment could show, so what stays visible afterwards is
+## only what is actually worn. Only meshes NAMED BY AN ITEM are touched — the
+## body, the headset and the unassigned details mesh are named by nothing and
+## are never hidden by this.
+func _hide_all_garment_meshes() -> void:
+	for mesh_name in _garment_mesh_names:
+		## Resolved directly rather than through _find_mesh(): a garment whose
+		## mesh does not exist in this rig is a normal state (an NPC rig, a
+		## garment authored ahead of its art), and warning about it once per
+		## sweep would bury the warning that matters — the one _find_mesh()
+		## raises when something is actually being shown.
+		var mesh := _skeleton.get_node_or_null(NodePath(String(mesh_name))) as MeshInstance3D
+		if mesh != null:
+			mesh.visible = false
+
+
+func _collect_garment_mesh_names() -> void:
+	_garment_mesh_names.clear()
+	var catalog := ItemCatalog.shared()
+	if catalog == null:
+		return
+	for item in catalog.items:
+		if item == null or item.garment == null:
+			continue
+		var mesh_name := item.garment.mesh_node_name
+		if mesh_name != &"" and not _garment_mesh_names.has(mesh_name):
+			_garment_mesh_names.append(mesh_name)
 
 
 func _mesh_for_slot(slot_id: StringName) -> MeshInstance3D:

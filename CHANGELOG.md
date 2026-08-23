@@ -53,6 +53,30 @@ drives it there.
 Смещение в руке вынесено в экспорты, подгонять глазами.*
 - `player/player_components/equipment_visuals_component/equipment_visuals_component.gd`, `core/items/garment_data.gd`, `core/items/item_resource.gd`, `player/player.tscn`, `data/items/starter_*.tres`, `data/items/scrap_pipe.tres`, `CLAUDE.md`
 
+**Follow-up the same day — equipment is now authoritative over the visibility
+the scene authored.** Stan asked whether the jumpsuit would still be visible at
+startup and how we would tell the component apart from the scene doing nothing.
+The first half was fine (`_ready()` order is safe both ways — the visuals
+component calls `refresh_all()` and catches up if equipment went first), but the
+question exposed a real hole: `_apply_body_slot()` only hid a mesh through
+`_slot_meshes`, which starts empty, and an empty slot returned early before
+hiding anything. So the component could never hide a mesh `player.tscn` had
+authored `visible = true` — at frame 0 the source of truth was the scene, not
+the equipment, and they agreed by coincidence. `refresh_all()` now sweeps every
+mesh named by any garment in `ItemCatalog` before showing the worn ones. Only
+meshes an item names are touched: the body, the headset and the unassigned
+details mesh are named by nothing and are never hidden. This is also what makes
+S6 observable — emptying `starter_garment_ids` in the inspector now actually
+undresses the character, and dropping just `starter_boots` is a clean
+discriminator since boots and jumpsuit are separate meshes even though the body
+is one.
+
+*Экипировка теперь главнее видимости, записанной в сцене: `refresh_all()`
+сначала гасит все меши одежды из каталога и только потом показывает надетые.
+Раньше компонент физически не мог погасить меш, у которого в `player.tscn`
+стоял `visible = true`, — и именно поэтому S6 нечем было проверить.*
+- `player/player_components/equipment_visuals_component/equipment_visuals_component.gd`, `CLAUDE.md`
+
 ---
 
 ## 2026-08-23 - Draw / holster, and stance as one state with it (H5 S5)
