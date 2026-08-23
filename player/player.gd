@@ -254,6 +254,19 @@ func _ready() -> void:
 		stamina_manager.stamina_depleted.connect(_on_stamina_depleted_for_comic)
 	PlayerState.stance_changed.connect(_on_stance_changed_for_comic)
 
+	## Draw/holster and stance are one state, symmetric both ways (H5). The
+	## player wires it because it owns the component and PlayerState is the
+	## only thing allowed to change a stance — equipment knows nothing about
+	## stances, and InputSystems knows nothing about equipment.
+	##
+	## No loop and no guard flag: set_stance() returns early on an unchanged
+	## value and holster() returns early with empty hands, so
+	## PEACE -> holster -> set_stance(PEACE) dies on the second hop.
+	InputSystems.draw_holster_pressed.connect(_on_draw_holster_pressed)
+	PlayerState.stance_changed.connect(_on_stance_changed_for_equipment)
+	if _equipment:
+		_equipment.drawn_changed.connect(_on_drawn_changed)
+
 	## Reuses InputSystems' existing primary_click_pressed signal instead of
 	## adding a new one. ClickToMoveSystem, the signal's other subscriber, is
 	## now self-gated to Stance.PEACE too (on top of ON_FOOT + ISOMETRIC), so
@@ -649,6 +662,48 @@ func _on_destination_reached() -> void:
 ## Nothing is destroyed on a refusal. A caller that gets false leaves the
 ## object in the world, which is the honest outcome of "there is nowhere to
 ## put it".
+## The draw key. With something in hand it holsters; otherwise it draws the
+## first drawable thing on the body. "First" is good enough while there is
+## one weapon — a real weapon-selection UI is H6's problem, not this key's.
+func _on_draw_holster_pressed() -> void:
+	if _equipment == null or PlayerState.mode != PlayerState.Mode.ON_FOOT:
+		return
+	if _equipment.get_drawn() != &"":
+		_equipment.holster()
+		return
+	for pocket in _equipment.get_available_pockets():
+		var item_id: StringName = pocket["item_id"]
+		if item_id == &"":
+			continue
+		var item := ItemCatalog.find(item_id)
+		if item != null and item.can_use_in_hands:
+			_equipment.draw(_equipment.pocket_path(pocket["body_slot"], pocket["pocket"]))
+			return
+
+
+## Drawing something the world reads as a threat IS the declaration — you
+## cannot hold it quietly. Drawing something ordinary (a torch, a tool) says
+## nothing, which is why the check is on readability and not on "is drawn".
+func _on_drawn_changed(item_id: StringName) -> void:
+	if item_id == &"":
+		PlayerState.set_stance(PlayerState.Stance.PEACE)
+		return
+	var item := ItemCatalog.find(item_id)
+	if item != null and item.readability == ItemTraits.Readability.THREATENING:
+		PlayerState.set_stance(PlayerState.Stance.COMBAT)
+
+
+## The other half. Standing down puts the weapon away, whatever route the
+## stance change took — the key, a script, anything. COMBAT deliberately does
+## NOT auto-draw: raised fists are already a statement.
+func _on_stance_changed_for_equipment(
+		_old_stance: PlayerState.Stance,
+		new_stance: PlayerState.Stance
+	) -> void:
+	if new_stance == PlayerState.Stance.PEACE and _equipment:
+		_equipment.holster()
+
+
 func store_item(item: ItemResource) -> bool:
 	if item == null:
 		return false

@@ -47,6 +47,14 @@ signal perception_debug_toggled()
 signal debug_save_pressed()
 signal debug_load_pressed()
 
+## --- Draw / holster (H5, docs/scope_horizon.md) ---
+## Its own action rather than a side effect of toggle_stance: hanging the
+## draw off the stance key would mean entering COMBAT auto-draws, and raised
+## fists are already a statement on their own. Relayed unconditionally like
+## every other action here — EquipmentComponent decides whether there is
+## anything to draw.
+signal draw_holster_pressed()
+
 ## --- Key hints HUD toggle (H2, docs/scope_horizon.md) ---
 signal key_hints_enabled_changed(enabled: bool)
 
@@ -145,6 +153,7 @@ func _physics_process(delta: float) -> void:
 	_handle_ui_hotkeys()
 	_handle_stance_toggle()
 	_handle_debug_save_load()
+	_handle_draw_holster()
 	_handle_lodging_hours()
 	_handle_key_hints_toggle()
 
@@ -256,6 +265,14 @@ func _handle_debug_save_load() -> void:
 		debug_save_pressed.emit()
 	if Input.is_action_just_pressed("debug_load"):
 		debug_load_pressed.emit()
+
+
+## ============================================
+## DRAW / HOLSTER — see draw_holster_pressed's own comment.
+## ============================================
+func _handle_draw_holster() -> void:
+	if Input.is_action_just_pressed("draw_holster"):
+		draw_holster_pressed.emit()
 
 
 ## ============================================

@@ -32,6 +32,17 @@ Active regardless of `PlayerState.mode`.
 | `debug_load` | `L` | Debug load from slot 0 (`SaveSystem`) | Отладочная загрузка |
 | `toggle_key_hints` | `H` | Show/hide the key-hints HUD panel (`InputSystems.key_hints_enabled`) | Показать/скрыть панель подсказок |
 
+`draw_holster` is its own action rather than a side effect of `toggle_stance`:
+hanging the draw off the stance key would mean entering COMBAT auto-draws, and
+raised fists are already a statement on their own. The two are coupled the
+other way instead — drawing something that reads as a threat sets COMBAT, and
+standing down to PEACE holsters (H5, `player.gd`).
+
+`B` is arbitrary and provisional. `X` would be the conventional holster key but
+is taken by `status`, one of the actions defined here and never implemented
+(see `docs/planned_scope.md`); repurposing a reserved binding is Stan's call,
+not a side effect of this feature.
+
 `debug_save`/`debug_load` were originally bound to `F5`/`F9` (2026-08-12) and rebound
 to `K`/`L` the same day: `F5` collides with the Godot editor's own "Run Project"
 shortcut, which intercepts the key before it reaches the running game when the game
@@ -53,6 +64,7 @@ view is embedded in the editor.
 | `status` | `X` | Status | Статус |
 | `toggle_tabs` | `Tab` | Tap — notifier; hold — status camera | Тап/холд — уведомление/статус-камера |
 | `toggle_stance` | `T` | Toggle `PlayerState.Stance` PEACE ⇄ COMBAT | Смена стойки |
+| `draw_holster` | `B` | Draw the first drawable item on the body, or holster what is in hand (`EquipmentComponent`) | Достать / убрать |
 
 ---
 
