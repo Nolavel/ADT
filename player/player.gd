@@ -211,6 +211,13 @@ var _last_health_seen: float = -1.0
 @onready var animation_player: AnimationPlayer = $player_base_mesh/AnimationPlayer
 @onready var _animation_component: PlayerAnimationComponent = $AnimationComponent
 @onready var _health: HealthComponent = $HealthComponent
+
+## The two places a picked-up item can end up. The player holds both because
+## the ORDER between them — worn first, carried second — is a decision about
+## this character's belongings, and neither component should have to know the
+## other exists. See store_item().
+@onready var _equipment: EquipmentComponent = $EquipmentComponent
+@onready var _inventory: InventoryComponent = $InventoryComponent
 ## Same node type npc_base.gd carries (core/components/votive_projector/) —
 ## driven every physics frame below, same "dumb component" pattern
 ## _animation_component already follows. Nothing drives its state past IDLE
@@ -631,6 +638,27 @@ func _on_destination_reached() -> void:
 ## movement_enabled is true); _is_dead is the extra flag _physics_process()
 ## checks first, ahead of its unconditional _update_punch() call, which
 ## movement_enabled alone does not gate.
+## Put a picked-up item away. True when it landed somewhere.
+##
+## Equipment first, inventory second. That order is the policy, and it lives
+## here rather than in either component: EquipmentComponent deliberately knows
+## nothing about inventory (see its own header), and InteractComponent has no
+## business deciding where things end up — its job ends at "the player wants
+## this thing".
+##
+## Nothing is destroyed on a refusal. A caller that gets false leaves the
+## object in the world, which is the honest outcome of "there is nowhere to
+## put it".
+func store_item(item: ItemResource) -> bool:
+	if item == null:
+		return false
+	if _equipment and _equipment.stow_anywhere(item.id) == EquipmentComponent.Refusal.NONE:
+		return true
+	if _inventory:
+		return _inventory.try_add(item)
+	return false
+
+
 func _on_died() -> void:
 	_animation_component.play_death()
 	set_movement_enabled(false)

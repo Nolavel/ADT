@@ -38,6 +38,8 @@
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://player/player_components/interact_component/interact_component.gd" id="37_1gbpw"]
 [ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://core/components/health_component/health_component.gd" id="37_pnw6m"]
 [ext_resource type="Script" path="res://core/components/votive_projector/votive_projector.gd" id="38_votive"]
+[ext_resource type="Script" path="res://player/player_components/equipment_component/equipment_component.gd" id="39_equipment"]
+[ext_resource type="Resource" path="res://data/equipment/player_layout.tres" id="39_layout"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
 radius = 0.38763407
@@ -1489,3 +1491,8 @@ script = ExtResource("37_pnw6m")
 [node name="VotiveProjector" type="Node3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/BoneAttachment3D" unique_id=1820093761]
 unique_name_in_owner = true
 script = ExtResource("38_votive")
+
+[node name="EquipmentComponent" type="Node" parent="."]
+script = ExtResource("39_equipment")
+layout = ExtResource("39_layout")
+debug_log = true
