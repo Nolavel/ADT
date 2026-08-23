@@ -1,4 +1,5 @@
-```markdown
+
+
 # Incident knowledge model
 
 This page defines what knowledge exists at each stage of the witness chain, and what must never be collapsed into a single field.
@@ -224,4 +225,3 @@ This document is design specification only.
 Nothing in §§3–7 is scheduled until the current witness vertical slice (`attribution.md` §7) has been played and judged, and until Equipment exists as a real observable.
 
 An empty or speculative implementation of the richer observation fields is not permitted. The model is written down so the next system that needs it does not have to invent it under time pressure.
-```
