@@ -126,6 +126,16 @@
 # cap on RUNNING alone now, not the whole reaction's timer, in case geometry
 # traps an NPC short of that distance. See _set_flee_direction_from_threat().
 #
+# A MISSED SWING is the one stimulus here that does not come through
+# IncidentRegistry at all: _try_connect_player_swing() subscribes to
+# player.gd's punch_missed (lazily, by group, same as the registry), and
+# _on_player_punch_missed() is the single entry point. A punch that hit
+# nothing is a visible act, not a fact about the city — no Incident, no
+# WitnessReport, no witness memory — so it is gated on nothing but this
+# NPC's ordinary perception of the player and yields either one "?" word or
+# a reduced-probability roll into the SAME Flee state machine below
+# (swing_flee_probability_scale), never a new branch of its own.
+#
 # WITNESS MEMORY (NPC_REACTIONS.md §4 extension) is unrelated to any of the
 # above being a WitnessReport producer: _remembers_player is set the moment
 # ANY archetype's vision.is_seen comes back true in _on_incident_reported()
@@ -262,6 +272,16 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## ordinary wander.
 @export var freeze_duration: float = 4.0
 
+@export_group("Missed Swing (visible act, not an incident)")
+## Scale applied to the archetype's own flee_probability when this NPC sees
+## the player throw a punch that connects with nobody. Below 1.0 because a
+## miss is a weaker provocation than an incident: someone swung at the air,
+## nobody went down, and the city has no record of it. The BIAS still comes
+## from the archetype table (NPCArchetypeData.flee_probability), not from
+## here — this file only says how much less a whiff is worth than the real
+## thing, so retuning who is skittish stays a data edit.
+@export_range(0.0, 1.0) var swing_flee_probability_scale: float = 0.5
+
 @export_group("Flee — two phases (NPC_REACTIONS.md §4 extension)")
 ## Speed ratio during the BACKING_AWAY phase (phase 1) — deliberately slower
 ## than flee_speed_ratio: a witness backing away while still watching the
@@ -395,6 +415,13 @@ var _visible_time: float = 0.0
 ## carried into IncidentRegistry (that registry is what the CITY has on
 ## record, this is what one passer-by personally remembers).
 var _remembers_player: bool = false
+
+## The player node this controller is subscribed to punch_missed on,
+## resolved lazily by group in _try_connect_player_swing() — the same
+## "a static scene instance never receives a WorldContext" situation
+## _incident_registry is in, and the same fix. Held only to keep the
+## connection check cheap; nothing reads it otherwise.
+var _swing_source: Node = null
 
 var _wander_state: State = State.IDLE
 ## Centre of the wander area — captured once in _ready(), same "anchored to
@@ -559,6 +586,8 @@ func _decide(delta: float) -> void:
 		_was_knocked_down = false
 		if _votive:
 			_votive.go_idle()
+
+	_try_connect_player_swing()
 
 	if not _incident_registry:
 		_try_resolve_incident_registry()
@@ -783,6 +812,71 @@ func _try_resolve_incident_registry() -> void:
 		return
 	_incident_registry = found
 	_incident_registry.incident_reported.connect(_on_incident_reported)
+
+
+## Subscribes to the player's punch_missed once the player node exists —
+## same lazy-by-group scheme as _try_resolve_incident_registry() above, for
+## the same bootstrap-ordering reason. Deliberately NOT routed through
+## IncidentRegistry: a swing that hit nothing is not a fact the city holds,
+## so it has no business travelling on the channel that survives saves and
+## streaming. The player is found by the "player" group, the same lookup
+## _call_it_in() and _is_player_approaching() already use.
+func _try_connect_player_swing() -> void:
+	## is_instance_valid(), not a plain null check: this covers both "never
+	## resolved" and "the node it was connected to has since been freed",
+	## which a stored reference alone cannot tell apart.
+	if is_instance_valid(_swing_source):
+		return
+	var player_node := get_tree().get_first_node_in_group("player")
+	if not (player_node and player_node.has_signal(&"punch_missed")):
+		return
+	_swing_source = player_node
+	player_node.connect(&"punch_missed", _on_player_punch_missed)
+
+
+## The one entry point for "the player swung at nothing while I was looking."
+## A local observable event, gone the moment it is handled: no Incident, no
+## WitnessReport, no _remembers_player — witnessing an assault is what earns
+## a permanent grudge, and nobody was assaulted here.
+##
+## Gated on this NPC actually seeing the player RIGHT NOW, through the
+## ordinary PerceptionComponent observation (range + cone + line of sight) —
+## no separate geometry, so an NPC facing away or round a corner saw nothing
+## and reacts to nothing. A reaction already in progress, or a body on the
+## ground, wins outright: a whiff is the weakest stimulus in the file and
+## must never interrupt a transmission, a flee or a knockdown.
+##
+## Exactly one word per noticed swing, never both: a rolled Flee already
+## spawns npc_flee from _start_flee(), and stacking "?" on top of "RUN" over
+## one head in one frame is the same double-word mistake npc_transmit's
+## placement exists to avoid (see CLAUDE.md's ComicEffectSystem entry). "?"
+## is what "noticed it and stayed put" looks like; RUN says more, and says
+## it instead.
+func _on_player_punch_missed(swing_position: Vector3) -> void:
+	if not _npc or not _perception:
+		return
+	if _npc.is_knocked_down():
+		return
+	if _reaction_state != ReactionState.NONE:
+		return
+
+	var observation := _perception.observe_player()
+	if not observation.is_seen:
+		return
+
+	if _npc.archetype \
+			and randf() < _npc.archetype.flee_probability * swing_flee_probability_scale:
+		## allow_backpedal left at its default rather than forced either
+		## way: _start_flee()'s own _is_player_approaching() gate is the
+		## right judge here and, since punching requires standing still
+		## (player.gd's punch_max_speed), it will normally answer "not
+		## approaching" and send this straight to RUNNING. Left to that gate
+		## anyway, so a swing thrown mid-slide (should punch_max_speed ever
+		## be relaxed) gets the backpedal without this line changing.
+		_start_flee(swing_position)
+		return
+
+	_try_spawn_comic_effect(&"npc_swing_noticed")
 
 
 ## Resolves ComicEffectSystem on first use and asks it for one word above

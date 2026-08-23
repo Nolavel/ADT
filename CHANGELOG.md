@@ -12,6 +12,58 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - A missed swing is seen; a punch commits to who it was thrown at
+
+Two combat/reaction gaps, closed surgically.
+
+**Missed swings are now observable.** `_resolve_punch_hit()` emits a new
+`punch_missed(position)` signal when the cone check finds nobody. It goes
+nowhere near `IncidentRegistry` — a swing that hit nothing is a visible act,
+not a fact the city holds, so nothing is recorded and nothing is attributed.
+`IdleNPCController` subscribes lazily by group (`_try_connect_player_swing()`,
+the same scheme it already uses for the registry) and handles it in one entry
+point, `_on_player_punch_missed()`: gated on the ordinary
+`PerceptionComponent.observe_player()` so an NPC facing away or behind a wall
+reacts to nothing, refused outright while knocked down or mid-reaction, and
+resolving to exactly one of two outcomes — a roll of
+`archetype.flee_probability * swing_flee_probability_scale` (new export,
+`0.5`) into the existing two-phase Flee, or one `npc_swing_noticed` word
+("?", "HUH", "…"). Never both: `_start_flee()` already spawns `npc_flee`, and
+two words over one head in one frame is the mistake `npc_transmit`'s
+placement exists to avoid. Witness memory is deliberately not set — nobody
+was assaulted. New def `data/comic_effects/npc_swing_noticed.tres`, registered
+in the catalog.
+
+**A punch now commits to its intended target.** `punch_hit_delay` (0.15s) is
+long enough for a walking NPC to step out of a cone the player was correctly
+aiming at when they clicked. `_start_punch()` resolves an intent target once,
+up front (`_acquire_punch_intent()`, a wider-cone/longer-reach reuse of the
+now-parameterised `_find_punch_target(reach, angle_deg)`), stored as an
+instance id rather than a `Node` reference so a target streaming out
+mid-swing is a checked lookup, not a dangling one. `_face_punch_intent()`
+turns the body toward it for the length of the wind-up only, at
+`punch_intent_turn_smoothing`. The hit check itself is untouched — this makes
+a fair punch more likely to land, it does not guarantee one, and a target
+that fully leaves the cone or reach still makes it a miss. Intent clears when
+the punch ends.
+
+Out of scope and untouched, as specified: `TpsCombatCameraState`'s
+pivot/reticle drift, wiring punch to `locked_target`, `punch_max_speed`,
+attribution/`WitnessReport`. Files: `player/player.gd`,
+`npc/controllers/idle_npc_controller.gd`, `data/comic_effects/` (new def +
+catalog), `CLAUDE.md`. Not run in the editor — no Godot binary in this
+session; verify with `project_run`/`logs_read`.
+
+> Промах теперь заметен: удар в воздух рассылает `punch_missed`, и любой NPC,
+> который в этот момент реально видит игрока, отвечает одним словом "?" или
+> (с пониженной вероятностью по архетипу) убегает — без инцидента, без отчёта
+> свидетеля и без памяти о игроке. Удар же запоминает, в кого его бросили:
+> цель определяется один раз в момент нажатия, и корпус доворачивается к ней
+> во время замаха, так что шагнувший в сторону NPC всё ещё получает удар в
+> свою сторону. Проверка попадания не изменена.
+
+---
+
 ## 2026-08-23 - Correct the slot model: garments carry the pockets
 
 Two things this page said earlier today were wrong, and both were mine.
