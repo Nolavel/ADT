@@ -85,7 +85,7 @@ func on_world_ready(context: WorldContext) -> void:
 func save_to_slot(slot: int = 0) -> bool:
 	var systems_payload: Dictionary = {}
 	for system in _systems:
-		if not _implements_save_contract(system):
+		if not implements_save_contract(system):
 			continue
 		var key := String(system.call(&"get_save_key"))
 		if key.is_empty():
@@ -147,7 +147,7 @@ func load_from_slot(slot: int = 0) -> bool:
 
 	var systems_payload: Dictionary = payload.get("systems", {})
 	for system in _systems:
-		if not _implements_save_contract(system):
+		if not implements_save_contract(system):
 			continue
 		var key := String(system.call(&"get_save_key"))
 		if systems_payload.has(key):
@@ -181,7 +181,7 @@ func _on_debug_load_pressed() -> void:
 ## costing a manual save-file inspection to find.
 func _print_payload_summary() -> void:
 	for system in _systems:
-		if not _implements_save_contract(system):
+		if not implements_save_contract(system):
 			continue
 		var key := String(system.call(&"get_save_key"))
 		var data: Dictionary = system.call(&"get_save_data")
@@ -210,13 +210,18 @@ func _summarize_payload(data: Dictionary) -> String:
 	return ", ".join(parts)
 
 
-## A system opts into the save contract by implementing all three methods
+## A node opts into the save contract by implementing all three methods
 ## together — get_save_key() alone (or get_save_data() alone) is treated as
 ## not opting in, rather than guessing at a partial contract.
-func _implements_save_contract(system: Node) -> bool:
-	return system.has_method(&"get_save_key") \
-			and system.has_method(&"get_save_data") \
-			and system.has_method(&"load_save_data")
+##
+## Static and public because this file is no longer the only place that asks
+## the question: PlayerPersistenceSystem asks it of the player's own
+## components, which SaveSystem never sees. Stating the contract twice is how
+## two definitions of it start to drift.
+static func implements_save_contract(node: Node) -> bool:
+	return node.has_method(&"get_save_key") \
+			and node.has_method(&"get_save_data") \
+			and node.has_method(&"load_save_data")
 
 
 func _slot_path(slot: int) -> String:
