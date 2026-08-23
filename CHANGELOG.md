@@ -12,6 +12,42 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - ItemCatalog: an item id can finally be resolved (H5 S0)
+
+First code of the H5 sequence, and deliberately not the component. H5's whole
+design rests on a slot holding `item_id: StringName` resolved through a
+registry — and there was no registry. An `ItemResource` reached the game
+exactly one way: hand-assigned in the inspector to `InteractableObject`'s
+`@export`. Nothing could turn an id back into a resource, so anything that has
+to STORE an item rather than hold one had nowhere to go, and storing the
+reference instead is barred by `SaveSystem`'s payload rule.
+
+`ItemCatalog` (`core/items/`, `data/items/catalog.tres`) is a plain `Resource`
+with a static accessor. Not a `WORLD_SYSTEM_SCRIPTS` entry — those are nodes
+because they hold runtime state and have a lifecycle, and a catalog is
+immutable data. Not an `@export` per consumer either: scene nodes could take
+one, but `.new()`-built consumers and future NPCs cannot, and per-consumer
+wiring is what rots. Found by path, not by scanning the folder — the same
+export-safety trap `ComicEffectSystem` already documents. `find()` is a silent
+query; `get_item()` warns on an unresolvable id.
+
+`ItemResource.id` becomes `StringName`, matching `ActorBase.actor_id`
+(`BlockBase.id` is still `String` — a pre-existing inconsistency, left
+alone), and `InventoryComponent`'s `take()`/`get_count()` follow. No
+external call sites existed, so the signature change is contained.
+
+Recorded in the inventory's own header rather than quietly left: `_stacks`
+still holds the `ItemResource` itself, so that component is not saveable as it
+stands. Resolvable ids make the fix possible; they are not the fix.
+
+*Первый код H5 и намеренно не компонент: правило «слот хранит item_id»
+упиралось в то, что разрешать id было нечем. Добавлен ItemCatalog —
+Resource со статическим доступом, без ноды и без @export у каждого
+потребителя. id предмета стал StringName.*
+- `core/items/item_catalog.gd`, `core/items/item_resource.gd`, `data/items/catalog.tres`, `data/items/test_can.tres`, `player/player_components/inventory_component/inventory_component.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - Equipment: the slot layout, the pistol rule, the first item property
 
 Documentation only again — H3/H4 still open, H5 still closed. Extends the

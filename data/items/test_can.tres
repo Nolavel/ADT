@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_itemres")
-id = "test_can"
+id = &"test_can"
 display_name = "Consetta Can"
 weight = 0.5
 max_stack = 8
