@@ -12,6 +12,57 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - Draw / holster, and stance as one state with it (H5 S5)
+
+The third of H5's three states — what is held — and the one rule that reaches
+outside equipment: **drawing a weapon and being in COMBAT are the same fact,
+symmetric both ways.** You cannot hold a drawn weapon and claim to be
+peaceful, and you cannot be at ease with one in your hand.
+
+A drawn item is removed from its slot and remembers where it came from, so
+holstering puts it back exactly there — that slot is guaranteed free, whereas
+`stow_anywhere()` would drop it in a different pocket every time. Both halves
+are saved; without `drawn_from`, holstering after a load would have nowhere to
+put the thing back.
+
+**No new item field was needed.** `can_use_in_hands` (already on
+`ItemResource`) gates whether something can be drawn; `readability ==
+THREATENING` (S2) gates whether drawing it means anything. They compose: a
+torch is drawable and says nothing, a weapon is drawable and says everything —
+so no "is a weapon" flag had to be guessed at ahead of the deferred item model.
+
+The coupling lives in `player.gd`: equipment knows nothing about stances,
+`InputSystems` knows nothing about equipment, and `PlayerState` is the only
+thing allowed to change a stance. `set_stance()` gains its second-ever caller.
+No loop and no guard flag — `set_stance()` returns early on an unchanged value
+and `holster()` returns early with empty hands. **COMBAT deliberately does not
+auto-draw:** raised fists are already a statement, and that asymmetry is the
+point.
+
+New `draw_holster` action on `B`, with `input_map.md` updated in the same
+commit per the standing rule. Its own action rather than a side effect of
+`toggle_stance`, precisely so COMBAT does not auto-draw. `B` is provisional —
+`X` would be conventional but is taken by the never-implemented `status`.
+
+`data/items/scrap_pipe.tres` is a fixture so this is testable before H6's
+pistol exists. POCKET-sized and THREATENING on purpose: it hides in a thigh
+pocket (pockets do not check readability — that IS the concealment mechanic)
+and reads as a threat once drawn, and it is refused by `back_unique`, which
+exercises `refuses_threatening` on a real item for the first time.
+`starter_stowed_ids` puts it on the player at start; both it and the item
+leave when H6 lands.
+
+`CLAUDE.md`'s "stance is a declared intent, **not equipment**" line is refined
+here and not earlier — only now does it describe code that exists.
+
+*Достать/убрать и стойка — одно состояние, симметрично в обе стороны. Новых
+полей у предмета не понадобилось: can_use_in_hands решает, можно ли взять,
+readability — значит ли это что-нибудь. COMBAT сам не достаёт: кулаки уже
+заявление. Обрезок трубы — фикстура, чтобы это было чем проверять до пистолета.*
+- `player/player_components/equipment_component/equipment_component.gd`, `player/player.gd`, `core/input/input_systems.gd`, `project.godot`, `input_map.md`, `data/items/scrap_pipe.tres`, `data/items/catalog.tres`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - InteractComponent stops deciding where items go (H5 S4)
 
 `InteractComponent` held an `@onready` reference to `InventoryComponent` and

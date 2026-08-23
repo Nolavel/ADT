@@ -31,6 +31,11 @@ class_name EquipmentComponent
 ## for a pocket. `item_id` is &"" when the slot was emptied.
 signal slot_changed(slot_path: StringName, item_id: StringName)
 
+## What is in the hands changed. &"" means they are now empty. Separate from
+## slot_changed because a drawn item is not in a slot — that is the whole
+## distinction, and the stance coupling listens to this one.
+signal drawn_changed(item_id: StringName)
+
 ## Why an equip was refused — surfaced so a caller can tell the player
 ## something true instead of failing silently.
 enum Refusal {
@@ -49,6 +54,10 @@ enum Refusal {
 	WRONG_BODY_SLOT,
 	## A garment cannot come off while its own pockets still hold something.
 	POCKETS_NOT_EMPTY,
+	## Not something that can be held — see ItemResource.can_use_in_hands.
+	NOT_DRAWABLE,
+	## Something is already drawn. One pair of hands.
+	HANDS_FULL,
 }
 
 ## Separator between a body slot id and a pocket id in a slot path. Pocket
@@ -71,6 +80,13 @@ const POCKET_SEPARATOR: String = "/"
 	&"starter_boots",
 ]
 
+## Stowed from the first frame, wherever stow_anywhere() puts them.
+##
+## FIXTURE, not content: the pipe exists so draw/holster can be exercised
+## before H6's pistol does it for real. Empty this once there is a weapon
+## the player actually finds in the world.
+@export var starter_stowed_ids: Array[StringName] = [&"scrap_pipe"]
+
 ## Prints every accepted and refused change. Off by default; there is no UI
 ## for equipment yet, so this is the only way to see it work.
 @export var debug_log: bool = false
@@ -79,10 +95,18 @@ const POCKET_SEPARATOR: String = "/"
 var _body: Dictionary = {}
 ## "<body slot>/<pocket>" -> item id.
 var _pockets: Dictionary = {}
+## What is in the hands, and the slot path it came out of. The origin is
+## remembered rather than re-derived so holster() puts the thing back exactly
+## where it was: that slot is guaranteed free (nothing else could have taken
+## it while the item was out of it), whereas stow_anywhere() would drop a
+## pistol into a different pocket every time.
+var _drawn_item_id: StringName = &""
+var _drawn_from: StringName = &""
 
 
 func _ready() -> void:
 	_equip_starter_garments()
+	_stow_starter_items()
 
 
 # -----------------------------------------------------------------------------
@@ -96,7 +120,7 @@ func get_equipped(slot_id: StringName) -> StringName:
 
 ## The item in a pocket, or &"" when empty.
 func get_pocket_item(body_slot_id: StringName, pocket_id: StringName) -> StringName:
-	return _pockets.get(_pocket_path(body_slot_id, pocket_id), &"")
+	return _pockets.get(pocket_path(body_slot_id, pocket_id), &"")
 
 
 ## Every pocket currently available, in body-slot order. Availability is
@@ -197,9 +221,9 @@ func unequip(slot_id: StringName) -> StringName:
 func stow(body_slot_id: StringName, pocket_id: StringName, item_id: StringName) -> Refusal:
 	var refusal := can_stow(body_slot_id, pocket_id, item_id)
 	if refusal != Refusal.NONE:
-		_log_refusal("stow", _pocket_path(body_slot_id, pocket_id), item_id, refusal)
+		_log_refusal("stow", pocket_path(body_slot_id, pocket_id), item_id, refusal)
 		return refusal
-	var path := _pocket_path(body_slot_id, pocket_id)
+	var path := pocket_path(body_slot_id, pocket_id)
 	_pockets[path] = item_id
 	_log_change("stow", path, item_id)
 	slot_changed.emit(path, item_id)
@@ -208,13 +232,69 @@ func stow(body_slot_id: StringName, pocket_id: StringName, item_id: StringName) 
 
 ## Empty a pocket and hand back what was in it, or &"" if it was empty.
 func take_from_pocket(body_slot_id: StringName, pocket_id: StringName) -> StringName:
-	var path := _pocket_path(body_slot_id, pocket_id)
+	var path := pocket_path(body_slot_id, pocket_id)
 	var item_id: StringName = _pockets.get(path, &"")
 	if item_id == &"":
 		return &""
 	_pockets.erase(path)
 	_log_change("take", path, &"")
 	slot_changed.emit(path, &"")
+	return item_id
+
+
+## What is in the hands, or &"" when they are empty.
+func get_drawn() -> StringName:
+	return _drawn_item_id
+
+
+## Take the item out of a slot and into the hands. `slot_path` is a body slot
+## id, or "<body_slot>/<pocket>" for a pocket — the same addressing
+## everything else here uses.
+##
+## can_use_in_hands is what decides whether something CAN be drawn. Whether
+## drawing it is a declaration is a separate question, answered by
+## readability, and it is answered outside this component: equipment does not
+## know what a stance is.
+func draw(slot_path: StringName) -> Refusal:
+	if _drawn_item_id != &"":
+		_log_refusal("draw", slot_path, _drawn_item_id, Refusal.HANDS_FULL)
+		return Refusal.HANDS_FULL
+
+	var item_id := _item_at(slot_path)
+	if item_id == &"":
+		_log_refusal("draw", slot_path, &"", Refusal.NO_SUCH_SLOT)
+		return Refusal.NO_SUCH_SLOT
+
+	var item := ItemCatalog.get_item(item_id)
+	if item == null:
+		return Refusal.UNKNOWN_ITEM
+	if not item.can_use_in_hands:
+		_log_refusal("draw", slot_path, item_id, Refusal.NOT_DRAWABLE)
+		return Refusal.NOT_DRAWABLE
+
+	_clear_slot(slot_path)
+	_drawn_item_id = item_id
+	_drawn_from = slot_path
+	_log_change("draw", slot_path, item_id)
+	slot_changed.emit(slot_path, &"")
+	drawn_changed.emit(item_id)
+	return Refusal.NONE
+
+
+## Put the drawn item back where it came from. Returns what was holstered, or
+## &"" when the hands were already empty — that early return is also what
+## keeps the stance coupling from looping.
+func holster() -> StringName:
+	if _drawn_item_id == &"":
+		return &""
+	var item_id := _drawn_item_id
+	var origin := _drawn_from
+	_drawn_item_id = &""
+	_drawn_from = &""
+	_restore_to_slot(origin, item_id)
+	_log_change("holster", origin, item_id)
+	slot_changed.emit(origin, item_id)
+	drawn_changed.emit(&"")
 	return item_id
 
 
@@ -260,7 +340,12 @@ func get_save_key() -> StringName:
 
 
 func get_save_data() -> Dictionary:
-	return {"body": _to_string_keys(_body), "pockets": _to_string_keys(_pockets)}
+	return {
+		"body": _to_string_keys(_body),
+		"pockets": _to_string_keys(_pockets),
+		"drawn": String(_drawn_item_id),
+		"drawn_from": String(_drawn_from),
+	}
 
 
 ## Body slots are restored BEFORE pockets, and that order is load-bearing: a
@@ -275,6 +360,8 @@ func get_save_data() -> Dictionary:
 func load_save_data(data: Dictionary) -> void:
 	_body.clear()
 	_pockets.clear()
+	_drawn_item_id = &""
+	_drawn_from = &""
 
 	var saved_body: Dictionary = data.get("body", {})
 	for slot_key in saved_body:
@@ -301,7 +388,18 @@ func load_save_data(data: Dictionary) -> void:
 			continue
 		_pockets[StringName(path_key)] = item_id
 
-	_log_change("restore", &"(all)", &"")
+	## The drawn item is state, not a view of a slot — it belongs to neither
+	## dictionary above, so it is restored separately. Both halves are needed:
+	## without drawn_from, holstering after a load would have nowhere to put
+	## the thing back.
+	var drawn := StringName(data.get("drawn", ""))
+	var drawn_from := StringName(data.get("drawn_from", ""))
+	if drawn != &"" and ItemCatalog.get_item(drawn) != null:
+		_drawn_item_id = drawn
+		_drawn_from = drawn_from
+		drawn_changed.emit(drawn)
+
+	_log_change("restore", &"(all)", _drawn_item_id)
 
 
 # -----------------------------------------------------------------------------
@@ -362,7 +460,42 @@ func _equip_starter_garments() -> void:
 		equip(item.garment.body_slot_id, item_id)
 
 
-func _pocket_path(body_slot_id: StringName, pocket_id: StringName) -> StringName:
+## Whatever is in a slot, addressed by path — body slot or pocket.
+func _item_at(slot_path: StringName) -> StringName:
+	if String(slot_path).contains(POCKET_SEPARATOR):
+		return _pockets.get(slot_path, &"")
+	return _body.get(slot_path, &"")
+
+
+func _clear_slot(slot_path: StringName) -> void:
+	if String(slot_path).contains(POCKET_SEPARATOR):
+		_pockets.erase(slot_path)
+	else:
+		_body.erase(slot_path)
+
+
+## Deliberately bypasses can_stow(): the slot is guaranteed free — this item
+## was taken out of it and nothing else could reach it while it was in the
+## hands — and it already passed every check on the way in.
+func _restore_to_slot(slot_path: StringName, item_id: StringName) -> void:
+	if String(slot_path).contains(POCKET_SEPARATOR):
+		_pockets[slot_path] = item_id
+	else:
+		_body[slot_path] = item_id
+
+
+func _stow_starter_items() -> void:
+	for item_id in starter_stowed_ids:
+		var refusal := stow_anywhere(item_id)
+		if refusal != Refusal.NONE:
+			push_warning("[Equipment] starter '%s' had nowhere to go: %s"
+					% [item_id, Refusal.keys()[refusal]])
+
+
+## Builds the address of a pocket. Public because draw() takes a slot path
+## and a caller iterating get_available_pockets() has to be able to name one
+## — the format is this component's business, not the caller's to spell.
+func pocket_path(body_slot_id: StringName, pocket_id: StringName) -> StringName:
 	return StringName(String(body_slot_id) + POCKET_SEPARATOR + String(pocket_id))
 
 
