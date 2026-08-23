@@ -12,6 +12,42 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - InteractComponent stops deciding where items go (H5 S4)
+
+`InteractComponent` held an `@onready` reference to `InventoryComponent` and
+decided an item's fate itself — `try_add()` then `queue_free()`. Its job ends
+at "the player wants this thing"; where the thing ends up is not its business.
+
+The policy moved to `player.gd`'s new `store_item()`: **equipment first,
+inventory second**. It lives there rather than in either component because
+`EquipmentComponent` deliberately knows nothing about inventory, and the
+player is what owns both — so the order between them is its decision to make.
+`InteractComponent` now calls it duck-typed through `has_method()`, the same
+idiom `on_world_ready()` and the save contract already use, and frees the
+world object only on success. A refusal leaves the item in the world
+untouched.
+
+`EquipmentComponent` gained `stow_anywhere()`: the garment's own body slot if
+it is a garment, else the first empty pocket that takes it. Candidates are
+tested with `can_stow()` and only the winner is actually stowed, so a full
+jacket does not produce four refusal lines on the way to the fifth pocket.
+
+**Visible behaviour change:** `test_can` is POCKET-sized by default and the
+starter jumpsuit carries four pockets, so cans now fill pockets first and only
+reach the inventory from the fifth onward. A pocket is a socket and holds
+exactly one item whatever `max_stack` says — stacking stays inventory's
+business.
+
+Carrying in the hands (`CARRY_ONLY`, the PickupSlot path) is untouched. Hands
+are not in the layout, and "what is held" is a later step.
+
+*Interact перестал решать судьбу предмета: политика «сначала на тело, потом в
+инвентарь» переехала в player.gd, который владеет обоими компонентами.
+Заметное следствие — банки теперь сначала занимают карманы комбинезона.*
+- `player/player_components/interact_component/interact_component.gd`, `player/player.gd`, `player/player_components/equipment_component/equipment_component.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - EquipmentComponent: the rules, without the wiring (H5 S3)
 
 Fourth step of H5, and the first that does something. Logic and persistence

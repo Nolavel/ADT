@@ -218,6 +218,39 @@ func take_from_pocket(body_slot_id: StringName, pocket_id: StringName) -> String
 	return item_id
 
 
+## Put an item away wherever it fits on the body: its own body slot if it is
+## a garment, otherwise the first empty pocket that takes it.
+##
+## This is equipment deciding where something goes, which is the whole reason
+## it sits between interaction and inventory. It still knows nothing about
+## inventory — a caller that gets a refusal decides what to do next.
+##
+## Candidate pockets are tested with can_stow() and only the winner is
+## actually stowed, so a full jacket does not produce four refusal lines in
+## the log on the way to the fifth pocket.
+func stow_anywhere(item_id: StringName) -> Refusal:
+	var item := ItemCatalog.get_item(item_id)
+	if item == null:
+		return Refusal.UNKNOWN_ITEM
+
+	if item.garment != null:
+		var worn := equip(item.garment.body_slot_id, item_id)
+		if worn == Refusal.NONE:
+			return Refusal.NONE
+
+	## Most informative refusal wins: NO_SUCH_SLOT only survives when there
+	## were no empty pockets at all to judge.
+	var reason := Refusal.NO_SUCH_SLOT
+	for pocket in get_available_pockets():
+		if pocket["item_id"] != &"":
+			continue
+		var refusal: Refusal = can_stow(pocket["body_slot"], pocket["pocket"], item_id)
+		if refusal == Refusal.NONE:
+			return stow(pocket["body_slot"], pocket["pocket"], item_id)
+		reason = refusal
+	return reason
+
+
 # -----------------------------------------------------------------------------
 # ## ENG: Save contract — reached through PlayerPersistenceSystem
 # -----------------------------------------------------------------------------

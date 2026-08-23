@@ -21,8 +21,6 @@ class_name InteractComponent
 @onready var pickup_slot: Node3D = $"../PickupSlot"
 ## прототип-набросок куда цепляется предмет (потом можно сделать - аттачить к Bone руки)
 
-@onready var inventory: InventoryComponent = $"../InventoryComponent"
-
 @onready var debug_label: Label = $Label
 ## через него видем какой обьект в фокусе, name, его возможности, количество
 
@@ -187,12 +185,26 @@ func try_interact() -> void:
 		InteractableObject.InteractionType.VEHICLE:  # flying car
 			_enter_vehicle(current_interactable)
 		InteractableObject.InteractionType.INVENTORY_ONLY:
-			_store_to_inventory(current_interactable)
-			
-## INVENTORY_ONLY: предмет уходит в инвентарь напрямую, минуя руки.
-## При отказе (перевес) остаётся в мире нетронутым.
-func _store_to_inventory(object: InteractableObject) -> void:
-	if inventory.try_add(object.item):
+			_store_item(current_interactable)
+
+## INVENTORY_ONLY: предмет уходит на игрока напрямую, минуя руки.
+## При отказе остаётся в мире нетронутым.
+##
+## This component no longer decides WHERE the item ends up — it only says the
+## player wants it. store_item() on the player picks worn-vs-carried, because
+## that order is a decision about the character's belongings and neither
+## EquipmentComponent nor InventoryComponent should have to know the other
+## exists. Freeing the world object stays here: that an interactable was
+## consumed is interaction's own business.
+##
+## Duck-typed through has_method(), the same idiom on_world_ready(),
+## get_actor_id() and the save contract already use — player.gd carries no
+## class_name, so there is no type to hold it by.
+func _store_item(object: InteractableObject) -> void:
+	if player == null or not player.has_method(&"store_item"):
+		push_warning("[Interact] player has no store_item() — %s left in the world" % object.name)
+		return
+	if player.call(&"store_item", object.item):
 		object.queue_free()
 			
 func _pickup_item(item: InteractableObject) -> void:
