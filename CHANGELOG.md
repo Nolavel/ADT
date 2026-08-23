@@ -12,6 +12,54 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - Equipment: the slot layout, the pistol rule, the first item property
+
+Documentation only again — H3/H4 still open, H5 still closed. Extends the
+section added earlier today with the parts that were still hand-waving.
+
+**Six slots, each a single socket:** two trouser pockets, two jacket pockets,
+a back slot for a pack, a back slot for one unique item. Fit is answered by a
+size class against the socket, **not a grid** — no packing, no rotation, no
+cell UI. The interesting question in this game is what is visible on a person,
+not how neatly a bag tessellates.
+
+**A pistol is concealed in the jacket, and a belt holster must never be
+added** — it is a visible statement to the world, and it would hand the player
+concealment for free where the design wants it to cost a jacket slot. Recorded
+as a hard "do not add", alongside `PlayerState`'s removed `TOPDOWN`.
+
+**Drawing a weapon and stance are one state, symmetric both ways:** drawing
+sets `COMBAT`, holstering returns to `PEACE`, and toggling to `PEACE` by hand
+holsters. Three consequences recorded — `set_stance()` gains a second caller
+(only `InputSystems` calls it today); no loop and no guard flag is needed,
+because `set_stance()` already returns early on an unchanged value; and
+`CLAUDE.md`'s "declared intent, not equipment" line will need refining, in the
+same commit as the code and not before it.
+
+**The item gains exactly two enums** — a size class, and how it reads to an
+observer (conceals / ordinary / reads as a threat). The unique back slot
+refuses the last, which is what makes "a machine gun on the back gives away
+your intent" expressible at all: the rule is about what the city sees, so it
+can only live on the item. Chosen over a per-slot whitelist because the same
+property is what NPC reaction and Iris Access will read later.
+
+**Both attachment techniques are needed** and are not interchangeable: clothing
+is a skinned mesh (it has to bend at the knee), rigid props — the drawn pistol,
+the pack, the unique back item — are `BoneAttachment3D`.
+
+**The rig gap is recorded rather than worked around:** there are no separate
+trousers and jacket, `Low Poly Jumpsuit` is one mesh. Slots can be declared
+now, but the visuals cannot be independent, and "conceal the pistol in the
+jacket" has no distinct jacket yet.
+
+*Уточнён раздел про экипировку: шесть слотов-гнёзд без сетки, кобура на поясе
+запрещена навсегда, оружие и стойка — одно состояние симметрично в обе
+стороны, у предмета появляются ровно два enum (размер и то, как он читается
+наблюдателем). Записано и то, что отдельных штанов с курткой в риге нет.*
+- `docs/planned_scope.md`
+
+---
+
 ## 2026-08-23 - Record the Equipment / Inventory / Interact direction
 
 Documentation only, no code: H3 and H4 are still open and this project builds
