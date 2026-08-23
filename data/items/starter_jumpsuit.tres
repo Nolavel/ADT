@@ -35,6 +35,7 @@ refuses_threatening = false
 [sub_resource type="Resource" id="Resource_jumpsuit_garment"]
 script = ExtResource("2_garment")
 body_slot_id = &"torso"
+mesh_node_name = &"Low Poly Jumpsuit"
 pockets = Array[ExtResource("3_slotdef")]([SubResource("Resource_chest_left"), SubResource("Resource_chest_right"), SubResource("Resource_thigh_left"), SubResource("Resource_thigh_right")])
 
 [resource]

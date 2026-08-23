@@ -6,6 +6,7 @@
 [sub_resource type="Resource" id="Resource_boots_garment"]
 script = ExtResource("2_garment")
 body_slot_id = &"feet"
+mesh_node_name = &"Boots Low Poly"
 
 [resource]
 script = ExtResource("1_item")

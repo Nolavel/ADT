@@ -12,6 +12,49 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-23 - Equipment becomes visible (H5 S6 + S7)
+
+Five steps of H5 were merged and none of them could be seen: the character
+wore a jumpsuit, carried a pipe in a thigh pocket and drew it on `B`, all of it
+true in the save file and invisible on screen. `EquipmentVisualsComponent`
+connects the state to the rig, and reflects it rather than owning it —
+deleting the component must change nothing except what is drawn.
+
+**Clothing** is a skinned mesh already in the rig, named by
+`GarmentData.mesh_node_name` and toggled visible. A name rather than a
+`NodePath`: a path is scene-specific and would not survive an NPC reading it,
+while the name is a convention both rigs already satisfy. One name, not a
+list — nothing today needs two.
+
+**A held item** is a `MeshInstance3D` built under a `BoneAttachment3D` on the
+hand, from a new `ItemResource.held_mesh`. A `Mesh` rather than a scene, so
+holding something costs one field instead of a `.tscn` per item; null means the
+drawn state is still correct and nothing shows.
+
+The trap worth recording: **the skeleton is `OriginalSkeleton`, not
+`GeneralSkeleton`.** The former is the retarget target every visible mesh is
+actually skinned to; it has 65 bones and indexes them differently — `Head` is 5
+there and 6 in `GeneralSkeleton`, `RightHand` is **34** and 32. Both the index
+and which skeleton it belongs to were read out of the scene and cross-checked
+against the existing Votive attachment rather than assumed.
+
+`held_offset`/`held_rotation_deg` are exported and deliberately left at zero:
+they are meant to be dragged in the inspector until the thing sits in the fist,
+the same reasoning `VotiveProjector.bone_local_offset` already carries. Nobody
+computed a default and nobody could.
+
+`scrap_pipe` got a `CylinderMesh` placeholder; it leaves with the fixture when
+H6 lands. NPCs are untouched — their rig would work unchanged, but nothing
+drives it there.
+
+*Экипировка стала видимой: одежда — скиннингованный меш по имени, вещь в
+руке — меш под BoneAttachment3D на кисти. Скелет именно OriginalSkeleton, у
+него своя индексация костей (RightHand = 34, а не 32) — сверено по сцене.
+Смещение в руке вынесено в экспорты, подгонять глазами.*
+- `player/player_components/equipment_visuals_component/equipment_visuals_component.gd`, `core/items/garment_data.gd`, `core/items/item_resource.gd`, `player/player.tscn`, `data/items/starter_*.tres`, `data/items/scrap_pipe.tres`, `CLAUDE.md`
+
+---
+
 ## 2026-08-23 - Draw / holster, and stance as one state with it (H5 S5)
 
 The third of H5's three states — what is held — and the one rule that reaches
