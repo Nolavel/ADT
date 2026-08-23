@@ -17,7 +17,7 @@ beside it: the city's reaction to the player is specified in
 
 Items promoted from this page to active work move to `scope_horizon.md`.
 
-Last reviewed: 2026-08-07
+Last reviewed: 2026-08-23
 
 ---
 
@@ -65,6 +65,108 @@ Implemented components — `nav_component`, `stamina_component`,
 | Hunger, sleep | Physiology. Deliberately not surfaced as permanent on-screen bars; state is shown at threshold crossings, on request, or when it blocks an action. |
 | Wallet, progression | Economy is tied to identity, which is a core theme rather than a numbers system. Design not settled. |
 | Save | **This is the gap that matters.** See its own section below. |
+
+---
+
+## Equipment, Inventory and Interact — the layer split
+
+Design direction only. **Blocked by H3 and H4** (`scope_horizon.md`), and the
+project builds one horizon at a time, so nothing here is available work. It is
+written down because it currently exists only in conversation, and starting H5
+should not begin by re-deriving it.
+
+### Who owns what
+
+| Layer | Owns | Today |
+|---|---|---|
+| `InteractComponent` | Recognising an interactable and raising the intent to act on it. **Nothing about where the item ends up.** | Also decides storage — this is the part that moves out |
+| `EquipmentComponent` | Physical placement on the body: worn slots, a special back slot, container equipment that brings its own slots | Does not exist |
+| `InventoryComponent` | Stacks, carried storage, weight accounting | Exists and works (`try_add`/`take`/`get_count`/`get_stacks`) — **not to be rewritten** |
+
+The concrete overreach to undo: `interact_component.gd` holds
+`@onready var inventory: InventoryComponent` and decides an item's fate itself
+in `_store_to_inventory()` — `inventory.try_add()` then `queue_free()`. Interact
+should raise the intent; equipment should decide where the thing goes, and hand
+the leftovers to inventory.
+
+The inventory is meant to become **three-dimensional and anthropomorphic** —
+an item is somewhere on the body, not a row in a list. That is why equipment
+owns placement rather than inventory growing slots: a backpack is an equipped
+item that brings its own storage, not a permission for the back to hold
+anything.
+
+### Save-compatible from the first commit, not retrofitted
+
+A slot holds `item_id: StringName` resolved through an item registry — **never
+an `ItemResource` reference.** `SaveSystem`'s payload rule is dictionaries,
+arrays and primitives only, so a slot holding an object is unsaveable by
+construction, and that fact would surface at the worst possible moment: once
+the component is written and equipment needs to survive a sleep.
+
+`EquipmentComponent` implements `get_save_key()` / `get_save_data()` /
+`load_save_data()` from the start — the same three methods `GameClockSystem`
+and `IncidentRegistry` already prove.
+
+**Open sub-problem, not solved here:** `SaveSystem` walks `WORLD_SYSTEM_SCRIPTS`
+entries only. A player component has no route into a save today. That route has
+to exist before equipment persistence means anything, and it is the same route
+a persisted inventory will need.
+
+### Slot registration has no owner — this is the real open question
+
+`register_slot()` with nobody calling it is an unfinished contract. Where the
+layout lives ("two trouser slots, two jacket slots, one back special") is a
+decision to take deliberately, not to discover.
+
+Direction: a layout `Resource` assigned on the player, not constants inside the
+component — so a different character or outfit does not mean editing the
+component. Before writing one, check the resource conventions already in use
+rather than inventing a fourth: `data/npc_archetypes/` (one file per item),
+`data/comic_effects/` (catalog plus one file per item), `data/key_hints.tres`
+(a single catalog holding sub-resources).
+
+### Types
+
+Identity is `StringName`, states are `enum`. Not `Array[String]` tags, not a
+bare `int` with its range explained in a comment — a mistyped string tag fails
+silently, an enum fails at parse time. Same rule `ActorBase.actor_id`,
+`PlayerState.Mode` and `Incident.Source` already follow.
+
+Note against that rule: `ItemResource.id` is currently a plain `String`.
+Reconciling it is part of the item-registry work, not a separate cleanup.
+
+### Clothing is skinned, not bone-attached
+
+An equipment mesh is a `MeshInstance3D` skinned to the whole skeleton, made
+visible when equipped. **Not a `BoneAttachment3D` child.** A bone attachment
+follows one bone rigidly, which is correct for a rigid prop and wrong for
+trousers, which have to bend at the knee.
+
+The precedent is already in `player.tscn`: `Low Poly Jumpsuit` is skinned to
+`OriginalSkeleton` — the retarget *target* skeleton every visible mesh is
+skinned to — and deforms with it. `BoneAttachment3D` is used exactly once in
+this project, for the Votive on the `Head` bone, and that is the kind of thing
+it is for: a pistol in the hand, a holster, a pack.
+
+Two things to know before the first mesh goes in:
+
+- **The default body is not naked.** `OriginalSkeleton` already carries
+  `Genesis8Male_Shape` (the body) plus `Low Poly Jumpsuit`, `Boots Low Poly`,
+  `DETAILS Low Poly` and `Low Poly Headset`. A naked baseline means hiding
+  meshes, not adding them — and it exposes whatever the body mesh looks like
+  underneath.
+- **An equipment mesh must not be tagged `archetype_body_mesh.`**
+  `NPCBase._apply_archetype()` paints a flat `material_override` across every
+  mesh carrying that group; a tagged jacket would lose its own material to the
+  archetype's placeholder colour.
+
+### Still undecided
+
+The canonical item model — physical volume, concealment, how visible a carried
+thing is and to whom — is **not recorded here**, deliberately. It predates this
+page, lives outside the repository, and settling it is a separate decision that
+has to happen before the first equipment commit, because slots cannot be
+designed around properties nobody has agreed on.
 
 ---
 
