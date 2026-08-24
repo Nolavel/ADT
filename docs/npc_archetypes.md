@@ -13,7 +13,7 @@ Companion pages: `core_loop.md` (why the player is out here at all),
 `NPC_REACTIONS.md` (what the crowd *does*). This page is only about what the
 crowd *looks like*.
 
-None of this is implemented. Last reviewed: 2026-08-13
+Data resources and flat-colour placeholders are implemented. Full silhouette / gait / clothing pass is not. Last reviewed: 2026-08-25
 
 ---
 
