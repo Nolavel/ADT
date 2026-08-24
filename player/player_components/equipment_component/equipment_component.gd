@@ -437,7 +437,7 @@ func _find_pocket(body_slot_id: StringName, pocket_id: StringName) -> EquipmentS
 
 
 func _garment_in(body_slot_id: StringName) -> GarmentData:
-	var item := ItemCatalog.find(_body.get(body_slot_id, &""))
+	var item := ItemCatalog.get_item(_body.get(body_slot_id, &""))
 	if item == null:
 		return null
 	return item.garment

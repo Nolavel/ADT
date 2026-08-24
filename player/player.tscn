@@ -37,10 +37,10 @@
 [ext_resource type="Script" uid="uid://kw0ry1yly3cv" path="res://player/player_components/animation_component/player_animation_component.gd" id="36_pnw6m"]
 [ext_resource type="Script" uid="uid://q1r8nueko0aj" path="res://player/player_components/interact_component/interact_component.gd" id="37_1gbpw"]
 [ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://core/components/health_component/health_component.gd" id="37_pnw6m"]
-[ext_resource type="Script" path="res://core/components/votive_projector/votive_projector.gd" id="38_votive"]
-[ext_resource type="Script" path="res://player/player_components/equipment_component/equipment_component.gd" id="39_equipment"]
+[ext_resource type="Script" uid="uid://h0uvlcvntac6" path="res://core/components/votive_projector/votive_projector.gd" id="38_votive"]
+[ext_resource type="Script" uid="uid://jr1uohu8mjbp" path="res://player/player_components/equipment_component/equipment_component.gd" id="39_equipment"]
 [ext_resource type="Resource" path="res://data/equipment/player_layout.tres" id="39_layout"]
-[ext_resource type="Script" path="res://player/player_components/equipment_visuals_component/equipment_visuals_component.gd" id="40_eqvisuals"]
+[ext_resource type="Script" uid="uid://cmvotwt0ok5dp" path="res://player/player_components/equipment_visuals_component/equipment_visuals_component.gd" id="40_eqvisuals"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
 radius = 0.38763407
@@ -1430,6 +1430,10 @@ transform = Transform3D(0.9999999, -9.107795e-09, -4.9094337e-09, 8.6379215e-09,
 bone_name = "Head"
 bone_idx = 5
 
+[node name="VotiveProjector" type="Node3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/BoneAttachment3D" unique_id=1820093761]
+unique_name_in_owner = true
+script = ExtResource("38_votive")
+
 [node name="ModifierBoneTarget3D" type="ModifierBoneTarget3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2073755690]
 transform = Transform3D(-0.12704615, 0.34249717, -0.9450081, -0.42143002, -0.81808424, -0.27856207, -0.9212151, 0.37875387, 0.2566957, 0.6659153, 2.8405356, -0.35164708)
 bone_name = "LeftLowerArm"
@@ -1438,6 +1442,12 @@ bone = 9
 [node name="LookAt" type="LookAtModifier3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=2088398475]
 bone_name = "Head"
 bone = 5
+
+[node name="RightHandAttachment" type="BoneAttachment3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton" unique_id=302654654]
+unique_name_in_owner = true
+transform = Transform3D(-0.5095874, -0.029771596, 0.86267626, -0.5331937, -0.72595215, -0.36502057, 0.6908861, -0.6705925, 0.3636552, -0.9140264, 2.2811816, -0.26229024)
+bone_name = "RightHand"
+bone_idx = 34
 
 [node name="DynamicCursorUI" type="Control" parent="." unique_id=1477939802]
 layout_mode = 3
@@ -1489,20 +1499,11 @@ script = ExtResource("36_pnw6m")
 [node name="HealthComponent" type="Node" parent="." unique_id=1820093760]
 script = ExtResource("37_pnw6m")
 
-[node name="VotiveProjector" type="Node3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/BoneAttachment3D" unique_id=1820093761]
-unique_name_in_owner = true
-script = ExtResource("38_votive")
-
-[node name="EquipmentComponent" type="Node" parent="."]
+[node name="EquipmentComponent" type="Node" parent="." unique_id=868565124]
 script = ExtResource("39_equipment")
 layout = ExtResource("39_layout")
 debug_log = true
 
-[node name="RightHandAttachment" type="BoneAttachment3D" parent="player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton"]
-unique_name_in_owner = true
-bone_name = "RightHand"
-bone_idx = 34
-
-[node name="EquipmentVisualsComponent" type="Node" parent="."]
+[node name="EquipmentVisualsComponent" type="Node" parent="." unique_id=1587176806]
 script = ExtResource("40_eqvisuals")
 debug_log = true

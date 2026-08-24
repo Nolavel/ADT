@@ -675,7 +675,7 @@ func _on_draw_holster_pressed() -> void:
 		var item_id: StringName = pocket["item_id"]
 		if item_id == &"":
 			continue
-		var item := ItemCatalog.find(item_id)
+		var item := ItemCatalog.get_item(item_id)
 		if item != null and item.can_use_in_hands:
 			_equipment.draw(_equipment.pocket_path(pocket["body_slot"], pocket["pocket"]))
 			return
@@ -688,7 +688,7 @@ func _on_drawn_changed(item_id: StringName) -> void:
 	if item_id == &"":
 		PlayerState.set_stance(PlayerState.Stance.PEACE)
 		return
-	var item := ItemCatalog.find(item_id)
+	var item := ItemCatalog.get_item(item_id)
 	if item != null and item.readability == ItemTraits.Readability.THREATENING:
 		PlayerState.set_stance(PlayerState.Stance.COMBAT)
 

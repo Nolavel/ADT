@@ -116,7 +116,7 @@ func _on_drawn_changed(item_id: StringName) -> void:
 	if item_id == &"" or _hand_attachment == null:
 		return
 
-	var item := ItemCatalog.find(item_id)
+	var item := ItemCatalog.get_item(item_id)
 	if item == null or item.held_mesh == null:
 		## The drawn state is still correct — this item simply has no mesh
 		## yet. Silent on purpose: most items will be in this position for a
@@ -149,7 +149,7 @@ func _apply_body_slot(slot_id: StringName) -> void:
 	if previous != null:
 		previous.visible = false
 
-	var item := ItemCatalog.find(_equipment.get_equipped(slot_id))
+	var item := ItemCatalog.get_item(_equipment.get_equipped(slot_id))
 	if item == null or item.garment == null:
 		return
 	var mesh := _find_mesh(item.garment.mesh_node_name)
