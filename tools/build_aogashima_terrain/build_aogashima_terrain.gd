@@ -4,16 +4,16 @@ extends EditorScript
 ## Построитель 3D-сцены острова Аогасима на основе Heightmap PNG.
 ## Запуск: Открыть скрипт в редакторе -> File -> Run (Ctrl+Shift+X).
 
-const HEIGHTMAP_PATH := "res://aogashima_heightmap_16bit.png"
+const HEIGHTMAP_PATH := "res://world/aogashima/aogashima_heightmap_16bit.png"
 const SHADER_PATH := "res://vfx/shaders/aogashima_terrain.gdshader"
-const OUTPUT_SCENE_PATH := "res://world/aogashima/Xaogashima_island.tscn"
+const OUTPUT_SCENE_PATH := "res://world/aogashima/aogashima_island.tscn"
 
 const MAP_SIZE_M := 3500.0        # Размер острова по оси X/Z в метрах
 const HEIGHT_RANGE_M := 500.0     # Максимальная высота (65535 = 500m)
 const SEA_LEVEL_M := 0.0          # Уровень моря (отметка Y = 0)
 
 # Разрешение сетки коллизии (256x256 дает высочайшую точность при минимальной нагрузке на CPU)
-const COLLISION_GRID_RES := 256
+const COLLISION_GRID_RES := 513
 
 
 func _run() -> void:
