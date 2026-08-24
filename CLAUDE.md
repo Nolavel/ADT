@@ -123,7 +123,7 @@ Any node/scene in these lists can implement `on_world_ready(context: WorldContex
 - **Click-to-move / navigation** (`ISOMETRIC` view mode) — driven by `NavigationComponent`, path following in `_handle_navigation`. Currently a straight-line stub: `nav_component.tscn` leaves `navigation_region_path` unset, so `_initialize_navigation()` finds no `NavigationRegion3D` and forces `use_navigation` to `false` at runtime — `set_target_position()` then just emits a single-point path straight to the destination. No obstacle avoidance and no path validation yet.
 - **Direct WASD movement** (`TPS` view mode) — `TPSMovementSystem` (a `WORLD_SYSTEM_SCRIPTS` entry) feeds `set_direct_move_input()` every physics frame; `player.gd` does the actual velocity/rotation/animation in `_apply_direct_movement`.
 
-Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `player_components/` contains three implemented components: `nav_component`, `stamina_component`, `interact_component`. Empty placeholder directories for unstarted components (health, hunger, sleep, wallet, progression, equipment, crafting, save) were removed on 2026-07-29; that scope is recorded in `docs/planned_scope.md`.
+Which path runs is gated on `PlayerState.view_mode` inside `_physics_process`. `player_components/` contains three implemented components: `nav_component`, `stamina_component`, `interact_component`. Empty placeholder directories for unstarted components (health, hunger, sleep, wallet, progression, crafting, save) were removed on 2026-07-29; that scope is recorded in `docs/planned_scope.md`. `equipment_component` and `equipment_visuals_component` were implemented later as H5 (2026-08-23).
 
 ### Camera (`camera/`)
 
