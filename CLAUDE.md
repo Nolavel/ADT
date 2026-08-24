@@ -31,7 +31,7 @@ Startup scene: `res://world/world.tscn`.
 | `docs/COLLISION_LAYERS.md` | Single source of truth for 3D physics layers and the named query-mask profiles built from them |
 | `docs/MORPHS_INTEGRATION.md` | Morph icons — what a `MorphIcon` is, attaching one to a widget in the editor, and writing the next one |
 | `docs/visual_language.md` | **How the game looks and states things** — the comic/noir frame, the onomatopoeia rules, and how the comic layer relates to archetype readability, BlackRock and the Votive. Artist- and animator-facing. |
-
+| `docs/island_rescope_brief.md` | Island transition (Aogashima) — ordered steps, numbers, hard constraints |
 
 This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled in `project.godot` under `[editor_plugins]`, autoloaded as `_mcp_game_helper`). When the Godot editor is open, prefer the `mcp__godot-ai__*` tools over hand-editing `.tscn`/resource files or shelling out to the Godot CLI:
 - `editor_state` — check what scene is open / whether the editor is ready before issuing other calls.
