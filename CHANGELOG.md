@@ -12,6 +12,16 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Doc sync after island rescope + H5 close
+
+- `planned_scope.md`: removed false claim that EquipmentComponent does not exist; H5 moved out of planned scope
+- `scope_horizon.md`: H5 closed; Island transition set as current Now
+- `island_rescope_brief.md`: strict version (no author-addressing)
+- `npc_archetypes.md`: corrected “None of this is implemented” header
+- `CLAUDE.md`: Documents table + player components list brought in line with reality
+
+*Синхронизация документов после закрытия H5 и утверждения перехода на остров.*
+
 ## 2026-08-23 - Equipment becomes visible (H5 S6 + S7)
 
 Five steps of H5 were merged and none of them could be seen: the character
