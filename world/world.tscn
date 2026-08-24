@@ -11,6 +11,7 @@
 [ext_resource type="Resource" path="res://data/npc_archetypes/vagrant.tres" id="7_vagrant"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/thug.tres" id="8_thug"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/commuter.tres" id="9_commuter"]
+[ext_resource type="PackedScene" uid="uid://dpc7jf5a45wyk" path="res://world/aogashima/aogashima_island.tscn" id="9_dqqhb"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/clerk.tres" id="10_clerk"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/patrolman.tres" id="11_patrolman"]
 
@@ -157,6 +158,9 @@ max_speed = 14.0
 [node name="LodgingRoom" parent="StreamContainer" unique_id=1572542072 instance=ExtResource("5_ai45w")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 220, 0, -120)
 room_id = &"1"
+
+[node name="AogashimaIsland" parent="." unique_id=1854643265 instance=ExtResource("9_dqqhb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2200)
 
 [node name="StatsDisplay" parent="." unique_id=1462911267 instance=ExtResource("2_h5o24")]
 visible = false

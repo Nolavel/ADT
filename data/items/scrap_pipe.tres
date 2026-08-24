@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="ItemResource" format=3]
+[gd_resource type="Resource" script_class="ItemResource" format=3 uid="uid://cr4stac75oqgb"]
 
-[ext_resource type="Script" path="res://core/items/item_resource.gd" id="1_item"]
+[ext_resource type="Script" uid="uid://c51f455owg8fl" path="res://core/items/item_resource.gd" id="1_item"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_pipe"]
 top_radius = 0.02
@@ -14,9 +14,7 @@ script = ExtResource("1_item")
 id = &"scrap_pipe"
 display_name = "Scrap Pipe"
 weight = 2.5
-max_stack = 1
 can_throw = true
 can_use_in_hands = true
-size_class = 0
 readability = 2
 held_mesh = SubResource("CylinderMesh_pipe")
