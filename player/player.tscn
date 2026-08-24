@@ -39,7 +39,7 @@
 [ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://core/components/health_component/health_component.gd" id="37_pnw6m"]
 [ext_resource type="Script" uid="uid://h0uvlcvntac6" path="res://core/components/votive_projector/votive_projector.gd" id="38_votive"]
 [ext_resource type="Script" uid="uid://jr1uohu8mjbp" path="res://player/player_components/equipment_component/equipment_component.gd" id="39_equipment"]
-[ext_resource type="Resource" path="res://data/equipment/player_layout.tres" id="39_layout"]
+[ext_resource type="Resource" uid="uid://b7wuq4aqbuymd" path="res://data/equipment/player_layout.tres" id="39_layout"]
 [ext_resource type="Script" uid="uid://cmvotwt0ok5dp" path="res://player/player_components/equipment_visuals_component/equipment_visuals_component.gd" id="40_eqvisuals"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
@@ -1506,4 +1506,6 @@ debug_log = true
 
 [node name="EquipmentVisualsComponent" type="Node" parent="." unique_id=1587176806]
 script = ExtResource("40_eqvisuals")
+held_offset = Vector3(0.33, 0.15, 0.05)
+held_rotation_deg = Vector3(0, 0, 90)
 debug_log = true

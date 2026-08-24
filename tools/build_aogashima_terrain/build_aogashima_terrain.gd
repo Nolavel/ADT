@@ -12,7 +12,10 @@ const MAP_SIZE_M := 3500.0        # Размер острова по оси X/Z 
 const HEIGHT_RANGE_M := 500.0     # Максимальная высота (65535 = 500m)
 const SEA_LEVEL_M := 0.0          # Уровень моря (отметка Y = 0)
 
-# Разрешение сетки коллизии (256x256 дает высочайшую точность при минимальной нагрузке на CPU)
+# Небольшой подъём коллизии над визуалом — убирает провалы на крутых склонах
+# ( discreteness heightmap / float error / капсула CharacterBody ).
+const COLLISION_HEIGHT_BIAS_M := 0.1
+# Разрешение сетки коллизии 
 const COLLISION_GRID_RES := 513
 
 
@@ -117,6 +120,9 @@ func _create_terrain_collision(img: Image) -> StaticBody3D:
 			# Отсечение океана по отметке моря
 			if h_m <= SEA_LEVEL_M:
 				h_m = SEA_LEVEL_M
+			else:
+				# Bias только на суше — океан остаётся ровно на SEA_LEVEL_M
+				h_m += COLLISION_HEIGHT_BIAS_M
 				
 			map_data[z * COLLISION_GRID_RES + x] = h_m
 

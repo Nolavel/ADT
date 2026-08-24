@@ -2,11 +2,15 @@
 
 [ext_resource type="Script" uid="uid://c51f455owg8fl" path="res://core/items/item_resource.gd" id="1_item"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gsrtj"]
+albedo_color = Color(0.46, 0, 0, 1)
+
 [sub_resource type="CylinderMesh" id="CylinderMesh_pipe"]
-top_radius = 0.02
-bottom_radius = 0.02
-height = 0.45
-radial_segments = 8
+material = SubResource("StandardMaterial3D_gsrtj")
+top_radius = 0.07
+bottom_radius = 0.06
+height = 0.9
+radial_segments = 16
 rings = 1
 
 [resource]
