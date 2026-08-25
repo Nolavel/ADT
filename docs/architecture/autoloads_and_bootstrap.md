@@ -1,0 +1,35 @@
+# Autoloads and scene bootstrap
+
+The closed set of autoload singletons, the composition root in `world/world.gd`,
+and the node groups actually in use.
+
+Split out of `CLAUDE.md` on 2026-08-25 — it had grown to 94 KB with single
+paragraphs over 4000 characters, which is a document nobody edits: agents append
+to the end instead of correcting the middle, and that is where the repeated drift
+came from. The text here is the same text, moved, not rewritten.
+
+`CLAUDE.md` remains authoritative for the rules; this file is authoritative for
+the contracts it describes.
+
+---
+
+### Autoload singletons (`project.godot` `[autoload]`)
+
+State and cross-scene concerns live in a small set of autoloads, each with one clearly-scoped job — read the header comment in each file before touching it, they're deliberately kept separate:
+
+- **`WorldSystems`** (`core/world/world_systems.gd`) — the single source of truth for world geometry: the ground-tile grid, tile-coordinate math, and session state that must survive scene changes (spawn point, current district/tile). Pure math only — no physics nodes. **Strata were removed entirely on 2026-08-25** (island transition, `docs/island_rescope_brief.md` step 1) — `STRATA_*`, `STRATA_HYSTERESIS`, `current_strata`, `strata_changed`, `get_strata_by_height()` are all gone. Height still means status, but continuously, through the terrain; Doggerland/Manifold/Glare survive only as conversational district names in dialogue and text, and no code knows them. `GAMEPLAY_HEIGHT` is `1000.0`, the island ceiling.
+- **`StreamingSystems`** (`core/world/streaming_systems.gd`) — the world-content streaming pipeline; the *only* owner of streamed content (`world.gd` doesn't know about individual cells). Two rings: Ring 0 = permanent-collision silhouettes for all ground tiles/blocks, spawned once; Ring 1 = actual content cells (ground tiles + blocks), state machine `UNLOADED → QUEUED → LOADING → READY → ACTIVE`, streamed in/out by XZ radius from the player, threaded-loaded with a per-frame instantiation budget. **What the pipeline is FOR changed with the island** (2026-08-25): it used to make a 9.6 km world manageable, which is where the old 1000/1200 m radii came from. A 3.5 km island fits in memory whole, so the pipeline now governs the SWAP OF SILHOUETTE FOR LIVE CONTENT, not world size — `BLOCK_STREAM_RADIUS` is 400 and `BLOCK_UNLOAD_RADIUS` 500, chosen from how many towers should be live around the player (~25 at the caldera's ~100 m spacing), not from how much world fits. Without this recorded, the reason the pipeline is as complicated as it is gets lost. The strata-layer mechanism a block used to carry (an `InstancePlaceholder` named `Layer<StrataName>`, materialized to match the player's vertical band) was removed on 2026-08-25 — a block's content scene now arrives whole, and the `LayerDoggerland`/`LayerManifold`/`LayerGlare` naming contract no longer exists. A block's silhouette is hidden wholesale when its content goes ACTIVE, the same way a ground tile's already was; the per-segment `Mesh<StrataName>` hiding went with the layers.
+- **`InputSystems`** (`core/input/input_systems.gd`) — the *only* place that calls `Input.*`. Translates raw input into signals (`primary_click_pressed`, `interact_pressed`, etc.) or query methods (`is_jump_just_pressed()`, `get_move_axis()`); it has zero game logic and never decides what an input means — that's left to subscribers reacting to `PlayerState`. One deliberate exception: `key_hints_enabled` (H2, see `KeyHintsPanel` below) is a screen-space UI switch that lives here anyway — the reasoning is on the field's own comment (this file is the only system that actually knows about keys as physical things) — and it is the first UI → `InputSystems` dependency in the project. Do not treat it as license to route other UI toggles through here without the same reasoning applying.
+- **`PlayerState`** (`core/player_state/player_state.gd`) — single source of truth for player `mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`, `MENU`) and `view_mode` (`TPS`, `ISOMETRIC`). `TOPDOWN` was removed entirely (not just deferred) — do not reintroduce it. `MENU` must only be entered/exited via `open_menu()`/`close_menu()` (these also own `get_tree().paused`) — never set `mode = MENU` directly.
+
+### Scene bootstrap (`world/world.gd`)
+
+`World._init_world()` is the composition root and is intentionally organized as three fixed, non-growing loops rather than one flexible abstraction, because each category has a different construction method and parent node:
+1. **`WORLD_SYSTEM_SCRIPTS`** — plain `Node` classes (`GameClockSystem`, `EnvironmentLightingSystem`, `ClickToMoveSystem`, `TPSMovementSystem`, `MenuSystem`, `ZoomRulerSystem`, `IncidentRegistry`, `LodgingSystem`, `SaveSystem`) instantiated with `.new()`, parented to `World` itself.
+2. **`WORLD_3D_ENTITY_SCENES`** — standalone 3D `.tscn` scenes instantiated and parented to `stream_container`.
+3. **`WORLD_UI_SCENES`** — screen-space `Control` UI scenes, parented to a dedicated `CanvasLayer`.
+
+Any node/scene in these lists can implement `on_world_ready(context: WorldContext)`, called once after player/camera/systems exist (`core/world/world_context.gd` exposes `context.get_system(SomeClass)`). Adding a new system/entity/UI scene = one line in the relevant array, not new bootstrap code. This mechanism is strictly about game-system/UI lifecycle — actual world content (tiles/blocks) is `StreamingSystems`' job, entirely separate.
+
+
+- Global node groups actually in use: `player` (lowercase — added in code, `player.gd`'s `_ready()`), `wall`, `interactables`, `floor`, `vehicle`, `world_root` (fast lookup via `get_first_node_in_group`), `district`, `lockable` (combat camera lock-on pool, `NPCBase` only — see `tps_combat_camera_state.gd`), `perceived_actor` (`ActorBase`'s own group, both NPCs and drones — debug-tooling enumeration only, deliberately not `lockable`: a drone is not a lock-on target), `incident_registry` (`IncidentRegistry`'s own group — the lookup path for consumers that can't reach it through `WorldContext`, see above), `comic_effect_system` (`ComicEffectSystem`'s own group, same lookup role). `project.godot`'s `[global_group]` section still registers a capitalized `Player` name too, but no node carries it — the group tag on the `Player` node itself was removed as dead weight; the leftover registration wasn't touched.

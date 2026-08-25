@@ -65,10 +65,6 @@ and breaking them fails silently, not loudly.
   `core/map_source/`, `map_camera/` (editor tooling).
 - **`StreamingSystems` is the only owner of streamed content.** Do not
   instantiate world content anywhere else.
-- **Strata layer naming.** A block content scene must contain
-  `InstancePlaceholder` nodes named exactly `LayerDoggerland`,
-  `LayerManifold`, `LayerGlare`. This is a name contract; violating it
-  produces a warning and a missing layer, not a crash.
 - **`GBX_` marker prefix.** Markers with that prefix are owned by the block
   generator and will be deleted on its next run. Drop the prefix to make a
   marker hand-owned.

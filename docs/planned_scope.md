@@ -30,7 +30,7 @@ delete the intent — it is recorded below.
 
 | Was | Intent | Prerequisite |
 |---|---|---|
-| `core/controllers/transport/base/lift_base.gd` | Vertical lift between strata | A location where a lift is required by gameplay |
+| `core/controllers/transport/base/lift_base.gd` | Vertical lift between levels of the island | A location where a lift is required by gameplay |
 | `core/controllers/transport/base/tube_transit_base.gd` | Pneumatic tube transit; observer camera only | `TUBE_TRANSIT` mode has a destination worth travelling to |
 | `core/controllers/transport/base/hover_metro_base.gd` | Levitating metro line, distinct from tubes | Hover base proven at scale first |
 | `core/controllers/transport/metro_train_types/train0..3.gd` | Metro rolling stock variants | Metro base exists |
@@ -82,7 +82,7 @@ is still undecided or unfinished.
 
 ### Still undecided
 
-- **The rest of the item model** — physical volume, strata fit, anything beyond
+- **The rest of the item model** — physical volume, anything beyond
   size class and observer readability. It predates this page and lives outside
   the repository.
 - **Where the layout resource lives.** Direction remains: a layout `Resource`

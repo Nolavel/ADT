@@ -12,6 +12,61 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Documents catch up, and CLAUDE.md is cut into pieces (island step 6)
+
+Out of the brief's order — step 6 comes after 3-5 — because 3-5 need an open
+editor and this does not, and the brief asks for step 6 not to be postponed.
+
+**`CLAUDE.md` split, 94 KB -> 15 KB.** It had single paragraphs over 4000
+characters. A document that dense is not edited: agents append to the end
+rather than correct the middle, which is exactly where the drift this file
+keeps suffering comes from. The per-system contracts now live in
+`docs/architecture/`: `autoloads_and_bootstrap`, `world_streaming`,
+`player_and_camera`, `npc_and_incidents`, `items_and_equipment`,
+`persistence`. `CLAUDE.md` keeps the rules, the constraints and an index.
+
+The text was **moved, not rewritten** — a split that also revises is not
+reviewable in one pass. Byte count across all seven files is 99 KB against
+94 KB before, the difference being the six file headers and the index table.
+
+**Vertical-city claims removed** from `ARCHITECTURE.md` (the strata layer name
+contract is now marked removed rather than deleted, because those `Layer*`
+nodes are still baked into generated block scenes and a reader needs to know
+what they were), `docs/CONTRIBUTING.md` (the strata naming rule is simply
+false now), `docs/core_loop.md` §10 (the surveillance gradient survives — it
+is design, not implementation — but is now expressed as caldera floor / shelf /
+outer rim, continuous through the terrain), `docs/visual_language.md`,
+`docs/planned_scope.md`. The streaming radii in `ARCHITECTURE.md` were 1000/1200
+and are now 400/500 with the reason attached.
+
+Mentions left alone on purpose: `NPC_REACTIONS.md`, `attribution.md` and
+`npc_archetypes.md` use Doggerland / Manifold / Glare as **place names**, which
+is exactly what the brief preserves them for.
+
+**`docs/COLLISION_LAYERS.md`** gained the island's `TerrainStaticBody`
+(`collision_layer = 3`) on layers 1 and 2. The project rule is that a bare
+integer in a scene is only allowed alongside a row in that file, and the row
+was missing — the ground the whole game now stands on was undocumented.
+
+**The brief itself amended** with the four decisions taken during these steps
+(square map, procedural terrain and no `CREDITS.md` entry, island at the
+origin, step 6 out of order), plus the one open question found by reading the
+file: `aogashima_heightmap_16bit.png` is **8-bit RGB**, not 16-bit. Data sits
+in R alone; the generator asks for `FORMAT_RH` but `save_png()` did not keep
+it. Height quantizes at ~1.96 m per step instead of 0.008, so the caldera
+floor will terrace visibly. The shader reads `.r` and works, which is what
+makes it quiet.
+
+*Разрезал `CLAUDE.md`: 94 КБ -> 15 КБ, контракты уехали в `docs/architecture/`
+шестью файлами. Текст перенесён дословно, не переписан. Вычищено описание
+вертикального города из остальных документов — кроме дизайнерских, где
+Доггерленд/Манифолд/Глэйр остаются именами мест, как ТЗ и разрешает. В
+`COLLISION_LAYERS.md` добавлена земля острова. В ТЗ внесены решения этой
+сессии и записан найденный дефект: heightmap 8-битный, а не 16-битный.*
+- `CLAUDE.md`, `docs/architecture/*.md` (new), `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`, `docs/core_loop.md`, `docs/visual_language.md`, `docs/planned_scope.md`, `docs/COLLISION_LAYERS.md`, `docs/island_rescope_brief.md`
+
+---
+
 ## 2026-08-25 - Island moved to the origin, and everything standing on it moved with it
 
 Stan's call: the island sits at the world origin. It was instanced in

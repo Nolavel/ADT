@@ -120,7 +120,7 @@ graph TD
     PS --> PLAYER["player.gd"]
     PS --> UIW
 
-    WS -->|"strata bands<br/>tile grid math"| SS
+    WS -->|"tile grid math"| SS
     WS --> PLAYER
 
     SS -->|"instantiates"| SC["StreamContainer<br/>tiles, blocks, silhouettes"]
@@ -229,10 +229,15 @@ Two distance metrics, chosen per cell type:
   the metric — a whole tile of slack. A radius metric was tried and does not
   work here: tiles are 2200 m across, so any radius under half a tile
   unloads the ground under the player's feet.
-- **Blocks** use an XZ **radius**: 1000 m to load, 1200 m to unload, the gap
-  being the hysteresis. Blocks are full-height columns spanning the whole
-  3200 m of gameplay height, so vertical filtering would be meaningless for
-  them.
+- **Blocks** use an XZ **radius**: 400 m to load, 500 m to unload, the gap
+  being the hysteresis. Blocks are full-height columns, so vertical filtering
+  would be meaningless for them.
+
+  These radii used to be 1000/1200, sized to make a 9.6 km world manageable.
+  The island is 3.5 km across and fits in memory whole, so the pipeline's job
+  changed with it: it governs the swap of silhouette for live content, not
+  world size, and 400/500 come from how many towers should be live around the
+  player (~25 at the caldera's ~100 m spacing).
 
 Scanning happens no more than once per 50 m travelled; the load/instantiate
 pump runs every frame. Budgets are tight on purpose — 2 concurrent threaded
@@ -240,26 +245,28 @@ loads, **1** instantiation per frame. Background loading is cheap;
 `instantiate()` + `add_child()` is what costs a frame. These numbers are
 tuned to the hardware target and should not be changed without discussion.
 
-### The strata layer name contract
+### The strata layer name contract (removed 2026-08-25)
 
-Vertical detail is handled separately from streaming. A block's content
-scene **must** contain `InstancePlaceholder` nodes named exactly:
+Blocks used to carry vertical detail separately from streaming: a content
+scene had to contain `InstancePlaceholder` nodes named exactly
+`LayerDoggerland` / `LayerManifold` / `LayerGlare`, and exactly one was
+materialised for an active block — the one matching the player's current
+stratum.
 
-```
-LayerDoggerland     0–1000 m
-LayerManifold    1000–2000 m
-LayerGlare       2000–3200 m
-```
+**All of it is gone with the move to the island** (`docs/island_rescope_brief.md`,
+step 1). A block's content scene arrives whole; there is no placeholder
+pipeline, no per-segment silhouette hiding, and no name contract. Height still
+means status, but continuously, through the terrain rather than through three
+bands.
 
-For an active block, exactly one of these is materialised — the one matching
-the player's current strata. Materialisation uses
-`create_instance(replace = false, ...)`; `replace = false` is required so the
-placeholder survives in the tree and the layer can be unloaded and
-re-materialised later.
+The section is kept as a marker rather than deleted, because the contract it
+describes is still baked into generated block scenes that predate the move, and
+someone reading those files needs to know what those `Layer*` nodes were. They
+are inert. This paragraph describes history:
 
-**This is a contract enforced by string matching, not by types.** Getting a
-name wrong produces a warning and a missing layer at runtime — not a crash,
-not a compile error. It is the single easiest thing to break silently in
+**It was a contract enforced by string matching, not by types.** Getting a
+name wrong produced a warning and a missing layer at runtime — not a crash,
+not a compile error. It was the single easiest thing to break silently in
 this codebase.
 
 ---
@@ -375,9 +382,10 @@ on its next run. Rename to drop the prefix to make a marker hand-owned.
 
 ## Conventions that bite
 
-- **Ground floor is world Y = 0.** Strata bands are read straight off
-  `pos.y` with no offset. Strata transitions have 50 m of hysteresis so a
-  player standing on a boundary does not flicker between them.
+- **Sea level is world Y = 0.** Height is read straight off `pos.y` with no
+  offset. There are no strata bands and no hysteresis any more — the island's
+  terrain carries the vertical meaning directly, topping out around 430 m
+  against a `GAMEPLAY_HEIGHT` ceiling of 1000 m.
 - **Tile coordinates are `Vector2i(col, row)`** — `.x` is the column along
   world X, `.y` is the row along world Z. Tile ids are `"gt_r%d_c%d"`,
   row first. The mismatch between the two orders is a genuine trap.
