@@ -189,7 +189,7 @@ const GROUND_RATE_FALLING: float = 8.0
 ## How long the character may be airborne before the vertical channel stops
 ## holding still and starts chasing. Below this, a jump reads as a jump:
 ## the character rises in frame and the world stays put. Above it, the
-## character is falling between strata and the camera has to follow.
+## character is falling down the terrain and the camera has to follow.
 const FALL_GRACE: float = 0.55
 
 
@@ -347,7 +347,7 @@ func _update_lead(delta: float, f: Frame) -> void:
 ## the ground rather than the world sinking. Once a fall outlasts
 ## FALL_GRACE it is no longer a jump, and the height chases quickly so the
 ## character cannot drop off the bottom of the screen — the case that
-## matters when falling between strata.
+## matters when falling down a slope.
 func _update_ground(delta: float, f: Frame) -> void:
 	if f.on_floor:
 		_air_time = 0.0

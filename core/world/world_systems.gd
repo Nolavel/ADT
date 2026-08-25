@@ -2,11 +2,14 @@
 # WorldSystems.gd — Autoload (singleton)
 #
 # Центральная шина состояния игры. Хранит всё, что должно пережить смену сцен:
-# точку спавна, текущую страту/район/тайл, путь к данным мира.
+# точку спавна, текущий район/тайл, путь к данным мира.
 #
 # Здесь же — единственный источник истины по геометрии мира:
-#   • Конвенция высоты: верх плит земли (пол города) = Y 0.
-#     Страты отсчитываются напрямую от pos.y.
+#   • Конвенция высоты: уровень моря = Y 0, высота читается прямо с pos.y.
+#     Страт как технической сущности больше нет (переезд на остров,
+#     2026-08-25): высота = статус остаётся, но непрерывно, через рельеф.
+#     Доггерленд / Манифолд / Глэйр живут только как разговорные имена
+#     районов в диалогах и текстах — код о них не знает.
 #   • Тайловая сетка земли: GROUND_GRID_SIZE плит по GROUND_TILE_SIZE метров.
 #     CITY_ZONE_SIZE выводится из них и не хранится вторым числом.
 #   • Координаты тайла everywhere = Vector2i(col, row):
@@ -32,17 +35,10 @@ const CITY_ZONE_SIZE     := Vector2(
 		GROUND_TILE_SIZE * GROUND_GRID_SIZE.x,
 		GROUND_TILE_SIZE * GROUND_GRID_SIZE.y)
 
-const GAMEPLAY_HEIGHT    := 3200.0
-
-## Диапазоны страт по высоте от пола (Y 0): [нижняя граница, верхняя).
-const STRATA_DOGGERLAND  := Vector2(0.0,    1000.0)
-const STRATA_MANIFOLD    := Vector2(1000.0, 2000.0)
-const STRATA_GLARE       := Vector2(2000.0, 3200.0)
-
-## Буфер вокруг порога страты — смена страты требует захода за порог на
-## этот запас, иначе игрок у самой границы дёргает конвейер материализации
-## страт-слоёв (_request_layer) туда-сюда каждый кадр.
-const STRATA_HYSTERESIS: float = 50.0
+## Потолок игрового пространства над уровнем моря. 1000 м — решение
+## островного ТЗ; самая высокая точка рельефа около 430 м, единственная
+## смысловая башня достаёт до потолка.
+const GAMEPLAY_HEIGHT    := 1000.0
 
 const DISTRICT_A1        := Vector2(0.0,    1600.0)
 const DISTRICT_A2        := Vector2(2000.0, 6000.0)
@@ -55,7 +51,6 @@ var spawn_point: Vector3 = Vector3(0.0, 2.0, 200.0)
 
 var world_data_path: String = "res://data/world_data.tres"
 
-var current_strata:   String = "Doggerland"
 var current_district: String = ""
 var current_tower_id: String = ""
 
@@ -66,7 +61,6 @@ var current_tile: Vector2i = Vector2i(-1, -1)
 
 # ── Сигналы ───────────────────────────────────────────────────────────────────
 
-signal strata_changed(new_strata: String)
 signal district_changed(new_district: String)
 signal spawn_point_updated(point: Vector3)
 signal tile_changed(new_tile: Vector2i)
@@ -80,14 +74,6 @@ func set_spawn_point(point: Vector3) -> void:
 	print("[WorldSystems] Spawn point: ", point)
 
 
-func set_current_strata(strata: String) -> void:
-	if strata == current_strata:
-		return
-	current_strata = strata
-	strata_changed.emit(strata)
-	print("[WorldSystems] Strata: ", strata)
-
-
 func set_current_district(district: String) -> void:
 	if district == current_district:
 		return
@@ -97,53 +83,12 @@ func set_current_district(district: String) -> void:
 
 
 ## Вызывается StreamingSystems каждый кадр с позицией игрока.
-## Обновляет текущую страту и текущий тайл.
+## Обновляет текущий тайл.
 func update_player_position(pos: Vector3) -> void:
-	set_current_strata(_get_strata_with_hysteresis(pos.y, current_strata))
-
 	var coords := get_tile_coords(pos)
 	if coords != current_tile:
 		current_tile = coords
 		tile_changed.emit(coords)
-
-
-# ── Математика страт ──────────────────────────────────────────────────────────
-
-## height — высота от пола мира (Y 0).
-func get_strata_by_height(height: float) -> String:
-	if height < STRATA_MANIFOLD.x:
-		return "Doggerland"
-	elif height < STRATA_GLARE.x:
-		return "Manifold"
-	else:
-		return "Glare"
-
-
-## Гистерезис вокруг порогов страт: не переключает, пока высота не зайдёт
-## за порог на STRATA_HYSTERESIS в сторону перехода — без этого игрок у
-## самой границы дёргает _request_layer каждый кадр.
-func _get_strata_with_hysteresis(height: float, current: String) -> String:
-	var candidate := current
-	while true:
-		var next := candidate
-		match candidate:
-			"Doggerland":
-				if height >= STRATA_MANIFOLD.x + STRATA_HYSTERESIS:
-					next = "Manifold"
-			"Manifold":
-				if height < STRATA_MANIFOLD.x - STRATA_HYSTERESIS:
-					next = "Doggerland"
-				elif height >= STRATA_GLARE.x + STRATA_HYSTERESIS:
-					next = "Glare"
-			"Glare":
-				if height < STRATA_GLARE.x - STRATA_HYSTERESIS:
-					next = "Manifold"
-			_:
-				return get_strata_by_height(height)
-		if next == candidate:
-			break
-		candidate = next
-	return candidate
 
 
 # ── Математика тайловой сетки ─────────────────────────────────────────────────

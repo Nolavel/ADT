@@ -12,6 +12,51 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Strata removed from the runtime (island step 1)
+
+`docs/island_rescope_brief.md` step 1. First because it is a deletion: the
+longer strata live, the more gets built on top of them.
+
+`WorldSystems` lost `STRATA_DOGGERLAND/MANIFOLD/GLARE`, `STRATA_HYSTERESIS`,
+`current_strata`, `set_current_strata()`, `strata_changed`,
+`get_strata_by_height()` and the hysteresis walk; `update_player_position()`
+now only tracks the tile. `GAMEPLAY_HEIGHT` 3200 -> 1000, the island ceiling.
+
+`StreamingSystems` lost the entire layer-materialization pipeline —
+`STRATA_PRELOAD_MARGIN`, the four `StreamCell` layer fields, the
+`layer_changed` signal, `_on_strata_changed`, `_prewarm_upcoming_layers`,
+`_prewarm_layer`, `_request_layer`, `_pump_layers`, `_set_silhouette_segment`,
+`_find_layer_placeholder`, and the `"Layer" + strata` naming contract (663 ->
+497 lines). **Untouched:** the cell state machine, `_packed_cache`,
+`MAX_CONCURRENT_LOADS`, `INSTANTIATION_BUDGET_PER_FRAME`, the silhouette and
+content rings.
+
+One deliberate behaviour change: a block's silhouette is now hidden wholesale
+when its content goes ACTIVE, exactly as a ground tile's already was. Before,
+a block hid its silhouette one `Mesh<StrataName>` segment at a time, per
+materialized layer; with no layers there is nothing to hide per segment, and
+leaving it alone would draw silhouette and content at once.
+
+Also stripped: `BlockData.strata_ids`, the strata column and `layer_changed`
+subscription in `stream_debug_panel.gd`, strata comments in
+`environment_lighting_system.gd` and `isometric_camera_state.gd`. Deleted
+`core/world/strata_geometry.gd` — its only consumers are the two editor
+interior builders, handled in the next commit.
+
+**Recorded in advance, per the brief's stop line:** removing
+`BlockData.strata_ids` makes the existing `data/world_data.tres` not fully
+readable — Godot will report an unknown property on every block. The data is
+regenerated at step 5 anyway; the file was never wrong, the field is gone.
+
+*Страты удалены из рантайма: ушёл весь конвейер материализации слоёв в
+`StreamingSystems` и вся математика страт в `WorldSystems`, потолок 3200 ->
+1000. Силуэт квартала теперь гасится целиком, как у плиты, — посегментно
+гасить нечего. Заранее зафиксировано: старый `world_data.tres` будет ругаться
+на `strata_ids`, это ожидаемо до перегенерации на шаге 5.*
+- `core/world/world_systems.gd`, `core/world/streaming_systems.gd`, `core/world/strata_geometry.gd` (deleted), `world/resources/block_data.gd`, `ui/debug/stream_debug_panel.gd`, `camera/isometric_camera_state.gd`, `core/world/world_environment_systems/environment_lighting_system.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - Doc sync after island rescope + H5 close
 
 - `planned_scope.md`: removed false claim that EquipmentComponent does not exist; H5 moved out of planned scope
