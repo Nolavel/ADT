@@ -73,7 +73,7 @@ deliberately.
 | `core/` | Autoloads and systems: `PlayerState`, `InputSystems`, streaming, transport |
 | `player/` | Player scene and components (interact, inventory, stamina, nav) |
 | `camera/` | Camera host + per-mode components (on foot / hover / transit) |
-| `world/` | `world.tscn`, block and ground-tile content and silhouettes |
+| `world/` | `world.tscn`, the Aogashima island, block content and silhouettes |
 | `tools/` | Editor tooling, incl. the greybox block generator |
 | `data/` | Data resources: `world_data.tres`, items |
 | `docs/` | Style guide, planned scope, current horizon |

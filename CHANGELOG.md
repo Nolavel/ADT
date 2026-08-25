@@ -12,6 +12,104 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Sea level is Y 45, and the documents say so
+
+**The water plane and the terrain shader disagreed about where the sea is.**
+`WaterSystem` sits at Y 45 in `aogashima_island.tscn`; the shader's
+`sea_level` was 0, so it painted 45 m of submerged terrain as land instead of
+coastal rock, and its `coast_mask` tinted a band nobody could see.
+
+The water is right, and the heightmap settles it: measured off the baked
+collision, the island above Y 45 is **2543 × 2570 m**; above Y 0 it is
+**3192 × 3124 m**. The brief asks for 2500 on the short side. The water plane
+is a deliberate choice that drowns the flat coastal shelf and leaves cliffs —
+exactly what the brief describes. `shader_parameter/sea_level` is now 45.
+
+**Documents caught up with the tile grid's removal**, in the same pass:
+`docs/architecture/world_streaming.md` (the spawn paragraph still described
+the `Y_CITY_ZONE_TOP` clamp that was removed two commits ago — it now says
+spawn is a point on the terrain, and which of the two places that store it
+wins), `ARCHITECTURE.md` (Ring 0 no longer holds nine tile silhouettes; one
+distance metric instead of two), `docs/CONTRIBUTING.md`, `readme.md`,
+`CLAUDE.md`'s index row.
+
+`docs/scope_horizon.md` now marks the state of each of the brief's six steps
+rather than just listing them: 1, 2, 4 and 6 done, 3 done differently by
+decision, **5 open and outstanding** — the building generator is the only
+thing left before the island transition can close.
+
+*Вода в сцене стоит на Y 45, а шейдер считал море за 0 — 45 м затопленного
+рельефа красились сушей. Права вода: при 45 остров 2543 × 2570 м, ровно то,
+что просит ТЗ. Заодно документы догнали снятие сетки: абзац про зажим спавна
+описывал зажим, снятый двумя коммитами раньше, а `scope_horizon` теперь
+показывает состояние каждого шага ТЗ — открыт только генератор застройки.*
+- `world/aogashima/aogashima_island.tscn`, `docs/architecture/world_streaming.md`, `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`, `readme.md`, `docs/scope_horizon.md`, `docs/island_rescope_brief.md`, `CLAUDE.md`
+
+---
+
+## 2026-08-25 - The 3x3 ground-tile grid is gone; the island is the ground
+
+Found by reviewing the merge, and bigger than it reads: **the nine ground tiles
+were a walkable seabed under the whole ocean.** Each `gt_silhouette_*` is a
+`BoxShape3D` 2200 x 10 x 2200 on `collision_layer = 3`, group `floor`, Ring 0 —
+permanent, never unloaded — with its top face at Y 0. Nine of them make a solid
+**6600 x 6600 m** slab, 1550 m wider than the island's own map on every side.
+The island was standing on a concrete plate the size of the old city, and 40
+greybox towers stood in the sea around it.
+
+The brief's first decided line is *"one island instead of a 3x3 tile grid"*.
+
+**Code.** `WorldSystems` lost `GROUND_TILE_SIZE`, `GROUND_GRID_SIZE`,
+`CITY_ZONE_SIZE`, `get_tile_id/position/coords()`, `is_tile_inside_grid()`,
+`current_tile`, `tile_changed`, and `update_player_position()` — which had
+nothing left to do. `StreamingSystems` lost `CellType` entirely (one kind of
+cell now), `TILE_LOAD_RING`/`TILE_UNLOAD_RING`, `_tile_ring()`, the `coords`
+field, and the two-branch distance metric; `cell_state_changed` dropped its
+`cell_type` argument. `WorldData.ground_tiles` and `GroundTileData` are
+deleted, as is the 3x3 export loop in `map_source.gd` and the tile line in the
+debug panel.
+
+`WORLD_ZONE_SIZE` 9600 -> **3500**: the world boundary is now exactly the
+terrain plane's extent, because past it there is no terrain and no collision,
+only the ocean plane.
+
+**Data.** The nine tile entries are gone. The 40 towers were **replanted**: the
+whole layout is scaled 0.33 toward the origin, which maps the old 6600 m city
+onto the island's ~2400 m of dry land and keeps the relative arrangement
+recognisable. 33 survive; 7 landed on Maruyama's cone (the brief leaves it
+unbuilt) and 1 was still at sea, and those are dropped. Y comes from the island
+scene's own baked `HeightMapShape3D`, so collision and visual agree by
+construction. Dead `strata_ids` dictionaries were cleared out of every block
+while they were open. Provisional — step 5 replaces all of it.
+
+**A spawn bug this uncovered, from my own earlier commit.** `world.gd` line 112
+overwrites `WorldSystems.spawn_point` with `world_data.spawn_point` whenever
+the latter is non-zero. It was `(250.8, 0, -277)`, so the spawn I placed on the
+terrain two commits ago never took effect at runtime — the player would have
+appeared at Y 0, inside the volcano. Both now read the same point on the caldera
+floor, and the autoload's comment says which one actually wins. `featured_3tower`
+had no `position` line at all (so, `Vector3.ZERO` — inside Maruyama's summit)
+and was given one on the inner slope.
+
+The nine tile scenes under `world/content/ground_tiles/` and
+`world/silhouettes/ground_tiles/` are **left on disk**, orphaned: nothing loads
+them, but editor scenes may still reference them and a blind `git rm` across
+scenes is not something to do twice in one session.
+`tools/block_generator/block_placer.gd` keeps its own copies of the grid
+constants and now says in its header that running it is pointless — it would
+place blocks in the sea at Y 0; step 5's generator replaces it.
+
+*Сетка 3×3 снята. Девять плит были ходимым дном 6600 × 6600 под всем морем —
+остров стоял на бетонной плите размером с прежний город. Ушли оба типа ячейки,
+кольцевая метрика и вся тайловая математика; граница мира 9600 -> 3500 = край
+карты. 40 башен пересажены на остров сжатием раскладки в 0.33, 33 выжили.
+Попутно вскрылось: `world.gd` перезаписывал спавн значением из
+`world_data.tres` с Y 0, то есть правка спавна из позавчерашнего коммита в игре
+не работала.*
+- `core/world/world_systems.gd`, `core/world/streaming_systems.gd`, `world/resources/world_data.gd`, `world/resources/ground_tile_data.gd` (deleted), `core/map_source/map_source.gd`, `ui/debug/stream_debug_panel.gd`, `core/world/world_border_guard.gd`, `tools/block_generator/block_placer.gd`, `world/world.gd`, `data/world_data.tres`
+
+---
+
 ## 2026-08-25 - Documents catch up, and CLAUDE.md is cut into pieces (island step 6)
 
 Out of the brief's order — step 6 comes after 3-5 — because 3-5 need an open

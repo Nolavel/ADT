@@ -25,7 +25,7 @@ instead of guessing**. Those headers document invariants, not trivia.
 
 Safe to pick up without deep context:
 
-- **Block and ground-tile content.** Assemble scenes against the existing
+- **Block content.** Assemble scenes against the existing
   data contract (see below). Verified by running the game. Fully parallel.
 - **Audio.** No audio system exists yet — a clean, self-contained seam.
 - **UI widgets** under `ui/widgets/` — self-contained.
