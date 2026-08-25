@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://dgdycarheixri" path="res://core/map_source/map_camera.gd" id="6_tg4so"]
 [ext_resource type="Script" uid="uid://bq552rdni7eh3" path="res://core/map_source/map_cursor.gd" id="7_xxtvx"]
 [ext_resource type="PackedScene" uid="uid://dhq5k04cppjic" path="res://world/silhouettes/blocks/test/tower_001_silhouette.tscn" id="32_c4gy1"]
+[ext_resource type="PackedScene" uid="uid://dfgnksifqyewk" path="res://world/aogashima/aogashima_island.tscn" id="99_island"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6w48d"]
 albedo_texture = ExtResource("2_ovdp1")
@@ -69,17 +70,7 @@ size = Vector3(3200, 3200, 3200)
 [node name="MapSource" type="Node3D" unique_id=1797648371]
 script = ExtResource("1_upnkk")
 
-[node name="CityZone" type="MeshInstance3D" parent="." unique_id=1797805020]
-material_override = SubResource("StandardMaterial3D_6w48d")
-mesh = SubResource("PlaneMesh_n58pn")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="CityZone" unique_id=143640666 groups=["floor"]]
-collision_layer = 3
-collision_mask = 3
-physics_material_override = SubResource("PhysicsMaterial_6w48d")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CityZone/StaticBody3D" unique_id=1177887517]
-shape = SubResource("ConvexPolygonShape3D_agfqh")
+[node name="AogashimaIsland" parent="." instance=ExtResource("99_island")]
 
 [node name="WorldZone" type="MeshInstance3D" parent="." unique_id=1015173098]
 mesh = SubResource("PlaneMesh_6w48d")

@@ -28,7 +28,6 @@ const SPAWN_MARKER_RADIUS: float = 50.0
 
 # ── Ссылки на ноды ───────────────────────────────────────────────────────────
 
-@onready var city_zone_body: StaticBody3D = $CityZone/StaticBody3D
 
 
 @onready var district_A1: 	Area3D = $Districts/A1
