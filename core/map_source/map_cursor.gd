@@ -31,10 +31,6 @@ const RAY_COLLISION_MASK: int   = 1
 # Пути: MapCursor → CameraSource → MapSource (корень)
 # Значит ".." = CameraSource, "../.." = MapSource
 
-@onready var strata_doggerland: Area3D = $"../../../STRATA_Doggerland"
-@onready var strata_manifold:   Area3D = $"../../../STRATA_Manifold"
-@onready var strata_glare:      Area3D = $"../../../STRATA_Glare"
-
 @onready var district_A1: Area3D = $"../../../Districts/A1"
 @onready var district_A2: Area3D = $"../../../Districts/A2"
 @onready var district_A3: Area3D = $"../../../Districts/A3"
@@ -51,7 +47,6 @@ const RAY_COLLISION_MASK: int   = 1
 
 # ── Словари Area3D → читаемые имена ──────────────────────────────────────────
 
-var _strata_map:   Dictionary = {}
 var _district_map: Dictionary = {}
 
 
@@ -67,7 +62,6 @@ var _hit_point:    Vector3     = Vector3.ZERO
 var _has_hit:      bool        = false
 var _hovered_block: BlockBase = null   # был SkyscraperMarker
 var _hovered_id:   String      = ""     # был _hovered_sc (sc_id)
-var _tower_strata: String      = ""
 
 
 # ── Жизненный цикл ───────────────────────────────────────────────────────────
@@ -107,7 +101,6 @@ func _cast_ray() -> void:
 		_hit_point    = Vector3.ZERO
 		_hovered_id   = ""
 		_hovered_block = null
-		_tower_strata  = ""
 		return
 
 	_has_hit   = true
@@ -115,7 +108,6 @@ func _cast_ray() -> void:
 
 	_hovered_id    = ""
 	_hovered_block = null
-	_tower_strata  = ""
 
 	var collider = result.get("collider")
 
@@ -126,10 +118,6 @@ func _cast_ray() -> void:
 
 		if _hovered_block != null:
 			_hovered_id = _hovered_block.block_name   # был skyscraper_name
-
-		# Опциональный мета-тег на коллайдере для имени страты башни
-		if collider.has_meta("strata_name"):
-			_tower_strata = str(collider.get_meta("strata_name"))
 
 
 ## Поднимаемся по иерархии нод пока не найдём TowerMarker или не достигнем корня.
@@ -152,13 +140,6 @@ func _update_hud() -> void:
 		_label_info.text = "🗺  MAP CURSOR\n──────────────────────\nнет данных\n(курсор вне геометрии)"
 		return
 
-	# Страта по точке попадания
-	var strata_name := "—"
-	for area: Area3D in _strata_map:
-		if _point_in_area(area, _hit_point):
-			strata_name = _strata_map[area]
-			break
-
 	# Район по точке попадания
 	var district_name := "—"
 	for area: Area3D in _district_map:
@@ -172,7 +153,6 @@ func _update_hud() -> void:
 	var lines: Array[String] = []
 	lines.append("🗺  MAP CURSOR")
 	lines.append("──────────────────────")
-	lines.append("Страта:  %s" % strata_name)
 	lines.append("Район:   %s" % district_name)
 
 	if _hovered_block != null:
@@ -187,9 +167,6 @@ func _update_hud() -> void:
 	lines.append("Высота курсора: %.0f м" % height)
 	lines.append("──────────────────────")
 	lines.append("X: %.0f  Z: %.0f" % [_hit_point.x, _hit_point.z])
-
-	if _tower_strata != "":
-		lines.append("Слой башни: %s" % _tower_strata)
 
 	_label_info.text = "\n".join(lines)
 
@@ -223,11 +200,6 @@ func _point_in_area(area: Area3D, point: Vector3) -> bool:
 # ── Заполнение словарей ───────────────────────────────────────────────────────
 
 func _fill_area_maps() -> void:
-	_strata_map = {}
-	if is_instance_valid(strata_doggerland): _strata_map[strata_doggerland] = "Doggerland"
-	if is_instance_valid(strata_manifold):   _strata_map[strata_manifold]   = "Manifold"
-	if is_instance_valid(strata_glare):      _strata_map[strata_glare]      = "Glare"
-
 	_district_map = {}
 	if is_instance_valid(district_A1): _district_map[district_A1] = "A1"
 	if is_instance_valid(district_A2): _district_map[district_A2] = "A2"
@@ -282,22 +254,9 @@ func _build_hud() -> void:
 
 # ── Debug ─────────────────────────────────────────────────────────────────────
 
-## Раскомментировать вызов в _ready() для диагностики AABB страт и районов.
+## Раскомментировать вызов в _ready() для диагностики AABB районов.
 func debug_dump_world() -> void:
 	print("\n=== [MapCursor] DEBUG DUMP ===")
-
-	for area: Area3D in _strata_map:
-		for child in area.get_children():
-			if child is CollisionShape3D:
-				var shape := (child as CollisionShape3D).shape
-				if shape is BoxShape3D:
-					var box  := shape as BoxShape3D
-					var half := box.size * 0.5
-					var ctr  := (child as CollisionShape3D).global_transform.origin
-					print("STRATA [%s]: center=%s  size=%s  Y=[%.0f..%.0f]" % [
-						_strata_map[area], ctr, box.size,
-						ctr.y - half.y, ctr.y + half.y
-					])
 
 	for area: Area3D in _district_map:
 		for child in area.get_children():

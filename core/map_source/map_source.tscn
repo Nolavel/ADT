@@ -36,15 +36,6 @@
 [ext_resource type="PackedScene" uid="uid://dwkdgbm35pljh" path="res://world/silhouettes/blocks/greybox/block_gbx_003_silhouette.tscn" id="31_sahta"]
 [ext_resource type="PackedScene" uid="uid://dhq5k04cppjic" path="res://world/silhouettes/blocks/test/tower_001_silhouette.tscn" id="32_c4gy1"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_nqtne"]
-size = Vector3(9600, 1000, 9600)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_6w48d"]
-size = Vector3(9600, 1000, 9600)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_agfqh"]
-size = Vector3(9600, 1200, 9600)
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6w48d"]
 albedo_texture = ExtResource("2_ovdp1")
 
@@ -104,29 +95,6 @@ size = Vector3(3200, 3200, 3200)
 
 [node name="MapSource" type="Node3D" unique_id=1797648371]
 script = ExtResource("1_upnkk")
-
-[node name="STRATA_Doggerland" type="Area3D" parent="." unique_id=1787207308 groups=["strata"]]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="STRATA_Doggerland" unique_id=1663376358]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
-shape = SubResource("BoxShape3D_nqtne")
-debug_color = Color(7.218552, 18.892157, 0, 0.41960785)
-
-[node name="STRATA_Manifold" type="Area3D" parent="." unique_id=659357873 groups=["strata"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 500, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="STRATA_Manifold" unique_id=1989960737]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1000, 0)
-shape = SubResource("BoxShape3D_6w48d")
-debug_color = Color(1.1297288, 0, 18.892157, 0.41960785)
-
-[node name="STRATA_Glare" type="Area3D" parent="." unique_id=1742562655 groups=["strata"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1000, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="STRATA_Glare" unique_id=1630839451]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1600, 0)
-shape = SubResource("BoxShape3D_agfqh")
-debug_color = Color(0, 18.892157, 13.504337, 0.41960785)
 
 [node name="CityZone" type="MeshInstance3D" parent="." unique_id=1797805020]
 material_override = SubResource("StandardMaterial3D_6w48d")
@@ -621,7 +589,6 @@ silhouette_scene_path = "res://world/silhouettes/blocks/test/tower_001_silhouett
 
 [node name="SilhouettePreview" type="Node3D" parent="BLOCKS/tower_001" unique_id=450093685 instance=ExtResource("32_c4gy1")]
 metadata/gbx_size = Vector3(400, 3000, 400)
-metadata/gbx_strata_top = "Glare"
 metadata/gbx_kind = "silhouette"
 
 [node name="Spawner" type="Node3D" parent="." unique_id=221293653]

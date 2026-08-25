@@ -30,9 +30,6 @@ const SPAWN_MARKER_RADIUS: float = 50.0
 
 @onready var city_zone_body: StaticBody3D = $CityZone/StaticBody3D
 
-@onready var strata_doggerland: Area3D = $STRATA_Doggerland
-@onready var strata_manifold:   Area3D = $STRATA_Manifold
-@onready var strata_glare:      Area3D = $STRATA_Glare
 
 @onready var district_A1: 	Area3D = $Districts/A1
 @onready var district_A2: 	Area3D = $Districts/A2
@@ -114,26 +111,19 @@ func snap_to_city_zone(node: Node3D, height: float) -> void:
 
 ## Зарегистрировать башню вручную (для создания через код).
 func register_block(b_id: String, node: Node3D, height: float, district: String) -> void:
-	var strata := _get_strata_for_height(height)
-
 	var data := {
 		"id":        b_id,
 		"position":  [node.global_position.x, node.global_position.y, node.global_position.z],
 		"height":    height,
 		"district":  district,
 		"scene_path": "",
-		"strata_ids": {},
 		"silhouette_scene_path": "",
 	}
 
-	for stratum in strata:
-		var suffix := _strata_suffix(stratum)
-		data["strata_ids"][stratum] = "%s-%s" % [b_id, suffix]
-
 	_block_data[b_id] = data
 
-	print("[MapSource] 🏙 Registered tower: %s  pos=%s  h=%dm  strata=%s" % [
-		b_id, node.global_position, int(height), strata])
+	print("[MapSource] 🏙 Registered tower: %s  pos=%s  h=%dm" % [
+		b_id, node.global_position, int(height)])
 
 
 ## Экспортировать все данные в WorldData.tres
@@ -151,7 +141,6 @@ func export_data() -> void:
 		bd.district = dict["district"]
 		bd.content_scene_path    = dict["scene_path"]
 		bd.silhouette_scene_path = dict.get("silhouette_scene_path", "")
-		bd.strata_ids = dict["strata_ids"]
 		world.blocks.append(bd)
 		
 	# ── Плиты земли ─────────────────────────────────────────────────────────
@@ -285,30 +274,6 @@ func _commit_spawn_point() -> void:
 	print("[MapSource] ✅ Spawn point set and exported: ", spawn)
 
 
-
-
-# ── Страты ───────────────────────────────────────────────────────────────────
-
-func _get_strata_for_height(height: float) -> Array[String]:
-	var result: Array[String] = []
-	var strata_ranges := {
-		"doggerland": [0.0,    500.0],
-		"manifold":   [500.0,  1000.0],
-		"glare":      [1000.0, 1700.0],
-	}
-	for stratum in strata_ranges:
-		var range_min: float = strata_ranges[stratum][0]
-		if height > range_min:
-			result.append(stratum)
-	return result
-
-
-func _strata_suffix(stratum: String) -> String:
-	match stratum:
-		"doggerland": return "DG"
-		"manifold":   return "MF"
-		"glare":      return "GL"
-	return "XX"
 
 
 # ── HUD ──────────────────────────────────────────────────────────────────────

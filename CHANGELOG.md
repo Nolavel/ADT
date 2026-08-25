@@ -12,6 +12,63 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Strata removed from the editor tools (island step 1, part 2)
+
+The runtime lost strata in the previous commit; these are the tools that fed
+it. Stan's call was to keep the interior builders and cut strata out of them
+rather than delete them.
+
+**Tiers, not strata.** All three builders needed the same three things from
+`StrataGeometry`: where floors are allowed, how wide the dead band is, and
+which deck profile to use. Without strata that collapses to *one tower, one
+playable height*, split into tiers:
+
+- `tower_builder.gd` — the three authored mesh pairs (350/300/250) were bound
+  to Doggerland/Manifold/Glare and shipped as three scenes behind
+  `InstancePlaceholder`. They are now three **tiers of one tower**, built
+  straight into a single content scene. The authored taper is kept — it is
+  good art and had nothing to do with strata. `TOWER_TOP` 3000 -> 1000, the
+  island ceiling.
+- `test_block_builder.gd` — same conversion, per tower: each tower's own
+  playable height is split into `TIER_PROFILES.size()` tiers.
+- `block_library_generator.gd` — had its own duplicated `STRATA_*_TOP`
+  constants. A block is now one solid volume; the silhouette is one mesh
+  instead of one `Mesh<StrataName>` segment per stratum. Height range
+  3200-ish -> `HEIGHT_RANGE` 30..500 m, which is what the island actually
+  holds.
+
+`TECH_BAND` is 6 m, not the old 100 m. That number came from a stratum 1000 m
+tall; island towers start at 30 m, where two 100 m dead bands would leave
+nothing. Six metres is about one floor and is meant to be caught by eye.
+
+`StrataDeckProfile` -> **`DeckProfile`** (`world/resources/deck_profile.gd`,
+`data/deck_profiles/`). The A/B/C pattern names keep their meaning — warren,
+utilitarian, atrium — but a profile is now named next to the tier it belongs
+to instead of being derived from a stratum. Uids are unchanged, so the three
+`.tres` keep their identity.
+
+`map_source.gd`/`map_cursor.gd` lost `strata_ids`, the height->strata mapping,
+the DG/MF/GL suffixes and the strata line in the cursor overlay; the three
+`STRATA_*` `Area3D` nodes and their box shapes are gone from
+`map_source.tscn`.
+
+**Expected on the next run, and not a bug:** the 40 existing greybox blocks
+still carry `Layer*` placeholders and `Mesh<StrataName>` segments in their
+`.tscn` files. Nothing materializes those any more, so a block renders as its
+thin `Shared` spine until the library is regenerated. Same for the 84 baked
+`gbx_strata_top` metadata entries. All of it is generated data, regenerated at
+step 5; the generators above already emit the new shape.
+
+*Страты вырезаны из редакторных тулз. Три меша башни стали тремя ЯРУСАМИ
+одной башни — авторская ступенчатость сохранена, она к стратам отношения не
+имела. `TECH_BAND` 6 м вместо 100: сотня была рассчитана на страту в 1000 м, а
+на острове башни от 30 м. `StrataDeckProfile` -> `DeckProfile`. Важно: старые
+40 greybox-блоков до перегенерации будут выглядеть тонкими стержнями —
+объём жил в слоях, которые больше никто не материализует.*
+- `tools/block_generator/tower_builder.gd`, `test_block_builder.gd`, `block_library_generator.gd`, `core/map_source/map_source.gd`, `map_cursor.gd`, `map_source.tscn`, `world/resources/deck_profile.gd` (renamed), `data/deck_profiles/*.tres` (moved)
+
+---
+
 ## 2026-08-25 - Strata removed from the runtime (island step 1)
 
 `docs/island_rescope_brief.md` step 1. First because it is a deletion: the
