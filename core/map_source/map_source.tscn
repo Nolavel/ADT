@@ -1,25 +1,26 @@
 [gd_scene format=3 uid="uid://dnttjixnfgoka"]
 
 [ext_resource type="Script" uid="uid://yq6u1mda12pc" path="res://core/map_source/map_source.gd" id="1_upnkk"]
-[ext_resource type="Texture2D" uid="uid://cof4owpdyyabm" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_05.png" id="2_ovdp1"]
 [ext_resource type="Texture2D" uid="uid://duon8olb0ugbb" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_07.png" id="3_moi5e"]
 [ext_resource type="Script" uid="uid://cr4yuevfslinn" path="res://core/map_source/blockbase.gd" id="5_753aq"]
 [ext_resource type="Script" uid="uid://45ki68uq8hm8" path="res://core/map_source/spawner.gd" id="5_ikph1"]
+[ext_resource type="PackedScene" uid="uid://cr43i8kkrs5ia" path="res://world/silhouettes/blocks/city/twr_48x48_h800_silhouette.tscn" id="6_mxhxe"]
 [ext_resource type="Script" uid="uid://dgdycarheixri" path="res://core/map_source/map_camera.gd" id="6_tg4so"]
+[ext_resource type="PackedScene" uid="uid://dxw0gtvrsp8xl" path="res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn" id="7_pcqp3"]
 [ext_resource type="Script" uid="uid://bq552rdni7eh3" path="res://core/map_source/map_cursor.gd" id="7_xxtvx"]
+[ext_resource type="PackedScene" uid="uid://c2aytp1moo7hs" path="res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn" id="8_5d4jm"]
+[ext_resource type="PackedScene" uid="uid://vj2ln6wwyx2v" path="res://world/silhouettes/blocks/city/twr_48x48_h440_silhouette.tscn" id="9_32dob"]
+[ext_resource type="PackedScene" uid="uid://cempe7ooh7uv5" path="res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn" id="10_supam"]
+[ext_resource type="PackedScene" uid="uid://dcq634e56n436" path="res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn" id="11_jyqhh"]
+[ext_resource type="PackedScene" uid="uid://dotsphvipplko" path="res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn" id="12_8j34d"]
+[ext_resource type="PackedScene" uid="uid://b417wo62owp7g" path="res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn" id="13_3xern"]
+[ext_resource type="PackedScene" uid="uid://dbob0jefpik8f" path="res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn" id="14_qsvi7"]
+[ext_resource type="PackedScene" uid="uid://bnrnkyi5mhwbw" path="res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn" id="15_bobmq"]
+[ext_resource type="PackedScene" uid="uid://bl6psadv7cn8p" path="res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn" id="16_l1rgy"]
+[ext_resource type="PackedScene" uid="uid://b4svgyuf08ds6" path="res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn" id="17_7x3ti"]
+[ext_resource type="PackedScene" uid="uid://st0e22gwcoc1" path="res://world/silhouettes/blocks/city/twr_48x48_h380_silhouette.tscn" id="18_sq2df"]
 [ext_resource type="PackedScene" uid="uid://dhq5k04cppjic" path="res://world/silhouettes/blocks/test/tower_001_silhouette.tscn" id="32_c4gy1"]
 [ext_resource type="PackedScene" uid="uid://dfgnksifqyewk" path="res://world/aogashima/aogashima_island.tscn" id="99_island"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6w48d"]
-albedo_texture = ExtResource("2_ovdp1")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_n58pn"]
-size = Vector2(6600, 6600)
-
-[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_6w48d"]
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_agfqh"]
-points = PackedVector3Array(-3300, 0, -3300, -3300, 0, 3300.0005, 3300.0005, 0, -3300, 3300.0005, 0, 3300.0005)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nqtne"]
 albedo_texture = ExtResource("3_moi5e")
@@ -70,7 +71,7 @@ size = Vector3(3200, 3200, 3200)
 [node name="MapSource" type="Node3D" unique_id=1797648371]
 script = ExtResource("1_upnkk")
 
-[node name="AogashimaIsland" parent="." instance=ExtResource("99_island")]
+[node name="AogashimaIsland" parent="." unique_id=417235779 instance=ExtResource("99_island")]
 
 [node name="WorldZone" type="MeshInstance3D" parent="." unique_id=1015173098]
 mesh = SubResource("PlaneMesh_6w48d")
@@ -102,6 +103,1969 @@ scene_path = "res://world/content/blocks/test/tower_001/tower_001.tscn"
 silhouette_scene_path = "res://world/silhouettes/blocks/test/tower_001_silhouette.tscn"
 
 [node name="SilhouettePreview" parent="BLOCKS/tower_001" unique_id=450093685 instance=ExtResource("32_c4gy1")]
+
+[node name="GBX_landmark" type="Node3D" parent="BLOCKS" unique_id=1263124368]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4264069, 220.15785, 37.573593)
+script = ExtResource("5_753aq")
+id = "landmark"
+block_name = "twr_48x48_h800"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h800.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h800_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_landmark" unique_id=214532229 instance=ExtResource("6_mxhxe")]
+metadata/gbx_size = Vector3(48, 800, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_001" type="Node3D" parent="BLOCKS" unique_id=1002257135]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 121.53744, 216.23628, 102.634834)
+script = ExtResource("5_753aq")
+id = "cty_001"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_001" unique_id=1967905764 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_002" type="Node3D" parent="BLOCKS" unique_id=575141462]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.448729, 204.47157, 176.55284)
+script = ExtResource("5_753aq")
+id = "cty_002"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_002" unique_id=1919710484 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_003" type="Node3D" parent="BLOCKS" unique_id=1329581640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -107.21792, 180.94215, 130.41077)
+script = ExtResource("5_753aq")
+id = "cty_003"
+block_name = "twr_48x48_h440"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h440.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h440_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_003" unique_id=2141795277 instance=ExtResource("9_32dob")]
+metadata/gbx_size = Vector3(48, 440, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_004" type="Node3D" parent="BLOCKS" unique_id=928507540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -138.35826, 171.13824, 71.07779)
+script = ExtResource("5_753aq")
+id = "cty_004"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_004" unique_id=1295263903 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_005" type="Node3D" parent="BLOCKS" unique_id=3357363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.448729, 175.05981, -101.405655)
+script = ExtResource("5_753aq")
+id = "cty_005"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_005" unique_id=602910917 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_006" type="Node3D" parent="BLOCKS" unique_id=223723330]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 121.53744, 198.58922, -27.487648)
+script = ExtResource("5_753aq")
+id = "cty_006"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_006" unique_id=625933238 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_007" type="Node3D" parent="BLOCKS" unique_id=1854802370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 207.88698, 163.2951, 172.7338)
+script = ExtResource("5_753aq")
+id = "cty_007"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_007" unique_id=1973550473 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_008" type="Node3D" parent="BLOCKS" unique_id=298121594]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 161.28877, 169.17746, 226.51099)
+script = ExtResource("5_753aq")
+id = "cty_008"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_008" unique_id=1914410774 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_009" type="Node3D" parent="BLOCKS" unique_id=1834203435]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -166.14159, 143.68726, 226.51099)
+script = ExtResource("5_753aq")
+id = "cty_009"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_009" unique_id=1265205985 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_010" type="Node3D" parent="BLOCKS" unique_id=1953175639]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -212.73979, 133.88333, 172.7338)
+script = ExtResource("5_753aq")
+id = "cty_010"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_010" unique_id=472306752 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_011" type="Node3D" parent="BLOCKS" unique_id=1449206989]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -242.29965, 126.0402, -32.859543)
+script = ExtResource("5_753aq")
+id = "cty_011"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_011" unique_id=1547128771 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_012" type="Node3D" parent="BLOCKS" unique_id=843772623]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -212.73979, 120.157845, -97.58661)
+script = ExtResource("5_753aq")
+id = "cty_012"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_012" unique_id=1070429319 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_013" type="Node3D" parent="BLOCKS" unique_id=119278717]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -166.14159, 122.11863, -151.3638)
+script = ExtResource("5_753aq")
+id = "cty_013"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_013" unique_id=1349249684 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_014" type="Node3D" parent="BLOCKS" unique_id=153420545]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.005116, 118.19706, -209.88176)
+script = ExtResource("5_753aq")
+id = "cty_014"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_014" unique_id=563932959 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_015" type="Node3D" parent="BLOCKS" unique_id=805809577]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 161.28877, 131.92255, -151.3638)
+script = ExtResource("5_753aq")
+id = "cty_015"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_015" unique_id=1765058968 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_016" type="Node3D" parent="BLOCKS" unique_id=1288886433]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 207.88698, 141.72647, -97.58661)
+script = ExtResource("5_753aq")
+id = "cty_016"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_016" unique_id=1342018807 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_017" type="Node3D" parent="BLOCKS" unique_id=1228365820]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 237.44684, 147.60883, -32.859543)
+script = ExtResource("5_753aq")
+id = "cty_017"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_017" unique_id=37181997 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_018" type="Node3D" parent="BLOCKS" unique_id=1789936612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 350.6563, 122.11863, 107.80611)
+script = ExtResource("5_753aq")
+id = "cty_018"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_018" unique_id=1727423657 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_019" type="Node3D" parent="BLOCKS" unique_id=567487017]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 330.17023, 124.079414, 175.33963)
+script = ExtResource("5_753aq")
+id = "cty_019"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_019" unique_id=1451641293 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_020" type="Node3D" parent="BLOCKS" unique_id=880735741]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 296.90265, 118.19706, 237.57889)
+script = ExtResource("5_753aq")
+id = "cty_020"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_020" unique_id=1602854793 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_021" type="Node3D" parent="BLOCKS" unique_id=1767029611]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 252.13203, 126.0402, 292.13202)
+script = ExtResource("5_753aq")
+id = "cty_021"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_021" unique_id=1476447828 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_022" type="Node3D" parent="BLOCKS" unique_id=1588562122]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135.33963, 124.079414, 370.17023)
+script = ExtResource("5_753aq")
+id = "cty_022"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_022" unique_id=116708408 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_023" type="Node3D" parent="BLOCKS" unique_id=690062446]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.80611, 114.27549, 390.6563)
+script = ExtResource("5_753aq")
+id = "cty_023"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_023" unique_id=1051649471 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_024" type="Node3D" parent="BLOCKS" unique_id=270933182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4264069, 124.079414, 397.5736)
+script = ExtResource("5_753aq")
+id = "cty_024"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_024" unique_id=1934919671 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_025" type="Node3D" parent="BLOCKS" unique_id=961016105]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -72.65892, 118.19706, 390.6563)
+script = ExtResource("5_753aq")
+id = "cty_025"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_025" unique_id=1289392074 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_026" type="Node3D" parent="BLOCKS" unique_id=922749604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140.19244, 106.43236, 370.17023)
+script = ExtResource("5_753aq")
+id = "cty_026"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_026" unique_id=934481916 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_027" type="Node3D" parent="BLOCKS" unique_id=1988630404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -256.98486, 110.35393, 292.13202)
+script = ExtResource("5_753aq")
+id = "cty_027"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_027" unique_id=828504238 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_028" type="Node3D" parent="BLOCKS" unique_id=1452123843]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -301.75543, 110.35393, 237.57889)
+script = ExtResource("5_753aq")
+id = "cty_028"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_028" unique_id=1047785897 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_029" type="Node3D" parent="BLOCKS" unique_id=363991164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -335.023, 104.47157, 175.33963)
+script = ExtResource("5_753aq")
+id = "cty_029"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_029" unique_id=232633664 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_030" type="Node3D" parent="BLOCKS" unique_id=424538624]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -355.5091, 108.39314, 107.80611)
+script = ExtResource("5_753aq")
+id = "cty_030"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_030" unique_id=1326013811 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_031" type="Node3D" parent="BLOCKS" unique_id=1152943709]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -355.5091, 114.27549, -32.65892)
+script = ExtResource("5_753aq")
+id = "cty_031"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_031" unique_id=181423205 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_032" type="Node3D" parent="BLOCKS" unique_id=1653714094]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -335.023, 108.39314, -100.192444)
+script = ExtResource("5_753aq")
+id = "cty_032"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_032" unique_id=1521124661 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_033" type="Node3D" parent="BLOCKS" unique_id=284081655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -301.75543, 102.51079, -162.4317)
+script = ExtResource("5_753aq")
+id = "cty_033"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_033" unique_id=1876154594 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_034" type="Node3D" parent="BLOCKS" unique_id=1104639941]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -256.98486, 110.35393, -216.98485)
+script = ExtResource("5_753aq")
+id = "cty_034"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_034" unique_id=437879949 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_035" type="Node3D" parent="BLOCKS" unique_id=1623863277]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140.19244, 112.31471, -295.023)
+script = ExtResource("5_753aq")
+id = "cty_035"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_035" unique_id=1021429888 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_036" type="Node3D" parent="BLOCKS" unique_id=385071301]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -72.65892, 116.236275, -315.5091)
+script = ExtResource("5_753aq")
+id = "cty_036"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_036" unique_id=575145275 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_037" type="Node3D" parent="BLOCKS" unique_id=1902669363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4264069, 108.39314, -322.4264)
+script = ExtResource("5_753aq")
+id = "cty_037"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_037" unique_id=1407230240 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_038" type="Node3D" parent="BLOCKS" unique_id=1805654897]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.80611, 108.39314, -315.5091)
+script = ExtResource("5_753aq")
+id = "cty_038"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_038" unique_id=1507071917 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_039" type="Node3D" parent="BLOCKS" unique_id=543067948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135.33963, 108.39314, -295.023)
+script = ExtResource("5_753aq")
+id = "cty_039"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_039" unique_id=1160341589 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_040" type="Node3D" parent="BLOCKS" unique_id=218972463]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 252.13203, 112.31471, -216.98485)
+script = ExtResource("5_753aq")
+id = "cty_040"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_040" unique_id=748335974 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_041" type="Node3D" parent="BLOCKS" unique_id=1107177847]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 296.90265, 110.35393, -162.4317)
+script = ExtResource("5_753aq")
+id = "cty_041"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_041" unique_id=2058099464 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_042" type="Node3D" parent="BLOCKS" unique_id=339172509]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 330.17023, 118.19706, -100.192444)
+script = ExtResource("5_753aq")
+id = "cty_042"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_042" unique_id=1808885452 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_043" type="Node3D" parent="BLOCKS" unique_id=234930683]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 350.6563, 118.19706, -32.65892)
+script = ExtResource("5_753aq")
+id = "cty_043"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_043" unique_id=234482458 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_044" type="Node3D" parent="BLOCKS" unique_id=903367054]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 462.3241, 110.35393, 107.62346)
+script = ExtResource("5_753aq")
+id = "cty_044"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_044" unique_id=1696318040 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_045" type="Node3D" parent="BLOCKS" unique_id=1125226362]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 446.6928, 106.43236, 176.10852)
+script = ExtResource("5_753aq")
+id = "cty_045"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_045" unique_id=720067573 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_046" type="Node3D" parent="BLOCKS" unique_id=1815892004]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 421.02893, 116.236275, 241.49895)
+script = ExtResource("5_753aq")
+id = "cty_046"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_046" unique_id=93758712 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_047" type="Node3D" parent="BLOCKS" unique_id=327891743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 385.90582, 106.43236, 302.33398)
+script = ExtResource("5_753aq")
+id = "cty_047"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_047" unique_id=598497499 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_048" type="Node3D" parent="BLOCKS" unique_id=591316134]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 342.10797, 114.27549, 357.25476)
+script = ExtResource("5_753aq")
+id = "cty_048"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_048" unique_id=1697549147 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_049" type="Node3D" parent="BLOCKS" unique_id=630014445]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 290.61377, 112.31471, 405.03442)
+script = ExtResource("5_753aq")
+id = "cty_049"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_049" unique_id=562076703 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_050" type="Node3D" parent="BLOCKS" unique_id=695318347]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 169.28387, 112.31471, 475.08423)
+script = ExtResource("5_753aq")
+id = "cty_050"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_050" unique_id=462171554 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_051" type="Node3D" parent="BLOCKS" unique_id=936758478]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102.15843, 116.236275, 495.78973)
+script = ExtResource("5_753aq")
+id = "cty_051"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_051" unique_id=101754428 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_052" type="Node3D" parent="BLOCKS" unique_id=264966804]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.696735, 118.19706, 506.2594)
+script = ExtResource("5_753aq")
+id = "cty_052"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_052" unique_id=1499059356 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_053" type="Node3D" parent="BLOCKS" unique_id=2030642412]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.54955, 112.31471, 506.2594)
+script = ExtResource("5_753aq")
+id = "cty_053"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_053" unique_id=1740928799 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_054" type="Node3D" parent="BLOCKS" unique_id=1575399389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -107.011246, 124.079414, 495.78973)
+script = ExtResource("5_753aq")
+id = "cty_054"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_054" unique_id=406041264 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_055" type="Node3D" parent="BLOCKS" unique_id=1103776119]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -174.13669, 108.39314, 475.08423)
+script = ExtResource("5_753aq")
+id = "cty_055"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_055" unique_id=2099205129 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_056" type="Node3D" parent="BLOCKS" unique_id=676721360]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -295.4666, 112.31471, 405.03442)
+script = ExtResource("5_753aq")
+id = "cty_056"
+block_name = "twr_48x48_h380"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h380.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h380_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_056" unique_id=52782960 instance=ExtResource("18_sq2df")]
+metadata/gbx_size = Vector3(48, 380, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_057" type="Node3D" parent="BLOCKS" unique_id=1333817768]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -346.96082, 112.31471, 357.25476)
+script = ExtResource("5_753aq")
+id = "cty_057"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_057" unique_id=719389449 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_058" type="Node3D" parent="BLOCKS" unique_id=111048557]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -390.7586, 108.39314, 302.33398)
+script = ExtResource("5_753aq")
+id = "cty_058"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_058" unique_id=1380286057 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_059" type="Node3D" parent="BLOCKS" unique_id=1736842066]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -425.88177, 102.51079, 241.49895)
+script = ExtResource("5_753aq")
+id = "cty_059"
+block_name = "twr_48x48_h380"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h380.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h380_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_059" unique_id=676411751 instance=ExtResource("18_sq2df")]
+metadata/gbx_size = Vector3(48, 380, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_060" type="Node3D" parent="BLOCKS" unique_id=778052072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -451.5456, 114.27549, 176.10852)
+script = ExtResource("5_753aq")
+id = "cty_060"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_060" unique_id=1174583146 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_061" type="Node3D" parent="BLOCKS" unique_id=1474148753]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -467.17688, 110.35393, 107.62346)
+script = ExtResource("5_753aq")
+id = "cty_061"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_061" unique_id=607083323 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_062" type="Node3D" parent="BLOCKS" unique_id=327288382]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -467.17688, 118.19706, -32.476273)
+script = ExtResource("5_753aq")
+id = "cty_062"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_062" unique_id=928655895 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_063" type="Node3D" parent="BLOCKS" unique_id=1962657303]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -451.5456, 114.27549, -100.961334)
+script = ExtResource("5_753aq")
+id = "cty_063"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_063" unique_id=1439062914 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_064" type="Node3D" parent="BLOCKS" unique_id=1794375853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -425.88177, 114.27549, -166.35176)
+script = ExtResource("5_753aq")
+id = "cty_064"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_064" unique_id=2006286552 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_065" type="Node3D" parent="BLOCKS" unique_id=1731870281]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -390.7586, 108.39314, -227.18681)
+script = ExtResource("5_753aq")
+id = "cty_065"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_065" unique_id=2068235416 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_066" type="Node3D" parent="BLOCKS" unique_id=1143147204]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -346.96082, 106.43236, -282.1076)
+script = ExtResource("5_753aq")
+id = "cty_066"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_066" unique_id=1970823614 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_067" type="Node3D" parent="BLOCKS" unique_id=1402899529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -295.4666, 106.43236, -329.8872)
+script = ExtResource("5_753aq")
+id = "cty_067"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_067" unique_id=1388630441 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_068" type="Node3D" parent="BLOCKS" unique_id=1141297483]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -174.13669, 108.39314, -399.93707)
+script = ExtResource("5_753aq")
+id = "cty_068"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_068" unique_id=1854730145 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_069" type="Node3D" parent="BLOCKS" unique_id=941851753]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -107.011246, 112.31471, -420.64252)
+script = ExtResource("5_753aq")
+id = "cty_069"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_069" unique_id=1968567261 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_070" type="Node3D" parent="BLOCKS" unique_id=1188726522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.54955, 114.27549, -431.11218)
+script = ExtResource("5_753aq")
+id = "cty_070"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_070" unique_id=1322742881 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_071" type="Node3D" parent="BLOCKS" unique_id=1437642511]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.696735, 106.43236, -431.11218)
+script = ExtResource("5_753aq")
+id = "cty_071"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_071" unique_id=1519545077 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_072" type="Node3D" parent="BLOCKS" unique_id=2034143114]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102.15843, 114.27549, -420.64252)
+script = ExtResource("5_753aq")
+id = "cty_072"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_072" unique_id=1018784842 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_073" type="Node3D" parent="BLOCKS" unique_id=1673202315]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 169.28387, 110.35393, -399.93707)
+script = ExtResource("5_753aq")
+id = "cty_073"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_073" unique_id=618283176 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_074" type="Node3D" parent="BLOCKS" unique_id=1497806591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 290.61377, 110.35393, -329.8872)
+script = ExtResource("5_753aq")
+id = "cty_074"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_074" unique_id=660304115 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_075" type="Node3D" parent="BLOCKS" unique_id=1527628413]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 342.10797, 114.27549, -282.1076)
+script = ExtResource("5_753aq")
+id = "cty_075"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_075" unique_id=1704610699 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_076" type="Node3D" parent="BLOCKS" unique_id=1605037005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 385.90582, 106.43236, -227.18681)
+script = ExtResource("5_753aq")
+id = "cty_076"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_076" unique_id=961603887 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_077" type="Node3D" parent="BLOCKS" unique_id=200929886]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 421.02893, 108.39314, -166.35176)
+script = ExtResource("5_753aq")
+id = "cty_077"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_077" unique_id=1544736187 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_078" type="Node3D" parent="BLOCKS" unique_id=226136164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 446.6928, 114.27549, -100.961334)
+script = ExtResource("5_753aq")
+id = "cty_078"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_078" unique_id=1559395934 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_079" type="Node3D" parent="BLOCKS" unique_id=1907798348]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 462.3241, 110.35393, -32.476273)
+script = ExtResource("5_753aq")
+id = "cty_079"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_079" unique_id=208604400 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_080" type="Node3D" parent="BLOCKS" unique_id=797592828]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 573.3447, 129.96176, 107.48486)
+script = ExtResource("5_753aq")
+id = "cty_080"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_080" unique_id=472771794 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_081" type="Node3D" parent="BLOCKS" unique_id=1092299504]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 560.71985, 131.92255, 176.37668)
+script = ExtResource("5_753aq")
+id = "cty_081"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_081" unique_id=952254211 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_082" type="Node3D" parent="BLOCKS" unique_id=566421303]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 539.883, 133.88333, 243.24443)
+script = ExtResource("5_753aq")
+id = "cty_082"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_082" unique_id=773745939 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_083" type="Node3D" parent="BLOCKS" unique_id=1847184984]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 511.13812, 124.079414, 307.11304)
+script = ExtResource("5_753aq")
+id = "cty_083"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_083" unique_id=824473545 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_084" type="Node3D" parent="BLOCKS" unique_id=100745763]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 474.90424, 124.079414, 367.05115)
+script = ExtResource("5_753aq")
+id = "cty_084"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_084" unique_id=1236139109 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_085" type="Node3D" parent="BLOCKS" unique_id=405824970]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 431.70984, 124.079414, 422.18475)
+script = ExtResource("5_753aq")
+id = "cty_085"
+block_name = "twr_48x48_h380"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h380.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h380_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_085" unique_id=588762851 instance=ExtResource("18_sq2df")]
+metadata/gbx_size = Vector3(48, 380, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_086" type="Node3D" parent="BLOCKS" unique_id=291833961]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 382.18475, 133.88333, 471.70984)
+script = ExtResource("5_753aq")
+id = "cty_086"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_086" unique_id=2034533857 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_087" type="Node3D" parent="BLOCKS" unique_id=653853886]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4264069, 178.98137, 617.5736)
+script = ExtResource("5_753aq")
+id = "cty_087"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_087" unique_id=806662379 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_088" type="Node3D" parent="BLOCKS" unique_id=1481521044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -331.904, 126.0402, 514.90424)
+script = ExtResource("5_753aq")
+id = "cty_088"
+block_name = "twr_48x48_h380"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h380.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h380_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_088" unique_id=708822398 instance=ExtResource("18_sq2df")]
+metadata/gbx_size = Vector3(48, 380, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_089" type="Node3D" parent="BLOCKS" unique_id=1707726486]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -515.9909, 131.92255, 307.11304)
+script = ExtResource("5_753aq")
+id = "cty_089"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_089" unique_id=2099825524 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_090" type="Node3D" parent="BLOCKS" unique_id=165002212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -565.57263, 133.88333, 176.37668)
+script = ExtResource("5_753aq")
+id = "cty_090"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_090" unique_id=478852832 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_091" type="Node3D" parent="BLOCKS" unique_id=1665372918]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -578.1975, 129.96176, 107.48486)
+script = ExtResource("5_753aq")
+id = "cty_091"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_091" unique_id=1934838261 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_092" type="Node3D" parent="BLOCKS" unique_id=873243376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -578.1975, 139.76569, -32.337677)
+script = ExtResource("5_753aq")
+id = "cty_092"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_092" unique_id=789263867 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_093" type="Node3D" parent="BLOCKS" unique_id=1165329793]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -387.03754, 155.45197, -396.56268)
+script = ExtResource("5_753aq")
+id = "cty_093"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_093" unique_id=1863855358 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_094" type="Node3D" parent="BLOCKS" unique_id=1366593319]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -331.904, 145.64804, -439.75702)
+script = ExtResource("5_753aq")
+id = "cty_094"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_094" unique_id=1925873453 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_095" type="Node3D" parent="BLOCKS" unique_id=1098713743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -208.09724, 135.84412, -504.73578)
+script = ExtResource("5_753aq")
+id = "cty_095"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_095" unique_id=748106786 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_096" type="Node3D" parent="BLOCKS" unique_id=1483181556]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -141.22949, 124.079414, -525.57263)
+script = ExtResource("5_753aq")
+id = "cty_096"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_096" unique_id=2093250440 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_097" type="Node3D" parent="BLOCKS" unique_id=2114525164]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -72.33768, 126.0402, -538.1975)
+script = ExtResource("5_753aq")
+id = "cty_097"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_097" unique_id=606949823 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_098" type="Node3D" parent="BLOCKS" unique_id=572526420]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4264069, 116.236275, -542.4264)
+script = ExtResource("5_753aq")
+id = "cty_098"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_098" unique_id=1415440402 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_099" type="Node3D" parent="BLOCKS" unique_id=1249767902]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.48486, 120.157845, -538.1975)
+script = ExtResource("5_753aq")
+id = "cty_099"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_099" unique_id=1149358232 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_100" type="Node3D" parent="BLOCKS" unique_id=181393081]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136.37668, 122.11863, -525.57263)
+script = ExtResource("5_753aq")
+id = "cty_100"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_100" unique_id=1045050376 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_101" type="Node3D" parent="BLOCKS" unique_id=890599797]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 382.18475, 141.72647, -396.56268)
+script = ExtResource("5_753aq")
+id = "cty_101"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_101" unique_id=1815033007 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_102" type="Node3D" parent="BLOCKS" unique_id=1058435251]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 573.3447, 145.64804, -32.337677)
+script = ExtResource("5_753aq")
+id = "cty_102"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_102" unique_id=430828888 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_103" type="Node3D" parent="BLOCKS" unique_id=1375788078]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 600.87274, 177.02058, 372.43195)
+script = ExtResource("5_753aq")
+id = "cty_103"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_103" unique_id=1036675671 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_104" type="Node3D" parent="BLOCKS" unique_id=1884074519]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 563.9004, 180.94215, 431.74866)
+script = ExtResource("5_753aq")
+id = "cty_104"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_104" unique_id=1531940485 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_105" type="Node3D" parent="BLOCKS" unique_id=291990160]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 521.1167, 167.21667, 487.02063)
+script = ExtResource("5_753aq")
+id = "cty_105"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_105" unique_id=852343621 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_106" type="Node3D" parent="BLOCKS" unique_id=1430169542]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 301.44556, 226.04019, 657.0588)
+script = ExtResource("5_753aq")
+id = "cty_106"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_106" unique_id=1265488590 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_107" type="Node3D" parent="BLOCKS" unique_id=1052372928]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 237.2142, 222.11864, 684.62256)
+script = ExtResource("5_753aq")
+id = "cty_107"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_107" unique_id=83896794 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_108" type="Node3D" parent="BLOCKS" unique_id=612322261]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 170.52383, 239.76569, 705.5468)
+script = ExtResource("5_753aq")
+id = "cty_108"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_108" unique_id=1104645628 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_109" type="Node3D" parent="BLOCKS" unique_id=108767023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102.05876, 226.04019, 719.61676)
+script = ExtResource("5_753aq")
+id = "cty_109"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_109" unique_id=329600574 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_110" type="Node3D" parent="BLOCKS" unique_id=358720051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175.37665, 220.15785, 705.5468)
+script = ExtResource("5_753aq")
+id = "cty_110"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_110" unique_id=1990199405 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_111" type="Node3D" parent="BLOCKS" unique_id=1217478216]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -525.9695, 182.90294, 487.02063)
+script = ExtResource("5_753aq")
+id = "cty_111"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_111" unique_id=965855111 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_112" type="Node3D" parent="BLOCKS" unique_id=1620966945]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -636.5073, 161.33432, 309.67914)
+script = ExtResource("5_753aq")
+id = "cty_112"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_112" unique_id=2111261971 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_113" type="Node3D" parent="BLOCKS" unique_id=1267480005]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175.37665, 171.13824, -630.3996)
+script = ExtResource("5_753aq")
+id = "cty_113"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_113" unique_id=216438481 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_114" type="Node3D" parent="BLOCKS" unique_id=2712478]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 237.2142, 186.82451, -609.47534)
+script = ExtResource("5_753aq")
+id = "cty_114"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_114" unique_id=185064249 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_115" type="Node3D" parent="BLOCKS" unique_id=1824448389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 794.52936, 263.29507, 107.29819)
+script = ExtResource("5_753aq")
+id = "cty_115"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_115" unique_id=1539885625 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_116" type="Node3D" parent="BLOCKS" unique_id=1311397515]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 610.4092, 241.72647, 551.8037)
+script = ExtResource("5_753aq")
+id = "cty_116"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_116" unique_id=381986827 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_117" type="Node3D" parent="BLOCKS" unique_id=990067946]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 511.8037, 249.56961, 650.4092)
+script = ExtResource("5_753aq")
+id = "cty_117"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_117" unique_id=2030463055 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_118" type="Node3D" parent="BLOCKS" unique_id=1632608716]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 456.43475, 249.56961, 692.89526)
+script = ExtResource("5_753aq")
+id = "cty_118"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_118" unique_id=1936182024 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_119" type="Node3D" parent="BLOCKS" unique_id=1088820850]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 335.6682, 249.56961, 762.6199)
+script = ExtResource("5_753aq")
+id = "cty_119"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_119" unique_id=855105660 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_120" type="Node3D" parent="BLOCKS" unique_id=666379085]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136.49214, 214.2755, 825.4198)
+script = ExtResource("5_753aq")
+id = "cty_120"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_120" unique_id=1909218113 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_121" type="Node3D" parent="BLOCKS" unique_id=1845073819]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 67.29819, 241.72647, 834.52936)
+script = ExtResource("5_753aq")
+id = "cty_121"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_121" unique_id=983047514 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_122" type="Node3D" parent="BLOCKS" unique_id=30406547]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -141.34496, 245.64804, 825.4198)
+script = ExtResource("5_753aq")
+id = "cty_122"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_122" unique_id=650248214 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_123" type="Node3D" parent="BLOCKS" unique_id=41194432]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -568.1118, 245.64804, 603.25903)
+script = ExtResource("5_753aq")
+id = "cty_123"
+block_name = "twr_48x48_h340"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h340.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h340_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_123" unique_id=2063995990 instance=ExtResource("7_pcqp3")]
+metadata/gbx_size = Vector3(48, 340, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_124" type="Node3D" parent="BLOCKS" unique_id=1117839112]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -615.26196, 245.64804, 551.8037)
+script = ExtResource("5_753aq")
+id = "cty_124"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_124" unique_id=241045172 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_125" type="Node3D" parent="BLOCKS" unique_id=2014861801]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -790.2726, 280.94214, 176.49214)
+script = ExtResource("5_753aq")
+id = "cty_125"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_125" unique_id=244968948 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_126" type="Node3D" parent="BLOCKS" unique_id=1402451030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -799.38214, 284.8637, 107.29819)
+script = ExtResource("5_753aq")
+id = "cty_126"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_126" unique_id=462345460 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_127" type="Node3D" parent="BLOCKS" unique_id=125992580]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -799.38214, 310.3539, -32.151)
+script = ExtResource("5_753aq")
+id = "cty_127"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_127" unique_id=300232919 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_128" type="Node3D" parent="BLOCKS" unique_id=2009781430]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -790.2726, 310.3539, -101.344955)
+script = ExtResource("5_753aq")
+id = "cty_128"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_128" unique_id=286410379 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_129" type="Node3D" parent="BLOCKS" unique_id=1417368718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -754.1805, 331.92255, -236.04253)
+script = ExtResource("5_753aq")
+id = "cty_129"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_129" unique_id=240266140 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_130" type="Node3D" parent="BLOCKS" unique_id=486036540]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -657.74805, 351.53036, -421.28754)
+script = ExtResource("5_753aq")
+id = "cty_130"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_130" unique_id=2007843872 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_131" type="Node3D" parent="BLOCKS" unique_id=871092838]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -615.26196, 382.90292, -476.6565)
+script = ExtResource("5_753aq")
+id = "cty_131"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_131" unique_id=1109805039 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_132" type="Node3D" parent="BLOCKS" unique_id=1347954810]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -568.1118, 378.98135, -528.1118)
+script = ExtResource("5_753aq")
+id = "cty_132"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_132" unique_id=721807029 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_133" type="Node3D" parent="BLOCKS" unique_id=809732770]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 511.8037, 375.05978, -575.26196)
+script = ExtResource("5_753aq")
+id = "cty_133"
+block_name = "twr_48x48_h380"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h380.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h380_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_133" unique_id=1175498738 instance=ExtResource("18_sq2df")]
+metadata/gbx_size = Vector3(48, 380, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_134" type="Node3D" parent="BLOCKS" unique_id=1587781190]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 563.25903, 367.21664, -528.1118)
+script = ExtResource("5_753aq")
+id = "cty_134"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_134" unique_id=1242179127 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_135" type="Node3D" parent="BLOCKS" unique_id=540772041]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 610.4092, 355.45193, -476.6565)
+script = ExtResource("5_753aq")
+id = "cty_135"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_135" unique_id=290216505 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_136" type="Node3D" parent="BLOCKS" unique_id=1877073443]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 690.3939, 357.41272, -362.4264)
+script = ExtResource("5_753aq")
+id = "cty_136"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_136" unique_id=1377314182 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_137" type="Node3D" parent="BLOCKS" unique_id=384200732]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 722.6199, 355.45193, -300.521)
+script = ExtResource("5_753aq")
+id = "cty_137"
+block_name = "twr_48x48_h240"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h240.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h240_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_137" unique_id=1236378806 instance=ExtResource("12_8j34d")]
+metadata/gbx_size = Vector3(48, 240, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_138" type="Node3D" parent="BLOCKS" unique_id=1664426885]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 749.3277, 339.7657, -236.04253)
+script = ExtResource("5_753aq")
+id = "cty_138"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_138" unique_id=1013881793 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_139" type="Node3D" parent="BLOCKS" unique_id=348427650]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 785.4198, 322.11862, -101.344955)
+script = ExtResource("5_753aq")
+id = "cty_139"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_139" unique_id=510923939 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_140" type="Node3D" parent="BLOCKS" unique_id=967955178]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 794.52936, 310.3539, -32.151)
+script = ExtResource("5_753aq")
+id = "cty_140"
+block_name = "twr_48x48_h220"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h220.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h220_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_140" unique_id=1381447875 instance=ExtResource("16_l1rgy")]
+metadata/gbx_size = Vector3(48, 220, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_141" type="Node3D" parent="BLOCKS" unique_id=635769006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 896.9088, 298.5892, 176.48444)
+script = ExtResource("5_753aq")
+id = "cty_141"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_141" unique_id=56240898 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_142" type="Node3D" parent="BLOCKS" unique_id=110844079]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 865.1643, 288.78528, 312.13934)
+script = ExtResource("5_753aq")
+id = "cty_142"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_142" unique_id=610515326 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_143" type="Node3D" parent="BLOCKS" unique_id=552560265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 841.6008, 273.099, 377.74713)
+script = ExtResource("5_753aq")
+id = "cty_143"
+block_name = "twr_48x48_h280"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h280.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h280_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_143" unique_id=1957795862 instance=ExtResource("15_bobmq")]
+metadata/gbx_size = Vector3(48, 280, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_144" type="Node3D" parent="BLOCKS" unique_id=1815270068]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 779.782, 261.3343, 502.6006)
+script = ExtResource("5_753aq")
+id = "cty_144"
+block_name = "twr_48x48_h300"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h300.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h300_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_144" unique_id=722682412 instance=ExtResource("10_supam")]
+metadata/gbx_size = Vector3(48, 300, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_145" type="Node3D" parent="BLOCKS" unique_id=2144461193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 741.88934, 273.099, 561.1136)
+script = ExtResource("5_753aq")
+id = "cty_145"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_145" unique_id=1188494695 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_146" type="Node3D" parent="BLOCKS" unique_id=920486561]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 699.6288, 249.56961, 616.55426)
+script = ExtResource("5_753aq")
+id = "cty_146"
+block_name = "twr_48x48_h400"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h400.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h400_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_146" unique_id=1827978868 instance=ExtResource("8_5d4jm")]
+metadata/gbx_size = Vector3(48, 400, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_147" type="Node3D" parent="BLOCKS" unique_id=471972757]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 653.2482, 243.68726, 668.59717)
+script = ExtResource("5_753aq")
+id = "cty_147"
+block_name = "twr_48x48_h260"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h260.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h260_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_147" unique_id=1755414751 instance=ExtResource("13_3xern")]
+metadata/gbx_size = Vector3(48, 260, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_148" type="Node3D" parent="BLOCKS" unique_id=279140435]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 492.22003, 231.92255, 801.3961)
+script = ExtResource("5_753aq")
+id = "cty_148"
+block_name = "twr_48x48_h200"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h200.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h200_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_148" unique_id=1366203643 instance=ExtResource("17_7x3ti")]
+metadata/gbx_size = Vector3(48, 200, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_149" type="Node3D" parent="BLOCKS" unique_id=102217621]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 369.82605, 210.35393, 867.9519)
+script = ExtResource("5_753aq")
+id = "cty_149"
+block_name = "twr_48x48_h320"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h320.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h320_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_149" unique_id=855653882 instance=ExtResource("14_qsvi7")]
+metadata/gbx_size = Vector3(48, 320, 48)
+metadata/gbx_kind = "silhouette"
+
+[node name="GBX_cty_150" type="Node3D" parent="BLOCKS" unique_id=49718940]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.42908, 165.25589, 946.9059)
+script = ExtResource("5_753aq")
+id = "cty_150"
+block_name = "twr_48x48_h360"
+district = "A1"
+scene_path = "res://world/content/blocks/city/twr_48x48_h360.tscn"
+silhouette_scene_path = "res://world/silhouettes/blocks/city/twr_48x48_h360_silhouette.tscn"
+
+[node name="SilhouettePreview" type="Node3D" parent="BLOCKS/GBX_cty_150" unique_id=1110659392 instance=ExtResource("11_jyqhh")]
+metadata/gbx_size = Vector3(48, 360, 48)
+metadata/gbx_kind = "silhouette"
 
 [node name="Spawner" type="Node3D" parent="." unique_id=221293653]
 script = ExtResource("5_ikph1")
