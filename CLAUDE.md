@@ -42,6 +42,16 @@ This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled 
 
 There is no separate unit-test framework (no GUT etc.); "testing" a change means running the project (`project_run` / F5 in editor) and watching `logs_read` for the `push_error`/`push_warning`/`print` diagnostics the systems below emit liberally.
 
+**In an agent session, use the Godot CLI instead of guessing.** Sessions on claude.ai/code run in a throwaway container with no Godot; `.claude/hooks/ensure_godot.sh` installs it at session start (4 s from cold — the proxy caches the download) and does nothing when `godot` is already on `PATH`, so it is inert on a developer machine. Three commands cover nearly everything an agent used to hand back unverified:
+
+- `godot --headless --editor --quit-after 2000` — imports the project and reports every script parse error and broken resource path in one pass. **Run it twice on a cold container:** the first pass compiles scripts before the autoloads they reference exist and invents `Cannot infer the type of X` errors that vanish on the second.
+- `godot --headless --quit-after 400` — actually boots `world.tscn`. No rendering (dummy driver), but autoloads, `_ready()`, physics and every `print`/`push_warning` are live. This is what catches a spawn landing inside the terrain, a system that silently fails to initialize, or a save payload that does not round-trip.
+- A temporary `print` in a `_ready()` — run, read, revert — answers what no existing log line covers: where the player actually ended up, whether `is_on_floor()` is true. Never commit the probe.
+
+**`--check-only --script` is a trap here.** It compiles one script with no autoloads registered, so every file touching `PlayerState`, `InputSystems` or `WorldSystems` reports `Identifier not found` — 36 of 120 files, all false. Use the import pass instead.
+
+What the CLI still cannot tell you is anything visual. The terrain is drawn by a vertex-displacement shader the dummy driver never runs, so headless proves the player stands on the ground but not that the ground looks like ground. Held-item offsets, clipping, terracing and silhouette all still need eyes.
+
 ## Observability (Entire checkpoints)
 
 This repo has [Entire](https://entire.io) (`entireio/cli`, preview/pre-release
@@ -90,6 +100,7 @@ whether one will; see `docs/ENTIRE_SETUP.md` for how to actually check.
 - Full conventions live in `docs/GDSCRIPT_STYLE.md`; collaborator-facing rules in `docs/CONTRIBUTING.md`. Read the style guide before writing GDScript.
 - **New comments are written in English.** Existing comments are largely Russian and are being translated header by header; do not add more Russian.
 - **Standing instruction when editing an existing script:** before changing it, check it against `docs/GDSCRIPT_STYLE.md` — static typing, declaration order, naming, banner header on systems, `TODO(scope):` form. If the file deviates, say so and offer the correction as a separate step. Do not silently reformat, and do not bundle a style pass into a behaviour change.
+- **`*.import` files are committed; `.godot/` is not.** Godot 4 stores an imported asset's UID inside its `.import` file, so ignoring them makes every clone mint its own UIDs while the `.tscn` files that reference those assets keep whoever-committed-them's — which is exactly why a fresh clone used to open with 28 `invalid UID` warnings and a project font that failed to load. This is Godot's own recommended layout; `.gitignore` says so at the line where it used to ignore them.
 - **Do not create placeholder scripts or empty directories** for work that has not started. Planned scope belongs in `docs/planned_scope.md`. An empty file in the tree reads as a promise.
 - **Collision layers and masks are set through `core/physics/collision_layers.gd` (`CollisionLayers`), never as a bare integer literal**, in both code and scenes. `docs/COLLISION_LAYERS.md` is the single source of truth for the layer table and the reasoning behind each named query profile (`SIGHT`, `CAMERA_OCCLUSION`, `OBSTACLE`, `GROUND`, `INTERACTION`, `CURSOR_UI`). A `.tscn` can't reference a script constant, so a scene-level mask is documented in that file's table instead of converted. A new layer is named in `project.godot`'s `[layer_names]`, given a constant in `CollisionLayers`, and given a row in `docs/COLLISION_LAYERS.md`, all in the same commit — never one without the other two.
  

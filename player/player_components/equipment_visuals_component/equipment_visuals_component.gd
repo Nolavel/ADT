@@ -149,7 +149,14 @@ func _apply_body_slot(slot_id: StringName) -> void:
 	if previous != null:
 		previous.visible = false
 
-	var item := ItemCatalog.get_item(_equipment.get_equipped(slot_id))
+	## An empty slot is answered before the catalog is asked. refresh_all()
+	## walks every body slot, and three of the player's five are empty, so
+	## without this guard get_item() warns "unknown item id ''" three times on
+	## every refresh for a question whose answer is "nothing is worn there".
+	var item_id := _equipment.get_equipped(slot_id)
+	if item_id == &"":
+		return
+	var item := ItemCatalog.get_item(item_id)
 	if item == null or item.garment == null:
 		return
 	var mesh := _find_mesh(item.garment.mesh_node_name)

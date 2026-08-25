@@ -12,6 +12,117 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - A clean run: 151 engine messages down to 4
+
+First use of the CLI for what it is actually for. A headless boot printed
+**151** errors and warnings; it now prints **4**, and the three that remain
+are not defects.
+
+**88 — unnamed animation blend points.** `add_blend_point()` gained a `name`
+parameter and warns for every unnamed one, four per NPC and sixteen on the
+player, every spawn. All twenty call sites now pass the name the point already
+had as a variable.
+
+**54 — stale asset UIDs, and a project font that never loaded.** Root cause:
+`*.import` was gitignored. Godot 4 keeps an imported asset's UID inside its
+`.import` file, so every clone minted its own while the `.tscn` files kept the
+UIDs of whoever saved them. `project.godot` asked for the BlackRock font by a
+UID no machine had, so the custom font silently failed to load — an ERROR, not
+a warning. `.import` files are now committed (133 of them, Godot's own
+recommended layout) and every stale reference rewritten to match; only the
+`uid=` field changed, never a path or an id.
+
+**22 — actors with no `actor_id`.** Every NPC and drone in `world.tscn` was
+unnamed to `IncidentRegistry`, meaning none of them could be recorded as a
+perpetrator or a witness. Each now carries its node name in snake_case, which
+is unique in the scene and stable for the save contract.
+
+**9 — `unknown item id ''`, and this one was mine.** `_garment_in()` and
+`_apply_body_slot()` both walk every body slot on every call, three of the
+player's five being empty, and asked the catalog to resolve `""` each time.
+An empty slot is now answered before the catalog is consulted. A non-empty id
+that fails to resolve still warns, because that is still a real failure.
+
+The same pass caught a regression I introduced while writing it: the first fix
+used `ItemCatalog.find()`, an instance method, on the class. That is a hard
+parse error, it took `equipment_component.gd` and everything depending on it
+down with it, and one headless run turned it into 177 cascading errors. It also
+settles a question this session had only answered indirectly — `find()` is not
+callable on the class, `get_item()` is the static form, and Stan had already
+converted every call site.
+
+**What is left, and why:** a UI scene with mismatched anchors (cosmetic, an
+editor fix), `NavigationRegion3D not found` (true — the island has no navmesh
+yet, the system is correctly reporting a missing feature), and two
+leaked-at-exit lines that are Godot shutdown noise on `--quit-after`.
+
+Verified after the fact: the player still spawns on the caldera floor at
+`(220, 128.81, -140)` with `is_on_floor()` true.
+
+*151 сообщение движка → 4. Безымянные точки блендспейсов (88), протухшие UID
+ассетов из-за `*.import` в gitignore (54, включая шрифт проекта, который вообще
+не грузился), акторы без `actor_id` (22) и мой собственный баг с пустым id
+предмета (9). По ходу поймал собственную же регрессию: `ItemCatalog.find()` на
+классе — жёсткая ошибка разбора, положившая пол-проекта; один headless-прогон
+превратил её в 177 ошибок и показал сразу.*
+- `npc/npc_components/animation_component/npc_animation_component.gd`, `player/player_components/animation_component/player_animation_component.gd`, `player/player_components/equipment_component/equipment_component.gd`, `player/player_components/equipment_visuals_component/equipment_visuals_component.gd`, `world/world.tscn`, `project.godot`, `.gitignore`, 133 `*.import` files (now tracked), 31 scenes/resources with rewritten UIDs, `CLAUDE.md`
+
+---
+
+## 2026-08-25 - Godot CLI in the agent container
+
+Agent sessions run in a throwaway container with no Godot, which is why every
+entry above ends with "verify by running it yourself". That is now fixed:
+`.claude/hooks/ensure_godot.sh` fetches Godot 4.7.2 at session start — **4
+seconds from cold**, the proxy caches it — and exits immediately when `godot`
+is already on `PATH`, so it does nothing on a developer machine. The GitHub
+Releases page is blocked by the agent proxy, but the redirect through
+`downloads.godotengine.org` to the release-asset CDN is allowed; the hook uses
+the official domain for that reason.
+
+**What it proved on the first run**, on work that was until now unverified:
+
+- The island commits hold up. `world.tscn` boots, `[World] ✅ Initialized`, 34
+  cells built, streaming activates blocks with a 64 ms latency, no errors about
+  `GroundTileData` or `strata_ids`.
+- **The player stands on the ground.** A temporary probe (run, read, reverted)
+  reported `spawn=(220, 130.062, -140)` settling to `(220, 128.81, -140)` with
+  `is_on_floor() = true`. This was the risk recorded as unverifiable two
+  commits ago — whether the image-row-to-world-Z mapping had the right sign. It
+  did.
+- H5 equipment works end to end at startup: jumpsuit and boots equipped, the
+  pipe stowed in `torso/chest_left`, both garment meshes shown. Which also
+  settles a question answered indirectly in the H5 session — `ItemCatalog.find()`
+  called on the class is legal GDScript.
+
+**Two things it found.** `_build_cells` still printed `Cells: %d (tiles +
+blocks)` after the ground tiles were removed — fixed here. And with 33 blocks
+replanted across the island, radius 400 activates only **2** of them at spawn;
+the brief sizes that radius for ~25 live towers. The replanted layout is far
+sparser than the island is meant to be, which is a fact about step 5's absence,
+not about the radius.
+
+**A trap worth recording:** `--check-only --script` compiles a file with no
+autoloads registered and reports `Identifier not found: PlayerState` for 36 of
+120 scripts, all false. The import pass is the real check, and it must be run
+**twice** cold — the first pass compiles scripts before the autoloads they
+reference exist and invents three `Cannot infer the type of X` errors that are
+gone on the second.
+
+Import touched no tracked files (`.godot/` and `*.import` are gitignored). The
+invalid-UID warnings on player textures and the project font predate this and
+are cosmetic — Godot falls back to the text path.
+
+*Godot CLI теперь ставится в контейнер агента хуком на старте сессии — 4
+секунды с холодного старта. Проверено сразу: мир грузится, стриминг работает,
+экипировка надевается, **игрок стоит на земле** — знак Z в спавне был верный,
+это был мой главный непроверяемый риск. Найдено две мелочи: устаревшая строка
+про плиты и то, что при 33 башнях радиус 400 активирует всего 2 — редко для
+острова, но это следствие отсутствия шага 5, а не радиуса.*
+- `.claude/hooks/ensure_godot.sh` (new), `.claude/settings.json`, `core/world/streaming_systems.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - Sea level is Y 45, and the documents say so
 
 **The water plane and the terrain shader disagreed about where the sea is.**

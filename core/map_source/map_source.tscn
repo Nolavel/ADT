@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dnttjixnfgoka"]
 
 [ext_resource type="Script" uid="uid://yq6u1mda12pc" path="res://core/map_source/map_source.gd" id="1_upnkk"]
-[ext_resource type="Texture2D" uid="uid://cjltkwabuxkyc" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_05.png" id="2_ovdp1"]
-[ext_resource type="Texture2D" uid="uid://p80uqckupev6" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_07.png" id="3_moi5e"]
+[ext_resource type="Texture2D" uid="uid://cof4owpdyyabm" path="res://assets/textures/prototype_tex_kenney/PNG/Dark/texture_05.png" id="2_ovdp1"]
+[ext_resource type="Texture2D" uid="uid://duon8olb0ugbb" path="res://assets/textures/prototype_tex_kenney/PNG/Light/texture_07.png" id="3_moi5e"]
 [ext_resource type="Script" uid="uid://cr4yuevfslinn" path="res://core/map_source/blockbase.gd" id="5_753aq"]
 [ext_resource type="Script" uid="uid://45ki68uq8hm8" path="res://core/map_source/spawner.gd" id="5_ikph1"]
 [ext_resource type="PackedScene" uid="uid://6cmjmiivbieh" path="res://world/silhouettes/blocks/greybox/block_gbx_024_silhouette.tscn" id="6_rf8af"]

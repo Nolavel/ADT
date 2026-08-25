@@ -155,7 +155,7 @@ func initialize(container: Node3D, player: Node3D) -> void:
 
 	_initialized = true
 	initialized.emit(_cells.size())
-	print("[StreamingSystems] Cells: %d (tiles + blocks)" % _cells.size())
+	print("[StreamingSystems] Cells: %d blocks" % _cells.size())
 
 	if DEBUG_LOAD_ALL:
 		push_warning("[StreamingSystems] DEBUG_LOAD_ALL is ON — no streaming")

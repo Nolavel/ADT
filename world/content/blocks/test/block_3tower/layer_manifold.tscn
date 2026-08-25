@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bh7c0v00raanr"]
 
-[ext_resource type="Texture2D" uid="uid://btulflavusmma" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_6m6sv"]
+[ext_resource type="Texture2D" uid="uid://c7kdiu1b4ntet" path="res://assets/textures/prototype_tex_kenney/PNG/Green/texture_01.png" id="1_6m6sv"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e1hgv"]
 albedo_color = Color(0.55, 0.62, 0.55, 1)
