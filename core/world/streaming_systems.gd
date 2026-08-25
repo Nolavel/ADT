@@ -13,11 +13,15 @@
 #
 # ДВА КОЛЬЦА:
 #   Ring 0 (силуэты) — создаются один раз в initialize() и живут до reset():
-#     • 9 силуэтов плит земли (своя сцена на плиту, позиции из WorldSystems);
-#       несут ПОСТОЯННУЮ коллизию пола — страховочная поверхность.
-#     • Силуэты кварталов (своя сцена на квартал).
-#   Ring 1 (контент) — ячейки конвейера (плиты + кварталы), грузятся и
-#     выгружаются по XZ-радиусу от игрока.
+#     силуэт на квартал, своя сцена.
+#   Ring 1 (контент) — ячейки конвейера (кварталы), грузятся и выгружаются
+#     по XZ-радиусу от игрока.
+#
+# ПЛИТ ЗЕМЛИ БОЛЬШЕ НЕТ (переезд на остров, 2026-08-25). Сетка 3×3 плит по
+# 2200 м держала пол города и была вторым типом ячейки со своей кольцевой
+# метрикой. Земля теперь одна — рельеф острова, статический меш с
+# HeightMapShape3D в world.tscn, который никто не стримит. Остался один тип
+# ячейки и одна метрика.
 #
 # ЖИЗНЕННЫЙ ЦИКЛ ЯЧЕЙКИ:
 #   UNLOADED ─(вошла в зону загрузки своей метрики)→ QUEUED
@@ -29,18 +33,11 @@
 #   без инстанцирования (кэш threaded-загрузки остаётся тёплым).
 #
 # ПРАВИЛА:
-#   • Две метрики дистанции — по типу ячейки:
-#       GROUND_TILE — КОЛЬЦЕВАЯ по координатам сетки: плита загружена, если
-#         расстояние Чебышёва до плиты игрока ≤ TILE_LOAD_RING; выгружается
-#         при ≥ TILE_UNLOAD_RING. Гистерезис встроен в метрику (целая плита
-#         зазора). Радиусная метрика тайлам не подходит: при радиусе меньше
-#         полуплиты (1100) контент выгружается под ногами игрока.
-#       BLOCK — радиусная в XZ (BLOCK_STREAM_RADIUS / BLOCK_UNLOAD_RADIUS).
-#         Кварталы — сквозные колонны на всю высоту, вертикальный фильтр для
-#         них бессмыслен.
-#   • Пока контент ячейки ACTIVE — корень её силуэта скрыт (visible=false),
-#     одинаково для плит и кварталов. Видимость в Godot НЕ отключает физику:
-#     коллизия силуэта живёт всегда.
+#   • Одна метрика дистанции: радиусная в XZ
+#     (BLOCK_STREAM_RADIUS / BLOCK_UNLOAD_RADIUS). Кварталы — сквозные колонны
+#     на всю высоту, вертикальный фильтр для них бессмыслен.
+#   • Пока контент ячейки ACTIVE — корень её силуэта скрыт (visible=false).
+#     Видимость в Godot НЕ отключает физику: коллизия силуэта живёт всегда.
 #   • Скан — не чаще, чем раз в STREAM_CHECK_DISTANCE пройденного пути;
 #     прокачка загрузок/инстансов (_pump) — каждый кадр.
 #
@@ -62,11 +59,7 @@ const DEBUG_LOAD_ALL := false
 ## демо. Шумно; выключить после стабилизации стриминга.
 const DEBUG_LOG_TRANSITIONS := true
 
-## GROUND_TILE: кольцевая метрика по координатам сетки (Чебышёв).
-const TILE_LOAD_RING   := 1   # текущая плита + соседи
-const TILE_UNLOAD_RING := 2   # гистерезис — целая плита зазора
-
-## BLOCK: радиусная метрика в XZ, метры. Остров ~3,5 км в поперечнике, шаг
+## Радиусная метрика в XZ, метры. Остров ~3,5 км в поперечнике, шаг
 ## застройки ~100 м в кальдере — 400 м это порядка 25 активных башен вокруг
 ## игрока. Подбирается глазом: если пустышка подменяется контентом прямо в
 ## лицо — радиус мал.
@@ -89,16 +82,13 @@ const DEBUG_QUEUE_PRINTS: bool = true
 
 # ── Типы ──────────────────────────────────────────────────────────────────────
 
-enum CellType { GROUND_TILE, BLOCK }
 enum CellState { UNLOADED, QUEUED, LOADING, READY, ACTIVE }
 
 
 ## Одна ячейка конвейера (Ring 1) + ссылка на её силуэт (Ring 0).
 class StreamCell:
 	var id:              String
-	var type:            CellType
 	var position:        Vector3      # мировая позиция (низ/пол ячейки)
-	var coords:          Vector2i     # координаты сетки — только GROUND_TILE
 	var content_path:    String
 	var silhouette_path: String
 	var state:           CellState = CellState.UNLOADED
@@ -130,7 +120,7 @@ var _initialized:         bool = false
 # ── Сигналы ───────────────────────────────────────────────────────────────────
 
 signal initialized(cell_count: int)
-signal cell_state_changed(cell_id: String, cell_type: CellType,
+signal cell_state_changed(cell_id: String,
 		old_state: CellState, new_state: CellState)
 
 
@@ -142,7 +132,7 @@ func _ready() -> void:
 		cell_state_changed.connect(_log_cell_transition)
 
 
-func _log_cell_transition(cell_id: String, _cell_type: CellType,
+func _log_cell_transition(cell_id: String,
 		old_state: CellState, new_state: CellState) -> void:
 	print("[Stream %8.2f] %-14s %s -> %s" % [Time.get_ticks_msec() * 0.001,
 			cell_id, CellState.keys()[old_state], CellState.keys()[new_state]])
@@ -183,7 +173,6 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(PlayerState.current_hover):
 		anchor = PlayerState.current_hover
 	var player_pos: Vector3 = anchor.global_position
-	WorldSystems.update_player_position(player_pos)
 
 	if DEBUG_LOAD_ALL:
 		return
@@ -227,7 +216,6 @@ func get_cells_snapshot() -> Array[Dictionary]:
 	for cell: StreamCell in _cells.values():
 		result.append({
 			"id":     cell.id,
-			"type":   cell.type,
 			"state":  cell.state,
 		})
 	return result
@@ -245,29 +233,17 @@ func _load_world_data(path: String) -> bool:
 		push_error("[StreamingSystems] WorldData cast failed")
 		return false
 
-	print("[StreamingSystems] Data: %d tiles, %d blocks" % [
-			_world_data.ground_tiles.size(), _world_data.blocks.size()])
+	print("[StreamingSystems] Data: %d blocks" % _world_data.blocks.size())
 	return true
 
 
 func _build_cells() -> void:
-	for td: GroundTileData in _world_data.ground_tiles:
-		var coords := Vector2i(td.col, td.row)
-		var cell := StreamCell.new()
-		cell.id              = WorldSystems.get_tile_id(coords)
-		cell.type            = CellType.GROUND_TILE
-		cell.position        = WorldSystems.get_tile_position(coords)
-		cell.coords          = coords
-		cell.content_path    = td.content_scene_path
-		cell.silhouette_path = td.silhouette_scene_path
-		_register_cell(cell)
-
 	for bd: BlockData in _world_data.blocks:
 		var cell := StreamCell.new()
-		cell.id           = bd.id
-		cell.type         = CellType.BLOCK
-		cell.position     = bd.position
-		cell.content_path = bd.content_scene_path
+		cell.id              = bd.id
+		cell.position        = bd.position
+		cell.content_path    = bd.content_scene_path
+		cell.silhouette_path = bd.silhouette_scene_path
 		_register_cell(cell)
 
 
@@ -285,12 +261,7 @@ func _register_cell(cell: StreamCell) -> void:
 ## Ring 0: силуэты создаются синхронно один раз и живут до reset().
 func _spawn_ring0() -> void:
 	for cell: StreamCell in _cells.values():
-		var packed: PackedScene = null
-		match cell.type:
-			CellType.GROUND_TILE:
-				packed = _load_tile_silhouette(cell)
-			CellType.BLOCK:
-				packed = _load_block_silhouette(cell.id)
+		var packed := _load_silhouette(cell)
 		if packed == null:
 			continue
 		var sil := packed.instantiate() as Node3D
@@ -300,28 +271,17 @@ func _spawn_ring0() -> void:
 		cell.silhouette_node = sil
 
 
-func _load_tile_silhouette(cell: StreamCell) -> PackedScene:
+## Силуэт берётся из пути, уже лежащего в ячейке. До снятия плит земли
+## кварталы искали свой силуэт линейным проходом по _world_data.blocks, потому
+## что путь не копировался в ячейку — плиты его копировали, кварталы нет.
+func _load_silhouette(cell: StreamCell) -> PackedScene:
 	if cell.silhouette_path.is_empty():
-		push_error("[StreamingSystems] Ground tile %s has no silhouette"
-				% cell.id)
+		push_warning("[StreamingSystems] %s has no silhouette" % cell.id)
 		return null
 	var packed := load(cell.silhouette_path) as PackedScene
 	if packed == null:
-		push_error("[StreamingSystems] Ground tile silhouette not found: "
-				+ cell.silhouette_path)
+		push_error("[StreamingSystems] Silhouette not found: " + cell.silhouette_path)
 	return packed
-
-
-func _load_block_silhouette(block_id: String) -> PackedScene:
-	for bd: BlockData in _world_data.blocks:
-		if bd.id != block_id:
-			continue
-		if bd.silhouette_scene_path.is_empty():
-			push_warning("[StreamingSystems] Block %s has no silhouette"
-					% block_id)
-			return null
-		return load(bd.silhouette_scene_path) as PackedScene
-	return null
 
 
 # ── Скан (по метрике типа ячейки) ─────────────────────────────────────────────
@@ -355,28 +315,13 @@ func _scan(player_pos: Vector3) -> void:
 
 
 func _is_in_load_range(cell: StreamCell, player_pos: Vector3) -> bool:
-	match cell.type:
-		CellType.GROUND_TILE:
-			return _tile_ring(cell, player_pos) <= TILE_LOAD_RING
-		_:
-			return _dist_xz(player_pos, cell.position) <= BLOCK_STREAM_RADIUS
+	return _dist_xz(player_pos, cell.position) <= BLOCK_STREAM_RADIUS
 
 
 ## Между load- и unload-порогом — зона гистерезиса: уже загруженное живёт,
 ## ещё не загруженное не стартует.
 func _is_out_of_range(cell: StreamCell, player_pos: Vector3) -> bool:
-	match cell.type:
-		CellType.GROUND_TILE:
-			return _tile_ring(cell, player_pos) >= TILE_UNLOAD_RING
-		_:
-			return _dist_xz(player_pos, cell.position) > BLOCK_UNLOAD_RADIUS
-
-
-## Расстояние Чебышёва (в плитах) от плиты игрока до плиты ячейки.
-func _tile_ring(cell: StreamCell, player_pos: Vector3) -> int:
-	var player_tile := WorldSystems.get_tile_coords(player_pos)
-	return maxi(absi(player_tile.x - cell.coords.x),
-			absi(player_tile.y - cell.coords.y))
+	return _dist_xz(player_pos, cell.position) > BLOCK_UNLOAD_RADIUS
 
 
 # ── Прокачка конвейера (каждый кадр) ─────────────────────────────────────────
@@ -489,7 +434,7 @@ func _unload_content(cell: StreamCell) -> void:
 func _set_state(cell: StreamCell, new_state: CellState) -> void:
 	var old := cell.state
 	cell.state = new_state
-	cell_state_changed.emit(cell.id, cell.type, old, new_state)
+	cell_state_changed.emit(cell.id, old, new_state)
 
 
 func _dist_xz(a: Vector3, b: Vector3) -> float:

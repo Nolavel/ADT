@@ -50,8 +50,17 @@ const LIBRARY_CONTENT_DIR:    String = "res://world/content/blocks/greybox"
 const LIBRARY_SILHOUETTE_DIR: String = "res://world/silhouettes/blocks/greybox"
 const BLOCKBASE_SCRIPT_PATH:  String = "res://core/map_source/blockbase.gd"
 
-## Дубли констант WorldSystems (автолоад недоступен в EditorScript).
-## При изменении геометрии мира обновить вручную.
+## УСТАРЕЛ ВМЕСТЕ С ГОРОДОМ. Эти три числа описывали сетку 3×3 плит по 2200 м,
+## по которой скрипт раскладывал кварталы. В `WorldSystems` их больше нет —
+## земля теперь одна, рельеф острова (переезд, 2026-08-25), — и здесь они
+## остались только как собственные константы этого скрипта.
+##
+## Прогонять его сейчас БЕССМЫСЛЕННО: он расставит кварталы по квадрату
+## 6600 × 6600 м вокруг начала координат, то есть в море вокруг острова, и на
+## Y 0, то есть под водой. Замена — генератор застройки по heightmap, шаг 5
+## островного ТЗ. Скрипт оставлен, а не удалён, потому что его сбор библиотеки
+## и очистка маркеров (`_collect_library`, `_clear_generated_markers`) новому
+## генератору пригодятся как есть.
 const GROUND_TILE_SIZE: float    = 2200.0
 const GROUND_GRID_SIZE: Vector2i = Vector2i(3, 3)
 const Y_CITY_ZONE_TOP:  float    = 0.0

@@ -84,7 +84,8 @@ var WORLD_UI_SCENES: Array[PackedScene] = [
 const UI_CANVAS_LAYER_INDEX: int = 40
 
 ## Player lift above the spawn point. Convention: spawn_point in data is a
-## point ON THE FLOOR (usually y = 0); this clearance keeps the capsule from
+## point ON THE FLOOR — on the island that is the terrain height under it, not
+## y = 0 as it was on the flat city; this clearance keeps the capsule from
 ## intersecting floor collision on the first physics tick. Player origin
 ## sits at the feet, so this clearance is literally the fall height at
 ## spawn, with no correction needed.

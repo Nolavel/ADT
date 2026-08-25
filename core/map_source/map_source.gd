@@ -142,22 +142,10 @@ func export_data() -> void:
 		bd.content_scene_path    = dict["scene_path"]
 		bd.silhouette_scene_path = dict.get("silhouette_scene_path", "")
 		world.blocks.append(bd)
-		
-	# ── Плиты земли ─────────────────────────────────────────────────────────
-	# Сетка 3×3 — геометрия в константах WorldSystems. Каждая плита несёт
-	# свою собственную пару content/silhouette сцен (по row/col).
-	for row in WorldSystems.GROUND_GRID_SIZE.y:
-		for col in WorldSystems.GROUND_GRID_SIZE.x:
-			var gt := GroundTileData.new()
-			gt.row = row
-			gt.col = col
-			gt.content_scene_path = \
-					"res://world/content/ground_tiles/gt_content_r%d_c%d.tscn" \
-					% [row, col]
-			gt.silhouette_scene_path = \
-					"res://world/silhouettes/ground_tiles/gt_silhouette_r%d_c%d.tscn" \
-					% [row, col]
-			world.ground_tiles.append(gt)
+
+	# Плит земли здесь больше не появляется: сетка 3×3 снята вместе с городом
+	# (2026-08-25), земля — рельеф острова, он статический и данными не
+	# описывается.
 
 	world.spawn_point = WorldSystems.spawn_point
 

@@ -67,7 +67,7 @@ func _apply_xz_bias(anchor: CharacterBody3D) -> void:
 		return
 
 	var pos := anchor.global_position
-	var half := WorldSystems.WORLD_ZONE_SIZE * 0.5   # (4800, 4800)
+	var half := WorldSystems.WORLD_ZONE_SIZE * 0.5   # (1750, 1750) — край карты острова
 
 	var turn := maxf(
 			_edge_turn_strength(absf(pos.x), half.x),
