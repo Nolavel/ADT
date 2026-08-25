@@ -12,6 +12,41 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Sea level is Y 45, and the documents say so
+
+**The water plane and the terrain shader disagreed about where the sea is.**
+`WaterSystem` sits at Y 45 in `aogashima_island.tscn`; the shader's
+`sea_level` was 0, so it painted 45 m of submerged terrain as land instead of
+coastal rock, and its `coast_mask` tinted a band nobody could see.
+
+The water is right, and the heightmap settles it: measured off the baked
+collision, the island above Y 45 is **2543 × 2570 m**; above Y 0 it is
+**3192 × 3124 m**. The brief asks for 2500 on the short side. The water plane
+is a deliberate choice that drowns the flat coastal shelf and leaves cliffs —
+exactly what the brief describes. `shader_parameter/sea_level` is now 45.
+
+**Documents caught up with the tile grid's removal**, in the same pass:
+`docs/architecture/world_streaming.md` (the spawn paragraph still described
+the `Y_CITY_ZONE_TOP` clamp that was removed two commits ago — it now says
+spawn is a point on the terrain, and which of the two places that store it
+wins), `ARCHITECTURE.md` (Ring 0 no longer holds nine tile silhouettes; one
+distance metric instead of two), `docs/CONTRIBUTING.md`, `readme.md`,
+`CLAUDE.md`'s index row.
+
+`docs/scope_horizon.md` now marks the state of each of the brief's six steps
+rather than just listing them: 1, 2, 4 and 6 done, 3 done differently by
+decision, **5 open and outstanding** — the building generator is the only
+thing left before the island transition can close.
+
+*Вода в сцене стоит на Y 45, а шейдер считал море за 0 — 45 м затопленного
+рельефа красились сушей. Права вода: при 45 остров 2543 × 2570 м, ровно то,
+что просит ТЗ. Заодно документы догнали снятие сетки: абзац про зажим спавна
+описывал зажим, снятый двумя коммитами раньше, а `scope_horizon` теперь
+показывает состояние каждого шага ТЗ — открыт только генератор застройки.*
+- `world/aogashima/aogashima_island.tscn`, `docs/architecture/world_streaming.md`, `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`, `readme.md`, `docs/scope_horizon.md`, `docs/island_rescope_brief.md`, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - The 3x3 ground-tile grid is gone; the island is the ground
 
 Found by reviewing the merge, and bigger than it reads: **the nine ground tiles

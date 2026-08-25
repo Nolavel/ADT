@@ -201,9 +201,14 @@ The most involved system here, and the one worth reading the file header of
 Content exists in two rings.
 
 **Ring 0 — silhouettes.** Built once in `initialize()`, synchronously,
-before the first physics tick after the player spawns. Nine ground-tile
-silhouettes plus one per block. These carry **permanent collision** — they
-are the safety floor, and they never unload. While a cell's real content is
+before the first physics tick after the player spawns. One per block. These
+carry **permanent collision** and never unload.
+
+Until 2026-08-25 this ring also held nine ground-tile silhouettes, and they
+were the safety floor. They were also a solid 6600 × 6600 m slab at Y 0 —
+walkable seabed under the whole ocean, wider than the island itself. The
+island's terrain is the floor now: a static mesh with a `HeightMapShape3D`,
+outside the pipeline entirely. While a cell's real content is
 active its silhouette is merely hidden (`visible = false`); in Godot that
 does not disable physics, so the collision stays live underneath.
 
@@ -222,16 +227,14 @@ stateDiagram-v2
     READY --> UNLOADED: left zone early<br/>(cache stays warm)
 ```
 
-Two distance metrics, chosen per cell type:
+One distance metric, since ground tiles left and blocks are the only cell
+type: an XZ **radius**, 400 m to load and 500 m to unload, the gap being the
+hysteresis. Blocks are full-height columns, so vertical filtering would be
+meaningless for them.
 
-- **Ground tiles** use a **ring metric** on grid coordinates (Chebyshev
-  distance): loaded at ≤ 1 ring, unloaded at ≥ 2. Hysteresis is built into
-  the metric — a whole tile of slack. A radius metric was tried and does not
-  work here: tiles are 2200 m across, so any radius under half a tile
-  unloads the ground under the player's feet.
-- **Blocks** use an XZ **radius**: 400 m to load, 500 m to unload, the gap
-  being the hysteresis. Blocks are full-height columns, so vertical filtering
-  would be meaningless for them.
+(The ring metric on grid coordinates that ground tiles used went with them.
+It existed because a radius under half a tile — tiles were 2200 m across —
+unloaded the ground under the player's feet.)
 
   These radii used to be 1000/1200, sized to make a 9.6 km world manageable.
   The island is 3.5 km across and fits in memory whole, so the pipeline's job

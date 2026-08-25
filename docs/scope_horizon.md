@@ -29,7 +29,7 @@ constraint on everything below. A horizon that assumes more is fiction.
 **Sequencing is by dependency, not by date.** Items unlock each other. Calendar
 dates appear only where an external commitment exists.
 
-Last reviewed: 2026-08-24
+Last reviewed: 2026-08-25
 
 ---
 
@@ -80,19 +80,29 @@ load-bearing world change. Continuing to build content or systems against the
 old strata model produces work that must be torn out. The brief is the single
 source of truth for order and numbers.
 
-Order is fixed (see the brief):
+Order is fixed (see the brief). State as of 2026-08-25:
 
-1. Remove strata as a technical entity
-2. Change streaming radii (`BLOCK_STREAM_RADIUS` 400, `BLOCK_UNLOAD_RADIUS` 500)
-3. Obtain real Aogashima heightmap + credit in `CREDITS.md`
-4. Terrain mesh + collision in Godot (no third-party terrain plugins)
-5. Building generator driven by the heightmap
-6. Document sync (this file, `planned_scope`, world descriptions, `CLAUDE.md` split)
+1. **Done** — strata removed as a technical entity, from the runtime and from
+   the editor tools. The 3×3 ground-tile grid went with them: nine 2200 m slabs
+   were a walkable seabed under the whole ocean, and the terrain is the ground
+   now.
+2. **Done** — `BLOCK_STREAM_RADIUS` 400, `BLOCK_UNLOAD_RADIUS` 500, with the
+   pipeline's changed purpose recorded next to them.
+3. **Done differently, by decision.** The heightmap is procedural
+   (`tools/island_generator/aogashima_generator.gd`), not real Aogashima DEM;
+   the `CREDITS.md` requirement lapses with it. See the brief's amendments.
+4. **Done** — terrain mesh, vertex-displacement shader, `HeightMapShape3D`
+   collision and the water plane, all in `world/aogashima/`.
+5. **Open. This is what "now" means.** No building generator exists. The 33
+   greybox blocks currently on the island were replanted from the old city
+   layout by scaling it — provisional scenery, not generated placement.
+6. **Done** — `CLAUDE.md` split into `docs/architecture/`, world descriptions
+   corrected across the documents.
 
 **Definition of Done:** island is the only world geometry; strata code and data
-are gone; streaming radii updated; heightmap-driven terrain visible and collidable;
-building markers generated from the heightmap; documents no longer describe the
-old vertical city.
+are gone; streaming radii updated; heightmap-driven terrain visible and
+collidable; building markers generated from the heightmap; documents no longer
+describe the old vertical city. **Only the generator is outstanding.**
 
 H3 (Crowd readability) remains open in parallel only for the residual
 play-test judgement of existing archetype reactions. It does not block the

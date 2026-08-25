@@ -110,7 +110,7 @@ touching; each is authoritative for its own contracts.
 | File | Covers |
 |---|---|
 | `docs/architecture/autoloads_and_bootstrap.md` | The four autoloads, `world.gd`'s three declarative lists, `on_world_ready()`, node groups |
-| `docs/architecture/world_streaming.md` | `WorldData`/`BlockData`/`GroundTileData`, `BlockBase` markers, tile coords, streaming conventions |
+| `docs/architecture/world_streaming.md` | `WorldData`/`BlockData`, `BlockBase` markers, streaming conventions, spawn |
 | `docs/architecture/player_and_camera.md` | `player.gd`'s two movement modes, camera components, transport, stance and aiming, key hints |
 | `docs/architecture/npc_and_incidents.md` | `ActorBase`/`NPCBase`/`DroneBase`, archetypes, reactions, the witness chain, `IncidentRegistry`, `ComicEffectSystem` |
 | `docs/architecture/items_and_equipment.md` | `ItemCatalog`, `EquipmentComponent`, equipment visuals, slot data, `MorphIcon` |
