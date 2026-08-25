@@ -12,6 +12,68 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - City generator (island step 5)
+
+The last open step of `docs/island_rescope_brief.md`. Reads the island's
+terrain, lays a Manhattan grid on the buildable ground, hangs a ring of towers
+outside it, and writes both the tower scenes and `data/world_data.tres`.
+
+**Run it yourself:** open `tools/city_generator/generate_city.gd` in the script
+editor and File -> Run. No scene needs to be open. Headless equivalent:
+`godot --headless --script res://tools/city_generator/generate_city_cli.gd`.
+
+**Why three files.** An EditorScript does not execute from `--script` on the
+CLI (verified — it silently does nothing), so the logic lives in
+`CityGenerator` (a `RefCounted`) with two thin entry points over it: one for a
+person in the editor, one for a headless agent run. No duplicated logic.
+
+**What makes the grid readable.** Avenues run N-S 85 m apart, streets E-W 46 m
+apart, and the tower footprint is 64 x 30 with its narrow side facing along the
+street. The asymmetry is the whole point: from any intersection it is obvious
+which axis is the long one, so direction of travel reads without a minimap. A
+square cell would be a chessboard with no north.
+
+**Height profile.** 200-700 m, quantized to 25 m so the scene library stays
+finite, tallest in the middle and falling off quadratically toward the edge —
+a city with a downtown rather than a field of equal posts. Ring towers are
+biased tall (70% draw the top of the range) per the brief. One landmark at
+1000 m, placed on the flattest ground near the centre.
+
+**Two traps this had to work around, both consequences of the 8-bit heightmap.**
+Slope measured between neighbouring samples measures the quantization, not the
+terrain — a 1.96 m step over a 6.84 m cell reads as 16 degrees, and a flat
+caldera floor is rejected as a cliff. Slope is therefore taken over a five-cell
+baseline. And the generator reads the heightmap PNG rather than the island
+scene's `HeightMapShape3D`, which was the first choice because it is what the
+player collides with — but it lives inside a 41 MB text scene that takes
+minutes to parse, and a tool run by hand cannot open with a multi-minute stall.
+The two were measured against each other and agree within half a metre.
+
+**Verified by running it here**, not by reading it: 258 buildable intersections
+found, 160 taken for the core within a 938 m radius, 40 ring towers on all 40
+sectors, 1 landmark, 201 total from a library of 35 tower pairs. Booting the
+result gives `Data: 201 blocks`, 37 of them active at the spawn radius, the
+player still standing at `(220, 128.81, -140)`, and no new errors or warnings.
+The generated output is deliberately **not** committed — it is Stan's run to
+make.
+
+Alongside it: `GAMEPLAY_HEIGHT` 1000 -> **1250**, so the 1000 m landmark
+standing on a 110 m caldera floor does not have the ceiling resting on its
+roof. And `WorldBorderGuardSystem.margin` 500 -> **120**: with a half-extent of
+1750, a 500 m margin started turning the player back at 1250 from centre, which
+is barely half the map and well inside the island's own shoreline.
+
+*Генератор города — последний открытый шаг островного ТЗ. Манхэттенская сетка:
+авеню через 85 м, улицы через 46, башня 64×30 узкой стороной вдоль улицы —
+именно несовпадение осей делает направление читаемым. Высоты 200-700 с
+профилем «выше к центру», кольцо преимущественно высокое, одна смысловая на
+1000. Проверено прогоном: 201 башня, мир грузится, игрок на месте. Потолок
+мира 1000 -> 1250, бордер 500 -> 120 (раньше отжимал от собственного берега).
+Сгенерированное намеренно не коммичу — запуск ваш.*
+- `tools/city_generator/` (new: `city_generator.gd`, `generate_city.gd`, `generate_city_cli.gd`), `core/world/world_systems.gd`, `core/world/world_border_guard.gd`
+
+---
+
 ## 2026-08-25 - A clean run: 151 engine messages down to 4
 
 First use of the CLI for what it is actually for. A headless boot printed
