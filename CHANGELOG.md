@@ -12,6 +12,59 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Radial city: concentric rings and six avenues
+
+Stan's numbers plus one structural note: the rings worked, make several of
+them, and make the traffic flow read between the towers. Only
+`tools/city_generator/city_layout.gd` changes.
+
+**Heights, exactly as asked.** Landmark 1000 -> **800**; the first ring around
+it — the retinue — **300-500**; everything else **200-400**. The
+`RING_FALLOFF` profile is gone, and so is the rim's "mostly tall" bias, which
+would have contradicted a flat 200-400. `HEIGHT_STEP` 25 -> 20, because the
+span shrank from 800 m to 200 and the library would otherwise coarsen.
+
+**Chebyshev squares -> real circles.** The downtown grid used square rings,
+which look circular from above but are not. It is now a radial plan:
+concentric rings from the summit, slot count per ring derived from
+circumference so spacing along the arc stays ~70 m instead of thinning outward.
+The separate 840 m rim is folded in — at a 110 m step the outer rings reach it
+on their own.
+
+**Readability is two gap widths, and it had to be.** A tower cannot be turned
+tangentially to its ring: `BlockData` has no rotation field and
+`map_source.export_data()` writes only `global_position`, so a rotated marker
+would lose its rotation on export and every tower would snap back to axis-
+aligned in game. That is a contract change across three files, and the ask was
+one. So: footprint 48x48, ring step 110 -> **62 m circular corridor**, arc
+spacing 70 -> **22 m radial slot**. Nearly threefold difference, the same trick
+that made avenues read against streets, in polar coordinates.
+
+**Six radial avenues, defined by ANGLE rather than slot index** — ring counts
+differ, so an index-based spoke would drift ring to ring instead of running
+through. Their half-width is given in metres of arc and converted per radius;
+in degrees a spoke would be a two-metre crack at the centre and a half-kilometre
+clearing at the shore. It is additionally capped at 22% of a sector, because
+constant metres near the centre ate 46% of the r=140 ring and left the landmark
+with a retinue of five.
+
+`MAX_SLOPE_CORE` 25 -> 28: Maruyama's flank averages 25.1 degrees at r=200, so
+25 sat exactly on the threshold and gutted ring 2.
+
+**Dry run:** summit (-2, 38) at 220 m; 8 rings from 140 to 910 m holding
+6/11/26/36/23/12/26/10; 43 slots taken by the avenues, 123 by terrain; **151
+exactly**; heights 200-800 with the retinue at 300-440; library of 13 pairs.
+
+*Радиально-кольцевая схема вместо манхэттенской. Высоты по вашим числам: 800 /
+300-500 / 200-400. Читаемость держится на разнице просветов — 62 м вдоль
+радиуса против 22 вдоль кольца, потому что развернуть башню по касательной
+нельзя: BlockData не хранит поворот. Шесть лучей заданы углом, а не номером
+слота, и сужаются у центра — иначе съедали половину первого кольца. 8 колец,
+151 башня.*
+- `tools/city_generator/city_layout.gd`
+
+---
+
 ## 2026-08-25 - City generator, second attempt: a grid that reads
 
 The first generator was run and rejected on sight — "влепил всё линейно,

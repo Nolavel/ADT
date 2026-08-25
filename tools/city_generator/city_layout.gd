@@ -59,59 +59,68 @@ class_name CityLayout
 
 # ── Сколько и какой высоты ───────────────────────────────────────────────────
 
-## Всего 151: 1 главная + 100 даунтаун + 30 обод + 20 внешний пояс.
-## TOTAL_TOWERS — контракт: если какой-то пояс недобрал (на ободе бывает
-## сектор без земли), недостачу добирает внешний пояс, и число сходится.
 const TOTAL_TOWERS: int = 151
-const LANDMARK_HEIGHT: float = 1000.0
-const DOWNTOWN_TOWERS: int = 100
-const OUTER_TOWERS: int = 20
-const RIM_TOWERS: int = 30
 
+## Главная башня. 800 на вершине конуса (~220 м) = макушка на 1020 при потолке
+## мира 1250 — запас есть, доминанта читается.
+const LANDMARK_HEIGHT: float = 800.0
+
+## Первое кольцо вокруг главной башни — свита. Выше остального города, ниже
+## доминанты: именно этот перепад и делает центр центром.
+const INNER_RING_MIN: float = 300.0
+const INNER_RING_MAX: float = 500.0
+
+## Все остальные кольца.
 const HEIGHT_MIN: float = 200.0
-const HEIGHT_MAX: float = 700.0
+const HEIGHT_MAX: float = 400.0
 
 ## Высоты округляются до этого шага, чтобы библиотека сцен была конечной.
-const HEIGHT_STEP: float = 25.0
-
-## Во сколько раз падает высота на каждое кольцо от главной башни.
-## 0.88 даёт 616 на первом кольце и 200 примерно на десятом — плавную корону
-## вокруг доминанты. Ближе к 1.0 — плоский город, ближе к 0.7 — резкий обрыв.
-const RING_FALLOFF: float = 0.88
-
-## Разброс поверх кольцевого профиля, чтобы силуэт не был правильным конусом.
-const HEIGHT_JITTER: float = 60.0
+## 20 при диапазоне 200 даёт 11 корзин — столько же ступеней на метр, сколько
+## давали 25 при прежнем диапазоне 500.
+const HEIGHT_STEP: float = 20.0
 
 
-# ── Сетка ────────────────────────────────────────────────────────────────────
+# ── Кольца и лучи ────────────────────────────────────────────────────────────
 #
-# Авеню идут с севера на юг (шаг по X), улицы — с запада на восток (шаг по Z).
-# Шаги РАЗНЫЕ, и footprint вытянут вдоль X: именно несовпадение осей делает
-# направление читаемым — с перекрёстка видно, какая ось длинная. Квадратная
-# ячейка дала бы шахматную доску без севера.
+# Схема радиально-кольцевая, а не манхэттенская: концентрические окружности от
+# главной башни плюс лучевые проспекты насквозь.
+#
+# ЧИТАЕМОСТЬ ДЕРЖИТСЯ НА РАЗНИЦЕ ДВУХ ПРОСВЕТОВ, и это единственное, чем её
+# здесь можно сделать: развернуть башню по касательной к кольцу нельзя —
+# BlockData не хранит поворот, а map_source.export_data() пишет только
+# global_position, так что поворот маркера умрёт при экспорте.
+#
+#   вдоль радиуса:  RING_STEP - footprint = 110 - 48 = 62 м — кольцевая дуга
+#   вдоль кольца:   ARC_SPACING - footprint = 70 - 48 = 22 м — проулок
+#
+# Разница почти втрое: широкая дуга читается магистралью, узкая щель — щелью.
+# Сблизишь числа — оба просвета станут одинаковыми и город снова превратится в
+# однородную россыпь.
 
-const AVENUE_STEP_X: float = 85.0
-const STREET_STEP_Z: float = 46.0
-const CORE_FOOTPRINT: Vector2 = Vector2(64.0, 30.0)
+const RING_START_RADIUS: float = 140.0
+const RING_STEP: float = 110.0
+const ARC_SPACING: float = 70.0
+const RING_FOOTPRINT: Vector2 = Vector2(48.0, 48.0)
 
-## Внешний пояс на дне кальдеры: шаг реже, дома ниже. Нужен, чтобы центр и
-## периферия отличались на глаз — в первой версии весь город был одним ковром.
-const OUTER_STEP_X: float = 130.0
-const OUTER_STEP_Z: float = 70.0
-const OUTER_FOOTPRINT: Vector2 = Vector2(96.0, 48.0)
-const OUTER_HEIGHT_SPAN: float = 150.0
+## Докуда кольца растут, даже если башни ещё не набраны. 12 колец от 140 с
+## шагом 110 — это радиус 1350, то есть весь остров.
+const MAX_RINGS: int = 12
 
-## Дальше скольких колец даунтаун не растёт, даже если башни ещё не кончились.
-const MAX_DOWNTOWN_RING: int = 24
+## Лучевые проспекты. Луч задан УГЛОМ, а не номером слота: на разных кольцах
+## разное число башен, и по номеру луч съезжал бы от кольца к кольцу вместо
+## того, чтобы идти насквозь.
+const SPOKE_COUNT: int = 6
+const SPOKE_HALF_ARC: float = 34.0
 
+## Потолок угловой ширины луча, в долях сектора между лучами.
+## Постоянная ширина В МЕТРАХ у центра съедает почти половину окружности:
+## на радиусе 140 шесть лучей по 34 м забирали 46% кольца, и свита вокруг
+## главной башни выходила из пяти домов. Здесь луч у центра сужается до
+## доли сектора, а дальше снова растёт метрами.
+const SPOKE_MAX_SECTOR_SHARE: float = 0.22
 
-# ── Обод кальдеры ────────────────────────────────────────────────────────────
-
-const RIM_RADIUS: float = 840.0
-const RIM_RADIUS_TOLERANCE: float = 260.0
-
-## Доля башен обода, которым достаётся верх диапазона высот.
-const RIM_TALL_SHARE: float = 0.7
+## Разброс высоты внутри пояса, чтобы кольцо не читалось забором одной высоты.
+const HEIGHT_JITTER: float = 40.0
 
 
 # ── Пригодность земли ────────────────────────────────────────────────────────
@@ -121,8 +130,7 @@ const SHORE_MARGIN: float = 12.0
 
 ## 25°, а не 20: склоны Маруямы держатся в 20–25°, и при 20 даунтаун на конус
 ## просто не влезает.
-const MAX_SLOPE_CORE: float = 25.0
-const MAX_SLOPE_RIM: float = 26.0
+const MAX_SLOPE_CORE: float = 28.0
 const SLOPE_BASELINE_CELLS: int = 5
 
 ## Где искать вершину под главную башню.
@@ -181,134 +189,95 @@ func compute_layout() -> Array[Dictionary]:
 
 	var placements: Array[Dictionary] = []
 	placements.append(_placement("landmark", summit.x, summit.y,
-			LANDMARK_HEIGHT, CORE_FOOTPRINT))
-
-	placements.append_array(_place_belt(summit, placements,
-			AVENUE_STEP_X, STREET_STEP_Z, CORE_FOOTPRINT,
-			DOWNTOWN_TOWERS, 1, "cty", true))
-
-	## Обод ставится РАНЬШЕ внешнего пояса. Порядок не косметический: пояс
-	## расходится от центра и при обратном порядке успевает занять места на
-	## ободе, после чего сектора отбраковываются по минимальной дистанции и
-	## кольцо получается дырявым (было 19 секторов из 30).
-	placements.append_array(_place_rim(placements))
-
-	## Внешний пояс идёт по своей, более редкой сетке от того же якоря — так
-	## улицы двух поясов остаются соосными и город не распадается на два
-	## несвязанных куска.
-	placements.append_array(_place_belt(summit, placements,
-			OUTER_STEP_X, OUTER_STEP_Z, OUTER_FOOTPRINT,
-			OUTER_TOWERS, 1, "out", false))
-
-	var missing: int = TOTAL_TOWERS - placements.size()
-	if missing > 0:
-		placements.append_array(_place_belt(summit, placements,
-				OUTER_STEP_X, OUTER_STEP_Z, OUTER_FOOTPRINT,
-				missing, 1, "fil", false))
+			LANDMARK_HEIGHT, RING_FOOTPRINT))
+	placements.append_array(_place_rings(summit, placements))
 
 	print("[CityGenerator] Всего башен: %d" % placements.size())
 	_report_heights(placements)
+	_report_inner_ring(placements, summit)
 	return placements
 
 
-## Один пояс: обход ячеек кольцами Чебышёва от якоря наружу.
+## Концентрические кольца от главной башни наружу, с лучевыми проспектами
+## насквозь.
 ##
-## Непригодная ячейка ПРОПУСКАЕТСЯ БЕЗ ЗАМЕНЫ — это и есть то, что делает
-## раскладку городом. Если вместо неё брать ближайшую пригодную, ряды съезжают
-## и улицы перестают быть сквозными; так выглядела первая версия.
-func _place_belt(anchor: Vector2, existing: Array[Dictionary],
-		step_x: float, step_z: float, footprint: Vector2,
-		want: int, start_ring: int, id_prefix: String,
-		tall_profile: bool) -> Array[Dictionary]:
-
+## Слотов на кольце столько, чтобы шаг вдоль дуги держался около ARC_SPACING:
+## иначе дальние кольца разрежались бы, и город растворялся к краю вместо того,
+## чтобы обрываться там, где кончается земля.
+##
+## Непригодный слот остаётся ПУСТЫМ, а не подменяется соседним. Подмена — ровно
+## то, из-за чего первая версия рассыпалась в конфетти: ряды съезжали и ни один
+## просвет не проходил насквозь.
+func _place_rings(centre: Vector2, existing: Array[Dictionary]) -> Array[Dictionary]:
 	var taken: Array[Dictionary] = []
-	var min_gap: float = maxf(footprint.x, footprint.y) * 0.9
-	var ring: int = start_ring
-	var skipped: int = 0
+	var min_gap: float = RING_FOOTPRINT.x * 0.9
+	var skipped_land: int = 0
+	var skipped_spoke: int = 0
 
-	while taken.size() < want and ring <= MAX_DOWNTOWN_RING:
-		for cell in _ring_cells(ring):
-			if taken.size() >= want:
+	for ring in range(1, MAX_RINGS + 1):
+		if taken.size() >= TOTAL_TOWERS - 1:
+			break
+		var radius: float = RING_START_RADIUS + float(ring - 1) * RING_STEP
+		var slots: int = maxi(6, int(round(TAU * radius / ARC_SPACING)))
+		var on_ring: int = 0
+
+		for slot in slots:
+			if taken.size() >= TOTAL_TOWERS - 1:
 				break
-			var pos := anchor + Vector2(float(cell.x) * step_x, float(cell.y) * step_z)
+			var angle: float = TAU * float(slot) / float(slots)
+			if _on_spoke(angle, radius):
+				skipped_spoke += 1
+				continue
+
+			var pos: Vector2 = centre + Vector2(cos(angle), sin(angle)) * radius
 			if not _is_buildable(pos.x, pos.y, MAX_SLOPE_CORE):
-				skipped += 1
+				skipped_land += 1
 				continue
 			if _too_close(existing, pos, min_gap) or _too_close(taken, pos, min_gap):
-				skipped += 1
+				skipped_land += 1
 				continue
 
 			var h: float
-			if tall_profile:
-				h = HEIGHT_MAX * pow(RING_FALLOFF, float(ring))
+			if ring == 1:
+				h = _rng.randf_range(INNER_RING_MIN, INNER_RING_MAX)
 			else:
-				h = HEIGHT_MIN + _rng.randf_range(0.0, OUTER_HEIGHT_SPAN)
+				h = _rng.randf_range(HEIGHT_MIN, HEIGHT_MAX)
 			h = clampf(h + _rng.randf_range(-HEIGHT_JITTER, HEIGHT_JITTER),
-					HEIGHT_MIN, HEIGHT_MAX)
+					INNER_RING_MIN if ring == 1 else HEIGHT_MIN,
+					INNER_RING_MAX if ring == 1 else HEIGHT_MAX)
 
-			taken.append(_placement("%s_%03d" % [id_prefix, taken.size() + 1],
-					pos.x, pos.y, h, footprint))
-		ring += 1
+			taken.append(_placement("cty_%03d" % (taken.size() + 1),
+					pos.x, pos.y, h, RING_FOOTPRINT))
+			on_ring += 1
 
-	print("[CityGenerator] Пояс '%s': %d башен, колец %d, пустых ячеек %d"
-			% [id_prefix, taken.size(), ring - 1, skipped])
-	if taken.size() < want:
-		print("[CityGenerator] ВНИМАНИЕ: пояс '%s' недобрал %d — ослабь MAX_SLOPE_CORE или подними MAX_DOWNTOWN_RING"
-				% [id_prefix, want - taken.size()])
+		print("[CityGenerator]   кольцо %2d: r=%4.0f м, слотов %3d, поставлено %3d"
+				% [ring, radius, slots, on_ring])
+
+	print("[CityGenerator] Кольца: %d башен, срезано лучами %d, рельефом %d"
+			% [taken.size(), skipped_spoke, skipped_land])
+	if taken.size() < TOTAL_TOWERS - 1:
+		print("[CityGenerator] ВНИМАНИЕ: недобрано %d — подними MAX_RINGS или MAX_SLOPE_CORE"
+				% [TOTAL_TOWERS - 1 - taken.size()])
 	return taken
 
 
-## Координаты ячеек одного кольца Чебышёва вокруг (0,0).
-func _ring_cells(ring: int) -> Array[Vector2i]:
-	var cells: Array[Vector2i] = []
-	if ring <= 0:
-		cells.append(Vector2i.ZERO)
-		return cells
-	for i in range(-ring, ring + 1):
-		cells.append(Vector2i(i, -ring))
-		cells.append(Vector2i(i, ring))
-	for j in range(-ring + 1, ring):
-		cells.append(Vector2i(-ring, j))
-		cells.append(Vector2i(ring, j))
-	return cells
-
-
-## Обод кальдеры: по одной башне на сектор, от идеального радиуса расходимся
-## наружу и внутрь, пока не найдём землю. Так кольцо остаётся кольцом на рваном
-## рельефе вместо того, чтобы рассыпаться там, где окружность уходит в море.
-func _place_rim(existing: Array[Dictionary]) -> Array[Dictionary]:
-	var taken: Array[Dictionary] = []
-	for i in RIM_TOWERS:
-		var angle := TAU * float(i) / float(RIM_TOWERS)
-		var dir := Vector2(cos(angle), sin(angle))
-		var found := Vector2.INF
-		var offset := 0.0
-		while offset <= RIM_RADIUS_TOLERANCE:
-			for sign_out: float in [1.0, -1.0]:
-				var probe: Vector2 = dir * (RIM_RADIUS + sign_out * offset)
-				if _is_buildable(probe.x, probe.y, MAX_SLOPE_RIM):
-					found = probe
-					break
-			if found != Vector2.INF:
-				break
-			offset += 20.0
-
-		if found == Vector2.INF:
-			continue
-		if _too_close(existing, found, 120.0) or _too_close(taken, found, 120.0):
-			continue
-
-		var tall: bool = _rng.randf() < RIM_TALL_SHARE
-		var h: float
-		if tall:
-			h = _rng.randf_range(HEIGHT_MAX - 140.0, HEIGHT_MAX)
-		else:
-			h = _rng.randf_range(HEIGHT_MIN, HEIGHT_MIN + 180.0)
-		taken.append(_placement("rim_%03d" % (i + 1), found.x, found.y,
-				h, OUTER_FOOTPRINT))
-
-	print("[CityGenerator] Обод: %d башен из %d секторов" % [taken.size(), RIM_TOWERS])
-	return taken
+## Попадает ли угол в один из лучевых проспектов.
+##
+## Полуширина задана В МЕТРАХ ПО ДУГЕ и переводится в угол на текущем радиусе:
+## задай её в градусах — и у центра луч был бы щелью в пару метров, а у берега
+## разъехался бы на просеку в полкилометра.
+func _on_spoke(angle: float, radius: float) -> bool:
+	if radius <= 0.001:
+		return false
+	var sector: float = TAU / float(SPOKE_COUNT)
+	var half_angle: float = minf(SPOKE_HALF_ARC / radius,
+			sector * SPOKE_MAX_SECTOR_SHARE)
+	for i in SPOKE_COUNT:
+		var spoke: float = TAU * float(i) / float(SPOKE_COUNT)
+		var delta: float = absf(wrapf(angle - spoke, -PI, PI))
+		if delta <= half_angle:
+			return true
+	return false
 
 
 func _too_close(taken: Array[Dictionary], p: Vector2, limit: float) -> bool:
@@ -328,6 +297,24 @@ func _placement(id: String, x: float, z: float, height: float,
 		"height": h,
 		"footprint": footprint,
 	}
+
+
+## Отдельная сводка по свите: она задана другим диапазоном, и если бы он
+## разъехался с общим, на глаз это заметили бы позже всего.
+func _report_inner_ring(placements: Array[Dictionary], centre: Vector2) -> void:
+	var lo := 99999.0
+	var hi := 0.0
+	var n := 0
+	for p in placements:
+		var pos: Vector3 = p["position"]
+		var d: float = Vector2(pos.x, pos.z).distance_to(centre)
+		if d < RING_START_RADIUS + RING_STEP * 0.5 and p["id"] != "landmark":
+			var h: float = p["height"]
+			lo = minf(lo, h)
+			hi = maxf(hi, h)
+			n += 1
+	if n > 0:
+		print("[CityGenerator] Свита (кольцо 1): %d башен, %.0f..%.0f м" % [n, lo, hi])
 
 
 func _report_heights(placements: Array[Dictionary]) -> void:
