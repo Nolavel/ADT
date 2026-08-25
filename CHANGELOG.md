@@ -12,6 +12,63 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - A clean run: 151 engine messages down to 4
+
+First use of the CLI for what it is actually for. A headless boot printed
+**151** errors and warnings; it now prints **4**, and the three that remain
+are not defects.
+
+**88 — unnamed animation blend points.** `add_blend_point()` gained a `name`
+parameter and warns for every unnamed one, four per NPC and sixteen on the
+player, every spawn. All twenty call sites now pass the name the point already
+had as a variable.
+
+**54 — stale asset UIDs, and a project font that never loaded.** Root cause:
+`*.import` was gitignored. Godot 4 keeps an imported asset's UID inside its
+`.import` file, so every clone minted its own while the `.tscn` files kept the
+UIDs of whoever saved them. `project.godot` asked for the BlackRock font by a
+UID no machine had, so the custom font silently failed to load — an ERROR, not
+a warning. `.import` files are now committed (133 of them, Godot's own
+recommended layout) and every stale reference rewritten to match; only the
+`uid=` field changed, never a path or an id.
+
+**22 — actors with no `actor_id`.** Every NPC and drone in `world.tscn` was
+unnamed to `IncidentRegistry`, meaning none of them could be recorded as a
+perpetrator or a witness. Each now carries its node name in snake_case, which
+is unique in the scene and stable for the save contract.
+
+**9 — `unknown item id ''`, and this one was mine.** `_garment_in()` and
+`_apply_body_slot()` both walk every body slot on every call, three of the
+player's five being empty, and asked the catalog to resolve `""` each time.
+An empty slot is now answered before the catalog is consulted. A non-empty id
+that fails to resolve still warns, because that is still a real failure.
+
+The same pass caught a regression I introduced while writing it: the first fix
+used `ItemCatalog.find()`, an instance method, on the class. That is a hard
+parse error, it took `equipment_component.gd` and everything depending on it
+down with it, and one headless run turned it into 177 cascading errors. It also
+settles a question this session had only answered indirectly — `find()` is not
+callable on the class, `get_item()` is the static form, and Stan had already
+converted every call site.
+
+**What is left, and why:** a UI scene with mismatched anchors (cosmetic, an
+editor fix), `NavigationRegion3D not found` (true — the island has no navmesh
+yet, the system is correctly reporting a missing feature), and two
+leaked-at-exit lines that are Godot shutdown noise on `--quit-after`.
+
+Verified after the fact: the player still spawns on the caldera floor at
+`(220, 128.81, -140)` with `is_on_floor()` true.
+
+*151 сообщение движка → 4. Безымянные точки блендспейсов (88), протухшие UID
+ассетов из-за `*.import` в gitignore (54, включая шрифт проекта, который вообще
+не грузился), акторы без `actor_id` (22) и мой собственный баг с пустым id
+предмета (9). По ходу поймал собственную же регрессию: `ItemCatalog.find()` на
+классе — жёсткая ошибка разбора, положившая пол-проекта; один headless-прогон
+превратил её в 177 ошибок и показал сразу.*
+- `npc/npc_components/animation_component/npc_animation_component.gd`, `player/player_components/animation_component/player_animation_component.gd`, `player/player_components/equipment_component/equipment_component.gd`, `player/player_components/equipment_visuals_component/equipment_visuals_component.gd`, `world/world.tscn`, `project.godot`, `.gitignore`, 133 `*.import` files (now tracked), 31 scenes/resources with rewritten UIDs, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - Godot CLI in the agent container
 
 Agent sessions run in a throwaway container with no Godot, which is why every

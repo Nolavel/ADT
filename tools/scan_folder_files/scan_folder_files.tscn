@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://h110anmbrux7" path="res://tools/scan_folder_files/project_stats_ui.gd" id="1_cnwk7"]
 [ext_resource type="Script" uid="uid://hse0ajxh67to" path="res://tools/scan_folder_files/project_scanner.gd" id="2_r84w1"]
-[ext_resource type="FontFile" uid="uid://bl6a6ig5x7lsc" path="res://assets/fonts/BlackRock/BlackRock-Regular.ttf" id="3_4syu8"]
+[ext_resource type="FontFile" uid="uid://7hp8cqc5fb1h" path="res://assets/fonts/BlackRock/BlackRock-Regular.ttf" id="3_4syu8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_t6i4e"]
 bg_color = Color(0.6, 0.6, 0.0862745, 0.423529)

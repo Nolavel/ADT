@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cvuw2ef72te81"]
 
 [ext_resource type="Script" uid="uid://dvhjb4bajtdha" path="res://tools/input_debugger/input_debugger.gd" id="1_venrx"]
-[ext_resource type="FontFile" uid="uid://bl6a6ig5x7lsc" path="res://assets/fonts/BlackRock/BlackRock-Regular.ttf" id="2_q60xq"]
+[ext_resource type="FontFile" uid="uid://7hp8cqc5fb1h" path="res://assets/fonts/BlackRock/BlackRock-Regular.ttf" id="2_q60xq"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_qq8oi"]
 font = ExtResource("2_q60xq")

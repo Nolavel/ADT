@@ -436,8 +436,17 @@ func _find_pocket(body_slot_id: StringName, pocket_id: StringName) -> EquipmentS
 	return null
 
 
+## An EMPTY body slot is answered before the catalog is asked anything.
+## get_available_pockets() walks every slot on every call, including the ones
+## nothing is worn in, so without this guard get_item() warned "unknown item
+## id ''" six times per startup for a question whose legitimate answer is
+## "nothing is worn there". A non-empty id that fails to resolve is still a
+## real failure and still warns.
 func _garment_in(body_slot_id: StringName) -> GarmentData:
-	var item := ItemCatalog.get_item(_body.get(body_slot_id, &""))
+	var item_id: StringName = _body.get(body_slot_id, &"")
+	if item_id == &"":
+		return null
+	var item := ItemCatalog.get_item(item_id)
 	if item == null:
 		return null
 	return item.garment

@@ -293,10 +293,10 @@ func _setup_animation_tree() -> void:
 	var locomotion := AnimationNodeBlendSpace1D.new()
 	locomotion.min_space = -1.0
 	locomotion.max_space = 1.0
-	locomotion.add_blend_point(backward, -1.0)
-	locomotion.add_blend_point(idle, 0.0)
-	locomotion.add_blend_point(walk, walk_blend_radius)
-	locomotion.add_blend_point(run, 1.0)
+	locomotion.add_blend_point(backward, -1.0, -1, &"backward")
+	locomotion.add_blend_point(idle, 0.0, -1, &"idle")
+	locomotion.add_blend_point(walk, walk_blend_radius, -1, &"walk")
+	locomotion.add_blend_point(run, 1.0, -1, &"run")
 
 	## Placeholder clip at setup time — never played until play_knockdown()/
 	## play_lying()/play_getup() assigns and fires it.
