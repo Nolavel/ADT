@@ -170,7 +170,7 @@ the same design rather than an effect bolted on:
 ## 8. This grows
 
 The event set and the word pools are both expected to expand as the core
-loop does — reactions to intent, surveillance, advertising, strata-specific
+loop does — reactions to intent, surveillance, advertising, district-specific
 behaviour all have moments that a panel might reasonably make a sound about.
 
 What must not drift is section 3. Every new effect earns its place by

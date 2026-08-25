@@ -4,6 +4,13 @@
 # Конвейер стриминга мира. Единственный владелец стримимого контента:
 # всё инстанцирует в StreamContainer, world.gd о ячейках не знает.
 #
+# ЧТО ОН ТЕПЕРЬ ДЕЛАЕТ (переезд на остров, 2026-08-25). Раньше он делал
+# управляемым мир на 9,6 км — радиусы были 1000/1200 именно поэтому. Остров
+# в 3,5 км в поперечнике целиком помещается в памяти, и смысл конвейера
+# сменился: он управляет ПОДМЕНОЙ ПУСТЫШКИ НА ЖИВОЙ КОНТЕНТ, а не размером
+# мира. Отсюда и радиусы 400/500: они выбраны от числа башен, которые должны
+# быть живыми вокруг игрока, а не от того, сколько мира влезает.
+#
 # ДВА КОЛЬЦА:
 #   Ring 0 (силуэты) — создаются один раз в initialize() и живут до reset():
 #     • 9 силуэтов плит земли (своя сцена на плиту, позиции из WorldSystems);
@@ -29,24 +36,18 @@
 #         зазора). Радиусная метрика тайлам не подходит: при радиусе меньше
 #         полуплиты (1100) контент выгружается под ногами игрока.
 #       BLOCK — радиусная в XZ (BLOCK_STREAM_RADIUS / BLOCK_UNLOAD_RADIUS).
-#         Кварталы — сквозные колонны на всю GAMEPLAY_HEIGHT, вертикальный
-#         фильтр для них бессмыслен; вертикальную детализацию дают страт-слои.
-#   • Пока контент ячейки ACTIVE — корень её силуэта скрыт (visible=false).
-#     Видимость в Godot НЕ отключает физику: коллизия силуэта живёт всегда.
+#         Кварталы — сквозные колонны на всю высоту, вертикальный фильтр для
+#         них бессмыслен.
+#   • Пока контент ячейки ACTIVE — корень её силуэта скрыт (visible=false),
+#     одинаково для плит и кварталов. Видимость в Godot НЕ отключает физику:
+#     коллизия силуэта живёт всегда.
 #   • Скан — не чаще, чем раз в STREAM_CHECK_DISTANCE пройденного пути;
 #     прокачка загрузок/инстансов (_pump) — каждый кадр.
 #
-# СТРАТ-СЛОИ (только кварталы):
-#   Контент-сцена квартала обязана содержать ноды InstancePlaceholder с
-#   именами "Layer" + имя страты из WorldSystems: LayerDoggerland,
-#   LayerManifold, LayerGlare. Это КОНТРАКТ ИМЁН — нарушение даст warning.
-#   Для ACTIVE-квартала материализован ровно один слой — текущая страта.
-#   Материализация: get_instance_path() → load_threaded_request() →
-#   create_instance(replace = false, custom_scene = packed).
-#   replace = false обязателен: плейсхолдер остаётся в дереве, слой можно
-#   выгружать (queue_free инстанса) и материализовывать повторно.
-#   TODO(backlog): гистерезис по высоте на границе страт — сейчас не
-#   воспроизводим (нет вертикального перемещения кроме дебаг-телепорта).
+# СТРАТ-СЛОЁВ БОЛЬШЕ НЕТ (переезд на остров, 2026-08-25). Квартал приходит
+# из своей контент-сцены целиком; контракта имён "Layer" + страта, его
+# InstancePlaceholder-конвейера и посегментного гашения силуэта не существует.
+# Вертикальная детализация на острове задаётся рельефом, а не тремя полосами.
 # =============================================================================
 
 extends Node
@@ -65,9 +66,12 @@ const DEBUG_LOG_TRANSITIONS := true
 const TILE_LOAD_RING   := 1   # текущая плита + соседи
 const TILE_UNLOAD_RING := 2   # гистерезис — целая плита зазора
 
-## BLOCK: радиусная метрика в XZ, метры.
-const BLOCK_STREAM_RADIUS := 1000.0
-const BLOCK_UNLOAD_RADIUS := 1200.0   # > STREAM: гистерезис границы
+## BLOCK: радиусная метрика в XZ, метры. Остров ~3,5 км в поперечнике, шаг
+## застройки ~100 м в кальдере — 400 м это порядка 25 активных башен вокруг
+## игрока. Подбирается глазом: если пустышка подменяется контентом прямо в
+## лицо — радиус мал.
+const BLOCK_STREAM_RADIUS := 400.0
+const BLOCK_UNLOAD_RADIUS := 500.0   # > STREAM: гистерезис границы 25 %
 
 const STREAM_CHECK_DISTANCE := 50.0
 
@@ -81,12 +85,6 @@ const INSTANTIATION_BUDGET_PER_FRAME := 1
 ## Temporary debug instrumentation for tracking down streaming-related
 ## "ripple between blocks at max hover speed" — remove once diagnosed.
 const DEBUG_QUEUE_PRINTS: bool = true
-
-## Зона вокруг границы страты (метры от порога по Y), в которой соседний
-## страт-слой активных кварталов упреждающе кладётся в _packed_cache — чтобы
-## к моменту реального пересечения (с учётом WorldSystems.STRATA_HYSTERESIS)
-## материализация не ждала фоновой загрузки.
-const STRATA_PRELOAD_MARGIN: float = 100.0
 
 
 # ── Типы ──────────────────────────────────────────────────────────────────────
@@ -108,11 +106,6 @@ class StreamCell:
 	var failed:          bool = false # битый путь/ресурс — исключена навсегда
 	var silhouette_node: Node3D = null
 	var content_node:    Node3D = null
-	# --- только кварталы ---
-	var layer_instance:  Node = null  # материализованный слой текущей страты
-	var layer_strata:    String = ""  # чья страта материализована
-	var pending_strata:  String = ""  # слой в фоновой загрузке
-	var pending_path:    String = ""
 
 
 # ── Состояние ─────────────────────────────────────────────────────────────────
@@ -139,7 +132,6 @@ var _initialized:         bool = false
 signal initialized(cell_count: int)
 signal cell_state_changed(cell_id: String, cell_type: CellType,
 		old_state: CellState, new_state: CellState)
-signal layer_changed(block_id: String, strata: String, loaded: bool)
 
 
 # ── Точки входа ───────────────────────────────────────────────────────────────
@@ -148,18 +140,12 @@ func _ready() -> void:
 	print("[StreamingSystems] 🌐 Ready, waiting for initialization...")
 	if DEBUG_LOG_TRANSITIONS:
 		cell_state_changed.connect(_log_cell_transition)
-		layer_changed.connect(_log_layer_event)
 
 
 func _log_cell_transition(cell_id: String, _cell_type: CellType,
 		old_state: CellState, new_state: CellState) -> void:
 	print("[Stream %8.2f] %-14s %s -> %s" % [Time.get_ticks_msec() * 0.001,
 			cell_id, CellState.keys()[old_state], CellState.keys()[new_state]])
-
-
-func _log_layer_event(block_id: String, strata: String, loaded: bool) -> void:
-	print("[Stream %8.2f] %-14s layer %s %s" % [Time.get_ticks_msec() * 0.001,
-			block_id, strata, "loaded" if loaded else "freed"])
 
 
 func initialize(container: Node3D, player: Node3D) -> void:
@@ -176,8 +162,6 @@ func initialize(container: Node3D, player: Node3D) -> void:
 
 	_build_cells()
 	_spawn_ring0()
-
-	WorldSystems.strata_changed.connect(_on_strata_changed)
 
 	_initialized = true
 	initialized.emit(_cells.size())
@@ -204,8 +188,6 @@ func _process(_delta: float) -> void:
 	if DEBUG_LOAD_ALL:
 		return
 
-	_prewarm_upcoming_layers(player_pos)
-
 	# Скан радиусов — дросселирован по пройденному пути.
 	if player_pos.distance_to(_last_check_position) >= STREAM_CHECK_DISTANCE:
 		_last_check_position = player_pos
@@ -222,9 +204,6 @@ func force_update() -> void:
 
 
 func reset() -> void:
-	if WorldSystems.strata_changed.is_connected(_on_strata_changed):
-		WorldSystems.strata_changed.disconnect(_on_strata_changed)
-
 	for cell: StreamCell in _cells.values():
 		_unload_content(cell)
 		if is_instance_valid(cell.silhouette_node):
@@ -250,7 +229,6 @@ func get_cells_snapshot() -> Array[Dictionary]:
 			"id":     cell.id,
 			"type":   cell.type,
 			"state":  cell.state,
-			"strata": cell.layer_strata,
 		})
 	return result
 
@@ -453,9 +431,6 @@ func _pump(player_pos: Vector3) -> void:
 					budget -= 1
 					_activate(cell)
 
-	# 3. Материализация страт-слоёв (тот же кадровый бюджет).
-	_pump_layers(budget)
-
 
 func _activate(cell: StreamCell) -> void:
 	var packed: PackedScene = _packed_cache.get(cell.content_path)
@@ -483,7 +458,11 @@ func _add_content(cell: StreamCell, packed: PackedScene) -> void:
 	instance.global_position = cell.position
 	cell.content_node = instance
 
-	if cell.type == CellType.GROUND_TILE and is_instance_valid(cell.silhouette_node):
+	# Силуэт гасится для плит И кварталов одинаково. До переезда на остров
+	# квартал вместо этого гасил силуэт посегментно, по одному сегменту на
+	# материализованный страт-слой; слоёв больше нет, гасить нечего — контент
+	# приходит целиком, значит и силуэт уходит целиком.
+	if is_instance_valid(cell.silhouette_node):
 		cell.silhouette_node.visible = false   # физика силуэта продолжает жить
 
 	_set_state(cell, CellState.ACTIVE)
@@ -492,152 +471,17 @@ func _add_content(cell: StreamCell, packed: PackedScene) -> void:
 		print("[StreamingSystems][DEBUG] activated %-14s latency=%dms queue_size=%d"
 				% [cell.id, Time.get_ticks_msec() - cell.queued_at, _queue.size()])
 
-	if cell.type == CellType.BLOCK:
-		_request_layer(cell, WorldSystems.current_strata)
-
 
 func _unload_content(cell: StreamCell) -> void:
 	if is_instance_valid(cell.content_node):
-		cell.content_node.queue_free()   # слой-инстанс освобождается вместе с ним
+		cell.content_node.queue_free()
 	cell.content_node = null
 
-	if cell.type == CellType.BLOCK and not cell.layer_strata.is_empty():
-		_set_silhouette_segment(cell, cell.layer_strata, true)
-
-	cell.layer_instance = null
-	cell.layer_strata   = ""
-	cell.pending_strata = ""
-	cell.pending_path   = ""
-
-	if cell.type == CellType.GROUND_TILE and is_instance_valid(cell.silhouette_node):
+	if is_instance_valid(cell.silhouette_node):
 		cell.silhouette_node.visible = true
 
 	if cell.state != CellState.UNLOADED:
 		_set_state(cell, CellState.UNLOADED)
-
-
-# ── Страт-слои кварталов ──────────────────────────────────────────────────────
-
-func _on_strata_changed(new_strata: String) -> void:
-	for cell: StreamCell in _cells.values():
-		if cell.type == CellType.BLOCK and cell.state == CellState.ACTIVE:
-			_request_layer(cell, new_strata)
-
-
-## Упреждающая фоновая прогрузка: пока игрок в пределах STRATA_PRELOAD_MARGIN
-## от границы страты, кладёт PackedScene соседнего страт-слоя активных
-## кварталов в _packed_cache — само переключение (материализация +
-## гашение сегмента силуэта) по-прежнему делают _request_layer/_pump_layers
-## при фактическом пересечении границы.
-func _prewarm_upcoming_layers(player_pos: Vector3) -> void:
-	var h := player_pos.y
-	var near_manifold_boundary := absf(h - WorldSystems.STRATA_MANIFOLD.x) <= STRATA_PRELOAD_MARGIN
-	var near_glare_boundary    := absf(h - WorldSystems.STRATA_GLARE.x)    <= STRATA_PRELOAD_MARGIN
-	if not (near_manifold_boundary or near_glare_boundary):
-		return
-	for cell: StreamCell in _cells.values():
-		if cell.type != CellType.BLOCK or cell.state != CellState.ACTIVE:
-			continue
-		if near_manifold_boundary:
-			_prewarm_layer(cell, "Doggerland" if cell.layer_strata == "Manifold" else "Manifold")
-		if near_glare_boundary:
-			_prewarm_layer(cell, "Manifold" if cell.layer_strata == "Glare" else "Glare")
-
-
-func _prewarm_layer(cell: StreamCell, strata: String) -> void:
-	if cell.layer_strata == strata or cell.pending_strata == strata:
-		return
-	var placeholder := _find_layer_placeholder(cell, strata)
-	if placeholder == null:
-		return
-	var path := placeholder.get_instance_path()
-	if not _packed_cache.has(path):
-		ResourceLoader.load_threaded_request(path)
-
-
-func _request_layer(cell: StreamCell, strata: String) -> void:
-	if cell.layer_strata == strata or cell.pending_strata == strata:
-		return
-
-	# Слой прежней страты выгружаем сразу — плейсхолдер остаётся в дереве.
-	if is_instance_valid(cell.layer_instance):
-		cell.layer_instance.queue_free()
-		layer_changed.emit(cell.id, cell.layer_strata, false)
-		_set_silhouette_segment(cell, cell.layer_strata, true)
-	cell.layer_instance = null
-	cell.layer_strata   = ""
-
-	var placeholder := _find_layer_placeholder(cell, strata)
-	if placeholder == null:
-		return
-
-	cell.pending_strata = strata
-	cell.pending_path   = placeholder.get_instance_path()
-	if not _packed_cache.has(cell.pending_path):
-		ResourceLoader.load_threaded_request(cell.pending_path)
-
-
-func _pump_layers(budget: int) -> void:
-	for cell: StreamCell in _cells.values():
-		if budget <= 0:
-			return
-		if cell.pending_strata.is_empty() or cell.state != CellState.ACTIVE:
-			continue
-
-		var packed: PackedScene = _packed_cache.get(cell.pending_path)
-		if packed == null:
-			match ResourceLoader.load_threaded_get_status(cell.pending_path):
-				ResourceLoader.THREAD_LOAD_LOADED:
-					packed = ResourceLoader.load_threaded_get(cell.pending_path) \
-							as PackedScene
-					_packed_cache[cell.pending_path] = packed
-				ResourceLoader.THREAD_LOAD_FAILED, \
-				ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-					push_warning("[StreamingSystems] Layer load failed: "
-							+ cell.pending_path)
-					cell.pending_strata = ""
-					cell.pending_path   = ""
-					continue
-				_:
-					continue   # ещё грузится
-
-		budget -= 1
-		var placeholder := _find_layer_placeholder(cell, cell.pending_strata)
-		if placeholder != null:
-			# replace = false: плейсхолдер живёт дальше, слой можно
-			# выгрузить и материализовать снова.
-			cell.layer_instance = placeholder.create_instance(false, packed)
-			cell.layer_strata   = cell.pending_strata
-			layer_changed.emit(cell.id, cell.layer_strata, true)
-			_set_silhouette_segment(cell, cell.layer_strata, false)
-		cell.pending_strata = ""
-		cell.pending_path   = ""
-
-
-## Прячет/показывает один сегмент силуэта квартала ("Mesh" + Strata) —
-## сегменты скрываются/показываются независимо друг от друга по мере того,
-## как материализуется/выгружается соответствующий страт-слой контента.
-## Коллизия силуэта не сегментирована и этой функцией не затрагивается.
-func _set_silhouette_segment(cell: StreamCell, strata: String, seg_visible: bool) -> void:
-	if not is_instance_valid(cell.silhouette_node):
-		return
-	var seg := cell.silhouette_node.get_node_or_null("Mesh" + strata)
-	if seg == null:
-		return
-	seg.visible = seg_visible
-
-
-## Контракт имён: нода InstancePlaceholder в корне контент-сцены квартала
-## называется "Layer" + имя страты (LayerDoggerland / LayerManifold / LayerGlare).
-func _find_layer_placeholder(cell: StreamCell, strata: String) -> InstancePlaceholder:
-	if not is_instance_valid(cell.content_node):
-		return null
-	var node := cell.content_node.get_node_or_null("Layer" + strata)
-	if node == null or not node is InstancePlaceholder:
-		push_warning("[StreamingSystems] Block %s: no InstancePlaceholder 'Layer%s'"
-				% [cell.id, strata])
-		return null
-	return node
 
 
 # ── Утилиты ───────────────────────────────────────────────────────────────────

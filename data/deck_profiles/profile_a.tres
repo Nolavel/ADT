@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="DeckProfile" format=3 uid="uid://qo4d57mt2wic"]
+
+[ext_resource type="Script" uid="uid://ug3k7ybkm077" path="res://world/resources/deck_profile.gd" id="1_cvjks"]
+
+[resource]
+script = ExtResource("1_cvjks")
+visual_floor_pitch = 10.0

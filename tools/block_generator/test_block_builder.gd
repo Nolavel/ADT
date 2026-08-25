@@ -6,27 +6,27 @@
 #
 # ПИШЕТ (в том же формате, что block_library_generator, но многобашенный):
 #   res://world/content/blocks/test/block_3tower/
-#       block_3tower.tscn        — корень: Shared + Layer* (InstancePlaceholder)
-#       layer_doggerland.tscn    — пирог визуальных этажей + палубы этой страты
-#       layer_manifold.tscn        по всем башням, что достают страту
-#       layer_glare.tscn
+#       block_3tower.tscn        — корень: Shared + башни с ярусами, одной сценой
 #   res://world/silhouettes/blocks/test/block_3tower_silhouette.tscn
-#   res://data/strata_deck_profiles/profile_{a,b,c}.tres  (если нет)
+#   res://data/deck_profiles/profile_{a,b,c}.tres  (если нет)
 #
 # РАСКЛАДКА ПО КОЛЬЦАМ (сверено со streaming_systems.gd):
 #   • Ring 0 (силуэт, постоянный): по-башенная wall-коллизия (StaticBody, слой 3,
 #     группа "wall") + тонкий футпринт-пад на башню (виден сверху в map_source,
 #     вертикаль НЕ загораживает — открытый пирог остаётся виден). Дальний
 #     LOD-фасад — отдельный шаг позже.
-#   • Ring 1 (контент, по радиусу): слои-страты Layer<Страта> (контракт имён!).
-#     В каждом слое — для каждой башни, что достаёт эту страту: MultiMesh «пирог»
-#     визуальных этажей (без коллизии) + 2 палубы (StaticBody слой 2 "floor",
-#     группа "floor"). Стриминг держит живой ОДНУ страту за раз.
+#   • Ring 1 (контент, по радиусу): башня целиком, внутри неё ярусы Tier*.
+#     В каждом ярусе — MultiMesh «пирог» визуальных этажей (без коллизии) +
+#     2 палубы (StaticBody слой 2 "floor", группа "floor"). Контент приходит
+#     ЦЕЛИКОМ: страт больше нет, стриминг не материализует слои по одному.
 #
 # ПАЛУБА: открытая полка, торчащая из башни в каньон (deck_overhang). Слой floor(2)
 # — маску floor у ховера правишь ты. Позже полка может стать нишей в фасаде.
 #
-# ГРАНИЦЫ ПОЛОС берутся из StrataGeometry — единый источник истины.
+# ЯРУСЫ, А НЕ СТРАТЫ (2026-08-25, переезд на остров). Полосы больше не берутся
+# из внешней таблицы страт — их нет. Играбельная высота КАЖДОЙ башни (её
+# собственный top минус TECH_BAND сверху и снизу) делится на TIER_PROFILES.size()
+# равных ярусов, а профиль ритма назван по ярусу, а не выведен из страты.
 # =============================================================================
 @tool
 extends EditorScript
@@ -39,7 +39,17 @@ const BLOCK_ID: String = "block_3tower"
 
 const CONTENT_DIR:    String = "res://world/content/blocks/test"
 const SILHOUETTE_DIR: String = "res://world/silhouettes/blocks/test"
-const PROFILE_DIR:    String = "res://data/strata_deck_profiles"
+const PROFILE_DIR:    String = "res://data/deck_profiles"
+
+## Глухая полоса снизу и сверху башни — ни этажей, ни палуб. Прежние 100 м
+## пришли из страты высотой 1000 м и сюда не переносятся: на острове башни
+## бывают по 30 м. 6 м — примерно один этаж; число ловится ногами.
+const TECH_BAND: float = 6.0
+
+## Профили ритма по ярусам снизу вверх. Раньше профиль выводился из страты
+## (Доггерленд→A, Манифолд→B, Глэр→C); теперь просто перечислен здесь, и
+## длина этого списка задаёт число ярусов.
+const TIER_PROFILES: Array[String] = ["A", "B", "C"]
 
 ## Зазор-каньон между башнями (мин по договорённости 20, рабочее 40).
 const GAP: float = 40.0
@@ -79,20 +89,13 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(block_dir)
 	DirAccess.make_dir_recursive_absolute(SILHOUETTE_DIR)
 
-	# 1. Слои страт (все три — башни гарантированно достают Glare).
-	var layer_paths := {}
-	for stratum in [StrataGeometry.DOGGERLAND, StrataGeometry.MANIFOLD, StrataGeometry.GLARE]:
-		var path := block_dir.path_join("layer_%s.tscn" % stratum.to_lower())
-		if not _save_layer_scene(path, stratum, layout, profiles, mat_floor, mat_deck, rng):
-			return
-		layer_paths[stratum] = path
-
-	# 2. Корень контента: Shared + Layer*-плейсхолдеры.
+	# 1. Контент: Shared + башни с ярусами, одной сценой.
 	var content_path := block_dir.path_join("%s.tscn" % BLOCK_ID)
-	if not _save_content_scene(content_path, cluster, layer_paths):
+	if not _save_content_scene(content_path, cluster, layout, profiles,
+			mat_floor, mat_deck, rng):
 		return
 
-	# 3. Силуэт: по-башенная wall-коллизия + футпринт-пады.
+	# 2. Силуэт: по-башенная wall-коллизия + футпринт-пады.
 	var sil_path := SILHOUETTE_DIR.path_join("%s_silhouette.tscn" % BLOCK_ID)
 	if not _save_silhouette_scene(sil_path, cluster, layout, mat_sil):
 		return
@@ -140,37 +143,12 @@ func _cluster_size(layout: Array[Dictionary]) -> Vector3:
 	return Vector3(max_x - min_x, max_top, max_d)
 
 
-# ── Слой страты (Ring 1) ─────────────────────────────────────────────────────
-
-func _save_layer_scene(path: String, stratum: String, layout: Array[Dictionary],
-		profiles: Dictionary, mat_floor: StandardMaterial3D,
-		mat_deck: StandardMaterial3D, rng: RandomNumberGenerator) -> bool:
-
-	var root := Node3D.new()
-	root.name = "Layer%s" % stratum
-	var profile: StrataDeckProfile = profiles[StrataGeometry.pattern_key(stratum)]
-
-	for i in layout.size():
-		var t: Dictionary = layout[i]
-		var band := StrataGeometry.playable_band(stratum, t["top"])
-		if band.y - band.x < profile.visual_floor_pitch:
-			continue   # башня не достаёт эту страту содержательно
-
-		var tower := Node3D.new()
-		tower.name = "Tower_%d" % i
-		tower.position = Vector3(t["x"], 0.0, 0.0)
-		_own(root, tower, root)
-
-		_add_visual_floors(root, tower, stratum, t, band, profile, mat_floor)
-		_add_decks(root, tower, stratum, t, band, profile, mat_deck, rng)
-
-	return _pack_and_save(root, path)
-
+# ── Ярусы башен (Ring 1) ─────────────────────────────────────────────────────
 
 ## Пирог: тонкие плиты на всю ширину/глубину башни с шагом pitch, только внутри
 ## играбельной полосы. Один MultiMesh на башню-страту — дёшево при масштабе.
-func _add_visual_floors(root: Node3D, tower: Node3D, stratum: String,
-		t: Dictionary, band: Vector2, profile: StrataDeckProfile,
+func _add_visual_floors(root: Node3D, tier_root: Node3D, tier_id: String,
+		t: Dictionary, band: Vector2, profile: DeckProfile,
 		mat: StandardMaterial3D) -> void:
 
 	var pitch: float = maxf(profile.visual_floor_pitch, 0.5)
@@ -191,14 +169,14 @@ func _add_visual_floors(root: Node3D, tower: Node3D, stratum: String,
 		mm.set_instance_transform(i, Transform3D(Basis(), Vector3(0.0, y, 0.0)))
 
 	var mmi := MultiMeshInstance3D.new()
-	mmi.name = "Floors_%s" % stratum
+	mmi.name = "Floors_%s" % tier_id
 	mmi.multimesh = mm
-	_own(root, mmi, tower)
+	_own(root, mmi, tier_root)
 
 
-## 2 палубы на страту: открытые полки в каньон, на разных высотах с разносом.
-func _add_decks(root: Node3D, tower: Node3D, stratum: String, t: Dictionary,
-		band: Vector2, profile: StrataDeckProfile, mat: StandardMaterial3D,
+## 2 палубы на ярус: открытые полки в каньон, на разных высотах с разносом.
+func _add_decks(root: Node3D, tier_root: Node3D, tier_id: String, t: Dictionary,
+		band: Vector2, profile: DeckProfile, mat: StandardMaterial3D,
 		rng: RandomNumberGenerator) -> void:
 
 	var heights := _deck_heights(band, profile.deck_min_separation_frac, rng)
@@ -209,7 +187,7 @@ func _add_decks(root: Node3D, tower: Node3D, stratum: String, t: Dictionary,
 
 	for k in heights.size():
 		var deck := StaticBody3D.new()
-		deck.name = "Deck_%s_%d" % [stratum, k]
+		deck.name = "Deck_%s_%d" % [tier_id, k]
 		# Слой 1|2 (world+floor)=3 — ТОЧНО как плиты земли (gt_silhouette
 		# collision_layer=3). Слой 2 (floor) в одиночку не ловит никто: перс
 		# маскирует 1, ховер 1|3. Бит 1 (world) — общий знаменатель, им и цепляем.
@@ -217,7 +195,7 @@ func _add_decks(root: Node3D, tower: Node3D, stratum: String, t: Dictionary,
 		deck.collision_mask = 0
 		deck.add_to_group("floor", true)
 		deck.position = Vector3(face_x + dir * overhang * 0.5, heights[k], 0.0)
-		_own(root, deck, tower)
+		_own(root, deck, tier_root)
 
 		var box := BoxShape3D.new()
 		box.size = Vector3(overhang, profile.deck_slab_thickness, depth)
@@ -254,29 +232,47 @@ func _deck_heights(band: Vector2, frac: float, rng: RandomNumberGenerator) -> Ar
 
 # ── Корень контента (Ring 1) ─────────────────────────────────────────────────
 
-func _save_content_scene(path: String, cluster: Vector3, layer_paths: Dictionary) -> bool:
+func _save_content_scene(path: String, cluster: Vector3, layout: Array[Dictionary],
+		profiles: Dictionary, mat_floor: StandardMaterial3D,
+		mat_deck: StandardMaterial3D, rng: RandomNumberGenerator) -> bool:
+
 	var root := Node3D.new()
 	root.name = BLOCK_ID.to_pascal_case()
 	root.set_meta("gbx_size", cluster)
-	root.set_meta("gbx_strata_top", "Glare")
 	root.set_meta("gbx_kind", "content")
 
 	# Shared — сквозной контент (контракт репо). Держим пустым: пирог живёт в
-	# слоях, коллизия — в силуэте. Ничего не загораживает.
+	# ярусах, коллизия — в силуэте. Ничего не загораживает.
 	var shared := Node3D.new()
 	shared.name = "Shared"
 	_own(root, shared, root)
 
-	# Layer* — InstancePlaceholder на сцены слоёв (контракт имён стриминга).
-	for stratum in [StrataGeometry.DOGGERLAND, StrataGeometry.MANIFOLD, StrataGeometry.GLARE]:
-		var layer_scene := load(layer_paths[stratum]) as PackedScene
-		if layer_scene == null:
-			push_error("[TestBlockBuilder] Слой не загрузился: %s" % layer_paths[stratum])
-			return false
-		var inst := layer_scene.instantiate()
-		inst.name = "Layer%s" % stratum
-		_own(root, inst, root)
-		inst.set_scene_instance_load_placeholder(true)
+	for i in layout.size():
+		var t: Dictionary = layout[i]
+		var tower := Node3D.new()
+		tower.name = "Tower_%d" % i
+		tower.position = Vector3(t["x"], 0.0, 0.0)
+		_own(root, tower, root)
+
+		# Играбельная высота ЭТОЙ башни, поделённая на ярусы поровну.
+		var playable_lo := TECH_BAND
+		var playable_hi := maxf(playable_lo, float(t["top"]) - TECH_BAND)
+		var tier_height := (playable_hi - playable_lo) / float(TIER_PROFILES.size())
+
+		for k in TIER_PROFILES.size():
+			var profile: DeckProfile = profiles[TIER_PROFILES[k]]
+			var band := Vector2(playable_lo + float(k) * tier_height,
+					playable_lo + float(k + 1) * tier_height)
+			if band.y - band.x < profile.visual_floor_pitch:
+				continue   # ярус тоньше одного этажа — строить нечего
+
+			var tier_id := "T%d" % k
+			var tier_root := Node3D.new()
+			tier_root.name = "Tier_%d" % k
+			_own(root, tier_root, tower)
+
+			_add_visual_floors(root, tier_root, tier_id, t, band, profile, mat_floor)
+			_add_decks(root, tier_root, tier_id, t, band, profile, mat_deck, rng)
 
 	return _pack_and_save(root, path)
 
@@ -289,7 +285,6 @@ func _save_silhouette_scene(path: String, cluster: Vector3,
 	var root := Node3D.new()
 	root.name = "%sSilhouette" % BLOCK_ID.to_pascal_case()
 	root.set_meta("gbx_size", cluster)
-	root.set_meta("gbx_strata_top", "Glare")
 	root.set_meta("gbx_kind", "silhouette")
 
 	for i in layout.size():
@@ -338,11 +333,11 @@ func _ensure_profiles() -> Dictionary:
 	var result := {}
 	for key in defaults:
 		var path := PROFILE_DIR.path_join(defaults[key]["path"])
-		var profile: StrataDeckProfile
+		var profile: DeckProfile
 		if ResourceLoader.exists(path):
 			profile = load(path)
 		else:
-			profile = StrataDeckProfile.new()
+			profile = DeckProfile.new()
 			profile.pattern = key
 			profile.visual_floor_pitch = defaults[key]["pitch"]
 			var err := ResourceSaver.save(profile, path)

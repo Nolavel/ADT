@@ -265,19 +265,25 @@ Named so they are not mistaken for oversights.
 
 ---
 
-## 10. Strata change what OBSERVE means
+## 10. Height changes what OBSERVE means
 
 Surveillance is a gradient, not a difficulty curve.
 
-| Stratum | Coverage | The danger is |
+| Where | Coverage | The danger is |
 |---|---|---|
-| Doggerland | Sparse, dark, tight | **People.** You read faces, posture, who is following |
-| Manifold | Mixed | — |
-| Glare | Dense CCTV, open sightlines, narrow approved routes | **Infrastructure.** You read cameras and routes; the crowd stops being what is worth watching |
+| Caldera floor | Sparse, dark, tight | **People.** You read faces, posture, who is following |
+| The shelf between the rims | Mixed | — |
+| Outer rim and slope | Dense CCTV, open sightlines, narrow approved routes | **Infrastructure.** You read cameras and routes; the crowd stops being what is worth watching |
 
 Same verb, different grammar. The inversion is deliberate: the safest place
 to work is the place with the least protection for its residents — the
 bottom is not watched because it is not counted.
+
+The gradient is unchanged by the move to the island; what changed is that it
+is now **continuous**, carried by the terrain, instead of three technical
+bands. Doggerland, Manifold and Glare survive as what people in the city call
+these places — in dialogue and text, never in code (see
+`docs/island_rescope_brief.md`).
 
 ---
 
@@ -287,9 +293,9 @@ A build passes when the answers come from play, not from documentation.
 
 **Minute 1 — what does the player learn to do?**
 Read the street and move through it. No lore dump, no prompts. The start is
-Doggerland, which means the first minute is about the *absence* of
-attention: dark, crowded, nobody watching. Not the reverse — cameras and
-drones at the start break the inversion of the strata.
+the caldera floor — what people call Doggerland — which means the first
+minute is about the *absence* of attention: dark, crowded, nobody watching.
+Not the reverse — cameras and drones at the start break the inversion.
 
 **Minute 5 — what decision do they make?**
 How to close a need without leaving a trace they cannot afford. A small

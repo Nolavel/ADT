@@ -30,9 +30,6 @@ const SPAWN_MARKER_RADIUS: float = 50.0
 
 @onready var city_zone_body: StaticBody3D = $CityZone/StaticBody3D
 
-@onready var strata_doggerland: Area3D = $STRATA_Doggerland
-@onready var strata_manifold:   Area3D = $STRATA_Manifold
-@onready var strata_glare:      Area3D = $STRATA_Glare
 
 @onready var district_A1: 	Area3D = $Districts/A1
 @onready var district_A2: 	Area3D = $Districts/A2
@@ -114,26 +111,19 @@ func snap_to_city_zone(node: Node3D, height: float) -> void:
 
 ## Зарегистрировать башню вручную (для создания через код).
 func register_block(b_id: String, node: Node3D, height: float, district: String) -> void:
-	var strata := _get_strata_for_height(height)
-
 	var data := {
 		"id":        b_id,
 		"position":  [node.global_position.x, node.global_position.y, node.global_position.z],
 		"height":    height,
 		"district":  district,
 		"scene_path": "",
-		"strata_ids": {},
 		"silhouette_scene_path": "",
 	}
 
-	for stratum in strata:
-		var suffix := _strata_suffix(stratum)
-		data["strata_ids"][stratum] = "%s-%s" % [b_id, suffix]
-
 	_block_data[b_id] = data
 
-	print("[MapSource] 🏙 Registered tower: %s  pos=%s  h=%dm  strata=%s" % [
-		b_id, node.global_position, int(height), strata])
+	print("[MapSource] 🏙 Registered tower: %s  pos=%s  h=%dm" % [
+		b_id, node.global_position, int(height)])
 
 
 ## Экспортировать все данные в WorldData.tres
@@ -151,7 +141,6 @@ func export_data() -> void:
 		bd.district = dict["district"]
 		bd.content_scene_path    = dict["scene_path"]
 		bd.silhouette_scene_path = dict.get("silhouette_scene_path", "")
-		bd.strata_ids = dict["strata_ids"]
 		world.blocks.append(bd)
 		
 	# ── Плиты земли ─────────────────────────────────────────────────────────
@@ -259,14 +248,12 @@ func _update_spawn_marker_from_raycast() -> void:
 
 	var hit_pos: Vector3 = hit["position"]
 
-	# Ограничиваем Y — шар не должен лететь выше 5м от пола CityZone
-	var clamped_y := clampf(
-		hit_pos.y + SPAWN_MARKER_OFFSET_Y,
-		Y_CITY_ZONE_TOP,
-		Y_CITY_ZONE_TOP + SPAWN_MARKER_OFFSET_Y
-	)
-
-	_spawn_marker.global_position = Vector3(hit_pos.x, clamped_y, hit_pos.z)
+	# Маркер садится на ТУ ВЫСОТУ, куда попал луч, плюс небольшой подъём —
+	# раньше Y зажимался в [0, 5] от пола плоского CityZone. На острове с
+	# рельефом такой зажим всегда даёт точку под землёй: дно кальдеры ~110 м,
+	# обод ~365 м.
+	_spawn_marker.global_position = Vector3(
+			hit_pos.x, hit_pos.y + SPAWN_MARKER_OFFSET_Y, hit_pos.z)
 
 
 ## Фиксируем финальную позицию спавна в WorldSystems.
@@ -274,41 +261,16 @@ func _commit_spawn_point() -> void:
 	if not is_instance_valid(_spawn_marker):
 		return
 
-	var spawn := Vector3(
-		_spawn_marker.global_position.x,
-		Y_CITY_ZONE_TOP,
-		_spawn_marker.global_position.z
-	)
+	# Y берётся у маркера, а не зажимается в Y_CITY_ZONE_TOP. Зажим был
+	# незаметен на плоском городе, где пол везде Y 0, и был единственной
+	# причиной, по которой спавн ставился только на земляные плиты.
+	var spawn := _spawn_marker.global_position
 
 	WorldSystems.set_spawn_point(spawn)
 	export_data()   # ← ДОБАВИТЬ: сразу записываем в .tres
 	print("[MapSource] ✅ Spawn point set and exported: ", spawn)
 
 
-
-
-# ── Страты ───────────────────────────────────────────────────────────────────
-
-func _get_strata_for_height(height: float) -> Array[String]:
-	var result: Array[String] = []
-	var strata_ranges := {
-		"doggerland": [0.0,    500.0],
-		"manifold":   [500.0,  1000.0],
-		"glare":      [1000.0, 1700.0],
-	}
-	for stratum in strata_ranges:
-		var range_min: float = strata_ranges[stratum][0]
-		if height > range_min:
-			result.append(stratum)
-	return result
-
-
-func _strata_suffix(stratum: String) -> String:
-	match stratum:
-		"doggerland": return "DG"
-		"manifold":   return "MF"
-		"glare":      return "GL"
-	return "XX"
 
 
 # ── HUD ──────────────────────────────────────────────────────────────────────

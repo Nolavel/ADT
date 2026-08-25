@@ -40,7 +40,7 @@ var _player: Node3D = null
 ## still null if the current scene has no camera_follow (e.g. no TPS).
 var _on_foot: OnFootCameraComponent = null
 
-## Локальная копия состояния ячеек: id -> {type, state, strata}.
+## Локальная копия состояния ячеек: id -> {type, state}.
 ## Обновляется ТОЛЬКО из сигналов и стартового снапшота.
 var _cells: Dictionary = {}
 var _log:   Array[String] = []
@@ -60,7 +60,6 @@ func _ready() -> void:
 	InputSystems.stream_debug_toggled.connect(_on_toggle)
 	StreamingSystems.initialized.connect(_on_streaming_initialized)
 	StreamingSystems.cell_state_changed.connect(_on_cell_state_changed)
-	StreamingSystems.layer_changed.connect(_on_layer_changed)
 
 	# Панель добавляется через call_deferred и почти наверняка просыпается
 	# ПОСЛЕ синхронного StreamingSystems.initialize() — добираем уже
@@ -106,19 +105,12 @@ func _on_streaming_initialized(_cell_count: int) -> void:
 func _on_cell_state_changed(cell_id: String, cell_type: int,
 		old_state: int, new_state: int) -> void:
 	if not _cells.has(cell_id):
-		_cells[cell_id] = { "type": cell_type, "state": new_state, "strata": "" }
+		_cells[cell_id] = { "type": cell_type, "state": new_state }
 	else:
 		_cells[cell_id]["state"] = new_state
 
 	_push_log("%s: %s → %s" % [cell_id,
 			_state_name(old_state), _state_name(new_state)])
-
-
-func _on_layer_changed(block_id: String, strata: String, loaded: bool) -> void:
-	if _cells.has(block_id):
-		_cells[block_id]["strata"] = strata if loaded else ""
-	_push_log("%s: layer %s %s" % [block_id, strata,
-			"loaded" if loaded else "freed"])
 
 
 # ── Данные ────────────────────────────────────────────────────────────────────
@@ -128,7 +120,6 @@ func _pull_snapshot() -> void:
 		_cells[entry["id"]] = {
 			"type":   entry["type"],
 			"state":  entry["state"],
-			"strata": entry["strata"],
 		}
 	_dirty = true
 
@@ -199,8 +190,8 @@ func _update_header() -> void:
 	for cell in _cells.values():
 		counts[cell["state"]] = counts.get(cell["state"], 0) + 1
 
-	_header.text = "pos %s | %s | %s\nACTIVE %d  READY %d  LOADING %d  QUEUED %d  UNLOADED %d" % [
-		pos_str, WorldSystems.current_strata, tile_str,
+	_header.text = "pos %s | %s\nACTIVE %d  READY %d  LOADING %d  QUEUED %d  UNLOADED %d" % [
+		pos_str, tile_str,
 		counts.get(StreamingSystems.CellState.ACTIVE, 0),
 		counts.get(StreamingSystems.CellState.READY, 0),
 		counts.get(StreamingSystems.CellState.LOADING, 0),
@@ -221,9 +212,6 @@ func _redraw_cells() -> void:
 		var color := _state_color(cell["state"]).to_html(false)
 		var line := "[color=#%s]●[/color] %s  %s" % [color, id,
 				_state_name(cell["state"])]
-		if cell["type"] == StreamingSystems.CellType.BLOCK \
-				and not str(cell["strata"]).is_empty():
-			line += "  [%s]" % cell["strata"]
 		lines.append(line)
 
 	_cells_text.text = "\n".join(lines) if not lines.is_empty() \

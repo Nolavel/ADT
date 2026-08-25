@@ -12,6 +12,237 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Documents catch up, and CLAUDE.md is cut into pieces (island step 6)
+
+Out of the brief's order — step 6 comes after 3-5 — because 3-5 need an open
+editor and this does not, and the brief asks for step 6 not to be postponed.
+
+**`CLAUDE.md` split, 94 KB -> 15 KB.** It had single paragraphs over 4000
+characters. A document that dense is not edited: agents append to the end
+rather than correct the middle, which is exactly where the drift this file
+keeps suffering comes from. The per-system contracts now live in
+`docs/architecture/`: `autoloads_and_bootstrap`, `world_streaming`,
+`player_and_camera`, `npc_and_incidents`, `items_and_equipment`,
+`persistence`. `CLAUDE.md` keeps the rules, the constraints and an index.
+
+The text was **moved, not rewritten** — a split that also revises is not
+reviewable in one pass. Byte count across all seven files is 99 KB against
+94 KB before, the difference being the six file headers and the index table.
+
+**Vertical-city claims removed** from `ARCHITECTURE.md` (the strata layer name
+contract is now marked removed rather than deleted, because those `Layer*`
+nodes are still baked into generated block scenes and a reader needs to know
+what they were), `docs/CONTRIBUTING.md` (the strata naming rule is simply
+false now), `docs/core_loop.md` §10 (the surveillance gradient survives — it
+is design, not implementation — but is now expressed as caldera floor / shelf /
+outer rim, continuous through the terrain), `docs/visual_language.md`,
+`docs/planned_scope.md`. The streaming radii in `ARCHITECTURE.md` were 1000/1200
+and are now 400/500 with the reason attached.
+
+Mentions left alone on purpose: `NPC_REACTIONS.md`, `attribution.md` and
+`npc_archetypes.md` use Doggerland / Manifold / Glare as **place names**, which
+is exactly what the brief preserves them for.
+
+**`docs/COLLISION_LAYERS.md`** gained the island's `TerrainStaticBody`
+(`collision_layer = 3`) on layers 1 and 2. The project rule is that a bare
+integer in a scene is only allowed alongside a row in that file, and the row
+was missing — the ground the whole game now stands on was undocumented.
+
+**The brief itself amended** with the four decisions taken during these steps
+(square map, procedural terrain and no `CREDITS.md` entry, island at the
+origin, step 6 out of order), plus the one open question found by reading the
+file: `aogashima_heightmap_16bit.png` is **8-bit RGB**, not 16-bit. Data sits
+in R alone; the generator asks for `FORMAT_RH` but `save_png()` did not keep
+it. Height quantizes at ~1.96 m per step instead of 0.008, so the caldera
+floor will terrace visibly. The shader reads `.r` and works, which is what
+makes it quiet.
+
+*Разрезал `CLAUDE.md`: 94 КБ -> 15 КБ, контракты уехали в `docs/architecture/`
+шестью файлами. Текст перенесён дословно, не переписан. Вычищено описание
+вертикального города из остальных документов — кроме дизайнерских, где
+Доггерленд/Манифолд/Глэйр остаются именами мест, как ТЗ и разрешает. В
+`COLLISION_LAYERS.md` добавлена земля острова. В ТЗ внесены решения этой
+сессии и записан найденный дефект: heightmap 8-битный, а не 16-битный.*
+- `CLAUDE.md`, `docs/architecture/*.md` (new), `ARCHITECTURE.md`, `docs/CONTRIBUTING.md`, `docs/core_loop.md`, `docs/visual_language.md`, `docs/planned_scope.md`, `docs/COLLISION_LAYERS.md`, `docs/island_rescope_brief.md`
+
+---
+
+## 2026-08-25 - Island moved to the origin, and everything standing on it moved with it
+
+Stan's call: the island sits at the world origin. It was instanced in
+`world.tscn` at `Z + 2200` — one old `GROUND_TILE_SIZE`, a leftover of the
+3x3 grid.
+
+**The offset was load-bearing and nobody noticed.** Every test object was
+placed while the island was 2200 m away, i.e. over open ocean where the
+terrain is 0 — so `Y 0..10` worked. Move the island under them and the whole
+scene is inside the volcano: the crowd, the lodging room, the hover and the
+four drones. The spawn point (`0, 2, 200`) lands 197 m below the surface of
+Maruyama's cone.
+
+So the move is three changes, not one:
+
+- `world.tscn` — the island's transform is gone; it sits at the origin.
+- All 24 `StreamContainer` objects lifted onto the terrain. **XZ is untouched**
+  — the playtest layout Stan knows is preserved exactly — and each object keeps
+  the clearance it already had, with the terrain height under it added.
+  Heights were read out of the scene's own baked `HeightMapShape3D`, sampled at
+  each object's XZ, so collision and visual agree by construction (they were
+  cross-checked against the heightmap PNG and match within half a metre).
+- `WorldSystems.spawn_point` -> `(220, 133, -140)`, three metres above ground
+  next to the lodging room, so a run starts at the thing being tested instead
+  of 500 m from it.
+
+`map_source.gd` also stopped clamping spawn Y. `_commit_spawn_point()` wrote
+`Y_CITY_ZONE_TOP` (0.0) instead of the marker's own height, and the marker
+raycast clamped into `[0, 5]`. On a flat city that was invisible; on terrain it
+guarantees a spawn underground. This is the clamp `CLAUDE.md` already blamed
+for the spawn being ground-tile-only.
+
+**Known and deliberately left:** the test cluster is on Maruyama's western
+flank at 122-160 m, and the brief wants Maruyama unbuilt. Re-placing it is
+editor work, by eye, and belongs with the building pass at step 5. The spawn
+above is a debug spawn, not a design decision.
+
+*Остров переехал в начало координат — и утащил за собой всё, что на нём
+стояло. Смещение Z+2200 держало сцену: объекты ставились над океаном, где
+рельеф 0, поэтому Y 0..10 работал. 24 объекта подняты по фактическому рельефу
+(XZ не тронут, высоты взяты из запечённой коллизии сцены), спавн — рядом с
+ночлежкой. Снят зажим Y при расстановке спавна: на плоском городе он был
+незаметен, на рельефе всегда даёт точку под землёй. Кластер пока стоит на
+склоне Маруямы — переставлять по месту в редакторе.*
+- `world/world.tscn`, `core/world/world_systems.gd`, `core/map_source/map_source.gd`
+
+---
+
+## 2026-08-25 - Streaming radii 400/500, and what streaming is now for (island step 2)
+
+`BLOCK_STREAM_RADIUS` 1000 -> **400**, `BLOCK_UNLOAD_RADIUS` 1200 -> **500**
+(the same 25 % hysteresis gap). Both are eyeball numbers: if a silhouette
+swaps to content in the player's face, the radius is too small.
+
+The brief asks for one thing to be written down alongside them, and it matters
+more than the numbers: **the pipeline's purpose changed.** It used to make a
+9.6 km world manageable, which is exactly where 1000/1200 came from. A 3.5 km
+island fits in memory whole, so streaming now governs the swap of silhouette
+for live content, not world size — and 400/500 are derived from how many
+towers should be live around the player (~25 at the caldera's ~100 m spacing),
+not from how much world fits. Recorded in `streaming_systems.gd`'s own header
+and in `CLAUDE.md`; without it the reason the pipeline is this complicated is
+lost in a month.
+
+Also: `aogashima_generator.gd`'s `OUTPUT_PATH` wrote to the repo root while the
+file it produces lives in `world/aogashima/`. One line.
+
+*Радиусы стриминга 400/500 вместо 1000/1200, и — что важнее — записано, зачем
+конвейер теперь нужен: не «сделать огромный мир управляемым», а управлять
+подменой пустышки на живой контент. Остров в 3,5 км помещается целиком.*
+- `core/world/streaming_systems.gd`, `tools/island_generator/aogashima_generator.gd`, `CLAUDE.md`
+
+---
+
+## 2026-08-25 - Strata removed from the editor tools (island step 1, part 2)
+
+The runtime lost strata in the previous commit; these are the tools that fed
+it. Stan's call was to keep the interior builders and cut strata out of them
+rather than delete them.
+
+**Tiers, not strata.** All three builders needed the same three things from
+`StrataGeometry`: where floors are allowed, how wide the dead band is, and
+which deck profile to use. Without strata that collapses to *one tower, one
+playable height*, split into tiers:
+
+- `tower_builder.gd` — the three authored mesh pairs (350/300/250) were bound
+  to Doggerland/Manifold/Glare and shipped as three scenes behind
+  `InstancePlaceholder`. They are now three **tiers of one tower**, built
+  straight into a single content scene. The authored taper is kept — it is
+  good art and had nothing to do with strata. `TOWER_TOP` 3000 -> 1000, the
+  island ceiling.
+- `test_block_builder.gd` — same conversion, per tower: each tower's own
+  playable height is split into `TIER_PROFILES.size()` tiers.
+- `block_library_generator.gd` — had its own duplicated `STRATA_*_TOP`
+  constants. A block is now one solid volume; the silhouette is one mesh
+  instead of one `Mesh<StrataName>` segment per stratum. Height range
+  3200-ish -> `HEIGHT_RANGE` 30..500 m, which is what the island actually
+  holds.
+
+`TECH_BAND` is 6 m, not the old 100 m. That number came from a stratum 1000 m
+tall; island towers start at 30 m, where two 100 m dead bands would leave
+nothing. Six metres is about one floor and is meant to be caught by eye.
+
+`StrataDeckProfile` -> **`DeckProfile`** (`world/resources/deck_profile.gd`,
+`data/deck_profiles/`). The A/B/C pattern names keep their meaning — warren,
+utilitarian, atrium — but a profile is now named next to the tier it belongs
+to instead of being derived from a stratum. Uids are unchanged, so the three
+`.tres` keep their identity.
+
+`map_source.gd`/`map_cursor.gd` lost `strata_ids`, the height->strata mapping,
+the DG/MF/GL suffixes and the strata line in the cursor overlay; the three
+`STRATA_*` `Area3D` nodes and their box shapes are gone from
+`map_source.tscn`.
+
+**Expected on the next run, and not a bug:** the 40 existing greybox blocks
+still carry `Layer*` placeholders and `Mesh<StrataName>` segments in their
+`.tscn` files. Nothing materializes those any more, so a block renders as its
+thin `Shared` spine until the library is regenerated. Same for the 84 baked
+`gbx_strata_top` metadata entries. All of it is generated data, regenerated at
+step 5; the generators above already emit the new shape.
+
+*Страты вырезаны из редакторных тулз. Три меша башни стали тремя ЯРУСАМИ
+одной башни — авторская ступенчатость сохранена, она к стратам отношения не
+имела. `TECH_BAND` 6 м вместо 100: сотня была рассчитана на страту в 1000 м, а
+на острове башни от 30 м. `StrataDeckProfile` -> `DeckProfile`. Важно: старые
+40 greybox-блоков до перегенерации будут выглядеть тонкими стержнями —
+объём жил в слоях, которые больше никто не материализует.*
+- `tools/block_generator/tower_builder.gd`, `test_block_builder.gd`, `block_library_generator.gd`, `core/map_source/map_source.gd`, `map_cursor.gd`, `map_source.tscn`, `world/resources/deck_profile.gd` (renamed), `data/deck_profiles/*.tres` (moved)
+
+---
+
+## 2026-08-25 - Strata removed from the runtime (island step 1)
+
+`docs/island_rescope_brief.md` step 1. First because it is a deletion: the
+longer strata live, the more gets built on top of them.
+
+`WorldSystems` lost `STRATA_DOGGERLAND/MANIFOLD/GLARE`, `STRATA_HYSTERESIS`,
+`current_strata`, `set_current_strata()`, `strata_changed`,
+`get_strata_by_height()` and the hysteresis walk; `update_player_position()`
+now only tracks the tile. `GAMEPLAY_HEIGHT` 3200 -> 1000, the island ceiling.
+
+`StreamingSystems` lost the entire layer-materialization pipeline —
+`STRATA_PRELOAD_MARGIN`, the four `StreamCell` layer fields, the
+`layer_changed` signal, `_on_strata_changed`, `_prewarm_upcoming_layers`,
+`_prewarm_layer`, `_request_layer`, `_pump_layers`, `_set_silhouette_segment`,
+`_find_layer_placeholder`, and the `"Layer" + strata` naming contract (663 ->
+497 lines). **Untouched:** the cell state machine, `_packed_cache`,
+`MAX_CONCURRENT_LOADS`, `INSTANTIATION_BUDGET_PER_FRAME`, the silhouette and
+content rings.
+
+One deliberate behaviour change: a block's silhouette is now hidden wholesale
+when its content goes ACTIVE, exactly as a ground tile's already was. Before,
+a block hid its silhouette one `Mesh<StrataName>` segment at a time, per
+materialized layer; with no layers there is nothing to hide per segment, and
+leaving it alone would draw silhouette and content at once.
+
+Also stripped: `BlockData.strata_ids`, the strata column and `layer_changed`
+subscription in `stream_debug_panel.gd`, strata comments in
+`environment_lighting_system.gd` and `isometric_camera_state.gd`. Deleted
+`core/world/strata_geometry.gd` — its only consumers are the two editor
+interior builders, handled in the next commit.
+
+**Recorded in advance, per the brief's stop line:** removing
+`BlockData.strata_ids` makes the existing `data/world_data.tres` not fully
+readable — Godot will report an unknown property on every block. The data is
+regenerated at step 5 anyway; the file was never wrong, the field is gone.
+
+*Страты удалены из рантайма: ушёл весь конвейер материализации слоёв в
+`StreamingSystems` и вся математика страт в `WorldSystems`, потолок 3200 ->
+1000. Силуэт квартала теперь гасится целиком, как у плиты, — посегментно
+гасить нечего. Заранее зафиксировано: старый `world_data.tres` будет ругаться
+на `strata_ids`, это ожидаемо до перегенерации на шаге 5.*
+- `core/world/world_systems.gd`, `core/world/streaming_systems.gd`, `core/world/strata_geometry.gd` (deleted), `world/resources/block_data.gd`, `ui/debug/stream_debug_panel.gd`, `camera/isometric_camera_state.gd`, `core/world/world_environment_systems/environment_lighting_system.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - Doc sync after island rescope + H5 close
 
 - `planned_scope.md`: removed false claim that EquipmentComponent does not exist; H5 moved out of planned scope
