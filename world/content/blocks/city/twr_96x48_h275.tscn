@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://assets/tres/greybox_mat_content.tres" id="1_h4b6u"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_mdy5k"]
+size = Vector3(96, 275, 48)
+
+[node name="Twr96x48H275" type="Node3D" unique_id=131581351]
+metadata/gbx_size = Vector3(96, 275, 48)
+metadata/gbx_kind = "content"
+
+[node name="Shared" type="Node3D" parent="." unique_id=1949775611]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Shared" unique_id=454914640]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 137.5, 0)
+material_override = ExtResource("1_h4b6u")
+mesh = SubResource("BoxMesh_mdy5k")

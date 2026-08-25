@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://assets/tres/greybox_mat_silhouette.tres" id="1_xrk1v"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_kl5dk"]
+size = Vector3(64, 250, 30)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_t4nm4"]
+size = Vector3(64, 250, 30)
+
+[node name="Twr64x30H250Silhouette" type="Node3D" unique_id=1135666277]
+metadata/gbx_size = Vector3(64, 250, 30)
+metadata/gbx_kind = "silhouette"
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1650244709]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 125, 0)
+material_override = ExtResource("1_xrk1v")
+mesh = SubResource("BoxMesh_kl5dk")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=751846528 groups=["wall"]]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=209063699]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 125, 0)
+shape = SubResource("BoxShape3D_t4nm4")

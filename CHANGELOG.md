@@ -12,6 +12,83 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - City generator, second attempt: a grid that reads
+
+The first generator was run and rejected on sight — "влепил всё линейно,
+выглядит генеративно, нет сетки, в центре нет ничего". All three were fair and
+all three had one cause each.
+
+**No grid.** The first version scattered a lattice over the whole island,
+tested every intersection for slope and dropped the failures. The land here is
+fragmented, so what survived was confetti: points on a pitch, but not one
+continuous street. A grid reads from the **corridors between** buildings, not
+from the spacing of the buildings.
+
+Now the grid grows in **Chebyshev rings outward from the landmark**, and an
+unbuildable cell is left **empty rather than replaced** by a distant buildable
+one. The gap reads as a plaza; the row does not break, and the street runs
+through. First run: 100 downtown towers over 8 rings with 188 empty cells —
+those 188 gaps are the thing that was missing.
+
+**Empty centre.** That was my own `MARUYAMA_RADIUS = 400`, honouring the
+brief's "Маруяма остаётся незастроенной". A 400 m hole in the middle of the
+island. Per Stan's decision the city now **climbs the volcano** and the brief
+is amended in the same commit, struck through rather than quietly deleted. The
+landmark stands on the summit at 220 m, so its 1000 m reaches 1220 against a
+1250 m ceiling and is visible from everywhere — which is what the brief wanted
+of it in the first place.
+
+**Landmark with no retinue.** It used to hunt for the flattest ground and ended
+up at (-247, -219), alone. It is now the anchor of the whole layout, and height
+falls off by ring (`RING_FALLOFF` 0.88) around it — the retinue is geometry, not
+chance.
+
+**Everything goes through map_source now.** Writing `world_data.tres` directly
+was my deviation from the brief and it is what left Stan unable to move
+anything. The generator now writes `BlockBase` markers into the open scene's
+`BLOCKS` node, each with a `SilhouettePreview` child so the towers are visible
+and draggable, following `block_placer.gd`'s established `get_scene()` pattern.
+`GBX_` prefixed markers are cleared on each run and authored ones are not
+touched — the documented convention. `world_data.tres` is written by
+map_source's own Export button, as the brief always specified.
+
+`map_source.tscn` gains the island as a backdrop at the origin and loses
+`CityZone`, the dead 6600 m city floor that would have covered it.
+`map_source.gd` lost its `city_zone_body` reference, which nothing read.
+
+**Three files, and this time for a verified reason.** `EditorScript` cannot be
+instantiated outside the editor — Godot answers "Class EditorScript can only be
+instantiated by editor". I had merged the logic into the EditorScript to stop
+the two similarly-named files confusing which one to Run, and that merge broke
+the headless path outright. The logic is back in `CityLayout` (a `RefCounted`),
+with `generate_city.gd` and `generate_city_cli.gd` as thin entry points — and
+`city_layout.gd` now says in its first line that it is not the file you run.
+
+Also fixed here: reading the heightmap through `Texture2D.get_image()` +
+`get_pixel()` is 4.2 million calls on a 2048² map and hung the tool past every
+timeout. It now reads the PNG with `Image.load_from_file()` and walks the raw
+`PackedByteArray`.
+
+**Dry run:** summit (-2, 38) at 220 m; 100 downtown over 8 rings; 29 of 30 rim
+sectors (one has no land); 20 outer belt; 1 top-up; **151 exactly**, heights
+200-1000, a library of 32 tower pairs.
+
+**Not verified, and Stan needs to know before running:** markers are written
+through `get_scene()`, which is empty headless. The layout numbers above are
+measured; *markers actually appearing in `BLOCKS`* is his first run.
+
+*Генератор переделан. Сетка растёт кольцами от главной башни, непригодная
+ячейка остаётся ПУСТОЙ, а не подменяется далёкой — из-за этой подмены ряды
+съезжали и улиц не было вовсе. Город лезет на Маруяму, главная башня на
+вершине окружена кольцами меньших; строку ТЗ про незастроенный конус
+зачёркиваю явно. Всё уходит в map_source маркерами — двигать мышью, экспорт
+кнопкой. Попутно: EditorScript нельзя создать вне редактора, поэтому логика
+вернулась в отдельный класс, а чтение карты высот переехало на сырые байты —
+через get_pixel() инструмент висел минутами.*
+- `tools/city_generator/city_layout.gd` (new), `generate_city.gd`, `generate_city_cli.gd`, `core/map_source/map_source.tscn`, `core/map_source/map_source.gd`, `docs/island_rescope_brief.md`
+
+---
+
 ## 2026-08-25 - City generator (island step 5)
 
 The last open step of `docs/island_rescope_brief.md`. Reads the island's
