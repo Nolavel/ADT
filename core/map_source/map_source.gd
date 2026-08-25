@@ -248,14 +248,12 @@ func _update_spawn_marker_from_raycast() -> void:
 
 	var hit_pos: Vector3 = hit["position"]
 
-	# Ограничиваем Y — шар не должен лететь выше 5м от пола CityZone
-	var clamped_y := clampf(
-		hit_pos.y + SPAWN_MARKER_OFFSET_Y,
-		Y_CITY_ZONE_TOP,
-		Y_CITY_ZONE_TOP + SPAWN_MARKER_OFFSET_Y
-	)
-
-	_spawn_marker.global_position = Vector3(hit_pos.x, clamped_y, hit_pos.z)
+	# Маркер садится на ТУ ВЫСОТУ, куда попал луч, плюс небольшой подъём —
+	# раньше Y зажимался в [0, 5] от пола плоского CityZone. На острове с
+	# рельефом такой зажим всегда даёт точку под землёй: дно кальдеры ~110 м,
+	# обод ~365 м.
+	_spawn_marker.global_position = Vector3(
+			hit_pos.x, hit_pos.y + SPAWN_MARKER_OFFSET_Y, hit_pos.z)
 
 
 ## Фиксируем финальную позицию спавна в WorldSystems.
@@ -263,11 +261,10 @@ func _commit_spawn_point() -> void:
 	if not is_instance_valid(_spawn_marker):
 		return
 
-	var spawn := Vector3(
-		_spawn_marker.global_position.x,
-		Y_CITY_ZONE_TOP,
-		_spawn_marker.global_position.z
-	)
+	# Y берётся у маркера, а не зажимается в Y_CITY_ZONE_TOP. Зажим был
+	# незаметен на плоском городе, где пол везде Y 0, и был единственной
+	# причиной, по которой спавн ставился только на земляные плиты.
+	var spawn := _spawn_marker.global_position
 
 	WorldSystems.set_spawn_point(spawn)
 	export_data()   # ← ДОБАВИТЬ: сразу записываем в .tres

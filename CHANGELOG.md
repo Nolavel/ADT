@@ -12,6 +12,54 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Island moved to the origin, and everything standing on it moved with it
+
+Stan's call: the island sits at the world origin. It was instanced in
+`world.tscn` at `Z + 2200` — one old `GROUND_TILE_SIZE`, a leftover of the
+3x3 grid.
+
+**The offset was load-bearing and nobody noticed.** Every test object was
+placed while the island was 2200 m away, i.e. over open ocean where the
+terrain is 0 — so `Y 0..10` worked. Move the island under them and the whole
+scene is inside the volcano: the crowd, the lodging room, the hover and the
+four drones. The spawn point (`0, 2, 200`) lands 197 m below the surface of
+Maruyama's cone.
+
+So the move is three changes, not one:
+
+- `world.tscn` — the island's transform is gone; it sits at the origin.
+- All 24 `StreamContainer` objects lifted onto the terrain. **XZ is untouched**
+  — the playtest layout Stan knows is preserved exactly — and each object keeps
+  the clearance it already had, with the terrain height under it added.
+  Heights were read out of the scene's own baked `HeightMapShape3D`, sampled at
+  each object's XZ, so collision and visual agree by construction (they were
+  cross-checked against the heightmap PNG and match within half a metre).
+- `WorldSystems.spawn_point` -> `(220, 133, -140)`, three metres above ground
+  next to the lodging room, so a run starts at the thing being tested instead
+  of 500 m from it.
+
+`map_source.gd` also stopped clamping spawn Y. `_commit_spawn_point()` wrote
+`Y_CITY_ZONE_TOP` (0.0) instead of the marker's own height, and the marker
+raycast clamped into `[0, 5]`. On a flat city that was invisible; on terrain it
+guarantees a spawn underground. This is the clamp `CLAUDE.md` already blamed
+for the spawn being ground-tile-only.
+
+**Known and deliberately left:** the test cluster is on Maruyama's western
+flank at 122-160 m, and the brief wants Maruyama unbuilt. Re-placing it is
+editor work, by eye, and belongs with the building pass at step 5. The spawn
+above is a debug spawn, not a design decision.
+
+*Остров переехал в начало координат — и утащил за собой всё, что на нём
+стояло. Смещение Z+2200 держало сцену: объекты ставились над океаном, где
+рельеф 0, поэтому Y 0..10 работал. 24 объекта подняты по фактическому рельефу
+(XZ не тронут, высоты взяты из запечённой коллизии сцены), спавн — рядом с
+ночлежкой. Снят зажим Y при расстановке спавна: на плоском городе он был
+незаметен, на рельефе всегда даёт точку под землёй. Кластер пока стоит на
+склоне Маруямы — переставлять по месту в редакторе.*
+- `world/world.tscn`, `core/world/world_systems.gd`, `core/map_source/map_source.gd`
+
+---
+
 ## 2026-08-25 - Streaming radii 400/500, and what streaming is now for (island step 2)
 
 `BLOCK_STREAM_RADIUS` 1000 -> **400**, `BLOCK_UNLOAD_RADIUS` 1200 -> **500**
