@@ -22,7 +22,7 @@ const CALDERA_RIM_RADIUS_Z := 750.0
 const OTONBU_HEIGHT_M := 423.0    # Северо-западная высшая точка (423 м)
 const OTONBU_CENTER_OFFSET := Vector2(0.0, -550.0)
 
-const OUTPUT_PATH := "res://aogashima_heightmap_16bit.png"
+const OUTPUT_PATH := "res://world/aogashima/aogashima_heightmap_16bit.png"
 
 
 func _run() -> void:

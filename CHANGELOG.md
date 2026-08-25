@@ -12,6 +12,32 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Streaming radii 400/500, and what streaming is now for (island step 2)
+
+`BLOCK_STREAM_RADIUS` 1000 -> **400**, `BLOCK_UNLOAD_RADIUS` 1200 -> **500**
+(the same 25 % hysteresis gap). Both are eyeball numbers: if a silhouette
+swaps to content in the player's face, the radius is too small.
+
+The brief asks for one thing to be written down alongside them, and it matters
+more than the numbers: **the pipeline's purpose changed.** It used to make a
+9.6 km world manageable, which is exactly where 1000/1200 came from. A 3.5 km
+island fits in memory whole, so streaming now governs the swap of silhouette
+for live content, not world size — and 400/500 are derived from how many
+towers should be live around the player (~25 at the caldera's ~100 m spacing),
+not from how much world fits. Recorded in `streaming_systems.gd`'s own header
+and in `CLAUDE.md`; without it the reason the pipeline is this complicated is
+lost in a month.
+
+Also: `aogashima_generator.gd`'s `OUTPUT_PATH` wrote to the repo root while the
+file it produces lives in `world/aogashima/`. One line.
+
+*Радиусы стриминга 400/500 вместо 1000/1200, и — что важнее — записано, зачем
+конвейер теперь нужен: не «сделать огромный мир управляемым», а управлять
+подменой пустышки на живой контент. Остров в 3,5 км помещается целиком.*
+- `core/world/streaming_systems.gd`, `tools/island_generator/aogashima_generator.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - Strata removed from the editor tools (island step 1, part 2)
 
 The runtime lost strata in the previous commit; these are the tools that fed
