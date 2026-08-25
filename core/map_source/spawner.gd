@@ -33,7 +33,7 @@ extends Node3D
 
 ## Y верхней поверхности CityZone. Дефолтная высота спавна если
 ## пользователь не двигал Spawner — игрок появится на полу города.
-const DEFAULT_SPAWN_Y: float = 25.0
+const DEFAULT_SPAWN_Y = Vector3(220.0, 130.062, -140.0)
 
 ## Цвет визуального маркера в редакторе
 const GIZMO_COLOR: Color = Color(1.0, 0.9, 0.0, 0.9)   # жёлтый
@@ -64,9 +64,9 @@ func _ready() -> void:
 	if not show_in_game and not Engine.is_editor_hint():
 		_set_gizmo_visible(false)
 
-	# Автосохранение позиции при старте
-	if auto_save_on_ready:
-		save_spawn_point()
+	## Автосохранение позиции при старте
+	#if auto_save_on_ready:
+		#save_spawn_point()
 
 	print("[Spawner] ✅ Ready at position: ", global_position)
 
@@ -75,15 +75,15 @@ func _ready() -> void:
 
 ## Сохранить текущую позицию Spawner как точку спавна игрока.
 ## Вызывается кнопкой в HUD или из кода.
-func save_spawn_point() -> void:
-	var spawn_pos := global_position
-
-	# Если Y не задан (нода в начале координат) — используем дефолт
-	if spawn_pos.y < DEFAULT_SPAWN_Y:
-		spawn_pos.y = DEFAULT_SPAWN_Y
-		push_warning("[Spawner] ⚠️ Spawn Y was below CityZone, clamped to %.1f" % DEFAULT_SPAWN_Y)
-	WorldSystems.set_spawn_point(spawn_pos)
-	print("[Spawner] 💾 Spawn point saved: ", spawn_pos)
+#func save_spawn_point() -> void:
+	#var spawn_pos := global_position
+#
+	## Если Y не задан (нода в начале координат) — используем дефолт
+	#if spawn_pos.y < DEFAULT_SPAWN_Y:
+		#spawn_pos.y = DEFAULT_SPAWN_Y
+		#push_warning("[Spawner] ⚠️ Spawn Y was below CityZone, clamped to %.1f" % DEFAULT_SPAWN_Y)
+	#WorldSystems.set_spawn_point(spawn_pos)
+	#print("[Spawner] 💾 Spawn point saved: ", spawn_pos)
 
 
 ## Телепортировать Spawner в указанную позицию (например по клику в MapSource HUD).
