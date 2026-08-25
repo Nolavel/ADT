@@ -12,6 +12,60 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-25 - Godot CLI in the agent container
+
+Agent sessions run in a throwaway container with no Godot, which is why every
+entry above ends with "verify by running it yourself". That is now fixed:
+`.claude/hooks/ensure_godot.sh` fetches Godot 4.7.2 at session start — **4
+seconds from cold**, the proxy caches it — and exits immediately when `godot`
+is already on `PATH`, so it does nothing on a developer machine. The GitHub
+Releases page is blocked by the agent proxy, but the redirect through
+`downloads.godotengine.org` to the release-asset CDN is allowed; the hook uses
+the official domain for that reason.
+
+**What it proved on the first run**, on work that was until now unverified:
+
+- The island commits hold up. `world.tscn` boots, `[World] ✅ Initialized`, 34
+  cells built, streaming activates blocks with a 64 ms latency, no errors about
+  `GroundTileData` or `strata_ids`.
+- **The player stands on the ground.** A temporary probe (run, read, reverted)
+  reported `spawn=(220, 130.062, -140)` settling to `(220, 128.81, -140)` with
+  `is_on_floor() = true`. This was the risk recorded as unverifiable two
+  commits ago — whether the image-row-to-world-Z mapping had the right sign. It
+  did.
+- H5 equipment works end to end at startup: jumpsuit and boots equipped, the
+  pipe stowed in `torso/chest_left`, both garment meshes shown. Which also
+  settles a question answered indirectly in the H5 session — `ItemCatalog.find()`
+  called on the class is legal GDScript.
+
+**Two things it found.** `_build_cells` still printed `Cells: %d (tiles +
+blocks)` after the ground tiles were removed — fixed here. And with 33 blocks
+replanted across the island, radius 400 activates only **2** of them at spawn;
+the brief sizes that radius for ~25 live towers. The replanted layout is far
+sparser than the island is meant to be, which is a fact about step 5's absence,
+not about the radius.
+
+**A trap worth recording:** `--check-only --script` compiles a file with no
+autoloads registered and reports `Identifier not found: PlayerState` for 36 of
+120 scripts, all false. The import pass is the real check, and it must be run
+**twice** cold — the first pass compiles scripts before the autoloads they
+reference exist and invents three `Cannot infer the type of X` errors that are
+gone on the second.
+
+Import touched no tracked files (`.godot/` and `*.import` are gitignored). The
+invalid-UID warnings on player textures and the project font predate this and
+are cosmetic — Godot falls back to the text path.
+
+*Godot CLI теперь ставится в контейнер агента хуком на старте сессии — 4
+секунды с холодного старта. Проверено сразу: мир грузится, стриминг работает,
+экипировка надевается, **игрок стоит на земле** — знак Z в спавне был верный,
+это был мой главный непроверяемый риск. Найдено две мелочи: устаревшая строка
+про плиты и то, что при 33 башнях радиус 400 активирует всего 2 — редко для
+острова, но это следствие отсутствия шага 5, а не радиуса.*
+- `.claude/hooks/ensure_godot.sh` (new), `.claude/settings.json`, `core/world/streaming_systems.gd`, `CLAUDE.md`
+
+---
+
 ## 2026-08-25 - Sea level is Y 45, and the documents say so
 
 **The water plane and the terrain shader disagreed about where the sea is.**
