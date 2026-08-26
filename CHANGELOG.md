@@ -12,6 +12,52 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Head-turn clamp and turn-size scaling (Phase 2 follow-up)
+
+Two defects in the commit above, both found by the author on first look.
+
+**The head could turn 360°.** The cursor branch handed the rig the cursor's
+raw world point with nothing bounding the angle, so a cursor behind the
+character asked for a look behind the character. A second, less visible
+route made it worse: `PlayerAnimationComponent` lerps the look marker's
+*world position*, so a target jumping front-to-back dragged the marker
+along a straight line **through** the character, and the look direction
+swept every angle as it passed the head. Every branch of
+`_update_iso_head_look()` now yields an angle off the body's facing rather
+than a point, with one construction at the bottom, so the clamp cannot be
+bypassed: `iso_head_look_limit_deg` (35°, matching the glance) as the
+backstop, `iso_head_look_cursor_limit_deg` (25°) tighter for the cursor —
+a glance is asked for, a cursor is not. Verified across a full 360° cursor
+sweep at two body orientations; worst magnitude 25.0°.
+
+**A 180° reversal whip-panned.** A reversal is one turn, not four, and it
+was taking the same 0.25 s as a 45° step — 720°/s. `_turn_duration_for()`
+now scales the duration by `sqrt(step / 45°)`: 45° stays 0.25 s, 90° takes
+0.367 s, 180° takes 0.5 s.
+
+Also measured, against a concern raised on the octant model rather than a
+defect: a heading wobbling ±8° across an octant boundary for 20 s commits
+**zero** turns, so ping-ponging is impossible. A steady sweep is a
+different matter — 180°/s of circling commits zero turns, 90°/s five, and
+60°/s or slower the full eight. Eight is the model working, not failing:
+any camera that follows heading must rotate 360° over a full circle, so a
+gate can only trade turn count against turn size, and eight 45° steps is
+the gentlest way to spend a rotation that has to happen. The comment
+claiming the dwell reduced this to one turn was wrong and has been
+replaced with the measurements.
+
+> *Две правки к коммиту ниже. Голова могла провернуться на 360°: курсорная
+> ветка отдавала ригу сырую мировую точку без ограничения угла, а маркер
+> взгляда лерпается по мировой позиции — цель позади тянула его по прямой
+> сквозь персонажа. Теперь все ветки дают угол от facing тела, а не точку,
+> с единственным клампом (35° общий, 25° для курсора). Разворот на 180°
+> проходил за те же 0.25 с, что и шаг в 45° — длительность отмасштабирована
+> по корню из величины шага. Плюс измерено поведение при обегании объекта:
+> дребезг на границе румба не даёт ни одного доворота, медленный круг даёт
+> все восемь — и это геометрия, а не дефект.*
+
+---
+
 ## 2026-08-26 - ISOMETRIC camera: octant yaw, cursor bias, head turn (Phase 2)
 
 Playtest of Phase 1 reported three things: the world rotated too much, the camera
