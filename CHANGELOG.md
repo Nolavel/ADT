@@ -12,6 +12,57 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - Front half of the turn circle softened; destination reversal (Phase 5B)
+
+Splits the circle in two and lets each half behave the way it actually
+wants to, which the single angle-keyed curve could not.
+
+**Front half softened.** Phase 5A's easing-only pass lowered a small turn's
+peak by a fifth and that was still not enough — a correction inside the
+front half kept reading as the camera clicking round after the body. The
+remaining lever is time, because at a fixed angle the average speed is
+duration and nothing else, so `_turn_soften_for()` multiplies the duration
+by `turn_soften_front` (1.25) across the front half, by nothing across the
+back half, with one octant of blend so there is no cliff at the boundary.
+Measured: 45° now 0.317 s at 212°/s (5A 265, originally 337), 90° 0.450 s
+at 323°/s (5A 403, originally 477). 135° and 180° are **bit-identical to
+5A** — a reversal is not a follow and must not become a slow pan across the
+world. Duration is deliberately non-monotonic as a result: 90° takes longer
+than 135°, because 135° covers over twice the angle at 536°/s against
+323°/s.
+
+**Destination reversal, now built.** `_try_destination_reversal()` reads
+`Frame.move_target` and commits a reversal immediately when the click is
+past `reversal_threshold_deg` (112.5°, `SNAP_STEP * 2.5` — the boundary
+between the octants in front of the camera and those behind it). Two
+witnesses on purpose: the body heading answers "where is this character
+going", the destination answers "what did the player just decide", and with
+click-to-move the second is known a whole turn-and-accelerate before the
+first agrees with it. It is also the case the hysteresis and dwell gates
+get wrong — a body swinging through 180° passes through every intermediate
+octant, each a plausible candidate, so the gates either commit somewhere
+nobody asked for or sit out the rotation and move afterwards. It bypasses
+the standing-still gate too: that gate exists to ignore idle fidgeting, and
+a move order is not fidgeting.
+
+Verified: front/back durations and peaks as tabled; a click behind starts
+the turn on the **next frame** with no dwell wait and lands on exactly π; a
+click 40° or 90° ahead while standing still moves the camera not at all;
+the body spun 180° on the spot with no click still rotates nothing, so the
+model's headline property survives; a behind-destination held for six
+seconds commits exactly one turn; a 180° click only 0.5 m away is ignored.
+
+> *Фаза 5B. Круг разделён на половины. Передняя смягчена по времени
+> (×1.25): 45° теперь 212 °/с вместо 337 исходных, 90° — 323 вместо 477.
+> Задняя не тронута совсем — разворот назад должен приходить как решение, а
+> не ехать со скоростью следования. Побочно длительность стала
+> немонотонной, и это намеренно. Плюс внедрён триггер по destination: клик
+> за спину распознаётся из move_target мгновенно, минуя гистерезис, выдержку
+> и гейт неподвижности — намерение игрока известно задолго до того, как тело
+> успеет повернуться.*
+
+---
+
 ## 2026-08-27 - Adaptive turn character for small ISOMETRIC turns (Phase 5A)
 
 Durations, octants, hysteresis, dwell, look-ahead, head-look, cursor edge
