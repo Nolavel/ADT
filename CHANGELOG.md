@@ -12,6 +12,58 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - ISOMETRIC camera output: critically damped position, smootherstep turns
+
+Playtest note from the author: the camera's idea of where to look is right,
+it just arrives there too abruptly, and most visibly at sprint. Diagnosis
+was position framing rather than yaw, with an explicit instruction not to
+touch the octant model, follow-point logic, cursor-bias architecture or
+head-look, and not to add a second independent follow state. That is what
+this does and no more.
+
+**The output filter's ORDER was the fault, not its rate.** An exponential
+is first order: it smooths position and passes a step in the *target's*
+velocity through in the same frame. `IsometricCameraState`'s follow point
+is assembled from piecewise rules — the dead-zone kink, the moving/settling
+rate switch at `SETTLING_SPEED_THRESHOLD`, a lead that collapses on
+arrival, a cursor bias that drops out when the ray misses — each continuous
+in position and discontinuous in rate of change. At `run_speed` 15.5 a rate
+step is a metre of framing inside a fifth of a second. New
+`Smoothing.smooth_damp_vector3()` (critically damped, Game Programming Gems
+formulation) replaces the position half of the existing pass at
+`ISO_POSITION_SMOOTH_TIME` 0.08. Not a second stage: there is still exactly
+one filter between the state and the camera. Measured against a 50% step in
+target velocity — exponential jerks by 3.05 m/s in one frame, spring by
+0.52. The cost is real and budgeted: a spring trails a constant-speed
+target by `speed * smooth_time`, 1.24 m at sprint against the exponential's
+0.52 m, constant rather than varying, and `LEAD_DISTANCE` already absorbs
+constant offsets.
+
+**Rotation deliberately keeps the exponential.** `_current_yaw` leaves a
+smootherstep turn already C1, so there is no velocity step to filter, and
+springing it would blunt the arrival the octant model exists to produce.
+
+**Turn easing is quintic smootherstep instead of ease-out cubic**, for the
+velocity curve rather than the position curve. The cubic opened a 45° turn
+at 505 °/s in its first frame — a dead stop to three times its own average
+in 16 ms — and only the arrival was smooth. Smootherstep opens at 7 °/s,
+peaks at 337 and returns to zero: a bump, not a step, and a lower peak
+than the old curve's opening value.
+
+`CURSOR_BIAS_DISTANCE` 2.5 → 2.9, a deliberate 16%. Head-look limits
+(35°/25°) and `FOLLOW_RATE_MOVING` (6.0) untouched.
+
+> *Правка по темпоральному отклику, без изменения идеи камеры. Дефектом был
+> порядок выходного фильтра, а не его скорость: экспонента — фильтр первого
+> порядка и пропускает скачок скорости цели в тот же кадр, а follow point
+> собран из кусочных правил. Позиция теперь идёт через критически
+> задемпфированную пружину (замена, не второй каскад): скачок скорости на
+> разрыве 3.05 → 0.52 м/с ценой +0.7 м постоянного отставания на спринте.
+> Поворот оставлен на экспоненте намеренно. Easing доворота переведён на
+> smootherstep: старт 505 → 7 °/с, пик ниже на треть.*
+
+---
+
 ## 2026-08-26 - Head-turn clamp and turn-size scaling (Phase 2 follow-up)
 
 Two defects in the commit above, both found by the author on first look.
