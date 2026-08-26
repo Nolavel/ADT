@@ -193,6 +193,20 @@ class Frame extends RefCounted:
 	## ground_point() returns null: Vector3 has no "no point" value.
 	var cursor_valid: bool = false
 
+	## How strongly the cursor's position ON SCREEN is asking for room, 0
+	## to 1, derived by the host from distance to the screen edge. Zero
+	## through the neutral middle of the screen, ramping to 1 at the very
+	## edge.
+	##
+	## Separated from cursor_point so the two carry one thing each: the
+	## point says WHERE the player is pointing, this says HOW MUCH they are
+	## asking. Before this existed the bias was proportional to plain
+	## distance from the character, which meant the frame drifted whenever
+	## the mouse rested anywhere off to one side — including while the
+	## player was simply reading the screen. A cursor in the middle now
+	## moves nothing at all.
+	var cursor_edge_weight: float = 0.0
+
 
 # =============================================================================
 # DEAD ZONE
@@ -314,6 +328,16 @@ const LEAD_RATE: float = 1.8
 # mode()), so the player's intent is on screen at all times and a full
 # second before the click lands. Reading it here is what makes the camera
 # respond to aiming rather than only to having already moved.
+#
+# GATED ON THE SCREEN EDGE, not on plain distance from the character. The
+# mouse is not only a pointing device here — it is also where the player's
+# hand rests while they read the screen — so a bias that grew with mere
+# distance from the character made the frame drift for no expressed reason.
+# Asking how close the cursor is to leaving the screen asks something the
+# player actually means: they are looking at the boundary of what they can
+# see, so they want more of that side. Through the middle of the screen
+# this channel now contributes exactly nothing. See Frame.cursor_edge_weight
+# and the host's _cursor_edge_weight().
 
 ## Largest cursor-driven offset, in world units. Small on purpose: this is
 ## a lean, and past a couple of metres it stops reading as the frame
@@ -919,13 +943,19 @@ func _update_lead(delta: float, f: Frame) -> void:
 func _update_cursor_bias(delta: float, f: Frame) -> void:
 	var want := Vector3.ZERO
 
-	if f.cursor_valid:
+	if f.cursor_valid and f.cursor_edge_weight > 0.0:
 		var to_cursor := f.cursor_point - f.target_position
 		to_cursor.y = 0.0
 		var distance := to_cursor.length()
 		if distance > 0.01:
+			# Direction from the cursor's own ground point, magnitude from
+			# how close to the screen edge it is. Keeping the two apart is
+			# what lets the bias point at a real place in the world — which
+			# a tilted camera needs, since a screen axis only approximates
+			# a ground direction — while still being silent in the middle
+			# of the screen.
 			var reach: float = minf(distance * CURSOR_BIAS_FRACTION, CURSOR_BIAS_DISTANCE)
-			want = to_cursor / distance * reach
+			want = to_cursor / distance * reach * f.cursor_edge_weight
 
 	_cursor_offset = _cursor_offset.lerp(want, Smoothing.damp_factor(CURSOR_BIAS_RATE, delta))
 
