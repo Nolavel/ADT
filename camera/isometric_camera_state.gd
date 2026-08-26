@@ -428,7 +428,7 @@ const SNAP_STEP: float = TAU / float(SNAP_COUNT)
 ## settling — passes any angular threshold instantly. Requiring the answer
 ## to be STABLE for a moment is what distinguishes "the player has changed
 ## direction" from "the player is passing through this direction".
-@export var snap_dwell: float = 0.3
+@export var snap_dwell: float = 0.375
 
 ## How long a ONE-OCTANT turn takes, in seconds. Larger turns take longer —
 ## see _turn_duration_for().
@@ -492,7 +492,7 @@ const TURN_RAMP_LARGE: float = 0.467
 ## they want to be facing the other way, and it should land like one. The
 ## whole point of splitting the circle is that these two want opposite
 ## things.
-@export var turn_soften_front: float = 1.25
+@export var turn_soften_front: float = 2.25
 
 ## How far away a click must be before its bearing is trusted as a reversal
 ## signal. A destination underfoot has no meaningful direction, and reading
