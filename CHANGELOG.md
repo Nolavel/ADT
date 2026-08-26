@@ -12,6 +12,69 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - ISOMETRIC wall safety and screen-edge framing (Phases 3 and 4)
+
+Camera feel deliberately left alone this pass — the brief was wall clipping
+and cursor framing, and nothing in the octant model, follow point, position
+spring or head-look limits was retuned.
+
+**Phase 3 — wall safety.** ISOMETRIC had no collision check at all; only
+TPS did. A **sphere** `cast_motion()` now runs from the pivot toward the
+unobstructed camera position along `CollisionLayers.CAMERA_OCCLUSION`. A
+sphere rather than a ray because a ray asks whether the camera's
+mathematical *centre* has crossed the wall — answered late, and flipping
+the frame the centre crosses a silhouette edge — while a sphere reports the
+surface a radius early and its answer then varies continuously as the
+player walks, so the retraction is a smooth ramp before any filtering.
+Retract is immediate and restore is eased at `ISO_COLLISION_RESTORE_RATE`:
+being inside a wall is a correctness failure, being further out than
+necessary costs nothing. The probe starts at eye height, since the follow
+point rides the tracked *ground* height and would report a hit on the
+floor. `current_zoom_distance` is untouched — a wall must not rewrite the
+player's zoom or the HUD ruler — and the retracted distance feeds
+`_build_iso_frame()` so the dead zone keeps its apparent size while pulled
+in.
+
+**Phase 4 — screen-edge framing.** The cursor bias is now gated on distance
+to the screen *edge* rather than distance from the character: nothing at
+all through the neutral middle 70%, then a smootherstep ramp to full at the
+edge, the two axes combined as a capped vector and softened where both are
+engaged so a corner reads 0.75 against an edge midpoint's 1.0 instead of
+the 1.41 naive axes would give. The mouse is also where the player's hand
+rests while reading the screen, so a bias growing with plain distance moved
+the frame for no expressed reason. **Deliberately weights a translation and
+not a yaw** — an ever-present mouse signal driving rotation would reinstate
+the self-moving yaw the octant model exists to remove.
+
+**A discontinuity found while building Phase 4 and fixed at source.**
+`_cursor_ground_point()` returned null for rays that never meet the ground,
+and at a -35° pitch the top few percent of the screen is sky. The edge bias
+ramps *up* toward the edges, so a cursor pushed to the top would lean the
+frame nearly all the way and then have it vanish on crossing the horizon.
+Such rays now yield a synthetic point along the ground direction at
+`CURSOR_RAY_MAX_DISTANCE`; both consumers want a direction more than a
+position.
+
+Verified by import pass, headless boot, a live-scene probe (control casts
+prove the sphere detects the floor at 3.00 m and clear sky at 20.00 m), a
+cursor sweep down the screen confirming a valid ground point at every
+height including the whole sky region, and a standalone check of the edge
+ramp (zero everywhere inside the dead zone, corner 0.750 against edge
+1.000). Wall behaviour in real geometry still needs eyes.
+
+> *Фазы 3 и 4, feel камеры намеренно не трогал. Стены: сферический
+> cast_motion от пивота к камере — сфера, а не луч, потому что луч отвечает
+> поздно и разрывно на силуэтных кромках. Отъезд мгновенный, возврат
+> плавный: быть внутри стены — ошибка корректности, стоять дальше нужного —
+> бесплатно. Зум игрока и линейка HUD не переписываются. Курсор: смещение
+> кадра теперь гейтится близостью к краю экрана, а не расстоянием до
+> персонажа — в середине экрана ноль, у края плавный набор, углы слабее
+> середины стороны. Это вес на смещении, а не на yaw. Попутно найден и
+> починен разрыв: выше горизонта курсорная точка была null, и вес обрывался
+> ровно в главном жесте.*
+
+---
+
 ## 2026-08-26 - ISOMETRIC camera output: critically damped position, smootherstep turns
 
 Playtest note from the author: the camera's idea of where to look is right,

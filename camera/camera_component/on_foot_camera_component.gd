@@ -104,15 +104,84 @@ const ISO_ROTATION_SPEED: float = 30.0
 ## of magnitude larger and still owns the lag.
 const ISO_POSITION_SMOOTH_TIME: float = 0.08
 
+
+# =============================================================================
+# ISOMETRIC WALL SAFETY
+# =============================================================================
+#
+# The orbit puts the camera 6-10 m above and behind the follow point. In
+# open ground that is fine; against a hillside, an overhang or the inside
+# of a building it puts the camera inside geometry, and ISOMETRIC had no
+# check at all — only TPS did.
+#
+# The shape is a SPHERE cast, not a ray, and that is the whole reason this
+# reads as smooth rather than as a snap. A ray asks "has the camera's
+# mathematical centre crossed the wall yet", which is answered late and
+# discontinuously — the near face of the frustum is already inside the wall
+# by then, and the answer flips the frame the centre crosses a silhouette
+# edge. A sphere of the radius below starts reporting the wall a whole
+# radius early and the reported distance then varies CONTINUOUSLY as the
+# player walks, so the retraction is already a smooth ramp before any
+# filtering is applied to it.
+
+## Radius of the probe. Roughly the near-plane half-extent this camera
+## needs to keep clear — big enough that the frustum's near face does not
+## poke through a wall the sphere cleared, small enough to fit through the
+## gaps a player can walk through.
+const ISO_COLLISION_RADIUS: float = 0.45
+
+## Closest the camera may be pulled to the pivot. Below this the character
+## fills the frame and then the camera enters them; a wall that would ask
+## for less than this is answered with this instead, and the character is
+## allowed to be occluded rather than the camera allowed inside their head.
+const ISO_COLLISION_MIN_DISTANCE: float = 3.0
+
+## How fast the camera returns to its full distance once the obstruction is
+## gone. Deliberately slow, and deliberately NOT symmetric with the retract
+## (see _update_iso_collision_distance): coming out is a luxury, going in is
+## a correctness requirement, and a fast return reads as the camera being
+## shoved outward by a wall it has just cleared.
+const ISO_COLLISION_RESTORE_RATE: float = 2.5
+
+## Extra clearance kept between the camera and the surface the probe hit, so
+## the camera sits in front of the wall rather than touching it. Matches the
+## 0.25 the TPS branch already backs off by.
+const ISO_COLLISION_SURFACE_MARGIN: float = 0.25
+
+
+# =============================================================================
+# ISOMETRIC SCREEN-EDGE FRAMING
+# =============================================================================
+#
+# The cursor asks the frame for room on the side it is pointing at. It does
+# NOT ask for rotation — see _cursor_edge_weight() for why that line is
+# load-bearing and not a matter of taste.
+
+## Fraction of the way to the screen edge at which the bias starts to exist
+## at all. Below this the cursor is in the neutral middle and the frame does
+## not move: the mouse spends most of its life somewhere near the character,
+## and a bias proportional to plain distance-from-centre would mean the
+## frame drifted whenever the player was merely reading the screen.
+const CURSOR_EDGE_DEAD_ZONE: float = 0.70
+
+## How much weaker a corner is than the middle of a side, as a fraction.
+## Both axes engaged at once should not simply add: a corner is a vaguer
+## request than an edge, and letting it be the strongest position on screen
+## would make the frame lurch diagonally every time the cursor rounded one.
+const CURSOR_EDGE_CORNER_SOFTEN: float = 0.25
+
 ## How steeply the cursor ray must point down before _cursor_ground_point()
 ## trusts its intersection with the ground plane. Below this the ray is
 ## near-parallel to the plane and the hit runs away toward the horizon.
 const CURSOR_RAY_MIN_DOWNWARD: float = 0.05
 
-## Furthest a cursor ground point may be from the camera before it is
-## discarded. A backstop for rays that pass the slope test and still land
-## absurdly far out; nothing the player can act on lives out there, and
-## letting one through would pin the cursor bias at its cap permanently.
+## Distance at which a cursor ground point stops being a real intersection
+## and becomes a direction. Serves two turns in _cursor_ground_point(): a
+## plane hit further out than this is rejected as meaningless, and the
+## synthetic point built for a ray that never meets the ground is placed
+## exactly here. Both consumers saturate long before it — the bias caps at
+## CURSOR_BIAS_DISTANCE, the head-look at its own cone — so any value large
+## enough to be clearly "over there" behaves identically.
 const CURSOR_RAY_MAX_DISTANCE: float = 200.0
 
 ## Manual look offset, in degrees, past which the character is considered
@@ -206,6 +275,35 @@ var _warned_missing_head_look: bool = false
 ## Zeroed on enter() and on every frame the spring is not the thing driving
 ## the camera, so it cannot carry momentum across a view or mode switch.
 var _iso_pos_velocity: Vector3 = Vector3.ZERO
+
+## Smoothed camera distance after wall retraction — what the orbit is
+## actually built from, as opposed to current_zoom_distance, which stays the
+## player's own zoom setting and keeps driving the HUD ruler. A wall must
+## not silently rewrite what the player chose.
+##
+## Initialised negative to mean "no value yet", so the first ISOMETRIC frame
+## adopts the real distance instead of easing out from zero with the camera
+## sitting on the character's head.
+var _iso_collision_distance: float = -1.0
+
+## Reusable query and shape for the wall probe. Held rather than built per
+## frame — this runs every frame in ISOMETRIC and both objects are pure
+## configuration.
+var _iso_collision_shape := SphereShape3D.new()
+var _iso_collision_query := PhysicsShapeQueryParameters3D.new()
+
+## The distance the camera actually ended up at last frame, read back by
+## _build_iso_frame() so the dead zone keeps its apparent size while the
+## camera is retracted against a wall.
+##
+## Without it the zone is derived from current_zoom_distance, and a camera
+## pulled from 15 m to 5 m would be measuring a rectangle three times too
+## big in world units — the frame would visibly stop tracking exactly when
+## the player is up against something and needs it most.
+##
+## Initialised to zero and treated as "not yet known" by the reader, so the
+## very first frame falls back to the zoom setting.
+var _iso_effective_distance: float = 0.0
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
 ## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING in TPS, and back toward 0
 ## at the same rate in ISOMETRIC (see _update_camera_position) — never
@@ -471,6 +569,12 @@ func enter() -> void:
 	_iso.request_reset()
 	_iso_manual_look_yaw_deg = 0.0
 	_iso_pos_velocity = Vector3.ZERO
+	# Both back to "not yet known", so the first ISOMETRIC frame adopts the
+	# real distance rather than easing out to it from whatever the previous
+	# stretch happened to end on — the camera would otherwise start inside
+	# the character and swing out.
+	_iso_collision_distance = -1.0
+	_iso_effective_distance = 0.0
 
 
 ## Releases the head on the way out, for the same reason enter() resets the
@@ -871,12 +975,20 @@ func _build_iso_frame() -> IsometricCameraState.Frame:
 	# camera_follow.tscn stores an orthogonal camera and camera_follow.gd
 	# overrides it to perspective at _ready(), so the assumption is one
 	# edit away from being wrong.
+	# Distance the camera is REALLY at, which is the zoom setting only when
+	# nothing is in the way — see _iso_effective_distance. Taken from the
+	# end of the previous frame, like everything else derived here, since
+	# this frame's has not been probed yet.
+	var framing_distance := (
+		_iso_effective_distance if _iso_effective_distance > 0.0 else current_zoom_distance
+	)
+
 	var visible_height: float
 	if camera and camera.projection == Camera3D.PROJECTION_ORTHOGONAL:
 		visible_height = camera.size
 	else:
 		var fov := camera.fov if camera else ISO_FOV_FALLBACK
-		visible_height = 2.0 * current_zoom_distance * tan(deg_to_rad(fov) * 0.5)
+		visible_height = 2.0 * framing_distance * tan(deg_to_rad(fov) * 0.5)
 	f.world_per_pixel = visible_height / maxf(viewport_size.y, 1.0)
 
 	# How much screen a ground metre running away from the camera covers,
@@ -888,6 +1000,7 @@ func _build_iso_frame() -> IsometricCameraState.Frame:
 	var cursor_point: Variant = _cursor_ground_point()
 	f.cursor_valid = cursor_point != null
 	f.cursor_point = cursor_point if f.cursor_valid else Vector3.ZERO
+	f.cursor_edge_weight = _cursor_edge_weight() if f.cursor_valid else 0.0
 
 	return f
 
@@ -925,23 +1038,47 @@ func _cursor_ground_point() -> Variant:
 	var origin := camera.project_ray_origin(screen_pos)
 	var direction := camera.project_ray_normal(screen_pos)
 
+	# Direction the cursor points along the ground, independent of how
+	# steeply the ray dives. This is the part that always means something,
+	# and the fallback below is built from it.
+	var horizontal := Vector3(direction.x, 0.0, direction.z)
+	if horizontal.length_squared() < 0.000001:
+		# Straight down. Not reachable at this camera's pitch, but a
+		# normalize() on it would be a NaN waiting for whoever changes that.
+		return null
+	horizontal = horizontal.normalized()
+
 	# Near the horizon the ray is almost parallel to the ground and the
-	# intersection runs off toward infinity. At the ISOMETRIC pitch the top
-	# edge of the frustum sits only a couple of degrees above horizontal, so
-	# this is an ordinary cursor position, not an edge case.
-	if direction.y > -CURSOR_RAY_MIN_DOWNWARD:
-		return null
+	# plane intersection runs off toward infinity — and at the ISOMETRIC
+	# pitch that is an ordinary cursor position rather than an edge case:
+	# the top edge of the frustum sits about two degrees ABOVE horizontal,
+	# so the top few percent of the screen is sky.
+	#
+	# Answering those with "no point" was wrong, and wrong in the one place
+	# it costs most. The screen-edge bias grows toward the edges, so a
+	# cursor pushed to the very top would ramp the frame's lean up to nearly
+	# full and then have it vanish the moment the cursor crossed the
+	# horizon — a step in exactly the channel that exists to be smooth, at
+	# exactly the gesture it exists to serve.
+	#
+	# A far point along the ground direction answers it instead. Both
+	# consumers want a DIRECTION more than a position: the bias saturates
+	# its own reach long before this distance, and the head-look clamps to
+	# a cone. So this is not an approximation of a real ground point — it is
+	# the honest answer to "which way is the player pointing" for a ray that
+	# never meets the ground.
+	var too_shallow := direction.y > -CURSOR_RAY_MIN_DOWNWARD
+	if not too_shallow:
+		var plane := Plane(Vector3.UP, _iso.follow_point.y)
+		var hit: Variant = plane.intersects_ray(origin, direction)
+		if hit != null:
+			var point: Vector3 = hit
+			if point.distance_squared_to(origin) <= CURSOR_RAY_MAX_DISTANCE * CURSOR_RAY_MAX_DISTANCE:
+				return point
 
-	var plane := Plane(Vector3.UP, _iso.follow_point.y)
-	var hit: Variant = plane.intersects_ray(origin, direction)
-	if hit == null:
-		return null
-
-	var point: Vector3 = hit
-	if point.distance_squared_to(origin) > CURSOR_RAY_MAX_DISTANCE * CURSOR_RAY_MAX_DISTANCE:
-		return null
-
-	return point
+	var far_point := _iso.follow_point + horizontal * CURSOR_RAY_MAX_DISTANCE
+	far_point.y = _iso.follow_point.y
+	return far_point
 
 
 ## Turns the character's head toward whatever the player is attending to in
@@ -1081,6 +1218,146 @@ func _update_iso_head_look(f: IsometricCameraState.Frame) -> void:
 func _clear_iso_head_look() -> void:
 	if target and target.has_method(&"clear_head_look_point"):
 		target.call(&"clear_head_look_point")
+
+
+## Largest distance the camera may sit from the pivot this frame without
+## ending up inside geometry, smoothed, and asymmetrically.
+##
+## RETRACT IS IMMEDIATE, RESTORE IS SLOW, and the asymmetry is not a feel
+## preference dressed up as one — the two directions are different kinds of
+## thing. Being inside a wall is a correctness failure the player sees as
+## the world disappearing; being further out than strictly necessary costs
+## nothing at all. So the shrinking direction is taken outright and only the
+## growing direction is eased.
+##
+## Taking the retraction outright would be a snap if the probe's answer
+## were itself a step, and against a flat wall it is not: the sphere reports
+## the surface a radius early and the reported distance then falls
+## continuously as the player walks in. What IS a step is a silhouette edge
+## — rounding a pillar, a doorway going out of line — and there the sphere
+## radius plus ISO_COLLISION_SURFACE_MARGIN mean the step happens while the
+## camera still has clearance, so the downstream position spring absorbs it
+## as a bump rather than a jump. Easing the retract as well would only put
+## the camera in the wall for those same frames.
+##
+## [param pivot] Point the camera orbits, already raised off the ground.
+## [param direction] Unit vector from pivot toward the unobstructed camera.
+## [param desired] Distance the camera would sit at with nothing in the way.
+func _update_iso_collision_distance(
+	delta: float, pivot: Vector3, direction: Vector3, desired: float
+) -> float:
+	var safe := _probe_iso_camera_distance(pivot, direction, desired)
+
+	if _iso_collision_distance < 0.0:
+		# First ISOMETRIC frame — adopt, do not ease in.
+		_iso_collision_distance = safe
+		return safe
+
+	if safe < _iso_collision_distance:
+		_iso_collision_distance = safe
+	else:
+		_iso_collision_distance = lerp(
+			_iso_collision_distance, safe,
+			Smoothing.damp_factor(ISO_COLLISION_RESTORE_RATE, delta)
+		)
+
+	return _iso_collision_distance
+
+
+## Sphere-casts from the pivot toward the camera and returns how far the
+## camera may go.
+##
+## cast_motion() rather than intersect_ray(): it answers "how far can this
+## VOLUME travel before it touches something", which is the question a
+## camera actually has. Its return is a pair of fractions — the last safe
+## one and the first unsafe one — and only the first is wanted here.
+##
+## A pivot already buried in geometry (spawned inside a wall, terrain
+## streamed in on top of the character) makes cast_motion() report zero
+## before it has moved at all. That is not a reason to put the camera on the
+## character's face, so the minimum wins: the character may be occluded, the
+## camera may not be inside them.
+func _probe_iso_camera_distance(pivot: Vector3, direction: Vector3, desired: float) -> float:
+	if not camera or desired <= ISO_COLLISION_MIN_DISTANCE:
+		return desired
+
+	var space_state := camera.get_world_3d().direct_space_state
+	if space_state == null:
+		return desired
+
+	_iso_collision_shape.radius = ISO_COLLISION_RADIUS
+	_iso_collision_query.shape = _iso_collision_shape
+	_iso_collision_query.transform = Transform3D(Basis.IDENTITY, pivot)
+	_iso_collision_query.motion = direction * desired
+	_iso_collision_query.collision_mask = CollisionLayers.CAMERA_OCCLUSION
+	_iso_collision_query.collide_with_areas = false
+	_iso_collision_query.exclude = [target.get_rid()] if target is CollisionObject3D else []
+
+	var result := space_state.cast_motion(_iso_collision_query)
+	if result.is_empty():
+		return desired
+
+	var safe_fraction: float = result[0]
+	if safe_fraction >= 1.0:
+		return desired
+
+	return maxf(desired * safe_fraction - ISO_COLLISION_SURFACE_MARGIN, ISO_COLLISION_MIN_DISTANCE)
+
+
+## How strongly the cursor's position on screen is asking for room, 0 to 1.
+##
+## THIS IS A WEIGHT ON A TRANSLATION, AND MUST NOT BECOME ONE ON A YAW. The
+## camera already spent a whole rework getting rid of a yaw that moved on
+## its own, and a mouse near a screen edge is exactly the kind of
+## ever-present signal that would put it back — dressed as cursor steering
+## rather than as an orbit, and no less disorienting for it. The frame
+## showing more of one side answers the same want and costs the player
+## nothing they were using to navigate.
+##
+## Shape: nothing at all until the cursor is CURSOR_EDGE_DEAD_ZONE of the
+## way out, then a smootherstep ramp to full at the very edge. The ramp is
+## the point — a threshold that switched on at 71% of the way out would be
+## a step in the frame's velocity, which is precisely the class of fault the
+## position spring was added to stop creating.
+##
+## The two axes are combined as a VECTOR and capped, so a corner cannot ask
+## for 1.41x what an edge asks for, and then softened further because a
+## corner is a vaguer request than a side.
+func _cursor_edge_weight() -> float:
+	if not camera:
+		return 0.0
+
+	var viewport_size := camera.get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return 0.0
+
+	var mouse := camera.get_viewport().get_mouse_position()
+	# -1 at one edge, 0 at the centre, +1 at the other.
+	var from_centre := Vector2(
+		(mouse.x / viewport_size.x - 0.5) * 2.0,
+		(mouse.y / viewport_size.y - 0.5) * 2.0
+	)
+
+	var ramp := Vector2(_edge_ramp(from_centre.x), _edge_ramp(from_centre.y))
+	if ramp == Vector2.ZERO:
+		return 0.0
+
+	var soften := 1.0 - CURSOR_EDGE_CORNER_SOFTEN * minf(ramp.x, ramp.y)
+	return minf(ramp.length(), 1.0) * soften
+
+
+## One axis of the edge ramp: zero inside the dead zone, smootherstep from
+## there to 1.0 at the edge. Takes a signed -1..1 position and returns an
+## unsigned 0..1 strength — the DIRECTION of the bias comes from the cursor's
+## own ground point, not from these signs, so that a tilted camera leans
+## toward the place the player is pointing at rather than along a screen
+## axis that only approximates it.
+func _edge_ramp(from_centre: float) -> float:
+	var magnitude := minf(absf(from_centre), 1.0)
+	if magnitude <= CURSOR_EDGE_DEAD_ZONE:
+		return 0.0
+	var t := (magnitude - CURSOR_EDGE_DEAD_ZONE) / (1.0 - CURSOR_EDGE_DEAD_ZONE)
+	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 
 
 ## Whether the target is standing on something. Optional getter, like
@@ -1239,12 +1516,29 @@ func _update_camera_position(delta):
 			# sits at the top of the branch the way it did when
 			# current_angle was already final by this point.
 			var pitch_rad = deg_to_rad(camera_angle)
-			var horizontal_distance = current_zoom_distance * cos(pitch_rad)
-			var vertical_distance = -current_zoom_distance * sin(pitch_rad)
 			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))
-			var orbit_offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0)
+			# Unit vector from pivot toward the camera. The orbit offset is
+			# this scaled by whatever distance survives the wall probe, so
+			# the two can no longer disagree about direction the way two
+			# separately-built offsets would.
+			var orbit_direction := (
+				horizontal_direction * cos(pitch_rad) + Vector3.UP * -sin(pitch_rad)
+			).normalized()
 
-			camera_target_pos = follow_point + orbit_offset
+			# The probe starts at eye height, not at the follow point. The
+			# follow point rides the tracked GROUND height, so a probe from
+			# there would begin flush with the floor and report a hit on the
+			# ground the character is standing on. Same getter and same
+			# fallback the TPS occlusion check already uses.
+			var probe_pivot := follow_point + Vector3.UP * _target_metric_height(
+				&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK
+			)
+			var safe_distance := _update_iso_collision_distance(
+				delta, probe_pivot, orbit_direction, current_zoom_distance
+			)
+			_iso_effective_distance = safe_distance
+
+			camera_target_pos = follow_point + orbit_direction * safe_distance
 			camera_target_pitch = camera_angle
 			camera_target_yaw = current_angle
 
@@ -1386,6 +1680,12 @@ func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 			target_angle = _yaw_facing(_target_facing_direction())
 			current_angle = target_angle
 			_iso_manual_look_yaw_deg = 0.0
+			# A retraction earned against a wall the camera was near while
+			# TPS was in charge means nothing to the orbit that is about to
+			# resume — the camera is arriving somewhere else entirely. Same
+			# rule as the look offset above.
+			_iso_collision_distance = -1.0
+			_iso_effective_distance = 0.0
 			view_target_pitch = camera_angle
 
 	target_zoom_distance = view_target_distance
