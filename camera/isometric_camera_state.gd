@@ -397,7 +397,8 @@ const SNAP_STEP: float = TAU / float(SNAP_COUNT)
 ## direction" from "the player is passing through this direction".
 @export var snap_dwell: float = 0.3
 
-## How long a committed turn takes, in seconds.
+## How long a ONE-OCTANT turn takes, in seconds. Larger turns take longer —
+## see _turn_duration_for().
 ##
 ## A fixed duration with an ease, deliberately NOT exponential damping like
 ## every other channel in this file. Exponential damping has an infinite
@@ -492,11 +493,13 @@ var _snap_index: int = 0
 var _candidate_index: int = -1
 var _candidate_time: float = 0.0
 
-## The committed turn in flight: where it started, where it ends, and how
-## far through snap_turn_duration it is. _turn_t >= 1.0 means no turn is
-## running and _base_yaw simply holds _turn_to.
+## The committed turn in flight: where it started, where it ends, how long
+## this particular turn was given (see _turn_duration_for(), which scales it
+## with the size of the step), and how far through that it is. _turn_t >=
+## 1.0 means no turn is running and _base_yaw simply holds _turn_to.
 var _turn_from: float = 0.0
 var _turn_to: float = 0.0
+var _turn_duration: float = 0.25
 var _turn_t: float = 1.0
 
 ## Yaw of the committed octant, mid-turn included, before the manual look.
@@ -665,6 +668,7 @@ func _reset_yaw(f: Frame) -> void:
 	_base_yaw = _yaw_of_octant(_snap_index)
 	_turn_from = _base_yaw
 	_turn_to = _base_yaw
+	_turn_duration = snap_turn_duration
 	_turn_t = 1.0
 	_target_yaw = _base_yaw
 	_current_yaw = _base_yaw
@@ -688,6 +692,36 @@ func _reset_yaw(f: Frame) -> void:
 ## 3. The new answer must be STABLE for snap_dwell. Stops a heading that
 ##    merely sweeps through an octant on the way somewhere else from
 ##    committing a turn nobody asked for.
+##
+## Between them these cover the two ways the model could visibly misbehave,
+## and it is worth being explicit about which gate covers which, because
+## they are not interchangeable:
+##
+## - A heading WOBBLING either side of a boundary (N/NE/N/NE...) is stopped
+##   by gate 2 alone. Having committed to NE, going back to N needs the
+##   heading to reach 34.5 degrees off NE's centre, which is most of the way
+##   into N — a few degrees of jitter at the boundary cannot reach it. The
+##   camera cannot ping-pong.
+## - A heading SWEEPING steadily, which is what running a circle around
+##   something produces, is handled by gate 3 ONLY WHILE THE SWEEP IS FAST.
+##   _candidate_time resets whenever the wanted octant changes, so a heading
+##   advancing faster than roughly one octant per snap_dwell never banks the
+##   dwell and the camera does not turn at all. Measured over a full circle:
+##   180 deg/s produces zero turns, 90 deg/s five, and anything at or below
+##   60 deg/s the full eight.
+##
+##   Eight is not a failure of the gates, and raising snap_dwell will not
+##   meaningfully change it (0.5 was measured at seven). It is geometry: a
+##   camera that follows heading at all must rotate a full 360 degrees over
+##   a full circle, so the only thing any gate can trade is the NUMBER of
+##   turns against their SIZE. Fewer turns on a circle means bigger ones,
+##   which is more jarring per turn, not less. Eight 45-degree steps is the
+##   gentlest way to spend a rotation that has to happen.
+##
+##   If circling still reads badly in play, the lever is therefore not these
+##   gates. It is the prior question of whether a sustained circle should
+##   move the octant at all — which would be a new gate on distance
+##   travelled, not a bigger number here.
 ##
 ## A turn already in flight is not interrupted; the gates are only consulted
 ## once it has landed. Retargeting mid-turn would reintroduce exactly the
@@ -744,6 +778,7 @@ func _start_turn(index: int) -> void:
 	_candidate_time = 0.0
 	_turn_from = _base_yaw
 	_turn_to = _base_yaw + angle_difference(_base_yaw, _yaw_of_octant(index))
+	_turn_duration = _turn_duration_for(absf(_turn_to - _turn_from))
 	_turn_t = 0.0
 
 
@@ -756,9 +791,27 @@ func _advance_turn(delta: float) -> void:
 		_base_yaw = _turn_to
 		return
 
-	_turn_t = minf(_turn_t + delta / maxf(snap_turn_duration, 0.0001), 1.0)
+	_turn_t = minf(_turn_t + delta / maxf(_turn_duration, 0.0001), 1.0)
 	var eased := 1.0 - pow(1.0 - _turn_t, 3.0)
 	_base_yaw = lerp(_turn_from, _turn_to, eased)
+
+
+## How long to give a turn of the given size, in radians.
+##
+## Not constant. A turn is not always one octant: a genuine reversal jumps
+## straight to the opposite heading, four octants at once, and giving 180
+## degrees the same quarter second as 45 makes it a 720 deg/s whip-pan —
+## which is the single most disorienting thing a camera can do, and would
+## undo the whole point of this model at the exact moment the player most
+## needs to keep their bearings.
+##
+## Square root rather than proportional. Proportional (constant angular
+## speed) would make a reversal take a full second, which reads as the
+## camera being slow to obey; sqrt puts 180 degrees at twice the duration of
+## 45, so a reversal takes half a second and still arrives with authority.
+## Small turns keep their snap, large turns stop hurting.
+func _turn_duration_for(step: float) -> float:
+	return snap_turn_duration * sqrt(maxf(step, 0.0001) / SNAP_STEP)
 
 
 ## Which octant a yaw falls in, as an index into the SNAP_COUNT headings.

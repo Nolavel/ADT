@@ -253,6 +253,24 @@ var _tps_lock_distance: float = TPS_DISTANCE
 ## hold and none to abandon.
 @export var iso_look_return_rate: float = 6.0
 
+## Furthest the character's head may turn off their own facing in
+## ISOMETRIC, either side. The backstop for every head-look branch, applied
+## after whichever one won — see _update_iso_head_look().
+##
+## Sized to match iso_look_yaw_limit_deg so a full glance turns the head the
+## whole way, and no further. It is NOT derived from that value: the two
+## answer different questions (how far may the camera lean, versus how far
+## may a neck turn) and a neck limit that silently followed a camera
+## setting is exactly how the head ended up able to rotate 360 degrees.
+## PlayerAnimationComponent's rig has limits of its own
+## (head_look_primary_limit_deg, 70) — this is the tighter, deliberate one,
+## and the rig's is the hard backstop underneath it.
+@export var iso_head_look_limit_deg: float = 35.0
+
+## Furthest the head will turn to follow the CURSOR. Tighter than the
+## glance limit on purpose: a glance is asked for, a cursor is not.
+@export var iso_head_look_cursor_limit_deg: float = 25.0
+
 @export_group("Aim")
 ## Multiplier on the shoulder h_offset while aiming. Grown, not shrunk: the
 ## sight needs to clear the character's silhouette, not sit centered on it,
@@ -916,7 +934,22 @@ func _update_iso_head_look(f: IsometricCameraState.Frame) -> void:
 			_warned_missing_head_look = true
 		return
 
-	var point: Variant = null
+	# Every branch below produces an ANGLE off the body's facing, never a
+	# world point, and the single construction at the bottom turns the
+	# winning angle into one. That shape is not tidiness — it is what makes
+	# the clamp unbypassable.
+	#
+	# Handing the cursor's own world point straight to the rig let the head
+	# turn a full 360 degrees, and by two separate routes. The obvious one:
+	# nothing bounded the angle, so a cursor behind the character asked for
+	# a look behind the character. The other is worse and is invisible from
+	# here — PlayerAnimationComponent lerps the marker's WORLD POSITION
+	# toward the target, so a target that jumps from front to back drags the
+	# marker along a straight line THROUGH the character, and as it passes
+	# the head the look direction sweeps through every angle on the way. A
+	# bounded cone fixes both at once: the target stays in front at a fixed
+	# radius, so the interpolation path never comes near the head.
+	var offset_deg: Variant = null
 
 	if absf(_iso_manual_look_yaw_deg) > ISO_HEAD_LOOK_PEEK_DEG:
 		# The head turns by exactly the angle the camera leaned, measured
@@ -938,26 +971,66 @@ func _update_iso_head_look(f: IsometricCameraState.Frame) -> void:
 		# construction, and if Q turns out to read inverted in game, the
 		# negation in _handle_isometric_look_input() flips both at once —
 		# there is nothing to keep in sync here.
-		var peek := _target_facing_direction().rotated(
-			Vector3.UP, deg_to_rad(_iso_manual_look_yaw_deg)
-		)
-		point = target.global_position + peek * ISO_HEAD_LOOK_DISTANCE
+		offset_deg = _iso_manual_look_yaw_deg
 
 	elif f.cursor_valid and f.speed_ratio < IsometricCameraState.MOVING_SPEED_THRESHOLD:
 		# Only while stopped. On the move the animation clips drive the
 		# head, and overriding them mid-stride reads as a broken neck rather
 		# than as attention — the same gate PlayerAnimationComponent's own
 		# TPS branch applies for the same reason.
+		var facing := _target_facing_direction()
 		var to_cursor := f.cursor_point - target.global_position
 		to_cursor.y = 0.0
 		if to_cursor.length() > ISO_HEAD_LOOK_CURSOR_MIN_DISTANCE:
-			point = f.cursor_point
+			# Clamped TIGHTER than the glance, deliberately. A glance is
+			# something the player is actively holding a key to get; the
+			# cursor is merely where the mouse happens to rest, and the head
+			# should acknowledge it rather than commit to it. Past the limit
+			# the head stops at the edge of its cone and leans that way,
+			# which reads as noticing something off to the side — the
+			# character is under no obligation to be able to see whatever
+			# the mouse is over.
+			#
+			# Both angles are taken with atan2(x, z), this project's facing
+			# convention (+Z forward, see player.gd's get_facing_direction),
+			# and differenced with angle_difference so the wrap at +/-PI
+			# cannot produce a spurious near-360 offset for a cursor sitting
+			# just behind the character.
+			#
+			# One seam survives and is left alone on purpose: a cursor
+			# crossing the line DIRECTLY behind flips the clamped offset
+			# from +limit to -limit, because which shoulder to look over is
+			# genuinely undefined there. The head then sweeps across the
+			# front rather than through itself — the marker's interpolation
+			# path is a chord several metres out, nowhere near the head —
+			# so this costs a quick glance from one side to the other and
+			# nothing worse. Suppressing it would mean remembering a side,
+			# which is state, for a case where the character cannot see
+			# anything either way.
+			offset_deg = clampf(
+				rad_to_deg(angle_difference(
+					atan2(facing.x, facing.z), atan2(to_cursor.x, to_cursor.z)
+				)),
+				-iso_head_look_cursor_limit_deg,
+				iso_head_look_cursor_limit_deg
+			)
 
-	if point == null:
+	if offset_deg == null:
 		target.call(&"clear_head_look_point")
 		return
 
-	target.call(&"set_head_look_point", point)
+	# The one clamp, applied to whichever branch won. The peek branch is
+	# already bounded by iso_look_yaw_limit_deg, but that is an @export a
+	# later tuning pass could raise without ever thinking about necks, and
+	# this is the line that has to hold regardless of what it is set to.
+	var clamped := clampf(
+		float(offset_deg), -iso_head_look_limit_deg, iso_head_look_limit_deg
+	)
+	var direction := _target_facing_direction().rotated(Vector3.UP, deg_to_rad(clamped))
+	target.call(
+		&"set_head_look_point",
+		target.global_position + direction * ISO_HEAD_LOOK_DISTANCE
+	)
 
 
 ## Releases the head, if the target has the rig at all. Separate from
