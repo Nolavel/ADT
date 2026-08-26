@@ -12,6 +12,59 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - ISOMETRIC look-ahead, and wall clamp moved after the spring
+
+Feel untouched again: octants, yaw rates, head-look and the position spring
+are as they were.
+
+**The camera now aims through the character rather than at them.** At full
+strength the look target moves 2.0 m forward along the camera's horizontal
+forward and 0.4 m up while the camera sinks 0.3 m; pitch is *derived* from
+camera-to-target and yaw is left entirely to the octant. Strength is
+`speed_ratio * 0.7 + cursor_edge_weight * 0.5`, clamped and eased.
+
+This answers "the camera is still catching up with my body" without
+touching yaw speed, and deliberately so: yaw speed trades smoothness
+against responsiveness and no setting gives both, because they are the same
+quantity. Look-ahead is a different quantity — the space the player is
+running into is shown *before* the turn finishes, so the octant turn never
+has to be hurried. **No yaw is produced, structurally rather than by
+promise**: the offset runs along the camera's own horizontal forward, so
+camera, follow point and look target stay in one vertical plane. Measured
+deviation over 16 bearings x 11 strengths is 8.9e-8 rad — float epsilon.
+Measured tilt at full strength: +6.05° at 15 m of zoom, +8.71° at the 10 m
+near edge, +5.25° at 17.5 m.
+
+**The wall clamp moved to after the position spring**, where the ordering
+diagram in the brief already assumed it was. It was not: Phase 3 clamped
+`camera_target_pos`, so the "immediate" retract was immediate only for the
+target and the spring then took its own 0.08 s to carry the camera there —
+longer, at `run_speed` 15.5, than the 0.7 m of sphere-plus-margin clearance
+lasts. It now clamps `camera_current_pos` itself, so the retract is
+immediate for the camera and the spring cannot hold a position inside the
+wall to snap back out to. The look target is built before the clamp runs,
+so a wall changes where the camera is and never where it aims.
+
+Edge tuning as requested: `CURSOR_EDGE_DEAD_ZONE` 0.70 -> 0.65,
+`CURSOR_BIAS_DISTANCE` 2.9 -> 3.4.
+
+Verified by import pass, headless boot, a standalone solve of the framing
+maths (yaw deviation at epsilon, pitch curve across strength and zoom), and
+a live probe in which the idle look-ahead settled at exactly 0.375 — the
+measured corner weight 0.750 times the cursor share 0.5, confirming the
+edge ramp, corner softening and look-ahead share all agree end to end.
+Behaviour against real walls and the feel of the tilt still need eyes.
+
+> *Look-ahead: камера целится сквозь персонажа вперёд, а не в него. Питч
+> выводится из точки взгляда, yaw остаётся за октантами — отклонение yaw
+> 8.9e-8 рад, то есть ноль по построению. Это ответ на «камера догоняет
+> тело» без ускорения поворота: скорость yaw меняет плавность на
+> отзывчивость и обратно, а look-ahead показывает пространство раньше, чем
+> поворот закончится. Плюс перенёс кламп стен за пружину — в фазе 3 он
+> стоял до неё, и мгновенный отъезд был мгновенным только у цели.*
+
+---
+
 ## 2026-08-27 - ISOMETRIC wall safety and screen-edge framing (Phases 3 and 4)
 
 Camera feel deliberately left alone this pass — the brief was wall clipping

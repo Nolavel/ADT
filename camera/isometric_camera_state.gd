@@ -344,14 +344,15 @@ const LEAD_RATE: float = 1.8
 ## accommodating the player and starts reading as the camera wandering off
 ## on its own.
 ##
-## 2.5 -> 2.9, a deliberate 16% and not the 50% that would make the reading
-## obvious. The line this must stay on the right side of is "the camera took
-## some interest in where I pointed" versus "the camera is trying to look at
-## my cursor", and in Blackrock's dense streets the second one costs the
-## player the character's own surroundings. Only the cap moved;
-## CURSOR_BIAS_FRACTION is untouched, so a cursor near the character still
-## produces almost nothing and the change is felt only at range.
-const CURSOR_BIAS_DISTANCE: float = 2.9
+## 2.5 -> 2.9 -> 3.4, both times deliberately short of the 50% that would
+## make the reading obvious. The line this must stay on the right side of is
+## "the camera took some interest in where I pointed" versus "the camera is
+## trying to look at my cursor", and in Blackrock's dense streets the second
+## one costs the player the character's own surroundings. Only the cap has
+## ever moved; CURSOR_BIAS_FRACTION is untouched, so a cursor near the
+## character still produces almost nothing and the change is felt only at
+## range.
+const CURSOR_BIAS_DISTANCE: float = 3.4
 
 ## Fraction of the distance to the cursor to actually lean by, before the
 ## cap above. Keeps a cursor resting just off the character from producing

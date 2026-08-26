@@ -162,13 +162,86 @@ const ISO_COLLISION_SURFACE_MARGIN: float = 0.25
 ## not move: the mouse spends most of its life somewhere near the character,
 ## and a bias proportional to plain distance-from-centre would mean the
 ## frame drifted whenever the player was merely reading the screen.
-const CURSOR_EDGE_DEAD_ZONE: float = 0.70
+const CURSOR_EDGE_DEAD_ZONE: float = 0.65
 
 ## How much weaker a corner is than the middle of a side, as a fraction.
 ## Both axes engaged at once should not simply add: a corner is a vaguer
 ## request than an edge, and letting it be the strongest position on screen
 ## would make the frame lurch diagonally every time the cursor rounded one.
 const CURSOR_EDGE_CORNER_SOFTEN: float = 0.25
+
+
+# =============================================================================
+# ISOMETRIC LOOK-AHEAD
+# =============================================================================
+#
+# The camera looks THROUGH the character into the space in front of them
+# rather than AT them, by a small amount, growing with how fast they are
+# moving and how close to the screen edge the cursor is.
+#
+# This is the answer to "the camera is still catching up with my body",
+# and it is a better answer than a faster yaw. A faster yaw trades
+# smoothness for responsiveness and a slower one trades back; there is no
+# setting that gives both, because they are the same quantity. Look-ahead
+# is a different quantity: the camera can show the player the space they
+# are running into BEFORE it has finished physically turning to face it.
+# The information arrives early even though the geometry arrives on its own
+# schedule, so the octant turn never has to be hurried.
+#
+# IT PRODUCES NO YAW, and that is structural rather than a promise. The
+# offset is applied along the camera's own horizontal forward, so the
+# camera, the follow point and the look target stay in one vertical plane
+# and the only angle that can change is pitch. A cursor-driven yaw is
+# exactly the self-moving rotation the octant model was written to remove;
+# it must not come back through this door.
+
+## How far in front of the character the camera aims at full effect.
+##
+## What this is worth, measured rather than predicted: together with the
+## raise and drop below it tilts the view up by +6.05 degrees at 15 m of
+## zoom. The effect is stronger the closer the camera is — +8.71 at the
+## 10 m near edge, +5.25 at the 17.5 m far edge — because a fixed
+## world-space offset is a larger fraction of a tighter shot. That is left
+## as it is on purpose: "aim two metres past the character" is a statement
+## about the world that stays true at any zoom, and normalising it against
+## the zoom would make the same tunable mean something different at each
+## end of the slider.
+const ISO_LOOK_AHEAD_DISTANCE: float = 2.0
+
+## How far the look target rises at full effect.
+##
+## The follow point rides GROUND height, so at rest the camera is aimed at
+## the character's feet. Lifting the target is half framing correction and
+## half the effect itself: combined with the drop below it tilts the view
+## up without moving the camera's own angle by hand.
+const ISO_LOOK_TARGET_RAISE: float = 0.4
+
+## How far the camera itself sinks at full effect. Small — this is not a
+## change of camera height, it is the other half of the tilt. Dropping the
+## eye while raising the aim opens the distance without the camera visibly
+## relocating.
+const ISO_CAMERA_DROP: float = 0.3
+
+## How much of the effect running alone is worth, and how much the cursor
+## at the screen edge adds. They sum and clamp at 1, so a sprint on its own
+## reaches most of it, the cursor tops it up, and either alone does
+## something.
+##
+## Movement is the larger share deliberately: the fault this exists to
+## answer shows up while running, and a player at a dead stop has no space
+## ahead of them that they are about to need.
+const ISO_LOOK_AHEAD_SPEED_SHARE: float = 0.7
+const ISO_LOOK_AHEAD_CURSOR_SHARE: float = 0.5
+
+## Easing rate for the effect's strength. Slow, close to the lead's own
+## rate and for the same reason: speed_ratio and the cursor's edge weight
+## both change abruptly, and an unfiltered weight would step the pitch.
+##
+## Note what is smoothed — a scalar STRENGTH, not a position. The pitch it
+## produces still passes through camera_current_pitch's own exponential at
+## ISO_ROTATION_SPEED, which is near-transparent, so there is one meaningful
+## filter on this channel and not two.
+const ISO_LOOK_AHEAD_RATE: float = 2.2
 
 ## How steeply the cursor ray must point down before _cursor_ground_point()
 ## trusts its intersection with the ground plane. Below this the ray is
@@ -304,6 +377,17 @@ var _iso_collision_query := PhysicsShapeQueryParameters3D.new()
 ## Initialised to zero and treated as "not yet known" by the reader, so the
 ## very first frame falls back to the zoom setting.
 var _iso_effective_distance: float = 0.0
+
+## Smoothed look-ahead strength, 0 to 1. Scales the forward aim offset, the
+## look-target raise and the camera drop together, so the three cannot drift
+## apart into three separate effects.
+var _iso_look_ahead: float = 0.0
+
+## Pivot the wall probe casts from, published by the ISOMETRIC branch for
+## the clamp that runs after the spring in the shared tail. Stashed rather
+## than recomputed so the probe and the framing cannot disagree about where
+## the character is this frame.
+var _iso_probe_pivot: Vector3 = Vector3.ZERO
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
 ## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING in TPS, and back toward 0
 ## at the same rate in ISOMETRIC (see _update_camera_position) — never
@@ -575,6 +659,7 @@ func enter() -> void:
 	# the character and swing out.
 	_iso_collision_distance = -1.0
 	_iso_effective_distance = 0.0
+	_iso_look_ahead = 0.0
 
 
 ## Releases the head on the way out, for the same reason enter() resets the
@@ -1220,6 +1305,52 @@ func _clear_iso_head_look() -> void:
 		target.call(&"clear_head_look_point")
 
 
+## Advances the look-ahead strength, 0 to 1, and returns it.
+##
+## Two contributions that sum and clamp: how fast the character is moving,
+## and how close to the screen edge the cursor is. Either alone does
+## something, both together saturate. Reads the frame the ISOMETRIC branch
+## has already built rather than re-deriving either, so the strength cannot
+## disagree with the bias computed from the same numbers.
+func _update_iso_look_ahead(delta: float) -> float:
+	var want := clampf(
+		_iso_frame.speed_ratio * ISO_LOOK_AHEAD_SPEED_SHARE
+		+ _iso_frame.cursor_edge_weight * ISO_LOOK_AHEAD_CURSOR_SHARE,
+		0.0, 1.0
+	)
+	_iso_look_ahead = lerp(
+		_iso_look_ahead, want, Smoothing.damp_factor(ISO_LOOK_AHEAD_RATE, delta)
+	)
+	return _iso_look_ahead
+
+
+## Pulls a settled camera position in until it is clear of geometry.
+##
+## The last thing that touches the position, by design: everything upstream
+## decides where the camera WANTS to be and this decides where it may
+## actually go. Nothing downstream of it may reconsider — in particular the
+## look target is built before this runs, so a wall changes where the camera
+## is and never where it is aimed.
+##
+## Probes toward wherever the camera actually settled rather than along the
+## nominal orbit direction, which the spring lags slightly during a turn.
+## The camera is what has to be clear of the wall, so the camera is what
+## gets asked about.
+func _apply_iso_wall_clamp(delta: float, position: Vector3) -> Vector3:
+	var to_camera := position - _iso_probe_pivot
+	var desired := to_camera.length()
+	if desired < 0.001:
+		return position
+
+	var direction := to_camera / desired
+	var safe := _update_iso_collision_distance(delta, _iso_probe_pivot, direction, desired)
+	_iso_effective_distance = safe
+
+	if safe >= desired:
+		return position
+	return _iso_probe_pivot + direction * safe
+
+
 ## Largest distance the camera may sit from the pivot this frame without
 ## ending up inside geometry, smoothed, and asymmetrically.
 ##
@@ -1530,16 +1661,46 @@ func _update_camera_position(delta):
 			# there would begin flush with the floor and report a hit on the
 			# ground the character is standing on. Same getter and same
 			# fallback the TPS occlusion check already uses.
-			var probe_pivot := follow_point + Vector3.UP * _target_metric_height(
+			# Pivot for the wall probe, applied after the spring in the
+			# shared tail — see _apply_iso_wall_clamp(). Stashed rather than
+			# recomputed there so the probe and the framing agree on where
+			# the character is.
+			_iso_probe_pivot = follow_point + Vector3.UP * _target_metric_height(
 				&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK
 			)
-			var safe_distance := _update_iso_collision_distance(
-				delta, probe_pivot, orbit_direction, current_zoom_distance
-			)
-			_iso_effective_distance = safe_distance
 
-			camera_target_pos = follow_point + orbit_direction * safe_distance
-			camera_target_pitch = camera_angle
+			var look_ahead := _update_iso_look_ahead(delta)
+
+			# Camera sinks, aim rises and moves forward. Both offsets are
+			# built from the UNOBSTRUCTED geometry: a wall may move the
+			# camera, but it must never change where the camera wants to
+			# look, or the framing would swing every time the player brushed
+			# past a doorway.
+			camera_target_pos = (
+				follow_point
+				+ orbit_direction * current_zoom_distance
+				- Vector3.UP * (ISO_CAMERA_DROP * look_ahead)
+			)
+
+			var look_target := (
+				follow_point
+				+ _iso.get_cam_forward() * (ISO_LOOK_AHEAD_DISTANCE * look_ahead)
+				+ Vector3.UP * (ISO_LOOK_TARGET_RAISE * look_ahead)
+			)
+
+			# Pitch is DERIVED from the aim, yaw is not touched. The offset
+			# above runs along get_cam_forward(), which is horizontal, so
+			# camera, follow point and look target share one vertical plane
+			# and the horizontal bearing between them is unchanged by
+			# construction. That is what keeps this from becoming cursor
+			# steering.
+			var to_look := look_target - camera_target_pos
+			var to_look_horizontal := Vector2(to_look.x, to_look.z).length()
+			camera_target_pitch = (
+				rad_to_deg(atan2(to_look.y, to_look_horizontal))
+				if to_look_horizontal > 0.001
+				else camera_angle
+			)
 			camera_target_yaw = current_angle
 
 			_decay_tps_state(delta)
@@ -1592,13 +1753,16 @@ func _update_camera_position(delta):
 		)
 		camera_current_pos = damped[0]
 		_iso_pos_velocity = damped[1]
-	else:
-		camera_current_pos = camera_current_pos.lerp(camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta))
-		# The spring's stored velocity must not survive a stretch where
-		# something else was driving the camera, or the first ISOMETRIC
-		# frame back would be launched by a velocity earned in TPS. Same
-		# rule as every other cross-view value in this file.
-		_iso_pos_velocity = Vector3.ZERO
+		# Wall safety is the LAST layer, after the spring rather than
+		# before it. Applied to the target instead, an "immediate" retract
+		# is immediate only for the target — the spring then takes its own
+		# 0.08 s to carry the camera there, and at run_speed 15.5 the
+		# sphere's 0.7 m of clearance is 45 ms of travel. Clamping the
+		# settled position is what makes the retract actually immediate,
+		# and clamping camera_current_pos rather than only the camera keeps
+		# the spring from holding a position inside the wall to snap back
+		# out to when the obstruction clears.
+		camera_current_pos = _apply_iso_wall_clamp(delta, camera_current_pos)
 
 	if not view_mode_animating:
 		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, Smoothing.damp_factor(rotation_follow_speed, delta))
@@ -1686,6 +1850,7 @@ func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 			# rule as the look offset above.
 			_iso_collision_distance = -1.0
 			_iso_effective_distance = 0.0
+			_iso_look_ahead = 0.0
 			view_target_pitch = camera_angle
 
 	target_zoom_distance = view_target_distance
