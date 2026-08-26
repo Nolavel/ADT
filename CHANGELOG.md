@@ -12,6 +12,53 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - Adaptive turn character for small ISOMETRIC turns (Phase 5A)
+
+Durations, octants, hysteresis, dwell, look-ahead, head-look, cursor edge
+framing and the whole collision path are untouched. Only the *shape* of a
+turn changed.
+
+The complaint was that every octant turn had much the same character
+whatever the angle, so a small correction read as the camera clicking round
+after the body. There is a hard constraint underneath that worth stating:
+at a fixed duration and angle the average angular speed is already decided,
+and every curve's peak is at least the average — so "less aggressive" can
+only mean **lower peak**, which means flatter, not rounder. A higher-order
+ease has softer ends and a *higher* peak, the opposite of what a small turn
+wants.
+
+So the profile is now a trapezoid in angular velocity with smootherstep
+corners (`_turn_ease()`): it ramps up over `ramp` of the duration, holds a
+plateau, ramps down over the same fraction. The area is fixed — the turn
+covers its angle in its time whatever shape it takes — so the plateau is
+`1/(1-ramp)` times the average, and a smaller ramp flattens the peak.
+`_turn_ramp_for()` interpolates `TURN_RAMP_SMALL` (0.32) at one octant to
+`TURN_RAMP_LARGE` (0.467) at a reversal, that upper value being exactly
+where the profile matches the plain smootherstep it replaces.
+
+Measured peak angular speed at unchanged durations: 45° 265°/s (was 337,
+**-21.5%**), 90° 403 (was 477, -15.5%), 135° 536 (was 584, -8.3%), 180°
+675 (was 675, **+0.1%**). First- and last-frame speeds stay near zero at
+every size, every turn still lands on exactly 1.000000, the ease is
+strictly non-decreasing at every ramp, and the area check holds for ramps
+from 0.05 to 0.5.
+
+Not built, and named here so it is not lost: splitting `body_heading_delta`
+from `destination_heading_delta`, so a click *behind* the character is read
+as deliberate reversal while a small drift of body heading is only ever a
+soft follow. `Frame.move_target` already carries the destination, so the
+plumbing exists; the trigger does not. Held back on purpose until the
+three-step dynamic above is judged in play.
+
+> *Фаза 5A: изменён только характер доворота, тайминги не тронуты. Профиль
+> угловой скорости стал трапецией со smootherstep-углами: площадь под ним
+> фиксирована, поэтому «мягче» достижимо исключительно снижением пика, то
+> есть уплощением, а не более гладкой кривой — кривая более высокого
+> порядка даёт пик ВЫШЕ. Малый поворот стал мягче на 21.5%, разворот на
+> 180° остался прежним с точностью до 0.1%.*
+
+---
+
 ## 2026-08-27 - ISOMETRIC look-ahead, and wall clamp moved after the spring
 
 Feel untouched again: octants, yaw rates, head-look and the position spring

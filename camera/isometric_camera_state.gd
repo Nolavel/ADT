@@ -441,6 +441,33 @@ const SNAP_STEP: float = TAU / float(SNAP_COUNT)
 ## genuinely still.
 @export var snap_turn_duration: float = 0.25
 
+## How much of a turn is spent accelerating and decelerating, either end,
+## for the SMALLEST turn and for a full reversal. The turn's character, as
+## opposed to its length, which snap_turn_duration owns.
+##
+## The velocity profile is a trapezoid with smootherstep corners: it ramps
+## up over this fraction of the duration, holds, and ramps down over the
+## same fraction at the far end. Because the area under it is fixed — the
+## turn covers its angle in its duration whatever shape it takes — the
+## plateau height is 1/(1-ramp), so a SMALLER ramp means a flatter, slower
+## peak and a LARGER one means a taller, more pointed one.
+##
+## That fixed area is the whole reason this parameter exists rather than a
+## gentler curve. At a fixed duration and angle the average angular speed is
+## already decided, and every curve's peak is at least the average, so
+## "less aggressive" can only mean "lower peak" — which means flatter, not
+## rounder. A higher-order ease has softer ends and a HIGHER peak, the
+## opposite of what a small turn wants.
+##
+## TURN_RAMP_LARGE is the value at which the profile matches the plain
+## smootherstep this replaced (peak 1.875x average), so a reversal keeps
+## exactly the decisive character it had. Small turns flatten from there.
+## Measured peak angular speed, against the previous curve at the same
+## durations: 45 deg 265 deg/s (was 337), 90 deg 403 (was 476), 135 deg 536
+## (was 585), 180 deg 675 (was 675).
+const TURN_RAMP_SMALL: float = 0.32
+const TURN_RAMP_LARGE: float = 0.467
+
 ## Speed ratio above which the character counts as moving for the purpose of
 ## reconsidering the octant. Deliberately the same threshold
 ## SETTLING_SPEED_THRESHOLD uses for the follow point: yaw and position
@@ -533,6 +560,7 @@ var _candidate_time: float = 0.0
 var _turn_from: float = 0.0
 var _turn_to: float = 0.0
 var _turn_duration: float = 0.25
+var _turn_ramp: float = TURN_RAMP_SMALL
 var _turn_t: float = 1.0
 
 ## Yaw of the committed octant, mid-turn included, before the manual look.
@@ -702,6 +730,7 @@ func _reset_yaw(f: Frame) -> void:
 	_turn_from = _base_yaw
 	_turn_to = _base_yaw
 	_turn_duration = snap_turn_duration
+	_turn_ramp = TURN_RAMP_SMALL
 	_turn_t = 1.0
 	_target_yaw = _base_yaw
 	_current_yaw = _base_yaw
@@ -811,7 +840,9 @@ func _start_turn(index: int) -> void:
 	_candidate_time = 0.0
 	_turn_from = _base_yaw
 	_turn_to = _base_yaw + angle_difference(_base_yaw, _yaw_of_octant(index))
-	_turn_duration = _turn_duration_for(absf(_turn_to - _turn_from))
+	var step := absf(_turn_to - _turn_from)
+	_turn_duration = _turn_duration_for(step)
+	_turn_ramp = _turn_ramp_for(step)
 	_turn_t = 0.0
 
 
@@ -825,30 +856,74 @@ func _advance_turn(delta: float) -> void:
 		return
 
 	_turn_t = minf(_turn_t + delta / maxf(_turn_duration, 0.0001), 1.0)
-	_base_yaw = lerp(_turn_from, _turn_to, _smootherstep(_turn_t))
+	_base_yaw = lerp(_turn_from, _turn_to, _turn_ease(_turn_t, _turn_ramp))
 
 
-## Quintic smootherstep, 6t^5 - 15t^4 + 10t^3.
+## Quintic smootherstep, 6t^5 - 15t^4 + 10t^3. Used as the CORNER of the
+## turn profile below, not as the profile itself any more.
 ##
-## Replaces an ease-out cubic, and the reason is the VELOCITY curve rather
-## than the position curve — the two look nearly identical plotted as
-## position and behave completely differently to watch.
-##
-## Ease-out cubic has derivative 3(1-t)^2, which is 3x the average speed at
-## t = 0 and zero at t = 1. So a turn began by snapping the angular velocity
-## from nothing to three times its own average in a single frame, and only
-## the ARRIVAL was smooth. That start is the "sharp" in a camera that
-## otherwise moves fine.
-##
-## Smootherstep's derivative is 30t^2(1-t)^2: zero at both ends, peaking at
-## 1.875x average in the middle. The turn accelerates in, runs, and
-## decelerates out — a bump, not a step — and the peak is lower than the old
-## curve's opening value into the bargain. Quintic rather than cubic
-## smoothstep because smoothstep is only C1 at the ends (zero velocity, non-
-## zero acceleration) while this is C2, and at 45 degrees in a quarter
-## second the acceleration step of the cubic is still visible.
+## It replaced an ease-out cubic, and the reason was the VELOCITY curve
+## rather than the position curve — the two look nearly identical plotted as
+## position and behave completely differently to watch. Ease-out cubic has
+## derivative 3(1-t)^2, which is 3x the average speed at t = 0 and zero at
+## t = 1, so a turn began by snapping the angular velocity from nothing to
+## three times its own average in one frame and only the ARRIVAL was smooth.
+## Smootherstep's derivative is 30t^2(1-t)^2: zero at both ends, C2 at both
+## ends, peaking at 1.875x average in the middle.
 func _smootherstep(t: float) -> float:
 	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+
+
+## Definite integral of _smootherstep from 0 to x, for x in [0, 1].
+##
+## x^6 - 3x^5 + 2.5x^4, which is 0.5 at x = 1 — a smootherstep ramp covers
+## exactly half the ground a constant would over the same span, which is
+## what makes the plateau height below work out to 1/(1-ramp).
+func _smootherstep_integral(x: float) -> float:
+	return x * x * x * x * (x * x - 3.0 * x + 2.5)
+
+
+## The turn profile: a trapezoid in angular VELOCITY with smootherstep
+## corners, given as position over normalised time.
+##
+## Velocity ramps from zero to a plateau over the first [param ramp] of the
+## duration, holds, then ramps back to zero over the last [param ramp]. The
+## plateau is 1/(1-ramp) times the average so the turn still covers exactly
+## its angle in exactly its duration whatever ramp is chosen — the shape is
+## free, the area is not.
+##
+## ramp = 0.5 leaves no plateau and gives a pure bump; smaller values flatten
+## it toward a constant-speed move with rounded ends. Both ends stay C2, as
+## smootherstep's do, so a turn still starts and finishes without a step in
+## either velocity or acceleration; what changes is how much of the turn is
+## spent at the peak rather than climbing to it.
+##
+## This is the whole of Phase 5A. Durations are untouched — the same turn
+## takes the same time as before and only its shape has changed.
+func _turn_ease(t: float, ramp: float) -> float:
+	var r := clampf(ramp, 0.01, 0.5)
+	var plateau := 1.0 / (1.0 - r)
+
+	if t <= r:
+		return plateau * r * _smootherstep_integral(t / r)
+	if t >= 1.0 - r:
+		return 1.0 - plateau * r * _smootherstep_integral((1.0 - t) / r)
+	return plateau * (r * 0.5 + t - r)
+
+
+## Ramp fraction for a turn of the given size, in radians.
+##
+## Interpolates from TURN_RAMP_SMALL at one octant to TURN_RAMP_LARGE at a
+## full reversal, so responsiveness is a curve rather than a switch: an
+## almost-invisible correction flows, a quarter turn is smooth but decisive,
+## and a reversal keeps the pointed, deliberate character it needs to read
+## as "I am now facing the other way" rather than as the world rotating.
+##
+## Sized on the OUTGOING angle rather than on the octant count so the two
+## cannot disagree if the octant step is ever retuned.
+func _turn_ramp_for(step: float) -> float:
+	var bigness := clampf((step - SNAP_STEP) / (PI - SNAP_STEP), 0.0, 1.0)
+	return lerp(TURN_RAMP_SMALL, TURN_RAMP_LARGE, bigness)
 
 
 ## How long to give a turn of the given size, in radians.
