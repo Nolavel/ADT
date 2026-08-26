@@ -58,7 +58,7 @@ view is embedded in the editor.
 | `zoom_in` | Wheel down | Zoom camera in | Приблизить |
 | `zoom_out` | Wheel up | Zoom camera out | Отдалить |
 | `toggle_view` | `V` | Toggle `ISOMETRIC` ⇄ `TPS` | Смена вида |
-| `toggle_follow` | `P` | Toggle camera-follows-player-rotation | Слежение камеры |
+| `toggle_follow` | `P` | Toggle camera-follows-player-rotation — **no effect since the ISOMETRIC camera became directional** (§3); binding kept, unread | Слежение камеры (не действует) |
 | `inventory` | `I` | Inventory | Инвентарь |
 | `map` | `M` | Map | Карта |
 | `status` | `X` | Status | Статус |
@@ -98,8 +98,22 @@ Click-to-move navigation. Handled by `NavigationComponent` and
 | `mouse_left_button` | LMB | `PEACE`: stop movement / cancel move target. `COMBAT`: punch instead — see §4, same action as TPS, standing still only | `PEACE`: отменить цель движения. `COMBAT`: удар (только с места) |
 | `mouse_right_button` | RMB click | Move to clicked point — regardless of `Stance` | Идти в точку |
 | `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
-| `lean_left` | `Q` | Orbital camera — discrete step left | Шаг камеры влево |
-| `lean_right` | `E` | Orbital camera — discrete step right | Шаг камеры вправо |
+| `lean_left` | `Q` **hold** | Look left — temporary, bounded to ±35° from the character's own direction, springs back on release | Осмотреться влево (удержание) |
+| `lean_right` | `E` **hold** | Look right — same bound and spring-back | Осмотреться вправо (удержание) |
+
+`lean_left`/`lean_right` were discrete orbital steps until the ISOMETRIC camera
+became directional: yaw now follows the character's movement direction while
+moving and their facing once stopped, so there is no orbit left to step. The
+two keys carry the bounded temporary look instead — held, not tapped. The
+bound (`OnFootCameraComponent.iso_look_yaw_limit_deg`) is what keeps this a
+glance rather than a free orbit by another name.
+
+Mouse-X drives the look in TPS but deliberately not here: `InputSystems`
+captures the cursor only in TPS (`_apply_mouse_mode()`), because ISOMETRIC
+needs a visible cursor for click-to-move. Mouse look in this view would fire
+on every ordinary movement toward a click target and stall at the screen
+edge. `toggle_follow` (`P`, §2) likewise no longer affects ISOMETRIC — the
+camera follows direction unconditionally now.
 
 `mouse_right_button` moved here from "shared" (2026-08-03): `ClickToMoveSystem`
 has always self-gated to ON_FOOT + ISOMETRIC, so the click-to-move meaning

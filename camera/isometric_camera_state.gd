@@ -1,8 +1,8 @@
 # =============================================================================
 # isometric_camera_state.gd
 #
-# Sub-state of the ON_FOOT camera. Owns the ISOMETRIC follow point and
-# nothing else.
+# Sub-state of the ON_FOOT camera. Owns the ISOMETRIC follow point and the
+# ISOMETRIC yaw, and nothing else.
 #
 # Responsibilities
 # - Dead zone: the follow point does not move while the character stays
@@ -10,6 +10,21 @@
 # - Lead: the follow point drifts toward the click destination
 # - Vertical channel: follows ground height, not body height
 # - Asymmetric damping: eases out of rest slowly, settles quickly
+# - Directional yaw: the camera faces where the character is going, or
+#   where they are facing once stopped, plus a bounded manual look
+#
+# TWO CALLS PER FRAME, IN ORDER. update_orientation() first, then the host
+# reads get_cam_forward()/get_cam_right() into the Frame, then update().
+# The order is not a style preference: the dead zone is measured in the
+# camera plane, so a follow point advanced against last frame's basis while
+# yaw moved this frame would drift sideways for no reason the player can
+# see. One yaw, one basis, one frame.
+#
+# _current_yaw is the authoritative ISOMETRIC yaw. The host keeps its own
+# current_angle in sync afterwards for labels and the view transition, but
+# that value never drives orientation again once this state has run for the
+# frame — before this existed it was the only source, and two sources is
+# what this change removes.
 #
 # Architecture
 # Camera
@@ -23,8 +38,11 @@
 # Notes
 # Does not know about Input, PlayerState or Camera3D. The host fills a
 # reusable Frame with everything this needs and reads back a world-space
-# follow point. Orbit, zoom and view switching stay in the host — they are
-# not follow behaviour.
+# follow point. Zoom and view switching stay in the host — they are not
+# follow behaviour. So does the manual look INPUT: the host reads the keys
+# and clamps the offset, and hands the result over as a number of degrees.
+# This file holds no input policy, which is why there is no look limit
+# here — see Frame.manual_look_yaw_deg.
 #
 # Screen-space work is done through values the host derives from the camera
 # as it stood at the END of the previous frame, because the camera for this
@@ -70,10 +88,34 @@ class Frame extends RefCounted:
 	## is around the character, not where the character is heading.
 	var combat: bool = false
 
-	## Horizontal camera-plane basis, from the host's orbit angle. Used to
-	## express the dead zone in the plane the player actually sees.
+	## Horizontal camera-plane basis. Used to express the dead zone in the
+	## plane the player actually sees. Filled by the host from
+	## get_cam_forward()/get_cam_right() AFTER update_orientation() has run,
+	## so the zone and the yaw always agree within one frame — see the file
+	## header on why that ordering is load-bearing.
 	var cam_right: Vector3 = Vector3.RIGHT
 	var cam_forward: Vector3 = Vector3.FORWARD
+
+	## Normalised horizontal direction the camera should face. The host
+	## decides what that means — movement direction while moving, character
+	## facing once stopped — and this state never asks why. Keeping the
+	## choice out here is what lets a future mount, vehicle or cutscene feed
+	## a direction of its own without touching the yaw maths below.
+	##
+	## Expressed as a VECTOR, not an angle, deliberately: this project
+	## rotates characters with atan2(dir.x, dir.z), which makes +Z the
+	## visual forward rather than Godot's usual -Z (see
+	## player.gd's get_facing_direction()). A raw rotation.y crossing this
+	## boundary would carry that convention silently; a direction vector
+	## cannot be misread.
+	var target_forward: Vector3 = Vector3.FORWARD
+
+	## Temporary manual look offset in degrees, ALREADY CLAMPED by the host.
+	## There is deliberately no limit constant in this file to clamp it
+	## against: the limit belongs where the input is read, and a second copy
+	## here would either duplicate the policy or sit unused and lie about
+	## being enforced.
+	var manual_look_yaw_deg: float = 0.0
 
 	## How many world units one screen pixel covers at the character's
 	## distance. Derived by the host from FOV, zoom distance and viewport
@@ -194,6 +236,35 @@ const FALL_GRACE: float = 0.55
 
 
 # =============================================================================
+# DIRECTIONAL ORIENTATION
+# =============================================================================
+
+## How fast the camera yaw chases the character's direction while they are
+## moving. Slow enough that a change of direction reads as the camera
+## swinging round to follow, not as the world snapping — the same "the lag
+## is the point" reasoning as FOLLOW_RATE_MOVING, applied to rotation.
+##
+## @export rather than const, like dead_zone_x/y and for the same reason:
+## this is a framing value tuned by eye, not an implementation detail.
+@export var follow_yaw_rate: float = 4.0
+
+## How fast the yaw returns to the character's facing once they have
+## stopped. Slower than follow_yaw_rate on purpose. While moving, the
+## direction the camera is chasing is the one the player chose a moment ago,
+## so catching up is welcome; standing still, the only thing left to chase
+## is the character turning on the spot, and matching that quickly would
+## make every idle fidget swing the whole view.
+@export var recenter_yaw_rate: float = 2.2
+
+## Speed ratio above which the character counts as moving for the purpose of
+## choosing between the two rates above. Deliberately the same threshold
+## SETTLING_SPEED_THRESHOLD uses for the follow point: yaw and position
+## should agree on when a character has stopped, and two nearly-equal
+## constants would drift apart the first time either was retuned.
+const MOVING_SPEED_THRESHOLD: float = SETTLING_SPEED_THRESHOLD
+
+
+# =============================================================================
 # DECAY
 # =============================================================================
 
@@ -228,9 +299,39 @@ var _air_time: float = 0.0
 var _zone_x: float = dead_zone_x
 var _zone_y: float = dead_zone_y
 
-## True until the first update after enter(), so the follow point can be
-## placed on the character instead of easing in from wherever it was left.
+## True until the first update() after a reset was requested, so the follow
+## point can be placed on the character instead of easing in from wherever
+## it was left. Cleared by reset().
 var _needs_reset: bool = true
+
+## The same, for the yaw channel, and deliberately a SECOND flag rather than
+## a second reader of the one above.
+##
+## The two resets are cleared by different methods — reset() from update(),
+## _reset_yaw() from update_orientation() — so one shared flag would make
+## each channel's reset depend on the OTHER channel's call also happening.
+## Today they are always called as a pair, so a shared flag would work and
+## would keep working right up until some caller ran orientation alone: the
+## flag would never clear, update_orientation() would take the reset path
+## every frame, and the yaw would silently pin to the character's direction
+## with the manual look doing nothing at all. Found exactly that way, by a
+## harness that drove update_orientation() without update().
+##
+## Each channel clearing its own flag costs one bool and removes the
+## coupling outright.
+var _needs_yaw_reset: bool = true
+
+## Yaw the character's own direction asks for, before the manual look.
+var _base_yaw: float = 0.0
+
+## _base_yaw plus the host's clamped manual offset — where the camera is
+## heading this frame.
+var _target_yaw: float = 0.0
+
+## The smoothed, authoritative ISOMETRIC yaw. Everything the host derives
+## for ISOMETRIC — camera placement, camera_target_yaw, the dead-zone basis
+## — comes from this value and nothing else.
+var _current_yaw: float = 0.0
 
 ## Last computed screen-space error, in pixels, kept only so the debug
 ## overlay can draw what the state actually decided rather than
@@ -250,6 +351,11 @@ var debug_hard_clamped: bool = false
 ## Places the follow point on the character without easing. Called by the
 ## host when ISOMETRIC becomes active, so the camera does not sweep in from
 ## a stale position left over from TPS.
+## Yaw is deliberately NOT touched here. reset() answers "where is the
+## follow point", and orientation is reset on its own path
+## (update_orientation() -> _reset_yaw()) because only that path has a Frame
+## to read a direction out of. Keeping the two apart is what lets this stay
+## a position-only call that a host can make with nothing but a Vector3.
 func reset(target_position: Vector3) -> void:
 	follow_point = target_position
 	_ground_height = target_position.y
@@ -259,9 +365,46 @@ func reset(target_position: Vector3) -> void:
 
 
 ## Marks the state as needing a reset on the next update. Used when the
-## host does not have a target position to hand yet.
+## host does not have a target position to hand yet — and, since this is the
+## only route that also reaches _reset_yaw(), the way a host should ALWAYS
+## ask for a reset when a Frame is about to be built anyway. See
+## _needs_reset's own comment.
 func request_reset() -> void:
 	_needs_reset = true
+	_needs_yaw_reset = true
+
+
+## Advances the directional yaw one frame. Must be called BEFORE the host
+## fills Frame.cam_forward/cam_right and before update() — see the file
+## header for why the order matters.
+##
+## [param delta] Frame delta.
+## [param f] Frame input; reads target_forward, manual_look_yaw_deg and
+##           speed_ratio only.
+func update_orientation(delta: float, f: Frame) -> void:
+	if _needs_yaw_reset:
+		_reset_yaw(f)
+	else:
+		_update_yaw(delta, f)
+
+
+## The authoritative ISOMETRIC yaw for this frame.
+func get_current_yaw() -> float:
+	return _current_yaw
+
+
+## Horizontal direction the camera looks along the ground, from the current
+## yaw. Matches the host's own camera placement by construction: it puts the
+## camera at follow_point + (sin y, 0, cos y) * distance and sets its
+## rotation.y to the same y, so the way it faces is the negation of that
+## offset.
+func get_cam_forward() -> Vector3:
+	return Vector3(-sin(_current_yaw), 0.0, -cos(_current_yaw))
+
+
+## Ninety degrees clockwise from get_cam_forward(), in the ground plane.
+func get_cam_right() -> Vector3:
+	return Vector3(cos(_current_yaw), 0.0, -sin(_current_yaw))
 
 
 ## Advances one frame and returns the world-space follow point.
@@ -273,7 +416,10 @@ func update(delta: float, f: Frame) -> Vector3:
 
 	if _needs_reset:
 		reset(f.target_position)
-		return follow_point
+		# Deliberately no early return. The reset frame runs the same zone,
+		# lead and ground code every other frame runs — with a zero error,
+		# so it changes nothing — rather than being a special case that has
+		# to be kept in step with the ordinary path by hand.
 
 	_update_zone_size(delta, f.combat)
 	_update_lead(delta, f)
@@ -296,12 +442,60 @@ func decay(delta: float) -> void:
 	_zone_x = lerp(_zone_x, dead_zone_x, k)
 	_zone_y = lerp(_zone_y, dead_zone_y, k)
 	_air_time = 0.0
+	# Yaw is not eased back here the way the offsets above are. There is
+	# nothing to ease toward: the yaw a returning ISOMETRIC frame wants
+	# depends on where the character is facing at that moment, which is not
+	# knowable from a TPS frame. Setting _needs_reset instead makes the
+	# first ISOMETRIC frame snap it to the real direction through
+	# update_orientation() -> _reset_yaw(), which is also what stops a stale
+	# TPS-era yaw from leaking back in.
 	_needs_reset = true
+	_needs_yaw_reset = true
 
 
 # =============================================================================
 # INTERNAL
 # =============================================================================
+
+## Snaps the yaw straight onto the character's direction, with no easing.
+## Used on the first frame of a fresh ISOMETRIC stretch (entering ON_FOOT,
+## coming back from TPS, finishing a view transition), where there is no
+## previous yaw worth easing from — whatever _current_yaw holds is left over
+## from a view the player is no longer in.
+func _reset_yaw(f: Frame) -> void:
+	_base_yaw = _yaw_from_forward(f.target_forward)
+	_target_yaw = _base_yaw
+	_current_yaw = _base_yaw
+	_needs_yaw_reset = false
+
+
+## Eases the yaw toward the character's direction plus the manual look.
+##
+## The manual offset is added to the BASE rather than held as a separate
+## smoothed channel: it is a temporary lean on top of wherever the character
+## is heading, so when they turn while the player is looking aside, the look
+## turns with them instead of staying pinned to a compass bearing.
+func _update_yaw(delta: float, f: Frame) -> void:
+	_base_yaw = _yaw_from_forward(f.target_forward)
+	_target_yaw = _base_yaw + deg_to_rad(f.manual_look_yaw_deg)
+
+	var rate := follow_yaw_rate if f.speed_ratio > MOVING_SPEED_THRESHOLD else recenter_yaw_rate
+	_current_yaw = lerp_angle(_current_yaw, _target_yaw, Smoothing.damp_factor(rate, delta))
+
+
+## Camera yaw that makes get_cam_forward() equal the given direction.
+##
+## Inverse of get_cam_forward()'s own (-sin, -cos) form, which is why the
+## arguments are negated. A degenerate direction falls back to FORWARD
+## rather than producing a NaN yaw that would poison every later frame —
+## atan2(0, 0) is defined, but the direction it implies is not.
+func _yaw_from_forward(forward: Vector3) -> float:
+	var fwd := forward
+	fwd.y = 0.0
+	if fwd.length_squared() < 0.0001:
+		fwd = Vector3.FORWARD
+	return atan2(-fwd.x, -fwd.z)
+
 
 ## Eases the dead-zone rectangle toward the size the current stance asks
 ## for. Resizing rather than switching keeps a stance change from snapping

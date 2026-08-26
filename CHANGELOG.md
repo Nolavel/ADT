@@ -12,6 +12,101 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - ISOMETRIC camera follows the character's direction (Phase 1)
+
+The isometric camera had two sources of yaw racing each other: a four-position
+orbit stepped with Q/E, and an optional follow-player-rotation toggle on P.
+`IsometricCameraState` owned only the follow point and was handed a camera basis
+the host derived from its own `current_angle`. The player had to aim the camera
+by hand while moving.
+
+**Yaw is now directional and lives in one place.** `IsometricCameraState` gained
+`update_orientation()` and owns `_current_yaw` — the character's movement
+direction while moving, their facing once stopped, chosen at the same speed
+threshold the follow point already used for settling. `follow_yaw_rate` (4.0) and
+`recenter_yaw_rate` (2.2) are the two rates; recentring is the slower of the two
+on purpose, so an idle turn on the spot doesn't swing the view. The host's
+`current_angle` is now written *from* the state each frame and read only by the
+debug labels and the next view transition.
+
+**Call order is load-bearing** and is spelled out in the state's own header:
+`update_orientation()`, then the host reads `get_cam_forward()`/`get_cam_right()`
+into the `Frame`, then `update()`. The dead zone is measured in the camera plane,
+so advancing the follow point against the previous frame's basis while the yaw
+moved this frame slides it sideways for no reason the player can see.
+
+**Manual look is Q/E held**, bounded to ±35° and spring-returned
+(`iso_look_yaw_limit_deg` / `iso_look_rate_deg` / `iso_look_return_rate`, all on
+the host). Not mouse-X, which is what the incoming spec asked for: `InputSystems`
+captures the cursor only in TPS, because ISOMETRIC needs it visible for
+click-to-move — mouse look here would fire on every ordinary movement toward a
+click target and stall at the screen edge. RMB is already the click-to-move
+run-hold. Q/E were free precisely because this change retired the orbit they
+stepped. The clamp lives on the host and nowhere else: the state receives an
+already-bounded number of degrees and holds no input policy.
+
+**Facing crosses the boundary as a vector, and the sign was corrected.** The
+incoming spec replaced the transition seed's `target.rotation.y + PI` with a
+formula built on Godot's standard −Z forward. This project uses +Z
+(`player.gd`'s `get_facing_direction()`, which carries its own "or the sign will
+be wrong" warning), so that would have placed the camera in front of the
+character's face at every angle — the exact 180° flip the spec's own acceptance
+test was written to catch. Kept the spec's intent (one shared conversion for the
+seed and for `_reset_yaw()`, no hand-written `+ PI`) and fed it
+`get_facing_direction()` instead; verified numerically that it reproduces
+`r + PI` at every angle.
+
+`enter()` now calls `request_reset()` rather than `reset()`: `reset()` clears the
+flag `update_orientation()` reads, so resetting the follow point directly would
+place it correctly and then let the yaw smooth out of a stale value.
+
+Q/E and P labels in the debug panel were corrected in the same commit rather than
+deferred — this change is what made them false. Files: `camera/isometric_camera_state.gd`,
+`camera/camera_component/on_foot_camera_component.gd`, `core/input/input_systems.gd`
+(held `is_lean_*_pressed()`), `input_map.md`, `ARCHITECTURE.md`.
+
+**One reset flag per channel, found by running it.** `update_orientation()` and
+`update()` reset different things — the yaw and the follow point — but cleared a
+single shared `_needs_reset`, and only `reset()` (called from `update()`) cleared
+it. Paired, as the host calls them, that works. Driven apart, `update_orientation()`
+takes the reset path every frame: the yaw pins to the character's direction and the
+manual look does nothing at all, silently. A harness that exercised orientation
+without `update()` hit exactly that. Split into `_needs_reset` and
+`_needs_yaw_reset`, each cleared by the method that owns it.
+
+Phase 1 only. The dead orbit infrastructure (`OrbitalPosition`, `POSITION_ANGLES`,
+`_handle_rotation_input`, `follow_player_rotation` and their animations) is left
+unreached in place, to be deleted in its own commit once the feel is confirmed;
+the debug overlay's direction lines are Phase 1B.
+
+**Verified with the Godot CLI** (4.7.2, via `.claude/hooks/ensure_godot.sh`): second
+import pass clean — 0 errors, 0 warnings; `world.tscn` boots headless with no script
+errors and no `push_warning` from `_target_facing_direction()`, so the duck-typed
+getter resolves and the camera is not running on its fallback. A temporary probe in
+the running engine confirmed the sign at `rotation.y = 0`: facing `(0.00, 1.00)`
+(+Z, as the project's convention says), yaw `180°`, `cam_forward` identical to
+facing (`dot = +1.000`) and the camera offset opposite it (`dot = -1.000`) — behind
+the character, which is acceptance test #1 passing in the engine rather than on
+paper. A synthetic harness covered what a stationary boot cannot: reset-snap at four
+angles, convergence while moving, the moving/stopped rate asymmetry (0.978 vs 0.866
+after 0.5 s on a 90° turn), the ±35° bound, the look riding the base through a
+character turn, and a degenerate direction not producing NaN. Probe and harness were
+both reverted; neither is committed.
+
+Still open for the playtest, because headless cannot answer them: whether Q pans
+left and E right on screen (needs held input and a rendered frame — the maths is
+verified, the screen-direction convention is not), and whether the feel is right.
+
+> ИЗО-камера теперь смотрит туда, куда персонаж идёт (а стоя — куда смотрит);
+> yaw живёт в `IsometricCameraState` в единственном экземпляре, `current_angle`
+> стал приёмником, а не источником. Осмотр — удержание Q/E, ±35°, с возвратом
+> пружиной; мышь не годится, потому что в ИЗО курсор видим для click-to-move.
+> Знак facing исправлен относительно присланного ТЗ: в проекте forward = +Z, и
+> вариант из ТЗ ставил камеру персонажу в лицо. Орбита и P оставлены в файле
+> мёртвыми до подтверждения ощущений. В редакторе не проверялось.
+
+---
+
 ## 2026-08-26 - Restore player.gd: the fall-damage commit truncated the file
 
 `ca19b2f` ("Fix false fall damage on island slopes (min air time)") meant to add
