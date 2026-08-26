@@ -468,6 +468,37 @@ const SNAP_STEP: float = TAU / float(SNAP_COUNT)
 const TURN_RAMP_SMALL: float = 0.32
 const TURN_RAMP_LARGE: float = 0.467
 
+## Where the front half of the circle ends and the back half begins.
+##
+## 112.5 degrees is not a taste value: it is the boundary between the
+## octants that sit in FRONT of the camera (0, +/-45, +/-90) and the ones
+## BEHIND it (+/-135, 180), which is SNAP_STEP * 2.5. Two different things
+## key off it — how a turn of that size feels, and whether a click of that
+## bearing counts as a deliberate reversal — and they must agree on where
+## the line is, so there is one constant and not two.
+@export var reversal_threshold_deg: float = 112.5
+
+## How much longer a turn within the front half is given than the duration
+## curve alone would allow, tapering to none by the back half.
+##
+## The easing change alone (Phase 5A) lowered the peak of a small turn by a
+## fifth and that was still not enough — a correction inside the front half
+## kept reading as the camera clicking round after the body. The remaining
+## lever is time, because at a fixed angle the average speed is duration and
+## nothing else.
+##
+## Applied ONLY to the front half, on purpose. A reversal is not a follow
+## and must not become a slow pan across the world; it is the player saying
+## they want to be facing the other way, and it should land like one. The
+## whole point of splitting the circle is that these two want opposite
+## things.
+@export var turn_soften_front: float = 1.25
+
+## How far away a click must be before its bearing is trusted as a reversal
+## signal. A destination underfoot has no meaningful direction, and reading
+## one out of the noise would spin the camera on a mis-click.
+const REVERSAL_MIN_DISTANCE: float = 1.5
+
 ## Speed ratio above which the character counts as moving for the purpose of
 ## reconsidering the octant. Deliberately the same threshold
 ## SETTLING_SPEED_THRESHOLD uses for the follow point: yaw and position
@@ -793,6 +824,13 @@ func _update_octant(delta: float, f: Frame) -> void:
 	if _turn_t < 1.0:
 		return
 
+	# A click behind the character is answered before anything below runs,
+	# and deliberately before the standing-still gate. See
+	# _try_destination_reversal() for why the destination is a better
+	# witness than the body here.
+	if _try_destination_reversal(f):
+		return
+
 	if f.speed_ratio <= MOVING_SPEED_THRESHOLD:
 		_candidate_index = -1
 		_candidate_time = 0.0
@@ -834,6 +872,52 @@ func _update_octant(delta: float, f: Frame) -> void:
 ## wrap at +/-PI. Handing an absolute value to a plain lerp would make a
 ## turn across that seam sweep the long way — seven octants of rotation for
 ## a single step.
+## Commits a reversal straight away when the player has ordered a move to
+## somewhere behind the camera. Returns true if it did.
+##
+## TWO DIFFERENT SIGNALS, NOT ONE. Everything else in _update_octant() reads
+## the BODY's heading, which is the right witness for "where is this
+## character actually going" and the wrong one for "what did the player just
+## decide". A click carries intent the body has not expressed yet: with
+## click-to-move the destination is known the instant the button goes down,
+## a full turn-and-accelerate before the heading agrees with it.
+##
+## That difference is exactly what the hysteresis and dwell gates get wrong
+## on a reversal. A body swinging through 180 degrees passes through every
+## intermediate octant on the way, each of them a plausible candidate, so
+## the gates either commit a turn to somewhere the player never asked for or
+## sit out the whole rotation and then move. Asking the destination instead
+## gives one answer, immediately, and it is the right one.
+##
+## Bypasses the standing-still gate for the same reason. Standing still must
+## never turn the camera — that is the headline property of this whole model
+## — but a player who has just clicked is not standing still, they are one
+## frame into a move. The gate exists to ignore idle fidgeting, and a move
+## order is not fidgeting.
+##
+## Only the BACK half qualifies. A click to the side is an ordinary change
+## of direction and goes through the normal gates; only a bearing past
+## reversal_threshold_deg is unambiguous enough to be worth overriding them
+## for. Cannot re-fire: committing moves _snap_index to the destination's
+## octant, which puts the bearing inside the threshold by construction.
+func _try_destination_reversal(f: Frame) -> bool:
+	if f.move_target == Vector3.ZERO:
+		return false
+
+	var to_destination := f.move_target - f.target_position
+	to_destination.y = 0.0
+	if to_destination.length() < REVERSAL_MIN_DISTANCE:
+		return false
+
+	var destination_yaw := _yaw_from_forward(to_destination)
+	var bearing := absf(angle_difference(_yaw_of_octant(_snap_index), destination_yaw))
+	if bearing < deg_to_rad(reversal_threshold_deg):
+		return false
+
+	_start_turn(_octant_of(destination_yaw))
+	return true
+
+
 func _start_turn(index: int) -> void:
 	_snap_index = index
 	_candidate_index = -1
@@ -941,7 +1025,42 @@ func _turn_ramp_for(step: float) -> float:
 ## 45, so a reversal takes half a second and still arrives with authority.
 ## Small turns keep their snap, large turns stop hurting.
 func _turn_duration_for(step: float) -> float:
-	return snap_turn_duration * sqrt(maxf(step, 0.0001) / SNAP_STEP)
+	return snap_turn_duration * sqrt(maxf(step, 0.0001) / SNAP_STEP) * _turn_soften_for(step)
+
+
+## Extra time a turn of the given size is given, as a multiplier.
+##
+## turn_soften_front across the whole FRONT half of the circle, none across
+## the BACK half, and one octant of blend across the boundary so there is no
+## cliff where a 112-degree turn and a 113-degree turn behave differently.
+##
+## The two halves are answering different questions and so are allowed
+## opposite answers. In front, the camera is FOLLOWING: the player already
+## knows roughly where they are, the turn is a correction, and a correction
+## that announces itself is the thing that reads as rough. Behind, the
+## camera is REORIENTING: the player has asked to be facing the other way,
+## and the move needs to land as a decision rather than drift across the
+## world at follow speed.
+##
+## Measured, against Phase 5A's easing-only pass and the original ease-out
+## cubic before it:
+##   step   duration   peak
+##    45     0.317 s   212 deg/s   (5A 265, originally 337)
+##    90     0.450 s   323 deg/s   (5A 403, originally 477)
+##   135     0.433 s   536 deg/s   (unchanged from 5A)
+##   180     0.500 s   675 deg/s   (unchanged from 5A and from the original)
+##
+## DURATION IS NOT MONOTONIC IN THE STEP and that is not a bug: a 90 degree
+## turn now takes longer than a 135 degree one. Read the peak column, not
+## the duration column — 90 covers its angle at 323 deg/s and 135 at 536, so
+## the larger turn is still decisively the faster MOVE. It only spends more
+## wall-clock time because it has over twice as far to go. The crossover is
+## the visible edge of the two halves wanting opposite things, and it is the
+## intended shape rather than an artefact to smooth away.
+func _turn_soften_for(step: float) -> float:
+	var threshold := deg_to_rad(reversal_threshold_deg)
+	var t := clampf((step - (threshold - SNAP_STEP * 0.5)) / SNAP_STEP, 0.0, 1.0)
+	return lerp(turn_soften_front, 1.0, t)
 
 
 ## Which octant a yaw falls in, as an index into the SNAP_COUNT headings.
