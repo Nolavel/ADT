@@ -12,6 +12,65 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - ISOMETRIC camera: octant yaw, cursor bias, head turn (Phase 2)
+
+Playtest of Phase 1 reported three things: the world rotated too much, the camera
+would not centre on the character during a run, and the directional framing was
+not earning its cost. Two of the three turned out to be defects in the pipeline
+rather than tuning.
+
+**ISOMETRIC was smoothed twice.** `_update_camera_position()` raised its trailing
+follow rates only for TPS; ISOMETRIC fell through to `view_transition_speed`
+(4.0), putting a second time constant behind `IsometricCameraState` — whose dead,
+soft and hard zones are all measured against the follow point it returns, on the
+assumption that the camera sits there. At `run_speed` 15.5 the two stages trailed
+by ~8.3 m against a 3.2 m lead, and the hard zone could not clamp anything,
+because the point it clamped was not the point being drawn. Rotation had the
+matching fault: position used this frame's yaw while `camera.rotation.y` used the
+lagged copy, so every turn slid the character across the frame. New
+`ISO_FOLLOW_SPEED`/`ISO_ROTATION_SPEED` (30.0) make that pass near-transparent;
+`FOLLOW_RATE_MOVING` 3.5 → 6.0 now that it is the only rate that counts.
+
+**The dead zone's vertical axis was measured in the wrong plane.** Forward error
+was converted to pixels with the same scale as sideways error, but at a -35°
+pitch a ground metre running away from the camera covers `sin(35°) ≈ 0.574` of
+the screen a metre running across it does — so `dead_zone_y` behaved as ~0.079.
+New `Frame.forward_screen_scale` corrects it; zones shrunk to 0.05/0.03 against
+the corrected measurement.
+
+**Yaw is now an octant snap, not a continuous follow.** Eight fixed headings; a
+turn commits only after the heading clears the boundary by `snap_hysteresis_deg`
+*and* holds for `snap_dwell`, and is then a fixed-duration ease
+(`snap_turn_duration`), not exponential damping — damping never arrives, and its
+tail is what read as "the world is rotating". Standing still no longer turns the
+camera at all, so `recenter_yaw_rate` has no successor. Q/E stays a spring-return
+glance, now leaning on a base that holds still.
+
+**Cursor bias and head turn added.** The follow point leans a bounded amount
+toward the ground point under the cursor (plane intersection, not a physics
+raycast — a physics hit jumps at rooftop edges and would kick the camera), which
+is how the praised click-to-move cameras answer "show me where I'm going" without
+spending orientation on it. And the character's head now turns: the
+`LookAtModifier3D` rig in `PlayerAnimationComponent` had been fully built with
+zero callers project-wide, so this only supplies the point — the Q/E glance
+first, the cursor while stopped.
+
+Touched `camera/isometric_camera_state.gd`,
+`camera/camera_component/on_foot_camera_component.gd`,
+`docs/architecture/player_and_camera.md`. Verified by import pass, headless boot
+and a throwaway harness over the octant gates (hysteresis, dwell, wrap, turn
+arrival, still-body invariance); **feel is unverified — this needs a playtest.**
+
+> *Изокамера, фаза 2. Найдено два дефекта тракта, а не тюнинга: в ISOMETRIC
+> демпфирование стояло дважды (из-за чего камера отставала на ~8.3 м на беге и
+> зоны меряли не ту точку), а вертикальная мёртвая зона считалась в неверной
+> плоскости и была в 1.75 раза шире заявленной. Yaw переведён на снап по 8
+> румбам с гистерезисом и выдержкой — поворот на месте больше не крутит мир.
+> Добавлены смещение кадра к курсору и поворот головы персонажа (риг уже
+> существовал и не имел ни одного вызывающего). Ощущение требует плейтеста.*
+
+---
+
 ## 2026-08-26 - ISOMETRIC camera follows the character's direction (Phase 1)
 
 The isometric camera had two sources of yaw racing each other: a four-position

@@ -8,10 +8,22 @@
 # - Dead zone: the follow point does not move while the character stays
 #   inside a screen-space rectangle around it
 # - Lead: the follow point drifts toward the click destination
+# - Cursor bias: the follow point leans a bounded amount toward the point
+#   the player is pointing at
 # - Vertical channel: follows ground height, not body height
 # - Asymmetric damping: eases out of rest slowly, settles quickly
-# - Directional yaw: the camera faces where the character is going, or
-#   where they are facing once stopped, plus a bounded manual look
+# - Octant yaw: the camera faces one of eight fixed compass headings,
+#   chosen by where the character is going, plus a bounded manual look
+#
+# THE CAMERA IS THE ONLY THING THAT LAGS. Everything here is measured
+# against follow_point, so follow_point must be where the camera actually
+# is. The host used to run a SECOND smoothing pass over the value this
+# returns, which made every zone and every rate in this file mean something
+# other than what it says — the hard zone in particular could not clamp
+# anything, because the point it clamped was not the point the camera sat
+# on. OnFootCameraComponent now runs its own pass fast enough to be a
+# pass-through in ISOMETRIC. Do not reintroduce a second time constant on
+# this path.
 #
 # TWO CALLS PER FRAME, IN ORDER. update_orientation() first, then the host
 # reads get_cam_forward()/get_cam_right() into the Frame, then update().
@@ -25,6 +37,28 @@
 # that value never drives orientation again once this state has run for the
 # frame — before this existed it was the only source, and two sources is
 # what this change removes.
+#
+# WHY OCTANTS AND NOT A CONTINUOUS FOLLOW. The first directional version
+# chased the character's heading with exponential damping, and it read as
+# the world rotating around the player rather than the camera turning to
+# look. Two properties of that shape cause it, and both are structural
+# rather than a matter of picking better rates:
+#
+# - Exponential damping never arrives. Its tail is small but never zero, so
+#   there is always some rotation on screen, and a scene that is always
+#   rotating slightly is a scene the player cannot use as a frame of
+#   reference.
+# - Every heading change produced some rotation, so walking a zigzag street
+#   swung the view continuously in both directions.
+#
+# The octant model inverts both. The yaw is one of eight fixed headings and
+# is therefore STILL by default; a change of heading produces a turn only
+# once it is unambiguous (see the hysteresis and dwell below), and that
+# turn is a fixed-duration eased move that finishes and stops. Between
+# turns the world is a rigid backdrop, which is the property that makes
+# streets and buildings usable as landmarks.
+#
+# Standing still never turns the camera at all — see _update_octant().
 #
 # Architecture
 # Camera
@@ -126,6 +160,39 @@ class Frame extends RefCounted:
 	## Viewport size in pixels, for converting zone fractions to pixels.
 	var viewport_size: Vector2 = Vector2(1920, 1080)
 
+	## How much of a metre a metre is, on screen, when it points away from
+	## the camera along the ground.
+	##
+	## sin(|camera pitch|). The camera looks down at the world, so ground
+	## distance running away from it is foreshortened, while ground distance
+	## running across it is not. At the host's -35 degrees the factor is
+	## about 0.57: the same metre covers only 57% as much screen going up
+	## the frame as it does going across it.
+	##
+	## Without this, _apply_zones() converted both axes with the same
+	## world_per_pixel and dead_zone_y silently behaved as though it were
+	## 1.75x its stated value — which is exactly the "I click near the top
+	## of the screen and the camera will not follow" complaint. The host
+	## supplies it because the pitch belongs to the host; this state has
+	## never known which way the camera is tilted and does not need to
+	## start.
+	var forward_screen_scale: float = 1.0
+
+	## Ground point the player is pointing at, valid only while
+	## cursor_valid. World space, at roughly the follow point's height —
+	## the host derives it by intersecting the cursor ray with a horizontal
+	## plane, NOT by a physics raycast, so it cannot jump discontinuously
+	## when the cursor crosses a rooftop edge. See the host's own comment
+	## for why a jump there would be visible.
+	var cursor_point: Vector3 = Vector3.ZERO
+
+	## False when the cursor ray does not produce a usable ground point —
+	## near the horizon it is almost parallel to the ground plane and the
+	## intersection runs away to infinity. A separate flag rather than a
+	## sentinel Vector3 for the same reason ClickToMoveSystem.raycast_
+	## ground_point() returns null: Vector3 has no "no point" value.
+	var cursor_valid: bool = false
+
 
 # =============================================================================
 # DEAD ZONE
@@ -138,14 +205,21 @@ class Frame extends RefCounted:
 ##
 ## @export rather than const — this is an eye-by-feel framing value, not an
 ## implementation detail (same reasoning as TpsCombatCameraState's spring
-## constants). Was 0.12/0.08; shrunk to roughly half. At the old size the
-## character could cross nearly a quarter of the screen width before the
-## follow point reacted at all, which read as the camera being unhooked
-## from the character rather than deliberately lagging it — the lag IS the
-## point (see FOLLOW_RATE_MOVING's own comment), but a dead zone this size
-## hid the lag behind a flat non-reaction instead.
-@export var dead_zone_x: float = 0.07
-@export var dead_zone_y: float = 0.045
+## constants). Was 0.12/0.08, then 0.07/0.045, now 0.05/0.03. At the first
+## size the character could cross nearly a quarter of the screen width
+## before the follow point reacted at all, which read as the camera being
+## unhooked from the character rather than deliberately lagging it — the lag
+## IS the point (see FOLLOW_RATE_MOVING's own comment), but a dead zone
+## that size hid the lag behind a flat non-reaction instead.
+##
+## The second shrink went most of the way and was still not felt, because
+## the vertical number was not doing what it said: _apply_zones() measured
+## the forward axis in the wrong plane, so 0.045 behaved as roughly 0.079.
+## Frame.forward_screen_scale fixes the measurement, and these values are
+## sized against the corrected one — do not read them as another blind
+## halving of the same number.
+@export var dead_zone_x: float = 0.05
+@export var dead_zone_y: float = 0.03
 
 ## Dead zone in COMBAT. Tighter, so the character stays near the centre of
 ## the frame while the player is watching for threats.
@@ -177,7 +251,17 @@ const ZONE_RESIZE_RATE: float = 6.0
 ## Catch-up rate while the character is moving away from the follow point.
 ## Deliberately slow: the lag is the point. The camera should read as being
 ## dragged along rather than bolted to the character.
-const FOLLOW_RATE_MOVING: float = 3.5
+##
+## Raised from 3.5 when the host's second smoothing pass was opened up. That
+## pass added a time constant of its own, so the real lag was never this
+## rate alone — at run_speed 15.5 the two together trailed by about 8.3 m,
+## against a LEAD_DISTANCE of 3.2 m sized as though for one of them. The
+## host's pass is now fast enough to be near-transparent
+## (OnFootCameraComponent.ISO_FOLLOW_SPEED), so at 6.0 the two together
+## trail by roughly 3.1 m — which the 3.2 m lead genuinely cancels, leaving
+## the character near the middle of the frame during a run instead of
+## riding the top of it.
+const FOLLOW_RATE_MOVING: float = 6.0
 
 ## Catch-up rate once the character has stopped. Faster, and applied to a
 ## shrinking error, so the camera settles instead of coasting past and
@@ -215,6 +299,42 @@ const LEAD_RATE: float = 1.8
 
 
 # =============================================================================
+# CURSOR BIAS
+# =============================================================================
+#
+# The frame leans toward whatever the player is pointing at. Borrowed from
+# the twin-stick and click-to-move cameras that get praised for
+# responsiveness (Hades is the clearest example): the camera answers "show
+# me what I am about to act on" by TRANSLATING, which costs nothing in
+# orientation, instead of by rotating, which costs the player their frame of
+# reference.
+#
+# In this project the cursor is free information. ISOMETRIC leaves it
+# visible because click-to-move needs it (see InputSystems._apply_mouse_
+# mode()), so the player's intent is on screen at all times and a full
+# second before the click lands. Reading it here is what makes the camera
+# respond to aiming rather than only to having already moved.
+
+## Largest cursor-driven offset, in world units. Small on purpose: this is
+## a lean, and past a couple of metres it stops reading as the frame
+## accommodating the player and starts reading as the camera wandering off
+## on its own.
+const CURSOR_BIAS_DISTANCE: float = 2.5
+
+## Fraction of the distance to the cursor to actually lean by, before the
+## cap above. Keeps a cursor resting just off the character from producing
+## the same offset as one across the street — near the character the bias
+## should be near zero, or every small mouse movement nudges the frame.
+const CURSOR_BIAS_FRACTION: float = 0.25
+
+## Easing rate for the bias. Slower than the follow rate and close to
+## LEAD_RATE, and for the same reason: a cursor can cross the screen in a
+## single frame, and anything that tracked it quickly would make the frame
+## twitch every time the player moved the mouse to click.
+const CURSOR_BIAS_RATE: float = 3.0
+
+
+# =============================================================================
 # VERTICAL CHANNEL
 # =============================================================================
 
@@ -239,25 +359,56 @@ const FALL_GRACE: float = 0.55
 # DIRECTIONAL ORIENTATION
 # =============================================================================
 
-## How fast the camera yaw chases the character's direction while they are
-## moving. Slow enough that a change of direction reads as the camera
-## swinging round to follow, not as the world snapping — the same "the lag
-## is the point" reasoning as FOLLOW_RATE_MOVING, applied to rotation.
+## How many fixed headings the yaw is allowed to take. Eight, 45 degrees
+## apart, aligned so index 0 is the yaw a FORWARD-facing character asks for.
+##
+## Eight rather than four because four leaves a diagonal run permanently
+## framed off-axis, and rather than sixteen because at 22.5 degrees apart
+## the turns stop being individually legible and the model degenerates back
+## into the continuous follow it replaced.
+const SNAP_COUNT: int = 8
+
+## Angular width of one octant. Derived, never typed twice.
+const SNAP_STEP: float = TAU / float(SNAP_COUNT)
+
+## How far past the boundary between two octants the character's heading
+## must go before the far one is even considered.
+##
+## The boundary sits at SNAP_STEP/2 (22.5 degrees) from the current octant's
+## centre, so this adds to that: at 12 degrees the heading has to reach
+## about 34.5 degrees off centre, three quarters of the way to the next
+## octant's own centre. That band is what makes a zigzag street hold still
+## — without it, a heading wobbling either side of a boundary would flip the
+## camera back and forth, which is worse than the continuous rotation this
+## model exists to remove.
 ##
 ## @export rather than const, like dead_zone_x/y and for the same reason:
-## this is a framing value tuned by eye, not an implementation detail.
-@export var follow_yaw_rate: float = 4.0
+## a framing value tuned by eye, not an implementation detail. Raise it if
+## turns feel trigger-happy.
+@export var snap_hysteresis_deg: float = 12.0
 
-## How fast the yaw returns to the character's facing once they have
-## stopped. Slower than follow_yaw_rate on purpose. While moving, the
-## direction the camera is chasing is the one the player chose a moment ago,
-## so catching up is welcome; standing still, the only thing left to chase
-## is the character turning on the spot, and matching that quickly would
-## make every idle fidget swing the whole view.
-@export var recenter_yaw_rate: float = 2.2
+## How long the new octant must stay the answer before the turn commits.
+##
+## Second gate, and it catches what the hysteresis cannot: a heading that
+## sweeps cleanly through a wide arc — rounding a corner, or the first
+## moment of a click-to-move path while the velocity vector is still
+## settling — passes any angular threshold instantly. Requiring the answer
+## to be STABLE for a moment is what distinguishes "the player has changed
+## direction" from "the player is passing through this direction".
+@export var snap_dwell: float = 0.3
+
+## How long a committed turn takes, in seconds.
+##
+## A fixed duration with an ease, deliberately NOT exponential damping like
+## every other channel in this file. Exponential damping has an infinite
+## tail: it is always still turning a little, and a view that is always
+## turning a little is the exact sensation this model was written to
+## remove. A turn has to arrive and stop, so that the time between turns is
+## genuinely still.
+@export var snap_turn_duration: float = 0.25
 
 ## Speed ratio above which the character counts as moving for the purpose of
-## choosing between the two rates above. Deliberately the same threshold
+## reconsidering the octant. Deliberately the same threshold
 ## SETTLING_SPEED_THRESHOLD uses for the follow point: yaw and position
 ## should agree on when a character has stopped, and two nearly-equal
 ## constants would drift apart the first time either was retuned.
@@ -285,6 +436,13 @@ var follow_point: Vector3 = Vector3.ZERO
 
 ## Smoothed lead offset, horizontal only.
 var _lead_offset: Vector3 = Vector3.ZERO
+
+## Smoothed cursor bias offset, horizontal only. Kept apart from
+## _lead_offset rather than summed into it because the two answer different
+## questions — where the character is going versus where the player is
+## looking — and are eased at different rates. They are added together only
+## at the point of use, in _desired_point().
+var _cursor_offset: Vector3 = Vector3.ZERO
 
 ## Tracked ground height. Updated while the character is on the floor, held
 ## while airborne, chased once a fall passes FALL_GRACE.
@@ -321,16 +479,42 @@ var _needs_reset: bool = true
 ## coupling outright.
 var _needs_yaw_reset: bool = true
 
-## Yaw the character's own direction asks for, before the manual look.
+## Which of the SNAP_COUNT headings the camera is committed to. The whole
+## point of the model: this is an integer, so between turns there is nothing
+## for the yaw to drift toward.
+var _snap_index: int = 0
+
+## Octant the heading currently argues for while it differs from
+## _snap_index, and how long it has argued for it. -1 means no argument in
+## progress. Cleared the moment the heading agrees with _snap_index again,
+## so a wobble that crosses the threshold and comes back does not bank
+## progress toward a turn it no longer wants.
+var _candidate_index: int = -1
+var _candidate_time: float = 0.0
+
+## The committed turn in flight: where it started, where it ends, and how
+## far through snap_turn_duration it is. _turn_t >= 1.0 means no turn is
+## running and _base_yaw simply holds _turn_to.
+var _turn_from: float = 0.0
+var _turn_to: float = 0.0
+var _turn_t: float = 1.0
+
+## Yaw of the committed octant, mid-turn included, before the manual look.
 var _base_yaw: float = 0.0
 
 ## _base_yaw plus the host's clamped manual offset — where the camera is
 ## heading this frame.
 var _target_yaw: float = 0.0
 
-## The smoothed, authoritative ISOMETRIC yaw. Everything the host derives
-## for ISOMETRIC — camera placement, camera_target_yaw, the dead-zone basis
-## — comes from this value and nothing else.
+## The authoritative ISOMETRIC yaw. Everything the host derives for
+## ISOMETRIC — camera placement, camera_target_yaw, the dead-zone basis —
+## comes from this value and nothing else.
+##
+## Equal to _target_yaw exactly: the two smoothed channels feeding it (the
+## eased turn, and the host's own spring on the manual look) have already
+## done their smoothing by the time it is assembled, and running a third
+## filter over the sum would put the infinite tail back that the fixed-
+## duration turn exists to avoid.
 var _current_yaw: float = 0.0
 
 ## Last computed screen-space error, in pixels, kept only so the debug
@@ -360,6 +544,7 @@ func reset(target_position: Vector3) -> void:
 	follow_point = target_position
 	_ground_height = target_position.y
 	_lead_offset = Vector3.ZERO
+	_cursor_offset = Vector3.ZERO
 	_air_time = 0.0
 	_needs_reset = false
 
@@ -384,8 +569,17 @@ func request_reset() -> void:
 func update_orientation(delta: float, f: Frame) -> void:
 	if _needs_yaw_reset:
 		_reset_yaw(f)
-	else:
-		_update_yaw(delta, f)
+		return
+
+	_update_octant(delta, f)
+	_advance_turn(delta)
+
+	# The manual look is added to the OCTANT rather than held as a separate
+	# smoothed channel, and the octant is the reason it now works properly:
+	# a lean is only readable against something that holds still, and before
+	# this the base it leaned on was itself rotating.
+	_target_yaw = _base_yaw + deg_to_rad(f.manual_look_yaw_deg)
+	_current_yaw = _target_yaw
 
 
 ## The authoritative ISOMETRIC yaw for this frame.
@@ -423,6 +617,7 @@ func update(delta: float, f: Frame) -> Vector3:
 
 	_update_zone_size(delta, f.combat)
 	_update_lead(delta, f)
+	_update_cursor_bias(delta, f)
 	_update_ground(delta, f)
 
 	var desired := _desired_point(f)
@@ -439,6 +634,7 @@ func update(delta: float, f: Frame) -> Vector3:
 func decay(delta: float) -> void:
 	var k := Smoothing.damp_factor(DECAY_RATE, delta)
 	_lead_offset = _lead_offset.lerp(Vector3.ZERO, k)
+	_cursor_offset = _cursor_offset.lerp(Vector3.ZERO, k)
 	_zone_x = lerp(_zone_x, dead_zone_x, k)
 	_zone_y = lerp(_zone_y, dead_zone_y, k)
 	_air_time = 0.0
@@ -463,24 +659,119 @@ func decay(delta: float) -> void:
 ## previous yaw worth easing from — whatever _current_yaw holds is left over
 ## from a view the player is no longer in.
 func _reset_yaw(f: Frame) -> void:
-	_base_yaw = _yaw_from_forward(f.target_forward)
+	_snap_index = _octant_of(_yaw_from_forward(f.target_forward))
+	_candidate_index = -1
+	_candidate_time = 0.0
+	_base_yaw = _yaw_of_octant(_snap_index)
+	_turn_from = _base_yaw
+	_turn_to = _base_yaw
+	_turn_t = 1.0
 	_target_yaw = _base_yaw
 	_current_yaw = _base_yaw
 	_needs_yaw_reset = false
 
 
-## Eases the yaw toward the character's direction plus the manual look.
+## Decides whether the committed octant should change, and starts a turn if
+## it should.
 ##
-## The manual offset is added to the BASE rather than held as a separate
-## smoothed channel: it is a temporary lean on top of wherever the character
-## is heading, so when they turn while the player is looking aside, the look
-## turns with them instead of staying pinned to a compass bearing.
-func _update_yaw(delta: float, f: Frame) -> void:
-	_base_yaw = _yaw_from_forward(f.target_forward)
-	_target_yaw = _base_yaw + deg_to_rad(f.manual_look_yaw_deg)
+## Three gates, in order, and each removes a case the previous one cannot:
+##
+## 1. The character must be MOVING. Standing still, the only thing a
+##    heading can report is the character turning on the spot, and turning
+##    on the spot is precisely what must not rotate the world — it is the
+##    single most common thing a player does while reading their
+##    surroundings. This gate is why the old recenter_yaw_rate has no
+##    successor: there is nothing left to recentre toward.
+## 2. The heading must be far enough past the octant boundary
+##    (snap_hysteresis_deg). Stops a heading sitting on a boundary from
+##    flipping the camera back and forth.
+## 3. The new answer must be STABLE for snap_dwell. Stops a heading that
+##    merely sweeps through an octant on the way somewhere else from
+##    committing a turn nobody asked for.
+##
+## A turn already in flight is not interrupted; the gates are only consulted
+## once it has landed. Retargeting mid-turn would reintroduce exactly the
+## continuous rotation this model removes, and a 0.25 s turn is short enough
+## that the wait is not felt.
+func _update_octant(delta: float, f: Frame) -> void:
+	if _turn_t < 1.0:
+		return
 
-	var rate := follow_yaw_rate if f.speed_ratio > MOVING_SPEED_THRESHOLD else recenter_yaw_rate
-	_current_yaw = lerp_angle(_current_yaw, _target_yaw, Smoothing.damp_factor(rate, delta))
+	if f.speed_ratio <= MOVING_SPEED_THRESHOLD:
+		_candidate_index = -1
+		_candidate_time = 0.0
+		return
+
+	var desired := _yaw_from_forward(f.target_forward)
+	var wanted := _octant_of(desired)
+
+	if wanted == _snap_index:
+		_candidate_index = -1
+		_candidate_time = 0.0
+		return
+
+	# How far the heading has left the committed octant's centre. The
+	# boundary is half an octant away, so the threshold is that plus the
+	# hysteresis band.
+	var off_centre := absf(angle_difference(_yaw_of_octant(_snap_index), desired))
+	if off_centre < SNAP_STEP * 0.5 + deg_to_rad(snap_hysteresis_deg):
+		_candidate_index = -1
+		_candidate_time = 0.0
+		return
+
+	if wanted != _candidate_index:
+		_candidate_index = wanted
+		_candidate_time = 0.0
+
+	_candidate_time += delta
+	if _candidate_time < snap_dwell:
+		return
+
+	_start_turn(wanted)
+
+
+## Commits to a new octant and begins the eased turn toward it.
+##
+## _turn_to is built by ADDING the shortest signed step to the current base
+## rather than by taking the new octant's absolute yaw, so the turn always
+## goes the short way round and _base_yaw stays continuous across the
+## wrap at +/-PI. Handing an absolute value to a plain lerp would make a
+## turn across that seam sweep the long way — seven octants of rotation for
+## a single step.
+func _start_turn(index: int) -> void:
+	_snap_index = index
+	_candidate_index = -1
+	_candidate_time = 0.0
+	_turn_from = _base_yaw
+	_turn_to = _base_yaw + angle_difference(_base_yaw, _yaw_of_octant(index))
+	_turn_t = 0.0
+
+
+## Advances a turn in flight. Ease-out cubic: the turn leaves quickly enough
+## to read as deliberate and arrives slowly enough not to jolt, and — unlike
+## the exponential damping used everywhere else in this file — it genuinely
+## arrives.
+func _advance_turn(delta: float) -> void:
+	if _turn_t >= 1.0:
+		_base_yaw = _turn_to
+		return
+
+	_turn_t = minf(_turn_t + delta / maxf(snap_turn_duration, 0.0001), 1.0)
+	var eased := 1.0 - pow(1.0 - _turn_t, 3.0)
+	_base_yaw = lerp(_turn_from, _turn_to, eased)
+
+
+## Which octant a yaw falls in, as an index into the SNAP_COUNT headings.
+## Index 0 is yaw 0, which _yaw_from_forward() gives a FORWARD-facing
+## character — so the eight headings are anchored to the world axes, not to
+## wherever the character happened to be looking when ISOMETRIC started.
+func _octant_of(yaw: float) -> int:
+	return wrapi(int(roundf(yaw / SNAP_STEP)), 0, SNAP_COUNT)
+
+
+## Yaw at the centre of an octant.
+func _yaw_of_octant(index: int) -> float:
+	return float(index) * SNAP_STEP
 
 
 ## Camera yaw that makes get_cam_forward() equal the given direction.
@@ -534,6 +825,28 @@ func _update_lead(delta: float, f: Frame) -> void:
 	_lead_offset = _lead_offset.lerp(want, Smoothing.damp_factor(LEAD_RATE, delta))
 
 
+## Eases the cursor bias toward a bounded lean in the direction of whatever
+## the player is pointing at.
+##
+## Measured from the CHARACTER rather than from the follow point, so the
+## bias cannot feed back on itself: biasing the frame moves the follow
+## point, which would move the measured distance, which would move the
+## bias. Anchoring it to the character breaks the loop outright rather than
+## relying on the fraction being small enough to keep it stable.
+func _update_cursor_bias(delta: float, f: Frame) -> void:
+	var want := Vector3.ZERO
+
+	if f.cursor_valid:
+		var to_cursor := f.cursor_point - f.target_position
+		to_cursor.y = 0.0
+		var distance := to_cursor.length()
+		if distance > 0.01:
+			var reach: float = minf(distance * CURSOR_BIAS_FRACTION, CURSOR_BIAS_DISTANCE)
+			want = to_cursor / distance * reach
+
+	_cursor_offset = _cursor_offset.lerp(want, Smoothing.damp_factor(CURSOR_BIAS_RATE, delta))
+
+
 ## Updates the tracked ground height.
 ##
 ## While the character is on the floor this follows their height slowly.
@@ -555,10 +868,10 @@ func _update_ground(delta: float, f: Frame) -> void:
 
 
 ## The point the follow point would sit on if there were no dead zone:
-## the character, plus the lead, at tracked ground height rather than body
-## height.
+## the character, plus the lead and the cursor bias, at tracked ground
+## height rather than body height.
 func _desired_point(f: Frame) -> Vector3:
-	var p := f.target_position + _lead_offset
+	var p := f.target_position + _lead_offset + _cursor_offset
 	p.y = _ground_height
 	return p
 
@@ -584,11 +897,18 @@ func _apply_zones(delta: float, f: Frame, desired: Vector3) -> void:
 
 	# Express the error in the plane the player sees, then in pixels, so
 	# the zones mean the same thing at any zoom and any orbit angle.
+	#
+	# The forward component carries an extra factor the sideways one does
+	# not: the camera looks DOWN at the ground, so a metre running away
+	# from it covers less screen than a metre running across it (see
+	# Frame.forward_screen_scale). Leaving it out is what made dead_zone_y
+	# behave as though it were 1.75x its stated value.
+	var forward_scale := maxf(f.forward_screen_scale, 0.1)
 	var error_right := error.dot(f.cam_right)
 	var error_forward := error.dot(f.cam_forward)
 
 	var px_per_world := 1.0 / maxf(f.world_per_pixel, 0.00001)
-	var error_px := Vector2(error_right, error_forward) * px_per_world
+	var error_px := Vector2(error_right, error_forward * forward_scale) * px_per_world
 
 	var zone_px := Vector2(_zone_x, _zone_y) * f.viewport_size
 	var hard_px := Vector2(HARD_ZONE_X, HARD_ZONE_Y) * f.viewport_size
@@ -628,8 +948,11 @@ func _apply_zones(delta: float, f: Frame, desired: Vector3) -> void:
 		move_px.x = _max_abs(move_px.x, hard_excess_px.x)
 		move_px.y = _max_abs(move_px.y, hard_excess_px.y)
 
+	# Back out of screen space the same way we came in — the forward axis
+	# divides by the factor it was multiplied by, or the follow point would
+	# advance by the foreshortened distance instead of the real one.
 	var move_world := move_px * f.world_per_pixel
-	follow_point += f.cam_right * move_world.x + f.cam_forward * move_world.y
+	follow_point += f.cam_right * move_world.x + f.cam_forward * (move_world.y / forward_scale)
 
 
 ## How far a value sticks out past a symmetric limit, keeping its sign.

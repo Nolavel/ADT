@@ -2,13 +2,21 @@
 # on_foot_camera_component.gd
 # Camera component for PlayerState.Mode.ON_FOOT.
 #
-# Logic moved here unchanged from the old monolithic camera_follow.gd
-# (orbital Q/E, TPS<->ISOMETRIC toggle via V, follow via P, wheel zoom) —
-# nothing here is being cleaned up or reworked yet, only relocated.
+# Originally a straight relocation of the old monolithic camera_follow.gd.
+# Two of the behaviours that arrived with it are gone: the four-position
+# Q/E orbit (replaced by ISOMETRIC's octant yaw, which left Q/E free for a
+# bounded glance) and the P follow-rotation toggle (nothing reads it any
+# more — see _handle_follow_toggle()). What remains from that era is the
+# V view toggle and wheel zoom.
 #
 # The component isn't a Camera3D itself — it gets a reference to the real
 # camera (camera) and the target (target) from its host, and writes
 # directly into camera.global_position/global_rotation while active.
+#
+# It also drives the character's HEAD in ISOMETRIC, through player.gd's
+# set_head_look_point(). That is not camera placement, but the two things
+# worth looking at — the manual glance offset and the cursor ground point —
+# both live here and nowhere else. See _update_iso_head_look().
 # =============================================================================
 extends Node
 class_name OnFootCameraComponent
@@ -36,6 +44,64 @@ const TPS_FOLLOW_SPEED: float = 16.0
 ## TPS_FOLLOW_SPEED: position lag reads as a spring, rotation lag reads as
 ## input lag. Mouse look must feel direct.
 const TPS_LOOK_SMOOTHING: float = 30.0
+
+## Position and rotation follow rates in steady-state ISOMETRIC. High
+## enough to be near-transparent, and that is the entire point of them.
+##
+## ISOMETRIC used to fall through to view_transition_speed (4.0) for both,
+## which put a SECOND time constant behind IsometricCameraState — a state
+## whose dead zone, soft zone and hard zone are all measured against the
+## follow point it returns, on the assumption that the camera sits there.
+## It did not. At run_speed 15.5 the two stages together trailed by about
+## 8.3 m where the state's own rate accounted for 4.4 of it, the lead was
+## sized for neither, and the hard zone could not clamp anything at all
+## because the point it clamped was not the point being drawn. Rotation had
+## the matching problem: camera_target_pos is built from current_angle (this
+## frame's yaw) while camera.rotation.y came from the lagged
+## camera_current_yaw, so during every turn the camera body orbited ahead of
+## its own look direction and slid the character across the frame.
+##
+## Not removed outright, at either channel. A fast filter still eases the
+## first frames after enter() instead of hard-snapping the camera in from
+## wherever the previous mode left it, and still absorbs a single-frame
+## spike. What it must not do is contribute a lag comparable to the state's
+## own: at 30.0 the residual is around 0.5 m at full run, an order of
+## magnitude under the state's, and FOLLOW_RATE_MOVING's comment accounts
+## for it explicitly rather than pretending it is zero.
+const ISO_FOLLOW_SPEED: float = 30.0
+const ISO_ROTATION_SPEED: float = 30.0
+
+## How steeply the cursor ray must point down before _cursor_ground_point()
+## trusts its intersection with the ground plane. Below this the ray is
+## near-parallel to the plane and the hit runs away toward the horizon.
+const CURSOR_RAY_MIN_DOWNWARD: float = 0.05
+
+## Furthest a cursor ground point may be from the camera before it is
+## discarded. A backstop for rays that pass the slope test and still land
+## absurdly far out; nothing the player can act on lives out there, and
+## letting one through would pin the cursor bias at its cap permanently.
+const CURSOR_RAY_MAX_DISTANCE: float = 200.0
+
+## Manual look offset, in degrees, past which the character is considered
+## to be actively glancing and turns their head to match. Small, but not
+## zero: the offset springs back through a long tail of fractions of a
+## degree, and a head that kept following it would never settle.
+const ISO_HEAD_LOOK_PEEK_DEG: float = 5.0
+
+## How far the cursor must be from the character before the head will look
+## at it. Inside this the direction is ill-defined and the head would spin
+## on tiny mouse movements.
+const ISO_HEAD_LOOK_CURSOR_MIN_DISTANCE: float = 1.5
+
+## How far in front of the character to place the peek look point. Only the
+## direction matters to the head, but the distance sets how far the gaze
+## converges, so it should read as looking down the street rather than at
+## something an arm's length away. Deliberately a local constant and not a
+## reach into PlayerAnimationComponent.HEAD_LOOK_DISTANCE: the camera
+## decides where to point the head and the animation component decides how
+## to get it there, and neither should have to be edited because the other
+## changed its mind.
+const ISO_HEAD_LOOK_DISTANCE: float = 5.0
 
 ## Extra camera distance at full run speed, on top of TPS_DISTANCE. Explicit
 ## and tunable — the previous pull-back was an accidental by-product of the
@@ -97,6 +163,9 @@ var _warned_missing_speed_ratio: bool = false
 ## Set once _target_horizontal_direction() has warned about a target with no
 ## get_horizontal_direction(), so the warning doesn't spam every frame.
 var _warned_missing_horizontal_direction: bool = false
+## Set once _update_iso_head_look() has warned about a target with no
+## set_head_look_point(), so the warning doesn't spam every frame.
+var _warned_missing_head_look: bool = false
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
 ## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING in TPS, and back toward 0
 ## at the same rate in ISOMETRIC (see _update_camera_position) — never
@@ -345,8 +414,14 @@ func enter() -> void:
 	_iso_manual_look_yaw_deg = 0.0
 
 
+## Releases the head on the way out, for the same reason enter() resets the
+## follow point and the look offset: nothing this component decided about
+## the character may outlive it being the component in charge. Without
+## this, leaving ON_FOOT mid-glance would leave the head pinned at a point
+## in the world that no longer means anything, with no one left running to
+## take it back.
 func exit() -> void:
-	pass
+	_clear_iso_head_look()
 
 
 func update(delta: float) -> void:
@@ -745,7 +820,153 @@ func _build_iso_frame() -> IsometricCameraState.Frame:
 		visible_height = 2.0 * current_zoom_distance * tan(deg_to_rad(fov) * 0.5)
 	f.world_per_pixel = visible_height / maxf(viewport_size.y, 1.0)
 
+	# How much screen a ground metre running away from the camera covers,
+	# relative to one running across it. sin of the pitch, floored so a
+	# camera tilted flat cannot hand the state a divisor of zero. See
+	# Frame.forward_screen_scale for what goes wrong without it.
+	f.forward_screen_scale = maxf(sin(deg_to_rad(absf(camera_angle))), 0.1)
+
+	var cursor_point: Variant = _cursor_ground_point()
+	f.cursor_valid = cursor_point != null
+	f.cursor_point = cursor_point if f.cursor_valid else Vector3.ZERO
+
 	return f
+
+
+## Where on the ground the player is pointing, or null when the cursor does
+## not name a usable point.
+##
+## A PLANE intersection, not a physics raycast, and the difference matters
+## for what this feeds. ClickToMoveSystem.raycast_ground_point() exists and
+## does the physics version, but this camera deliberately holds no
+## reference to that system (same reasoning as _target_move_target()) — and
+## a physics hit would be the wrong answer here anyway. A move order wants
+## the exact surface the player clicked, so a discontinuity at a rooftop
+## edge is correct for it. Framing wants a value that varies smoothly with
+## the cursor: a hit that jumps several metres the instant the cursor
+## crosses a parapet would kick the camera, and it would do it while the
+## player was merely moving the mouse. Intersecting a flat plane at the
+## follow point's height is continuous by construction.
+##
+## The plane's height comes from the follow point as it stood at the END of
+## the previous frame — this runs before _iso.update() has produced this
+## frame's. Same accepted one-frame lag as world_per_pixel above and the
+## debug overlay's projection, and for the same reason: far below every
+## damping constant involved.
+##
+## Reading the cursor through the viewport rather than through InputSystems
+## is not a breach of the "only InputSystems touches Input" rule — this is
+## a Viewport query, not Input.*, and ClickToMoveSystem._raycast_and_move()
+## already reads it exactly this way.
+func _cursor_ground_point() -> Variant:
+	if not camera:
+		return null
+
+	var screen_pos := camera.get_viewport().get_mouse_position()
+	var origin := camera.project_ray_origin(screen_pos)
+	var direction := camera.project_ray_normal(screen_pos)
+
+	# Near the horizon the ray is almost parallel to the ground and the
+	# intersection runs off toward infinity. At the ISOMETRIC pitch the top
+	# edge of the frustum sits only a couple of degrees above horizontal, so
+	# this is an ordinary cursor position, not an edge case.
+	if direction.y > -CURSOR_RAY_MIN_DOWNWARD:
+		return null
+
+	var plane := Plane(Vector3.UP, _iso.follow_point.y)
+	var hit: Variant = plane.intersects_ray(origin, direction)
+	if hit == null:
+		return null
+
+	var point: Vector3 = hit
+	if point.distance_squared_to(origin) > CURSOR_RAY_MAX_DISTANCE * CURSOR_RAY_MAX_DISTANCE:
+		return null
+
+	return point
+
+
+## Turns the character's head toward whatever the player is attending to in
+## ISOMETRIC, or lets it go.
+##
+## The rig for this already existed and had no caller anywhere in the
+## project: PlayerAnimationComponent builds a LookAtModifier3D on the Head
+## bone with its own limits, smoothing and influence fade, and exposes it
+## through player.gd's set_head_look_point()/clear_head_look_point(). All
+## that was missing was something to decide the point. This is that.
+##
+## Driven from the camera rather than from player.gd because the two things
+## worth looking at — the manual look offset and the cursor ground point —
+## both belong to this component. player.gd could not answer either without
+## acquiring them, and get_camera_yaw() is not a route to the first: it is
+## fed only by TpsMovementSystem, so in ISOMETRIC it holds whatever TPS left
+## behind.
+##
+## Priority, and why the peek wins: a glance is something the player just
+## asked for by holding a key, and the cursor is merely where the mouse
+## happens to rest. Answering the deliberate one first is what keeps the
+## head from being pulled off a peek by an idle cursor.
+##
+## [param f] The frame already built for this tick, for its cursor point and
+##           speed ratio — rebuilding either here would risk disagreeing
+##           with what the follow point was computed against.
+func _update_iso_head_look(f: IsometricCameraState.Frame) -> void:
+	if not target or not target.has_method(&"set_head_look_point"):
+		if not _warned_missing_head_look:
+			push_warning("OnFootCameraComponent: target '%s' has no set_head_look_point() — ISOMETRIC head look disabled" % target.name)
+			_warned_missing_head_look = true
+		return
+
+	var point: Variant = null
+
+	if absf(_iso_manual_look_yaw_deg) > ISO_HEAD_LOOK_PEEK_DEG:
+		# The head turns by exactly the angle the camera leaned, measured
+		# off the BODY's own facing — deliberately not along
+		# _iso.get_cam_forward(), even though the two coincide whenever the
+		# camera's base happens to be the character's heading.
+		#
+		# They no longer always coincide. The base is an octant now, so with
+		# no peek at all the camera can sit up to a little over half an
+		# octant off the direction the character is actually walking; a head
+		# pointed along the camera would be looking somewhere the character
+		# is not, and would drift as the octant turned. Measuring off the
+		# facing means the head answers only for the glance.
+		#
+		# Sign is derived, not guessed: facing is (sin r, 0, cos r) and a
+		# +offset rotation about UP takes it to (sin(r+o), 0, cos(r+o)),
+		# which is exactly what get_cam_forward() produces for the same
+		# offset. So the head and the camera lean the same way by
+		# construction, and if Q turns out to read inverted in game, the
+		# negation in _handle_isometric_look_input() flips both at once —
+		# there is nothing to keep in sync here.
+		var peek := _target_facing_direction().rotated(
+			Vector3.UP, deg_to_rad(_iso_manual_look_yaw_deg)
+		)
+		point = target.global_position + peek * ISO_HEAD_LOOK_DISTANCE
+
+	elif f.cursor_valid and f.speed_ratio < IsometricCameraState.MOVING_SPEED_THRESHOLD:
+		# Only while stopped. On the move the animation clips drive the
+		# head, and overriding them mid-stride reads as a broken neck rather
+		# than as attention — the same gate PlayerAnimationComponent's own
+		# TPS branch applies for the same reason.
+		var to_cursor := f.cursor_point - target.global_position
+		to_cursor.y = 0.0
+		if to_cursor.length() > ISO_HEAD_LOOK_CURSOR_MIN_DISTANCE:
+			point = f.cursor_point
+
+	if point == null:
+		target.call(&"clear_head_look_point")
+		return
+
+	target.call(&"set_head_look_point", point)
+
+
+## Releases the head, if the target has the rig at all. Separate from
+## _update_iso_head_look()'s own null branch because the callers that need
+## it — a view transition starting, the component being left — have no
+## Frame to hand it and should not have to build one just to say "stop".
+func _clear_iso_head_look() -> void:
+	if target and target.has_method(&"clear_head_look_point"):
+		target.call(&"clear_head_look_point")
 
 
 ## Whether the target is standing on something. Optional getter, like
@@ -877,6 +1098,9 @@ func _update_camera_position(delta):
 				# reconsiders. Carrying an offset across would apply it to a
 				# base the player never chose it against.
 				_iso_manual_look_yaw_deg = 0.0
+				# Same argument for the head: whatever it was attending to
+				# belongs to a view the player is leaving.
+				_clear_iso_head_look()
 			else:
 				# Order is load-bearing, see IsometricCameraState's header:
 				# yaw first, then the basis it implies, then the follow
@@ -889,6 +1113,7 @@ func _update_camera_position(delta):
 				f.cam_forward = _iso.get_cam_forward()
 				f.cam_right = _iso.get_cam_right()
 				follow_point = _iso.update(delta, f)
+				_update_iso_head_look(f)
 
 				# Copy the authoritative yaw back for the debug labels and
 				# for whatever the next view transition reads. Neither is a
@@ -912,19 +1137,33 @@ func _update_camera_position(delta):
 			_decay_tps_state(delta)
 			_push_iso_debug(follow_point)
 
-	# Position follows at TPS_FOLLOW_SPEED once settled in TPS — decoupled
-	# from view_transition_speed so steady-state follow lag and the
-	# ISOMETRIC <-> TPS transition animation can be tuned independently.
-	# Rotation follows at TPS_LOOK_SMOOTHING, much faster than position: if
-	# rotation lagged as much as position, the target would visibly leave
-	# frame on a quick mouse turn (camera body already moved, look direction
-	# hasn't caught up). During the transition animation (or in ISOMETRIC),
-	# both still ride view_transition_speed, or the transition itself would jump.
+	# Steady-state follow rates are per-view and decoupled from
+	# view_transition_speed, so each view's feel and the ISOMETRIC <-> TPS
+	# transition animation can be tuned independently.
+	#
+	# TPS: position at TPS_FOLLOW_SPEED, rotation much faster at
+	# TPS_LOOK_SMOOTHING — if rotation lagged as much as position, the
+	# target would visibly leave frame on a quick mouse turn (camera body
+	# already moved, look direction hasn't caught up).
+	#
+	# ISOMETRIC: both near-transparent, because IsometricCameraState is the
+	# thing that decides how much the camera lags there and a second time
+	# constant behind it made its own zone maths untrue. See
+	# ISO_FOLLOW_SPEED for the full reasoning — this line is where the bug
+	# lived, as a missing branch rather than a wrong number.
+	#
+	# While the transition animation runs, both still ride
+	# view_transition_speed in either view, or the transition itself would
+	# jump.
 	var position_follow_speed := view_transition_speed
 	var rotation_follow_speed := view_transition_speed
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS and not view_mode_animating:
-		position_follow_speed = TPS_FOLLOW_SPEED
-		rotation_follow_speed = TPS_LOOK_SMOOTHING
+	if not view_mode_animating:
+		if PlayerState.view_mode == PlayerState.ViewMode.TPS:
+			position_follow_speed = TPS_FOLLOW_SPEED
+			rotation_follow_speed = TPS_LOOK_SMOOTHING
+		else:
+			position_follow_speed = ISO_FOLLOW_SPEED
+			rotation_follow_speed = ISO_ROTATION_SPEED
 
 	camera_current_pos = camera_current_pos.lerp(camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta))
 	if not view_mode_animating:
