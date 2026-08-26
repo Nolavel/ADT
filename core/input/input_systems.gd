@@ -342,6 +342,18 @@ func is_lean_left_just_pressed() -> bool:
 func is_lean_right_just_pressed() -> bool:
 	return Input.is_action_just_pressed("lean_right")
 
+## Held forms of the same two actions. The ISOMETRIC camera reads these for
+## its bounded temporary look, which is a continuous lean rather than a
+## discrete step — see OnFootCameraComponent._handle_isometric_look_input().
+## The *_just_pressed pair above is kept: the orbit that used it still
+## exists in the camera component, unreached, until the directional feel is
+## confirmed.
+func is_lean_left_pressed() -> bool:
+	return Input.is_action_pressed("lean_left")
+
+func is_lean_right_pressed() -> bool:
+	return Input.is_action_pressed("lean_right")
+
 func is_zoom_in_just_released() -> bool:
 	return Input.is_action_just_released("zoom_in")
 

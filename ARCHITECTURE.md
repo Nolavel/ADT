@@ -334,8 +334,8 @@ grow a stable id specifically in order to become saveable.
 `camera/camera_follow.gd` is a host. It owns the `Camera3D` and switches
 which behaviour component is active based on `PlayerState.mode`:
 
-- `on_foot_camera_component` — orbital/isometric and TPS, including the
-  shoulder and combat lock-on sub-states
+- `on_foot_camera_component` — isometric and TPS, including the shoulder and
+  combat lock-on sub-states
 - `hover_camera_component` — chase and cockpit views, persisting across
   entering and leaving a vehicle
 - `tube_transit_camera_component` — observer
@@ -349,6 +349,42 @@ by construction.
 
 Camera components read input exclusively through `InputSystems` query
 methods.
+
+### ISOMETRIC is directional
+
+`IsometricCameraState` owns two things for the isometric view: the follow
+point (dead zone, lead toward the click-to-move destination, a separate
+vertical channel, asymmetric damping) and, since Phase 1 of the directional
+work, the **yaw**.
+
+Yaw follows the character: their movement direction while they are moving,
+their facing once they stop. On top of that sits a temporary manual look,
+bounded to ±35°, held on Q/E and spring-returned on release. There is no free
+orbit and no follow toggle — the four-position orbit (Q/E stepping
+`OrbitalPosition`) and `toggle_follow` (P) are no longer reached, and are kept
+in the file only until the directional feel is confirmed.
+
+Two properties are load-bearing:
+
+- **One yaw source.** `IsometricCameraState._current_yaw` is authoritative.
+  The host's `current_angle` is written *from* it each frame and read only by
+  the debug labels and the next view transition. Before this, the two raced.
+- **One basis per frame.** The host calls `update_orientation()`, reads
+  `get_cam_forward()`/`get_cam_right()` into the `Frame`, and only then calls
+  `update()`. The dead zone is measured in the camera plane, so a follow point
+  advanced against the previous frame's basis while the yaw moved this frame
+  drifts sideways for no visible reason.
+
+The split of ownership is the usual one: the state owns the yaw maths and
+knows nothing about input; the host reads the keys, applies the ±35° clamp,
+and hands over a number of degrees. The limit exists in exactly one place for
+that reason.
+
+Direction crosses the boundary as a **vector**, never a `rotation.y`. This
+project rotates characters with `atan2(dir.x, dir.z)`, making +Z the visual
+forward rather than Godot's usual −Z (see `player.gd`'s
+`get_facing_direction()`), and an angle would carry that convention silently
+into code that has no way to know about it.
 
 ---
 

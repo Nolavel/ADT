@@ -162,6 +162,28 @@ var _tps_lock_distance: float = TPS_DISTANCE
 @export var follow_rotation_damping: float = 3.0
 @export var follow_rotation_delay: float = 0.2
 
+@export_group("Isometric Look")
+## Largest temporary look offset from the character's own direction, in
+## degrees, either side. The whole point of the bound is that ISOMETRIC look
+## stays a glance: past roughly this much the camera stops reading as
+## "leaning to see" and starts reading as a free orbit, which is the thing
+## directional framing exists to replace.
+##
+## The ONLY clamp in the system. IsometricCameraState deliberately has no
+## copy — see Frame.manual_look_yaw_deg over there.
+@export var iso_look_yaw_limit_deg: float = 35.0
+## Degrees per second while Q or E is held.
+##
+## A rate, not a sensitivity multiplier: the ISOMETRIC look is driven by
+## keys, and a key has no delta to scale the way look_sensitivity_x scales
+## mouse motion. At 60 deg/s the full 35 degrees takes a little under six
+## tenths of a second, so a tap leans and a hold reaches the stop.
+@export var iso_look_rate_deg: float = 60.0
+## How fast the offset springs back to zero once neither key is held.
+## Faster than iso_look_rate_deg on purpose — the look should cost effort to
+## hold and none to abandon.
+@export var iso_look_return_rate: float = 6.0
+
 @export_group("Aim")
 ## Multiplier on the shoulder h_offset while aiming. Grown, not shrunk: the
 ## sight needs to clear the character's silhouette, not sit centered on it,
@@ -273,6 +295,17 @@ var _iso := IsometricCameraState.new()
 ## Frame per tick. Never handed out — the host is its only writer.
 var _iso_frame := IsometricCameraState.Frame.new()
 
+## Current temporary ISOMETRIC look offset in degrees, already clamped to
+## +/- iso_look_yaw_limit_deg. Owned here rather than in
+## IsometricCameraState because it is a product of input, and input policy
+## belongs on this side of that boundary. Handed over each frame through
+## Frame.manual_look_yaw_deg.
+var _iso_manual_look_yaw_deg: float = 0.0
+
+## Set once _target_facing_direction() has warned about a target with no
+## get_facing_direction(), so the warning doesn't spam every frame.
+var _warned_missing_facing_direction: bool = false
+
 ## Optional, assigned by the host like the debug labels. Null in a
 ## normal build; when present, draws the dead-zone rectangles.
 var iso_debug_overlay: IsometricCameraDebugOverlay
@@ -297,12 +330,19 @@ func setup() -> void:
 func enter() -> void:
 	camera_current_pos = camera.global_position
 
-	# The follow point must not ease in from wherever ISOMETRIC left it
-	# before the last mode switch — place it on the character instead.
-	if target:
-		_iso.reset(target.global_position)
-	else:
-		_iso.request_reset()
+	# Neither the follow point nor the yaw may ease in from wherever
+	# ISOMETRIC left them before the last mode switch.
+	#
+	# request_reset() rather than reset(), even when a target is available:
+	# reset() clears IsometricCameraState._needs_reset, and that flag is
+	# what update_orientation() reads to decide between snapping the yaw and
+	# smoothing it. Resetting the follow point here directly would therefore
+	# leave the yaw smoothing out of a stale value on the first ISOMETRIC
+	# frame — the follow point placed correctly, the camera swinging into
+	# place around it. Deferring both to the next frame costs nothing:
+	# nothing reads the follow point between here and update().
+	_iso.request_reset()
+	_iso_manual_look_yaw_deg = 0.0
 
 
 func exit() -> void:
@@ -324,11 +364,17 @@ func update(delta: float) -> void:
 		_handle_tps_follow(delta)
 		_handle_shoulder_toggle()
 	else:
-		_handle_follow_toggle()
-		if follow_player_rotation:
-			_handle_follow_rotation(delta)
-		else:
-			_handle_rotation_input()
+		# ISOMETRIC yaw is directional now — it comes from where the
+		# character is going, not from a camera the player aims by hand. So
+		# the two mechanisms that used to aim it are no longer called here:
+		# _handle_rotation_input() (Q/E stepping OrbitalPosition) and
+		# _handle_follow_toggle()/_handle_follow_rotation() (P). They stay
+		# in the file until the directional feel is confirmed, so reverting
+		# is one line rather than a resurrection; nothing reaches them.
+		#
+		# Q and E themselves are not idle: they now hold the bounded
+		# temporary look below.
+		_handle_isometric_look_input(delta)
 
 	_update_zoom_animation(delta)
 	_update_orbit_rotation_animation(delta)
@@ -342,8 +388,15 @@ func update(delta: float) -> void:
 		if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
 			_transition_to_view(PlayerState.ViewMode.TPS)
 
-	if not orbit_rotation_animating and not follow_rotation_animating:
-		current_angle = lerp_angle(current_angle, target_angle, Smoothing.damp_factor(rotation_speed, delta))
+	# In ISOMETRIC current_angle no longer drives anything — IsometricCamera-
+	# State owns the yaw, and _update_camera_position() copies it back into
+	# current_angle afterwards so labels and the next view transition still
+	# have a sensible value to read. Easing it toward target_angle here as
+	# well would be a second yaw source racing the first, which is exactly
+	# the arrangement this change removes.
+	if PlayerState.view_mode != PlayerState.ViewMode.ISOMETRIC:
+		if not orbit_rotation_animating and not follow_rotation_animating:
+			current_angle = lerp_angle(current_angle, target_angle, Smoothing.damp_factor(rotation_speed, delta))
 
 	_update_camera_position(delta)
 	
@@ -522,6 +575,76 @@ func _target_horizontal_direction() -> Vector3:
 	return Vector3.ZERO
 
 
+## Bounded temporary look for ISOMETRIC, on held Q/E.
+##
+## NOT mouse-X, despite TPS reading look that way. InputSystems captures the
+## cursor only in TPS (see _apply_mouse_mode()); ISOMETRIC leaves it visible
+## because click-to-move needs it. Mouse look here would therefore fire on
+## every ordinary movement of the cursor toward a click target, and stop
+## dead at the screen edge. RMB is already claimed by ClickToMoveSystem's
+## run-hold. Q and E are free precisely because this change retired the
+## orbit they used to step, which makes them the natural home for the look
+## that replaces it.
+##
+## Direction convention: increasing yaw turns get_cam_forward() from -Z
+## toward -X, and +X is screen-right, so a larger yaw pans the view LEFT —
+## hence lean_left adding. Derived from the maths, not observed in the
+## editor; if it reads inverted, flip the two signs here and nothing else.
+func _handle_isometric_look_input(delta: float) -> void:
+	var axis := 0.0
+	if InputSystems.is_lean_left_pressed():
+		axis += 1.0
+	if InputSystems.is_lean_right_pressed():
+		axis -= 1.0
+
+	if axis != 0.0:
+		_iso_manual_look_yaw_deg = clampf(
+			_iso_manual_look_yaw_deg + axis * iso_look_rate_deg * delta,
+			-iso_look_yaw_limit_deg,
+			iso_look_yaw_limit_deg
+		)
+		return
+
+	# Nothing held — spring back to the character's own direction.
+	_iso_manual_look_yaw_deg = lerpf(
+		_iso_manual_look_yaw_deg,
+		0.0,
+		Smoothing.damp_factor(iso_look_return_rate, delta)
+	)
+
+
+## Reads target.get_facing_direction() via duck typing, same pattern as
+## _target_speed_ratio() and _target_horizontal_direction().
+##
+## The fallback derives facing from rotation.y using +Z as forward, NOT
+## Godot's usual -Z: this project rotates characters with atan2(dir.x,
+## dir.z), and player.gd's own get_facing_direction() carries the warning
+## that deriving it from the basis gets the sign wrong. A -Z fallback here
+## would point the ISOMETRIC camera at the character's face instead of
+## following them, and would do it only on targets missing the getter —
+## the kind of bug that survives a playtest because the player character
+## has the getter.
+func _target_facing_direction() -> Vector3:
+	if target.has_method(&"get_facing_direction"):
+		return target.call(&"get_facing_direction") as Vector3
+	if not _warned_missing_facing_direction:
+		push_warning("OnFootCameraComponent: target '%s' has no get_facing_direction() — using rotation.y" % target.name)
+		_warned_missing_facing_direction = true
+	return Vector3(sin(target.rotation.y), 0.0, cos(target.rotation.y))
+
+
+## Camera yaw that faces the same way as the given ground direction. One
+## shared conversion so the view-transition seed and
+## IsometricCameraState._reset_yaw() cannot disagree about the sign — they
+## used to, as a hand-written "+ PI" on one side and a formula on the other.
+func _yaw_facing(forward: Vector3) -> float:
+	var fwd := forward
+	fwd.y = 0.0
+	if fwd.length_squared() < 0.0001:
+		fwd = Vector3.FORWARD
+	return atan2(-fwd.x, -fwd.z)
+
+
 func _select_tps_distance_source() -> TpsDistanceSource:
 	if PlayerState.is_aiming:
 		return TpsDistanceSource.AIM
@@ -571,9 +694,33 @@ func _build_iso_frame() -> IsometricCameraState.Frame:
 	f.move_target = _target_move_target()
 	f.combat = PlayerState.stance == PlayerState.Stance.COMBAT
 
-	# Horizontal camera-plane basis from the orbit angle. cam_forward is
-	# the direction the camera looks along the ground; cam_right is 90
-	# degrees clockwise from it.
+	# Which direction the camera should face. Movement direction while the
+	# character is actually moving, their facing once stopped — stated as an
+	# explicit branch rather than "velocity, or facing if velocity is zero",
+	# because the two answer different questions. While moving, the player
+	# cares where they are going; standing still, velocity says nothing at
+	# all and facing is the only intent there is.
+	#
+	# Same threshold IsometricCameraState uses to pick between its two yaw
+	# rates, referenced rather than repeated: yaw and the direction feeding
+	# it must agree on when a character has stopped.
+	var dir: Vector3
+	if f.speed_ratio > IsometricCameraState.MOVING_SPEED_THRESHOLD:
+		dir = _target_horizontal_direction()
+		# Click-to-move can report speed while the velocity vector is still
+		# settling; facing is the honest answer for that frame.
+		if dir.length_squared() < 0.0001:
+			dir = _target_facing_direction()
+	else:
+		dir = _target_facing_direction()
+	f.target_forward = dir
+	f.manual_look_yaw_deg = _iso_manual_look_yaw_deg
+
+	# Provisional basis only. The caller overwrites both from
+	# _iso.get_cam_forward()/get_cam_right() once update_orientation() has
+	# run — see _update_camera_position(). Filled here anyway so a Frame is
+	# never handed on with a stale basis from two frames ago if some future
+	# caller forgets the second step.
 	f.cam_forward = Vector3(-sin(current_angle), 0.0, -cos(current_angle))
 	f.cam_right = Vector3(cos(current_angle), 0.0, -sin(current_angle))
 
@@ -717,12 +864,6 @@ func _update_camera_position(delta):
 			_iso.decay(delta)
 
 		_:  # ISOMETRIC
-			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))
-			var pitch_rad = deg_to_rad(camera_angle)
-			var horizontal_distance = current_zoom_distance * cos(pitch_rad)
-			var vertical_distance = -current_zoom_distance * sin(pitch_rad)
-			var orbit_offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0)
-
 			# The camera orbits a follow point that lags, leads and holds
 			# height on its own — not the character's position directly.
 			# While the view-mode transition is animating the follow point
@@ -731,8 +872,38 @@ func _update_camera_position(delta):
 			var follow_point := target.global_position
 			if view_mode_animating:
 				_iso.request_reset()
+				# The look is a lean on the character's direction, and the
+				# character's direction is exactly what a view switch
+				# reconsiders. Carrying an offset across would apply it to a
+				# base the player never chose it against.
+				_iso_manual_look_yaw_deg = 0.0
 			else:
-				follow_point = _iso.update(delta, _build_iso_frame())
+				# Order is load-bearing, see IsometricCameraState's header:
+				# yaw first, then the basis it implies, then the follow
+				# point measured against that basis. Getting this backwards
+				# advances the dead zone against last frame's camera plane
+				# and shows up as the follow point sliding sideways whenever
+				# the camera turns.
+				var f := _build_iso_frame()
+				_iso.update_orientation(delta, f)
+				f.cam_forward = _iso.get_cam_forward()
+				f.cam_right = _iso.get_cam_right()
+				follow_point = _iso.update(delta, f)
+
+				# Copy the authoritative yaw back for the debug labels and
+				# for whatever the next view transition reads. Neither is a
+				# source any more — this is the sink.
+				current_angle = _iso.get_current_yaw()
+				target_angle = current_angle
+
+			# Derived AFTER the yaw is settled, which is why this no longer
+			# sits at the top of the branch the way it did when
+			# current_angle was already final by this point.
+			var pitch_rad = deg_to_rad(camera_angle)
+			var horizontal_distance = current_zoom_distance * cos(pitch_rad)
+			var vertical_distance = -current_zoom_distance * sin(pitch_rad)
+			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))
+			var orbit_offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0)
 
 			camera_target_pos = follow_point + orbit_offset
 			camera_target_pitch = camera_angle
@@ -824,10 +995,18 @@ func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
 			view_target_pitch = _tps_pitch_deg
 
 		PlayerState.ViewMode.ISOMETRIC:
-			# coming from TPS — enter at ISO's near edge, facing where the player was looking
+			# Coming from TPS — enter at ISO's near edge, already facing the
+			# way the character does. Through the same conversion
+			# IsometricCameraState._reset_yaw() uses, so the seed and the
+			# first directional frame cannot land on different angles. This
+			# replaces a hand-written "target.rotation.y + PI": the same
+			# value, but derived from the facing vector rather than from a
+			# constant that silently encoded this project's +Z-forward
+			# convention.
 			view_target_distance = ISOMETRIC_ZOOM_MIN
-			target_angle = target.rotation.y + PI
+			target_angle = _yaw_facing(_target_facing_direction())
 			current_angle = target_angle
+			_iso_manual_look_yaw_deg = 0.0
 			view_target_pitch = camera_angle
 
 	target_zoom_distance = view_target_distance
@@ -931,13 +1110,18 @@ func _update_labels():
 		return
 
 	lbl_current_mode.text = "Режим: %s (нажми V для изменения)" % get_current_mode()
-	if follow_player_rotation or PlayerState.view_mode == PlayerState.ViewMode.TPS:
+	# Q/E no longer step an orbit — they hold a bounded look. The old text
+	# is corrected here rather than left for the orbit cleanup: this change
+	# is what made it false, so it does not get to outlive this commit.
+	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
 		lbl_orbital.visible = false
 	else:
 		lbl_orbital.visible = true
-		lbl_orbital.text = "Изменить орбиту: Q или E"
-	var follow_state = "ON" if follow_player_rotation else "OFF"
-	lbl_follow.text = "Слежение за игроком (P): %s" % follow_state
+		lbl_orbital.text = "Осмотреться: удерживай Q или E"
+	# P is unread since the ISOMETRIC camera became directional — the camera
+	# follows the character's direction unconditionally now. Same reason the
+	# orbital line above was corrected rather than left to the cleanup.
+	lbl_follow.text = "Слежение: направление движения (P не действует)"
 
 
 func get_current_mode() -> String:
@@ -945,9 +1129,10 @@ func get_current_mode() -> String:
 		PlayerState.ViewMode.TPS:
 			return "TPS"
 		_:
-			if follow_player_rotation:
-				return "Follow Player"
-			return "Orbital (%s)" % get_current_direction_name()
+			# Not get_current_direction_name(): that reads current_position,
+			# which nothing steps any more now that the yaw is directional.
+			# It would have kept reporting "North" forever.
+			return "Isometric (directional)"
 
 
 func get_current_direction_name() -> String:
