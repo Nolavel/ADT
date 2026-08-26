@@ -319,7 +319,15 @@ const LEAD_RATE: float = 1.8
 ## a lean, and past a couple of metres it stops reading as the frame
 ## accommodating the player and starts reading as the camera wandering off
 ## on its own.
-const CURSOR_BIAS_DISTANCE: float = 2.5
+##
+## 2.5 -> 2.9, a deliberate 16% and not the 50% that would make the reading
+## obvious. The line this must stay on the right side of is "the camera took
+## some interest in where I pointed" versus "the camera is trying to look at
+## my cursor", and in Blackrock's dense streets the second one costs the
+## player the character's own surroundings. Only the cap moved;
+## CURSOR_BIAS_FRACTION is untouched, so a cursor near the character still
+## produces almost nothing and the change is felt only at range.
+const CURSOR_BIAS_DISTANCE: float = 2.9
 
 ## Fraction of the distance to the cursor to actually lean by, before the
 ## cap above. Keeps a cursor resting just off the character from producing
@@ -792,8 +800,30 @@ func _advance_turn(delta: float) -> void:
 		return
 
 	_turn_t = minf(_turn_t + delta / maxf(_turn_duration, 0.0001), 1.0)
-	var eased := 1.0 - pow(1.0 - _turn_t, 3.0)
-	_base_yaw = lerp(_turn_from, _turn_to, eased)
+	_base_yaw = lerp(_turn_from, _turn_to, _smootherstep(_turn_t))
+
+
+## Quintic smootherstep, 6t^5 - 15t^4 + 10t^3.
+##
+## Replaces an ease-out cubic, and the reason is the VELOCITY curve rather
+## than the position curve — the two look nearly identical plotted as
+## position and behave completely differently to watch.
+##
+## Ease-out cubic has derivative 3(1-t)^2, which is 3x the average speed at
+## t = 0 and zero at t = 1. So a turn began by snapping the angular velocity
+## from nothing to three times its own average in a single frame, and only
+## the ARRIVAL was smooth. That start is the "sharp" in a camera that
+## otherwise moves fine.
+##
+## Smootherstep's derivative is 30t^2(1-t)^2: zero at both ends, peaking at
+## 1.875x average in the middle. The turn accelerates in, runs, and
+## decelerates out — a bump, not a step — and the peak is lower than the old
+## curve's opening value into the bargain. Quintic rather than cubic
+## smoothstep because smoothstep is only C1 at the ends (zero velocity, non-
+## zero acceleration) while this is C2, and at 45 degrees in a quarter
+## second the acceleration step of the cubic is still visible.
+func _smootherstep(t: float) -> float:
+	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 
 
 ## How long to give a turn of the given size, in radians.

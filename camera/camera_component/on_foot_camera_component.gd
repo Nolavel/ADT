@@ -71,6 +71,39 @@ const TPS_LOOK_SMOOTHING: float = 30.0
 const ISO_FOLLOW_SPEED: float = 30.0
 const ISO_ROTATION_SPEED: float = 30.0
 
+## Smoothing time for the ISOMETRIC camera's POSITION output, as a
+## critically damped spring rather than the exponential above.
+##
+## The two filters answer different faults and only one of them was ever
+## the lag problem. ISO_FOLLOW_SPEED's exponential is first order: it
+## smooths position and passes a step in the target's VELOCITY straight
+## through in the same frame. IsometricCameraState's follow point is
+## assembled from piecewise rules — the dead-zone kink, the moving/settling
+## rate switch at SETTLING_SPEED_THRESHOLD, a lead that collapses when a
+## destination is reached, a cursor bias that drops out when the ray stops
+## hitting the ground. Each is continuous in position and discontinuous in
+## rate of change, and at run_speed 15.5 a rate step is a metre of framing
+## inside a fifth of a second. That is what reads as the camera correcting
+## in jerks rather than moving.
+##
+## A spring is second order, so acceleration is bounded and the output's
+## velocity cannot step regardless of what the target does. That, not
+## slowness, is what it is here for.
+##
+## THIS IS NOT THE SECOND FOLLOW STATE THAT WAS REMOVED. It replaces the
+## position half of the existing output pass rather than joining it — there
+## is still exactly one filter between IsometricCameraState and the camera.
+## The old fault was a second time constant COMPARABLE to the state's own
+## (4.0 against 3.5), which made the zone maths describe a point the camera
+## was nowhere near. The budget here is explicit and small: a spring lags a
+## constant-speed target by speed * smooth_time, so at 0.08 s this trails by
+## 1.24 m at full sprint where the exponential it replaces trailed 0.52 m.
+## The 0.72 m difference is about 35 px at default zoom, it is CONSTANT
+## during a sprint rather than varying, and LEAD_DISTANCE already exists to
+## absorb constant framing offsets. The state's own rate remains an order
+## of magnitude larger and still owns the lag.
+const ISO_POSITION_SMOOTH_TIME: float = 0.08
+
 ## How steeply the cursor ray must point down before _cursor_ground_point()
 ## trusts its intersection with the ground plane. Below this the ray is
 ## near-parallel to the plane and the hit runs away toward the horizon.
@@ -166,6 +199,13 @@ var _warned_missing_horizontal_direction: bool = false
 ## Set once _update_iso_head_look() has warned about a target with no
 ## set_head_look_point(), so the warning doesn't spam every frame.
 var _warned_missing_head_look: bool = false
+## Carried velocity for the ISOMETRIC position spring. Owned here rather
+## than inside Smoothing because the filter is stateless by design — the
+## whole point of a second-order filter is that the state is the velocity,
+## and hiding it in a static helper would make two callers share one.
+## Zeroed on enter() and on every frame the spring is not the thing driving
+## the camera, so it cannot carry momentum across a view or mode switch.
+var _iso_pos_velocity: Vector3 = Vector3.ZERO
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
 ## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING in TPS, and back toward 0
 ## at the same rate in ISOMETRIC (see _update_camera_position) — never
@@ -430,6 +470,7 @@ func enter() -> void:
 	# nothing reads the follow point between here and update().
 	_iso.request_reset()
 	_iso_manual_look_yaw_deg = 0.0
+	_iso_pos_velocity = Vector3.ZERO
 
 
 ## Releases the head on the way out, for the same reason enter() resets the
@@ -1238,7 +1279,33 @@ func _update_camera_position(delta):
 			position_follow_speed = ISO_FOLLOW_SPEED
 			rotation_follow_speed = ISO_ROTATION_SPEED
 
-	camera_current_pos = camera_current_pos.lerp(camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta))
+	# Position: a critically damped spring in steady-state ISOMETRIC, the
+	# exponential everywhere else. See ISO_POSITION_SMOOTH_TIME for why the
+	# two views want different filters and why this is not a second stage.
+	#
+	# ROTATION KEEPS THE EXPONENTIAL IN BOTH VIEWS, deliberately, and not
+	# for want of a smooth_damp_angle(). A spring earns its place by
+	# filtering a velocity step, and the ISOMETRIC yaw has none to filter:
+	# _current_yaw comes out of a smootherstep turn whose angular velocity
+	# is already zero at both ends by construction. Springing a signal that
+	# is C1 already would only blunt the arrival the octant model exists to
+	# produce — the turn would stop finishing, which is the whole complaint
+	# it was written to answer.
+	if PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC and not view_mode_animating:
+		var damped := Smoothing.smooth_damp_vector3(
+			camera_current_pos, camera_target_pos, _iso_pos_velocity,
+			ISO_POSITION_SMOOTH_TIME, delta
+		)
+		camera_current_pos = damped[0]
+		_iso_pos_velocity = damped[1]
+	else:
+		camera_current_pos = camera_current_pos.lerp(camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta))
+		# The spring's stored velocity must not survive a stretch where
+		# something else was driving the camera, or the first ISOMETRIC
+		# frame back would be launched by a velocity earned in TPS. Same
+		# rule as every other cross-view value in this file.
+		_iso_pos_velocity = Vector3.ZERO
+
 	if not view_mode_animating:
 		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, Smoothing.damp_factor(rotation_follow_speed, delta))
 	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, Smoothing.damp_factor(rotation_follow_speed, delta))
