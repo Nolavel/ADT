@@ -12,6 +12,47 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Restore player.gd: the fall-damage commit truncated the file
+
+`ca19b2f` ("Fix false fall damage on island slopes (min air time)") meant to add
+three things — a `fall_damage_min_air_time` export, an `_air_time` counter, and a
+`_check_fall_damage()` that requires a minimum airborne duration before a landing
+can hurt. It did add them, and it also deleted the other 698 lines of
+`player/player.gd`, ending the file at line 517 with a literal
+`# --- rest of file unchanged ---`. They were not unchanged; they were gone.
+
+The build could not run. `_physics_process()` still called `_handle_jump()`,
+`_apply_gravity()`, `_update_speed()`, `_apply_direct_movement()`,
+`_handle_navigation()`, `_apply_deceleration()`, `_update_punch()`,
+`_handle_stamina_consumption()`, `_update_direct_move_target_speed()`,
+`_apply_fall_damage()` and `get_current_max_speed()` — none of which existed any
+more. The whole punch path, `_on_died()` and the player's comic-word wiring went
+with them. So did three public getters other systems read through duck typing:
+`get_facing_direction()` (`tps_combat_camera_state.gd`,
+`player_animation_component.gd`), `get_horizontal_direction()` and
+`get_move_target()` (`on_foot_camera_component.gd`) — those would have degraded to
+a one-time `push_warning` and a dead camera lead rather than a crash, which is the
+worse failure of the two: silent.
+
+Restored from `586cd6e`, the last intact revision, with `ca19b2f`'s three intended
+edits reapplied in place, so the fall-damage fix is kept in full and nothing else
+is re-litigated. 46 functions come back; the only lines this removes relative to
+the broken tip are the marker itself and a duplicate `get_speed_ratio()` that the
+truncated file had re-pasted at the end. No contract changed, so `CLAUDE.md` is
+untouched.
+
+Not verified in the editor — no Godot binary in the session that produced this.
+Worth an F5 before trusting it: the claim here is "the file is whole again and
+every call target resolves", checked by diffing the function list against both
+revisions, not "the game was run".
+
+> `ca19b2f` обрезал `player/player.gd` c 1192 строк до 517, оставив в конце
+> `# --- rest of file unchanged ---`. Задуманные три правки про урон от падения на
+> месте, остальные 698 строк — удалены, игра не запускалась. Файл восстановлен из
+> `586cd6e` с повторно применёнными правками `ca19b2f`. В редакторе не проверялось.
+
+---
+
 ## 2026-08-25 - City generator, second attempt: a grid that reads
 
 The first generator was run and rejected on sight — "влепил всё линейно,
