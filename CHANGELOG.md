@@ -12,6 +12,99 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Draw it, carry it, fire it (H6 S3-S5) — the slice closes
+
+**One gesture node, three clips.** A second `AnimationNodeOneShot`
+(`weapon_oneshot`) chained after the punch's and feeding `death_transition`,
+with a single `weapon_clip` whose animation is rewritten immediately before
+each request. Two one-shots rather than one, because `is_punch_active()` and
+`is_weapon_gesture_active()` are what `player.gd` polls to know when to give
+movement back and sharing a node would make the two questions
+indistinguishable; but one clip node, because draw, holster and fire are
+mutually exclusive uses of the same hands. Every clip was already in the
+project — `new4/equip-hip-fast`, `new4/equip-thigh`, `WeaponChange_hip`,
+`new4/shoot-pistol`. Nothing imported, nothing mounted.
+
+**The draw follows the slot, not the other way round.** `EquipmentComponent`
+gained `get_drawn_from()`, and `player.gd` picks `equip-thigh` or
+`equip-hip-fast` from the slot id. `stow_anywhere()` keeps choosing the pocket
+— per Stan, a firearm belongs in a future jacket's chest pocket, so forcing a
+slot would have been backwards.
+
+**Carrying** substitutes `new4/idle-pistol` into the COMBAT blend space's
+centre point while something is drawn (`set_drawn_idle()`), leaving all eight
+directional points alone. Verified that a live `AnimationNodeAnimation.animation`
+write is picked up by a running `AnimationTree`.
+
+**The held mesh now waits for the hand.** `draw_attach_delay` (0.22 s) on
+`EquipmentVisualsComponent`, with a re-check after the wait so a quick
+draw-then-holster cannot leave a pistol floating in an empty hand. The delay
+lives with the mesh rather than on `player.gd`: "when does it appear" is a
+presentation question, and a second copy of the number in another file is the
+duplication this project keeps getting bitten by.
+
+**Firing** mirrors the punch — same COMBAT/ON_FOOT/standing-still gates, a
+one-shot, a timer for the impact frame — and differs in two places: the target
+search runs at `shot_range` with a narrow `shot_angle_deg` instead of a fist's
+cone, and a single ray against `CollisionLayers.SIGHT` refuses a shot through a
+wall. Damage goes through the existing `take_hit()`, so knockdown, the witness
+chain and the comic layer all follow unchanged. A blocked or missed shot emits
+the existing `punch_missed`, so a shot at nothing is noticed exactly as a
+whiffed swing is.
+
+**One new field, and it earns its place.** `ItemResource.ranged_damage`
+(0 = not a firearm). `readability` cannot separate a pistol from a scrap pipe —
+both are THREATENING and `can_use_in_hands` — and the equipment contract's "no
+invented is-a-weapon flag was needed" was about *drawing*, which genuinely
+needed none. One field rather than a bool beside a number, because a flag can
+disagree with the number. Range stays on `player.gd` next to `punch_reach`:
+reach belongs to whoever is holding the thing.
+
+`IncidentRegistry` subscribes to `shot_landed` alongside `punch_landed`, both
+duck-typed, both `Kind.ASSAULT`.
+
+**A bug only running could find.** `_has_clear_shot()` originally aimed
+chest-to-chest — but `get_chest_height()` exists on the player and *not* on
+`NPCBase`, which exposes only eye and shoulder. The call failed silently and
+the check returned false for every shot, including across open sea. Now
+shoulder-to-shoulder, which both carry and which the TPS camera already pivots
+on.
+
+Two things the probe taught about the world, worth writing down: tower
+silhouettes sit on `CollisionLayers.WALL`, so a character standing inside a
+generated block's footprint has no clear line to anything — correct behaviour
+for the mask, surprising the first time it bites. And an occlusion test that
+relies on a generated building standing in the right place is not a test; the
+committed check authors its own wall.
+
+Verified in `world.tscn` with the real player, a real NPC and the live
+registry: draw sets COMBAT and fires the gesture; a shot at 2.5 m takes health
+1.000 → 0.660 (34 of 100) and puts one ASSAULT incident in the registry under
+`player`; the same shot through an authored wall does neither and reports a
+miss; a shot at nothing reports a miss; holstering returns the pistol to
+`torso/chest_right` and it survives in the save payload. Second import pass 0
+errors / 0 warnings; boot 0 script errors and only the three pre-existing
+warnings. Probes deleted, not committed.
+
+**H6's Definition of Done is met** — found on the island, picked up, saved,
+drawn, carried, fired, damage through the existing path, incident recorded.
+Not seen by eye: whether the placeholder reads as a pistol, whether the draw
+reads as a draw, whether `idle-pistol` blends cleanly, and whether the held
+offsets sit right in the palm.
+
+> *Слайс закрыт. Жест один узел на три клипа — все клипы уже были в проекте.
+> Анимация доставания выбирается по слоту, а не слот под анимацию. Меш
+> появляется в руке с задержкой и с перепроверкой, чтобы не повис в пустой
+> ладони. Выстрел — копия удара, но луч вместо конуса плюс проверка стены;
+> урон и инцидент идут по существующим путям. Новое поле ranged_damage: по
+> readability пистолет от трубы не отличить. Найден настоящий баг: у NPC нет
+> get_chest_height(), из-за чего проверка линии огня всегда возвращала «занято»
+> — перешёл на плечи. Проверено в живом мире: 34 урона из 100, запись в
+> реестре, за стеной — промах.*
+- `player/player.gd`, `player_animation_component.gd`, `equipment_component.gd`, `equipment_visuals_component.gd`, `core/items/item_resource.gd`, `data/items/pistol.tres`, `core/world/incident_registry/incident_registry.gd`
+
+---
+
 ## 2026-08-26 - Pistol as an item, and the first thing in the world you can pick up (H6 S1-S2)
 
 **The pistol exists as data.** `data/items/pistol.tres` — `size_class = POCKET`

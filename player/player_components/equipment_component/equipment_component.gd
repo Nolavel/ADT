@@ -247,6 +247,18 @@ func get_drawn() -> StringName:
 	return _drawn_item_id
 
 
+## Which slot the drawn item came from, or &"" when the hands are empty.
+##
+## Exists because the DRAW GESTURE has to start where the item actually was —
+## a chest pocket reads as a hip-level grab, a thigh pocket as a reach down
+## the leg — and only this component knows. It answers where, not what the
+## animation should be: choosing the clip is the caller's job, the same way
+## readability is read outside this file rather than turned into a stance
+## here.
+func get_drawn_from() -> StringName:
+	return _drawn_from
+
+
 ## Take the item out of a slot and into the hands. `slot_path` is a body slot
 ## id, or "<body_slot>/<pocket>" for a pocket — the same addressing
 ## everything else here uses.

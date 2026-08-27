@@ -14,3 +14,4 @@ can_use_in_hands = true
 size_class = 0
 readability = 2
 held_mesh = ExtResource("2_mesh")
+ranged_damage = 34.0

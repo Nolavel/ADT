@@ -52,3 +52,19 @@ class_name ItemResource
 ## appears on screen — which is the honest position for every item until
 ## someone models it.
 @export var held_mesh: Mesh = null
+
+@export_group("Ranged")
+## Damage one shot deals, and by being non-zero, the fact that this item is
+## a firearm at all. Zero means it is not — which is why there is no
+## separate is_a_weapon bool: the number is the thing that differs between a
+## pistol and a scrap pipe, and a flag beside it could disagree with it.
+##
+## readability cannot answer this question. A scrap pipe is THREATENING and
+## can_use_in_hands too, and the equipment contract's "no invented is-a-
+## weapon flag was needed" was about DRAWING, which genuinely needed none.
+## Firing does.
+##
+## Range is deliberately NOT here: how far a character can reach is tuned on
+## the character (player.gd's shot_range, next to punch_reach), the same way
+## the punch's reach already is.
+@export var ranged_damage: float = 0.0

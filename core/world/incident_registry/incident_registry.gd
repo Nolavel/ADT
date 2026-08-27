@@ -145,6 +145,13 @@ func on_world_ready(context: WorldContext) -> void:
 	_player = context.player
 	if _player and _player.has_signal(&"punch_landed"):
 		_player.connect(&"punch_landed", _on_punch_landed)
+	## The ranged twin, wired the same duck-typed way and landing in the same
+	## record: both are Kind.ASSAULT, and the registry has no reason to care
+	## which limb or which tool delivered it. Two signals rather than one
+	## because the player states what happened truthfully; collapsing them
+	## into "punch_landed" would make this file's own header a lie.
+	if _player and _player.has_signal(&"shot_landed"):
+		_player.connect(&"shot_landed", _on_punch_landed)
 
 
 ## Records a fact: the actor behind perpetrator_id did kind at position, now.
