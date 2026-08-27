@@ -24,11 +24,54 @@ class_name InteractComponent
 @onready var debug_label: Label = $Label
 ## через него видем какой обьект в фокусе, name, его возможности, количество
 
+@export_group("Intent")
+## Radius of the INTENT search, metres — the second detection tier, used when
+## PlayerFocusCast finds nothing.
+##
+## The focus cast is a capsule reaching ~1.8 m forward with radius 0.4, and it
+## has to physically overlap the object's own Area. That makes pickup a
+## positioning exercise: the player lines the character up for the UI rather
+## than for the fiction. This radius is the answer to "what is the player
+## plausibly reaching for", and F acts on it — see try_interact().
+##
+## Deliberately on the CHARACTER, not on each item's Area. The Area is what an
+## object offers to be found by; growing every future item's box to 5 m to be
+## reachable is the per-item spelling of a rule that belongs here once.
+@export var intent_radius: float = 2.5
+## Full angular width of the intent cone, degrees, centred on facing. 240°
+## means anything except a rear arc — generous enough that aiming is not a
+## skill, tight enough that F never turns the character round to grab
+## something behind them.
+@export var intent_angle_deg: float = 240.0
+
+@export_group("Approach")
+## How close the character walks before acting. Also the threshold that
+## decides whether F acts immediately or walks first.
+@export var pickup_distance: float = 0.9
+## Seconds before an approach gives up. Not optional: this project has no
+## NavigationRegion3D (NavigationComponent logs it at every boot and falls
+## back to a straight line), so a walk into geometry would otherwise never
+## end.
+@export var approach_timeout: float = 4.0
+
 var current_interactable: InteractableObject = null
 var previous_interactable: InteractableObject = null ## Для отслеживания смены объекта
 var carried_item: InteractableObject = null
 var closest_distance: float = INF
 var detected_count: int = 0
+
+## The object F was pressed on, while the character is still walking to it.
+## Null whenever no approach is in flight — which is also how every abort
+## path (timeout, the player taking over, the object being freed) reports
+## itself: it clears this and nothing else.
+var _pending_interactable: InteractableObject = null
+var _approach_elapsed: float = 0.0
+## The body stopped while an approach was pending. NOT itself a cancel: the
+## path ending normally emits the same signal as the player interrupting, and
+## _update_approach() is the only place that can tell them apart — by asking
+## whether we are in reach. Deciding here instead silently swallowed pickups
+## whose walk finished a few centimetres outside the arrival radius.
+var _approach_body_stopped: bool = false
 
 func _ready() -> void:
 	## вкл допом программно
@@ -48,13 +91,21 @@ func _ready() -> void:
 	## InputSystems лишь сообщает о нажатии, ни о чём не спрашивая.
 	InputSystems.interact_pressed.connect(_on_interact_pressed)
 
+	## The player giving a movement order of their own abandons an approach.
+	## In ISOMETRIC a left click calls stop_moving(); in TPS player.gd clears
+	## the scripted path the moment WASD is touched. Both end in this signal,
+	## so one subscription covers both views.
+	if player != null and player.has_signal(&"movement_stopped"):
+		player.movement_stopped.connect(_on_player_movement_stopped)
+
 func _on_interact_pressed() -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 	try_interact()
 	
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	detect_interactable()
+	_update_approach(delta)
 	update_debug_label()
 	
 func detect_interactable() -> void:
@@ -91,6 +142,14 @@ func detect_interactable() -> void:
 					closest_distance = distance
 					new_interactable = potential_item
 	
+	## Second tier. The focus cast answers "what is right in front of the
+	## hands"; when it answers nothing, this asks the wider question "what is
+	## this player plausibly reaching for" — see intent_radius. Run only on a
+	## miss, so anything actually in focus still wins and the cast's own
+	## reach stays the deliberate gameplay choice player.tscn says it is.
+	if new_interactable == null:
+		new_interactable = _find_intent_target()
+
 	## 🔥 КРИТИЧНО! Этот блок теперь ВСЕГДА выполняется, даже если is_colliding() == false
 	## Обработка смены объекта в фокусе
 	if new_interactable != current_interactable:
@@ -166,26 +225,228 @@ func update_debug_label() -> void:
 		debug_label.visible = true
 		
 		
+## Nearest interactable inside intent_radius and inside the forward cone, or
+## null. One shape query per physics frame, and only on a focus-cast miss.
+##
+## Queries the same Area3Ds the focus cast does — CollisionLayers.INTERACTABLES,
+## areas only — so an object needs nothing new to be found this way, and an
+## object that deliberately has no Area is still invisible to both tiers.
+func _find_intent_target() -> InteractableObject:
+	if player == null or intent_radius <= 0.0:
+		return null
+
+	var shape := SphereShape3D.new()
+	shape.radius = intent_radius
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, player.global_position)
+	query.collision_mask = CollisionLayers.INTERACTABLES
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+
+	## get_facing_direction(), not the basis: this project's visual forward is
+	## +Z, and deriving it from the basis gets the sign backwards — see that
+	## method's own comment in player.gd.
+	var facing: Vector3 = player.get_facing_direction()
+	var half_angle := deg_to_rad(intent_angle_deg) * 0.5
+
+	var best: InteractableObject = null
+	var best_distance: float = INF
+	for hit in get_world_3d().direct_space_state.intersect_shape(query, 32):
+		var object := _interactable_from(hit.get("collider"))
+		if object == null or object == carried_item:
+			continue
+		var to_object: Vector3 = object.global_position - player.global_position
+		to_object.y = 0.0
+		var distance := to_object.length()
+		if distance > intent_radius or distance >= best_distance:
+			continue
+		## A target directly on top of the player has no direction to judge,
+		## and is plainly in reach either way.
+		if distance > 0.01 and facing.angle_to(to_object / distance) > half_angle:
+			continue
+		best = object
+		best_distance = distance
+	return best
+
+
+## An InteractableObject from whatever a query returned — the object itself,
+## or the Area3D that belongs to one. Same two cases detect_interactable()
+## already handles for the focus cast, pulled out so both tiers agree on what
+## counts as a hit.
+func _interactable_from(collider: Variant) -> InteractableObject:
+	if collider is InteractableObject:
+		return collider
+	if collider is Area3D and collider.get_parent() is InteractableObject:
+		return collider.get_parent()
+	return null
+
+
+## Horizontal distance from the player to an object. Horizontal because the
+## character walks on the ground: an item on the floor is a metre below the
+## chest and that is not distance to cover.
+func _flat_distance_to(object: Node3D) -> float:
+	var to_object: Vector3 = object.global_position - player.global_position
+	to_object.y = 0.0
+	return to_object.length()
+
+
+## F states an INTENT: "interact with that". It no longer requires the
+## character to already be standing correctly — if the target is further away
+## than pickup_distance, the character walks over first and the interaction
+## runs on arrival.
+##
+## The alternative was widening every object's detection Area until standing
+## anywhere near counted as standing on it, which only moves the positioning
+## problem into level authoring.
 func try_interact() -> void:
 	## Если уже что-то в руках - выбрасываем
 	if carried_item:
+		_cancel_approach()
 		_drop_item()
 		return
 	
 	if not current_interactable:
 		return
-	
+
+	## Already there — act now, with no walk and no delay. This is the path
+	## every interaction took before the approach existed, and the one it
+	## still takes whenever the player has done the positioning themselves.
+	if _flat_distance_to(current_interactable) <= pickup_distance:
+		_cancel_approach()
+		_perform_interaction(current_interactable)
+		return
+
+	_begin_approach(current_interactable)
+
+
+## What F actually does, once the character is in reach. Extracted from
+## try_interact() so the immediate path and the on-arrival path run the SAME
+## code — a second copy of this match is how the two would drift apart.
+func _perform_interaction(object: InteractableObject) -> void:
+	if object == null or not is_instance_valid(object):
+		return
+
 	## Проверяем тип взаимодействия
-	match current_interactable.interaction_type:
+	match object.interaction_type:
 		InteractableObject.InteractionType.CARRY_ONLY, \
 		InteractableObject.InteractionType.CARRY_AND_INVENTORY:
-			_pickup_item(current_interactable)
+			_pickup_item(object)
 		InteractableObject.InteractionType.BUTTON:
-			_activate_button(current_interactable)
+			_activate_button(object)
 		InteractableObject.InteractionType.VEHICLE:  # flying car
-			_enter_vehicle(current_interactable)
+			_enter_vehicle(object)
 		InteractableObject.InteractionType.INVENTORY_ONLY:
-			_store_item(current_interactable)
+			_store_item(object)
+
+
+## Sends the character walking to a point in front of the target.
+##
+## The stop point is on the line FROM the object TOWARD where the player is
+## already standing, at pickup_distance — approaching from where you are is
+## what makes it read as walking over rather than being routed around. It is
+## then dropped onto the ground by a downward ray, the same method the
+## carbine's own world placement uses; without that, an item on a slope
+## produces a target floating above or buried under the terrain.
+##
+## Reuses the click-to-move contract exactly (set_movement_speed +
+## move_to_position) rather than driving the body from here — that path is
+## already the one ClickToMoveSystem uses, and player.gd already turns the
+## body toward the point it is walking to, so the character arrives facing
+## the target with nothing extra to do.
+func _begin_approach(object: InteractableObject) -> void:
+	if player == null or not player.is_movement_enabled():
+		return
+
+	var from_object: Vector3 = player.global_position - object.global_position
+	from_object.y = 0.0
+	if from_object.length() < 0.01:
+		return
+	## Aimed slightly INSIDE the arrival radius, not exactly on it. The walk
+	## ends when _handle_navigation() gets within 5 cm of the point, and the
+	## ground snap below moves it again — landing exactly on the boundary
+	## makes arrival a coin flip.
+	var stop_point: Vector3 = object.global_position \
+			+ from_object.normalized() * (pickup_distance * 0.75)
+	stop_point.y = _ground_height_at(stop_point, player.global_position.y)
+
+	_pending_interactable = object
+	_approach_elapsed = 0.0
+	_approach_body_stopped = false
+	## Walk, never run. Two metres at run_speed reads as lunging, and this is
+	## a deliberate act rather than an escape.
+	player.set_movement_speed(player.walk_speed)
+	player.move_to_position(stop_point)
+
+
+## Ground height under a point, or the fallback when nothing is below it.
+func _ground_height_at(point: Vector3, fallback_y: float) -> float:
+	var query := PhysicsRayQueryParameters3D.create(
+		Vector3(point.x, fallback_y + 2.0, point.z),
+		Vector3(point.x, fallback_y - 5.0, point.z),
+		CollisionLayers.GROUND
+	)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return hit["position"].y if not hit.is_empty() else fallback_y
+
+
+## Drives an approach to its end, one of three ways: arrived, gave up, or the
+## target stopped existing.
+##
+## Arrival is measured as DISTANCE TO THE TARGET, never "the path ended". A
+## right-click move order in ISOMETRIC replaces the path underneath us, and a
+## path-ended test would then fire the interaction at wherever that order
+## went. Distance cannot be fooled that way.
+func _update_approach(delta: float) -> void:
+	if _pending_interactable == null:
+		return
+
+	if not is_instance_valid(_pending_interactable) or player == null:
+		_cancel_approach()
+		return
+
+	## Distance decides, and it is asked FIRST — before the body-stopped and
+	## timeout branches — so a walk that ended right on the boundary still
+	## counts as having arrived rather than as having been interrupted.
+	if _flat_distance_to(_pending_interactable) <= pickup_distance + 0.05:
+		var target := _pending_interactable
+		_cancel_approach()
+		player.stop_moving(true)
+		_perform_interaction(target)
+		return
+
+	if _approach_body_stopped:
+		## Stopped short: either the player gave an order of their own, or
+		## the path ran out without getting there.
+		_cancel_approach()
+		return
+
+	_approach_elapsed += delta
+	if _approach_elapsed >= approach_timeout:
+		## Walked into something and stopped making progress. There is no
+		## navmesh in this project, so this is a real outcome rather than a
+		## defensive branch — see approach_timeout.
+		_cancel_approach()
+		player.stop_moving(true)
+
+
+## Forgets a pending approach without touching the body. Callers that also
+## want the character to stop say so themselves — _drop_item() and a fresh
+## interact both continue moving on purpose.
+func _cancel_approach() -> void:
+	_pending_interactable = null
+	_approach_elapsed = 0.0
+	_approach_body_stopped = false
+
+
+## The body stopped. Deliberately does NOT cancel: this same signal fires
+## when the path simply ran out, and only _update_approach() knows whether
+## that happened in reach of the target or short of it. Recording the fact
+## and letting the distance test rule next frame is what keeps a walk that
+## ended on the boundary from silently losing the pickup.
+func _on_player_movement_stopped() -> void:
+	if _pending_interactable != null:
+		_approach_body_stopped = true
 
 ## INVENTORY_ONLY: предмет уходит на игрока напрямую, минуя руки.
 ## При отказе остаётся в мире нетронутым.

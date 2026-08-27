@@ -12,6 +12,70 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - F means "pick that up", not "you are standing correctly"
+
+Picking something up made the player position the character for the UI rather
+than for the fiction. `PlayerFocusCast` is a capsule reaching ~1.8 m forward
+with radius 0.4, and it has to physically overlap the object's own `Area3D` —
+a window roughly ±0.9 m wide that you had to thread while facing the thing.
+Then `try_interact()` acted only if `current_interactable` was already set,
+and nothing ever moved toward anything.
+
+**Detection got a second tier, on the player rather than on the items.** When
+the focus cast finds nothing, one shape query per physics frame asks the wider
+question: anything within `intent_radius` (2.5 m) inside a 240° forward cone,
+nearest wins. It reads the same `Area3D`s on the same layer the focus cast
+already reads, so no object needs anything new — and the winner goes into the
+same `current_interactable`, so the tick indicator, the debug label and
+`try_interact()` all work unchanged, just earlier. Growing every item's own
+`Area` instead would have been the per-item spelling of a rule that belongs on
+the character once.
+
+**F now states an intent.** Further than `pickup_distance` (0.9 m) and the
+character walks over first, then interacts on arrival; already in range and it
+acts immediately, exactly as before. The walk reuses the click-to-move
+contract as-is (`set_movement_speed` + `move_to_position`) rather than driving
+the body from the component, and since `_handle_navigation()` already turns
+toward the point it is walking to, the character arrives facing the target
+with nothing extra to do — measured 2.1° off. All five interaction types go
+through it, via a `_perform_interaction()` extracted from `try_interact()` so
+the immediate path and the on-arrival path run the same code instead of two
+copies of the same `match`.
+
+**Navigation is no longer ISOMETRIC-only.** `move_to_position()` in TPS used to
+set a path nothing consumed, so an approach there did nothing. TPS now runs the
+navigation branch whenever a scripted path is in flight — and, less obviously,
+must also **skip `_update_direct_move_target_speed()`**, which zeroes
+`target_speed` on every frame without WASD input and would have drained the
+approach's speed before it moved a metre. Player input cancels the path on the
+spot; `InteractComponent` hears that through the existing `movement_stopped`.
+
+**One bug found by re-reading rather than by running:** a path that ends
+normally emits the same `movement_stopped` as the player interrupting, so the
+first version silently cancelled any pickup whose walk finished a few
+centimetres outside the arrival radius. The handler now only records that the
+body stopped; the distance test rules first, and the stop point is aimed at
+75% of `pickup_distance` so the walk ends comfortably inside.
+
+`approach_timeout` (4 s) is not padding: this project has no
+`NavigationRegion3D` (`NavigationComponent` says so at every boot and falls
+back to a straight line), so a walk into geometry never arrives and never ends.
+The probe confirms both halves — an approach across open ground succeeds, and
+one starting behind `LodgingRoom`'s walls gives up and hands control back.
+
+25 assertions in `world.tscn` through the real `interact_pressed` signal, all
+green, starting with a negative control: with `intent_radius = 0` the same
+carbine at 2.2 m and 55° off is **not** detected and F does nothing.
+
+Player speed is untouched — 5.0 / 15.5 were never the cause of this.
+
+*F теперь означает намерение: увидел — нажал — персонаж сам подошёл и подобрал.
+Второй ярус обнаружения (2.5 м, конус 240°) живёт на игроке, а не на предметах.
+Навигация заработала и в TPS. Найден баг: нормально завершившийся путь шлёт тот
+же сигнал, что и вмешательство игрока, — подбор молча терялся.*
+
+---
+
 ## 2026-08-27 - tools/for_claude_addon_item_/ removed — it broke ItemResource
 
 `main` did not compile its own item system. `tools/for_claude_addon_item_/`

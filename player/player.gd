@@ -3,11 +3,15 @@
 #
 # Owns physics, the movement state machine and body rotation directly
 # (not delegated to components) for both movement modes: click-to-move/
-# navigation (ISOMETRIC, via NavigationComponent, _handle_navigation) and
-# direct WASD movement (TPS, TPSMovementSystem feeds set_direct_move_input()
-# every physics frame, _apply_direct_movement computes velocity/rotation/
-# animation). Which path runs is decided by PlayerState.view_mode inside
-# _physics_process().
+# navigation (via NavigationComponent, _handle_navigation) and direct WASD
+# movement (TPS, TPSMovementSystem feeds set_direct_move_input() every
+# physics frame, _apply_direct_movement computes velocity/rotation/
+# animation). Which path runs is decided inside _physics_process() by the
+# view mode AND by whether a scripted path is in flight: navigation is the
+# ISOMETRIC default, but it also takes over in TPS while something is
+# walking the character to a point (see _has_scripted_path()), because an
+# auto-approach has to work in both views. Player input in TPS cancels such
+# a path on the spot.
 # AnimationTree assembly and the procedural Head LookAt are delegated to
 # PlayerAnimationComponent (player_components/animation_component/) —
 # player.gd calls its update_*() methods explicitly at the right point in
@@ -378,15 +382,28 @@ func _physics_process(delta: float) -> void:
 	_handle_jump()
 	_apply_gravity(delta)
 
+	## A scripted path (today: InteractComponent walking to something F was
+	## pressed on) owns locomotion while it lasts, in EITHER view. In TPS
+	## that means skipping this too, not just the movement call below:
+	## _update_direct_move_target_speed() zeroes target_speed whenever there
+	## is no WASD input, which would drain the approach's own speed to zero
+	## before it moved a metre.
 	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		_update_direct_move_target_speed()
+		if _has_scripted_path() and _direct_move_direction.length() > 0.01:
+			## The player took the controls back. Their input wins
+			## immediately and without ceremony — clearing the path is also
+			## what tells InteractComponent to forget the pickup, through
+			## the movement_stopped signal stop_moving() emits.
+			stop_moving(true)
+		if not _has_scripted_path():
+			_update_direct_move_target_speed()
 
 	_update_speed(delta)
 	_animation_component.update_animation_blend(delta)
 	_animation_component.update_head_look(delta)
 	_votive.update_projection(delta)
 
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
+	if PlayerState.view_mode == PlayerState.ViewMode.TPS and not _has_scripted_path():
 		_apply_direct_movement(delta)
 	else:
 		_handle_navigation(delta)
@@ -504,6 +521,17 @@ func set_movement_enabled(enabled: bool) -> void:
 
 func is_movement_enabled() -> bool:
 	return movement_enabled
+
+
+## Is something walking this character to a point right now, rather than the
+## player steering it. True for a click-to-move order and for
+## InteractComponent's approach alike — both go through move_to_position(),
+## and neither wants WASD or the camera-facing rules applied on top.
+##
+## This is what makes ISOMETRIC no longer the only view navigation runs in:
+## before it, move_to_position() in TPS set a path nothing ever consumed.
+func _has_scripted_path() -> bool:
+	return navigation_component != null and navigation_component.has_active_path()
 
 
 ## === CURSOR METHODS (compatibility with MouseCursorUI) ===
