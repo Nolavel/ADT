@@ -231,9 +231,21 @@ flowchart TD
 not evidence-over-stars, not the 1/5/10 test below. No amount of behaviour
 work compensates for an illegible crowd.
 
-The fix is specified in `npc_archetypes.md`: six archetypes, four
+The fix is specified in `npc_archetypes.md`: five archetypes, four
 readability channels, no profiler UI. Flat placeholder colours are
 acceptable at prototype stage so the loop can be felt before meshes exist.
+
+> **Closed 2026-08-26 (H3).** The archetypes and their channels are in, at
+> placeholder-colour fidelity, and the loop above no longer collapses in the
+> middle. The gap is closed as a *blocker*, not as finished work: silhouette
+> and gait are still one mesh and one animation set, and the remaining
+> fidelity is deferred past H6 — see `scope_horizon.md`. This section is kept
+> because it states why the gap mattered, which is still the reason the
+> archetypes exist.
+
+This page said "six archetypes" until 2026-08-26; `npc_archetypes.md` and
+`data/npc_archetypes/` have always had five (four on the two-axis grid, plus
+Patrolman outside it). Corrected here rather than in the other direction.
 
 ---
 
