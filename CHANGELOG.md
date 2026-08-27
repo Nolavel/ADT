@@ -12,6 +12,71 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - The carbine sits in the hand, the shot reads, and there is a reserve
+
+Playing the carbine surfaced three complaints, and each had one measurable
+cause rather than being a matter of taste.
+
+**Every held item in the project was rendered at 38.8% of its real size.**
+`player.tscn`'s `player_base_mesh` carries a uniform 0.38763407 scale and it
+is the only scale between the player and the hand bones, and
+`EquipmentVisualsComponent` parented the held mesh straight to
+`RightHandAttachment` — so a 73 cm carbine appeared as 28 cm, and every offset
+written for one was silently in skeleton units rather than metres (the
+pistol's `held_offset` of 0.33 was 12.8 cm). Nothing warned; it looked like
+the numbers needed tuning. A **`GripPivot` under each hand attachment** now
+carries the reciprocal scale (2.5797526), so everything below it is metric,
+and `_check_grip_scale()` warns if that ever stops being true. A
+`LeftHandAttachment` was added alongside the right one.
+
+**The pose moved off the component and onto the item.** New `HeldFit`
+(`core/items/held_fit.gd`, optional `ItemResource.held_fit`) — hand, offset,
+rotation, scale. `EquipmentVisualsComponent.held_offset`/`held_rotation_deg`
+are gone: one pose shared by everything ever drawn is how a component ends up
+holding a pose for geometry it knows nothing about. The carbine placeholder
+was regenerated with its **origin in the grip** (all vertices shifted
+`(0, +0.088, +0.088)`), so a zero fit already puts it in the fist instead of
+holding it by the middle of the barrel; the world placement Y was re-measured
+against the new AABB, 128.917 → **128.829**, by ground ray.
+
+**The shot and the reload now come from the same pack as the locomotion.**
+`new4/shoot-rifle-light` is 0.25 s and from ShooterLib while the idle and all
+eight locomotion points are `new3/` — a quarter-second snap to a different
+rifle pose and back, which is why it read as no animation at all.
+`new4/reload-rifle` had the same mismatch, and that is the other half of
+"after the reload it's as if there's nothing left": the magazine did refill,
+it just did not look like a reload. Now **`new3/rifle_shot`** (1.17 s) and
+**`new3/rifle_reload_2`** (1.88 s), both non-looping — which rules out every
+shorter candidate, since a looping clip under a `OneShot` can fail to
+terminate and would lock movement permanently. `weapon_oneshot`'s fade times
+are set explicitly rather than left at a default.
+
+**Reserve ammunition**, 80 rounds behind the magazine
+(`ItemResource.reserve_capacity`, `WeaponComponent._reserves`). A reload moves
+`min(missing, reserve)`; a partial reload is a success, since refusing one
+would strand the last rounds. **`can_reload()` is asked before the gesture
+starts** — caught by the probe suite: `player.gd` locks movement at the key
+press and only reaches `reload()` a second into the clip, so the first version
+played a full reload animation for a weapon with an empty reserve. The HUD row
+reads `8 / 8 · 72`, the reserve dimmer than the magazine and red at zero.
+The reserve is finite and nothing restores it; an ammunition pickup is the
+follow-up, deliberately not built here.
+
+39 assertions in `world.tscn` through the real input paths, all green —
+including the two that would have caught the scale bug and did not exist
+before (the held mesh's global scale is 1.0, its world length 0.734 m), the
+gesture timings, the reserve draining to zero and refusing the eleventh
+reload, and the HUD immediately after a reload rather than only at zero.
+
+*Найдено: любой предмет в руке рендерился в 38.8% размера — у `player_base_mesh`
+масштаб 0.38763, а меш вешался прямо на кость. Добавлены пивоты `GripPivot` с
+обратным масштабом, посадка предмета переехала на сам предмет (`HeldFit`),
+начало координат меша карабина перенесено в рукоять. Выстрел и перезарядка
+переведены на тот же пак анимаций, что и локомоция, — отсюда «анимации нет».
+Добавлен запас в 80 патронов.*
+
+---
+
 ## 2026-08-27 - The pistol becomes a carbine, and gets ammunition
 
 The pistol was the wrong weapon for this project's animation library. It has

@@ -52,6 +52,10 @@ class_name ItemResource
 ## appears on screen — which is the honest position for every item until
 ## someone models it.
 @export var held_mesh: Mesh = null
+## How that mesh sits in the hand — see HeldFit. Null means it hangs at the
+## grip pivot's own origin, which is the honest default for an item nobody
+## has fitted yet. Authored by addons/item_fitter/, not by hand.
+@export var held_fit: HeldFit = null
 
 @export_group("Ranged")
 ## Damage one shot deals, and by being non-zero, the fact that this item is
@@ -84,3 +88,16 @@ class_name ItemResource
 ## WeaponComponent.reload()). A reserve pool is a second number and a second
 ## place to run out, and it is not wanted yet.
 @export var magazine_size: int = 0
+
+## Rounds carried behind the magazine. Zero means none — a weapon that
+## reloads from nothing, which is what this was until it had a number.
+##
+## Finite on purpose, and nothing in the world restores it: when it is gone
+## the weapon is spent. That is a real consequence rather than an oversight,
+## and the fix when it starts to bite is an ammunition pickup, not a bigger
+## number here.
+##
+## Like magazine_size, the CAPACITY is on the item and the running count is
+## on WeaponComponent — a resource is shared, so a live count on it would be
+## one count for every carbine in the game.
+@export var reserve_capacity: int = 0

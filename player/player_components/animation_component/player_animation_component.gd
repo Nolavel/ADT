@@ -88,16 +88,23 @@ const ANIM_DRAW_SHOULDER: StringName = &"new4/equip-shoulder-r"
 const ANIM_HOLSTER: StringName = &"WeaponChange_hip"
 const ANIM_HOLSTER_BACK: StringName = &"WeaponChange_back"
 
-## Firing, ShooterLib (new4/). The light rifle clip (0.25s), not
-## shoot-rifle-heavy (0.42s, and imported as LOOPING, which a one-shot
-## gesture must never be) and not shoot-hip, which is fired from the waist.
-const ANIM_SHOOT_RIFLE: StringName = &"new4/shoot-rifle-light"
-
-## Magazine reload, ShooterLib (new4/). 1.62s, non-looping. ShooterLib also
-## carries reload-barrelfed and reload-revolver — a different feed each,
-## neither of them this weapon — and a -fps variant of every one, which is
-## a first-person arms-only clip and wrong for a third-person body.
-const ANIM_RELOAD_RIFLE: StringName = &"new4/reload-rifle"
+## Firing and reloading, from the RIFLE PACK (new3/) — the same pack as the
+## idle and all eight locomotion points below, and that is the whole reason
+## for the choice. ShooterLib's new4/shoot-rifle-light was here first and
+## read as no animation at all: 0.25s long, and a quarter-second snap to a
+## different pack's rifle pose and back is a twitch, not a shot. Its
+## reload-rifle (1.62s) had the same mismatch, which is why a reload that
+## demonstrably refilled the magazine still looked like nothing happened.
+##
+## Both of these are 1.17s and 1.88s, and both are NON-LOOPING — checked,
+## and it decides the choice as much as the length does. A looping clip
+## under an AnimationNodeOneShot can fail to terminate, and player.gd hands
+## movement back on the gesture ending, so a looping fire clip would lock
+## the character where it stood. That rules out the shorter candidates:
+## new3/rifle_fire (0.57s) and new4/shoot-rifle-heavy (0.42s) are both
+## imported as looping.
+const ANIM_SHOOT_RIFLE: StringName = &"new3/rifle_shot"
+const ANIM_RELOAD_RIFLE: StringName = &"new3/rifle_reload_2"
 
 ## Picking something up, ShooterLib (new4/). Two clips, chosen by how high
 ## off the ground the thing is — see InteractComponent's own comment. A
@@ -639,6 +646,14 @@ func _setup_animation_tree() -> void:
 	weapon_clip.animation = ANIM_DRAW_CHEST
 	_weapon_clip = weapon_clip
 	var weapon_oneshot := AnimationNodeOneShot.new()
+	## Set rather than left at whatever the default is. A fade is a fraction
+	## of the clip, and these gestures range from a 0.33s draw to a 1.88s
+	## reload — an unexamined fade at both ends is the second way a gesture
+	## reads as nothing having happened, after the clip simply being too
+	## short. Small and explicit: enough to not snap, not enough to eat a
+	## short clip.
+	weapon_oneshot.fadein_time = 0.05
+	weapon_oneshot.fadeout_time = 0.1
 	tree_root.add_node("weapon_clip", weapon_clip)
 	tree_root.add_node("weapon_oneshot", weapon_oneshot)
 	tree_root.connect_node("weapon_oneshot", 0, "punch_oneshot")

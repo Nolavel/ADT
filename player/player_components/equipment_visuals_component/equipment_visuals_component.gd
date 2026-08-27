@@ -36,24 +36,29 @@ class_name EquipmentVisualsComponent
 ## The equipment this reflects. Sibling by default.
 @export var equipment_path: NodePath = ^"../EquipmentComponent"
 
-## Where a drawn item is parented. A BoneAttachment3D on the hand, NOT on
-## the body root — the prop has to follow the hand through the animation.
-@export var hand_attachment_path: NodePath = ^"../player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/RightHandAttachment"
-
-## Position and rotation of a held item inside the hand, in the attachment's
-## local space.
+## Where a drawn item is parented — the GripPivot inside each hand, NOT the
+## BoneAttachment3D itself and NOT the body root. The prop has to follow the
+## hand through the animation, and it has to do so at its real size:
 ##
-## Exported rather than baked into the scene node's transform for the same
-## reason VotiveProjector exports bone_local_offset: a bone's local axes
-## rarely match anything's forward assumption, and the right values can only
-## be found by looking at it. These are meant to be dragged in the inspector
-## until the thing sits in the fist — they are not defaults anybody computed.
-@export var held_offset: Vector3 = Vector3.ZERO
+## player.tscn's player_base_mesh carries a uniform 0.38763407 scale, and it
+## is the only scale between the player and the hand bones. A mesh parented
+## straight to the attachment therefore renders at 38.8% — a 73 cm carbine
+## as 28 cm — and every offset written for it is silently in skeleton units
+## rather than metres. That is not a thing to tune around; it is why the
+## GripPivot nodes exist and why they carry the reciprocal scale
+## (2.5797526). Everything below a pivot is in world metres, which is what
+## makes a fit value mean what it says.
+##
+## The pivot is also the only per-CHARACTER half of the pose: where the palm
+## is. How an object sits in that palm is per-item and lives on the item —
+## see HeldFit.
+@export var right_grip_path: NodePath = ^"../player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/RightHandAttachment/GripPivot"
+@export var left_grip_path: NodePath = ^"../player_base_mesh/GeneralSkeleton/RetargetModifier3D/OriginalSkeleton/LeftHandAttachment/GripPivot"
+
 ## Seconds between a draw starting and the item appearing in the hand.
 ## Roughly a third of the draw clip, so the two land together. Set to 0 for
 ## the old snap-attach behaviour; nothing else changes.
 @export var draw_attach_delay: float = 0.22
-@export var held_rotation_deg: Vector3 = Vector3.ZERO
 
 @export var debug_log: bool = false
 
@@ -66,7 +71,8 @@ var _slot_meshes: Dictionary = {}
 ## catalog is immutable, so this cannot go stale; it exists so the sweep in
 ## refresh_all() does not walk every item on every call.
 var _garment_mesh_names: Array[StringName] = []
-var _hand_attachment: Node3D = null
+var _right_grip: Node3D = null
+var _left_grip: Node3D = null
 ## The MeshInstance3D currently in the hand, built on draw and freed on
 ## holster. Built rather than pre-made and hidden: an item's mesh is per-item
 ## data, so there is nothing to pre-make.
@@ -82,9 +88,12 @@ func _ready() -> void:
 		push_warning("[EquipmentVisuals] no EquipmentComponent at %s — inert" % equipment_path)
 		return
 
-	_hand_attachment = get_node_or_null(hand_attachment_path) as Node3D
-	if _hand_attachment == null:
-		push_warning("[EquipmentVisuals] no hand attachment at %s — held items stay invisible" % hand_attachment_path)
+	_right_grip = get_node_or_null(right_grip_path) as Node3D
+	_left_grip = get_node_or_null(left_grip_path) as Node3D
+	if _right_grip == null:
+		push_warning("[EquipmentVisuals] no grip pivot at %s — held items stay invisible" % right_grip_path)
+	_check_grip_scale(_right_grip, "right")
+	_check_grip_scale(_left_grip, "left")
 
 	_collect_garment_mesh_names()
 	_equipment.slot_changed.connect(_on_slot_changed)
@@ -124,7 +133,7 @@ func _on_drawn_changed(item_id: StringName) -> void:
 	if _held_instance != null:
 		_held_instance.queue_free()
 		_held_instance = null
-	if item_id == &"" or _hand_attachment == null:
+	if item_id == &"" or _right_grip == null:
 		return
 
 	if draw_attach_delay > 0.0:
@@ -134,7 +143,7 @@ func _on_drawn_changed(item_id: StringName) -> void:
 		## empty hand a fifth of a second after the player put it away.
 		if not is_instance_valid(self) or _equipment == null:
 			return
-		if _equipment.get_drawn() != item_id or _hand_attachment == null:
+		if _equipment.get_drawn() != item_id or _right_grip == null:
 			return
 
 	var item := ItemCatalog.get_item(item_id)
@@ -146,11 +155,62 @@ func _on_drawn_changed(item_id: StringName) -> void:
 
 	_held_instance = MeshInstance3D.new()
 	_held_instance.mesh = item.held_mesh
-	_held_instance.position = held_offset
-	_held_instance.rotation_degrees = held_rotation_deg
-	_hand_attachment.add_child(_held_instance)
+	_grip_for(item.held_fit).add_child(_held_instance)
+	_apply_fit(_held_instance, item.held_fit)
 	if debug_log:
 		print("[EquipmentVisuals] holding %s" % item_id)
+
+
+## Which hand an item goes in. Falls back to the right for an item with no
+## HeldFit, and for one that names a hand this character does not have —
+## a left-handed item on a rig with no left attachment is still better held
+## wrongly than not held at all.
+func _grip_for(fit: HeldFit) -> Node3D:
+	if fit != null and fit.hand == HeldFit.Hand.LEFT and _left_grip != null:
+		return _left_grip
+	return _right_grip
+
+
+## The item's own pose inside the pivot. Applied AFTER the reparent, not
+## before: setting position/rotation on an orphan node and then adding it
+## works, but scale and transform order stop being obvious the moment a
+## parent has its own — and this parent has a 2.58 counter-scale.
+##
+## A null fit is not a failure. It means nobody has fitted this item yet, and
+## the pivot's own origin is the honest place for it until someone does.
+func _apply_fit(instance: MeshInstance3D, fit: HeldFit) -> void:
+	if fit == null:
+		instance.transform = Transform3D.IDENTITY
+		return
+	instance.position = fit.offset
+	instance.rotation_degrees = fit.rotation_deg
+	instance.scale = fit.scale
+
+
+## A grip pivot exists to cancel the rig's own scale, so its GLOBAL scale
+## must be 1: that is the whole contract, and it is the difference between an
+## offset in metres and an offset in whatever units the rig happens to use.
+##
+## Checked rather than assumed because the failure is silent. Every held item
+## in the project rendered at 38.8% for as long as the mesh was parented to
+## the bone attachment directly, and nothing said a word — it just looked
+## like the offsets needed tuning.
+func _check_grip_scale(grip: Node3D, side: String) -> void:
+	if grip == null:
+		return
+	## A loose tolerance on purpose. An animated bone's pose basis is not
+	## exactly orthonormal — measured up to 2% per axis on this rig with the
+	## locomotion running — so a tight threshold would warn every time the
+	## character moved. What this is actually guarding against is off by a
+	## factor of 2.6 in one direction or 0.39 in the other, which clears any
+	## threshold in this range by a mile.
+	var scale_error: float = (grip.global_basis.get_scale() - Vector3.ONE).length()
+	if scale_error > 0.1:
+		push_warning(
+			"[EquipmentVisuals] %s grip pivot has global scale %s, not 1 — held items will be "
+			% [side, grip.global_basis.get_scale()]
+			+ "the wrong size and every HeldFit offset is in the wrong units"
+		)
 
 
 func _on_slot_changed(slot_path: StringName, _item_id: StringName) -> void:
