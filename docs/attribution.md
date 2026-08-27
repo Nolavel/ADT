@@ -351,6 +351,52 @@ rule by eye.
 | D | 3 m, witness facing away | does not become a witness — no report at any quality |
 | E | interrupted at 1.5 s | CANCELLED, nothing in registry |
 
+### Measured, 2026-08-26
+
+Run against a Clerk (`data/npc_archetypes/clerk.tres`) in a throwaway probe
+scene, driving `IdleNPCController._on_incident_reported()` directly and
+reading the same debug getters the observation panel uses.
+
+| Case | Expected | Measured | |
+|---|---|---|---|
+| A — 3 m, facing | IRIS | `CALLING`, ceiling IRIS, result IRIS, in FOV | pass |
+| B — 15 m | EQUIPMENT | `CALLING`, ceiling EQUIPMENT, result EQUIPMENT | pass |
+| C — 35 m | SILHOUETTE | no reaction at all, no report | **fails — see below** |
+| D — 3 m, facing away | no report at any quality | no report; falls through to the ordinary Freeze/Flee roll | pass |
+| E — interrupted at 1.5 s | CANCELLED, nothing in registry | `WitnessReport.status = CANCELLED`, reaction returns to `NONE` | pass |
+
+Two boundary probes beyond the table: 12 m gives EQUIPMENT; **20 m gives no
+report at all**.
+
+**Case C cannot pass under current tuning, and the reason is arithmetic, not
+a defect in the chain.** SILHOUETTE requires
+`distance > witness_ceiling_equipment_distance` (30 m). But two earlier gates
+close first:
+
+- `IdleNPCController.earshot_radius` is 25 m — past it an ordinary NPC never
+  learns an incident happened;
+- the witness gate itself uses the archetype's
+  `PerceptionComponent.vision_range`, which for Clerk — the only calling
+  archetype — is 16 m.
+
+So the reachable witness envelope for a Clerk is **0–16 m**: IRIS ≤ 5,
+FACE 5–10, EQUIPMENT 10–16. The SILHOUETTE rung, and the top of the
+EQUIPMENT band, are unreachable by construction — the ladder is taller than
+the room it stands in. Closing the gap is a tuning decision (raise earshot
+and archetype vision above 30 m, or lower the ceilings under 16 m), not a
+code change, and it is deliberately deferred: see `scope_horizon.md`,
+H3 / H4 refinement.
+
+One observability note, not a behaviour one: `_cancel_active_witness_report()`
+nulls `_current_witness_report` after setting CANCELLED, so the panel shows
+`n/a` rather than the terminal status. The cancellation itself is correct —
+case E was confirmed by holding a reference to the report across the
+interrupt.
+
+Case D's reaction varies between runs (FROZEN or FLEEING). That is
+`NPCArchetypeData.flee_probability` doing its job, not flakiness — §4 of
+`NPC_REACTIONS.md` is explicit that the crowd reacts by chance.
+
 Case D changed from an earlier draft ("witness talking", one level below
 IRIS): §2's own correction applies here too. Facing away is the one gate
 this iteration actually implements, and it means not seeing the incident,

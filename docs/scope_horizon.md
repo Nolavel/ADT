@@ -29,7 +29,7 @@ constraint on everything below. A horizon that assumes more is fiction.
 **Sequencing is by dependency, not by date.** Items unlock each other. Calendar
 dates appear only where an external commitment exists.
 
-Last reviewed: 2026-08-25
+Last reviewed: 2026-08-26
 
 ---
 
@@ -59,6 +59,30 @@ horizon has somewhere to go instead of just disappearing from the page.
   authoritative over authored mesh visibility. See `CHANGELOG.md` entries
   dated 2026-08-23. Prerequisite for H6 is now met.
 
+- **Island transition (Blackrock → Aogashima).** All six steps of
+  `docs/island_rescope_brief.md` are done. Step 5, the building generator,
+  was the last one open and is closed by evidence rather than assertion:
+  `tools/city_generator/` holds the four files the 2026-08-25 entry
+  describes, `core/map_source/map_source.tscn` carries 151 `GBX_` markers —
+  exactly the dry-run figure — and `data/world_data.tres` holds 152
+  `BlockData` entries (`landmark`, `tower_001`, `cty_001`–`cty_150`), so the
+  Export step ran and the runtime streams the generated city. That entry's
+  own caveat ("markers actually appearing in `BLOCKS` is his first run") is
+  discharged. See `CHANGELOG.md`, 2026-08-25.
+
+- **H3. Crowd readability** and **H4. Witnesses** — closed **as concepts**,
+  by decision, 2026-08-26. The archetype channels are in (five archetypes in
+  `data/npc_archetypes/`, colour/gait/attention applied through
+  `NPCBase._apply_archetype()`), and the witness chain of
+  `docs/attribution.md` §7 runs end to end: perception → distance ceiling →
+  `WitnessReport` → Votive transmit → COMMITTED / CANCELLED, with the
+  developer observation panel §7 asks for. Four of the five §7 test cases
+  were measured on 2026-08-26 and pass; the fifth (case C) cannot pass under
+  today's tuning, recorded as a known gap in `attribution.md` §7 rather than
+  fixed here. **Refinement of both is deliberately deferred well past H6** —
+  closing them means they stop gating the next horizon, not that they are
+  finished work.
+
 H1's own task list had one box still unchecked when this horizon closed —
 the Context/Autoload/Signal/Group rule, bundled into H1 because it was
 cheap to write alongside it, was never actually written into `CLAUDE.md`.
@@ -69,60 +93,15 @@ horizon marked done; see `CLAUDE.md`'s Architecture rules.
 
 ## Now — current horizon
 
-One horizon open at a time. It closes when its Definition of Done is met, then
-the next is promoted from Next.
-
-### Island transition (Blackrock → Aogashima)
-
-**Why this is Now:** the vertical 3200 m city is replaced by a single volcanic
-island (ceiling 1000 m) per `docs/island_rescope_brief.md`. This is a
-load-bearing world change. Continuing to build content or systems against the
-old strata model produces work that must be torn out. The brief is the single
-source of truth for order and numbers.
-
-Order is fixed (see the brief). State as of 2026-08-25:
-
-1. **Done** — strata removed as a technical entity, from the runtime and from
-   the editor tools. The 3×3 ground-tile grid went with them: nine 2200 m slabs
-   were a walkable seabed under the whole ocean, and the terrain is the ground
-   now.
-2. **Done** — `BLOCK_STREAM_RADIUS` 400, `BLOCK_UNLOAD_RADIUS` 500, with the
-   pipeline's changed purpose recorded next to them.
-3. **Done differently, by decision.** The heightmap is procedural
-   (`tools/island_generator/aogashima_generator.gd`), not real Aogashima DEM;
-   the `CREDITS.md` requirement lapses with it. See the brief's amendments.
-4. **Done** — terrain mesh, vertex-displacement shader, `HeightMapShape3D`
-   collision and the water plane, all in `world/aogashima/`.
-5. **Open. This is what "now" means.** No building generator exists. The 33
-   greybox blocks currently on the island were replanted from the old city
-   layout by scaling it — provisional scenery, not generated placement.
-6. **Done** — `CLAUDE.md` split into `docs/architecture/`, world descriptions
-   corrected across the documents.
-
-**Definition of Done:** island is the only world geometry; strata code and data
-are gone; streaming radii updated; heightmap-driven terrain visible and
-collidable; building markers generated from the heightmap; documents no longer
-describe the old vertical city. **Only the generator is outstanding.**
-
-H3 (Crowd readability) remains open in parallel only for the residual
-play-test judgement of existing archetype reactions. It does not block the
-island work and does not receive new features until the island is in.
-
----
-
-## Next — promoted when the island transition closes
-
-### H3 residual / H4. Witnesses
-
-Crowd readability Definition of Done has not yet been formally exercised in
-play. The witness vertical slice (`docs/attribution.md` §7) was partially
-landed out of order. After the island is stable, finish the observation →
-WitnessReport → Votive transmit chain and close the readability judgement.
-
 ### H6. Pistol chain
 
-The demo's TIER 2 target. Now unblocked by closed H5. Built as one connected
-slice:
+**Why this is Now:** H5 (`EquipmentComponent`) closed on 2026-08-23 and was
+its only prerequisite. The island closed on 2026-08-26, so the reason to hold
+a weapon back — "a weapon on the old vertical city is wasted effort" — is
+spent. H3/H4 closed as concepts the same day and no longer gate anything.
+This is the demo's TIER 2 target and the first real test of ACT.
+
+Built as one connected slice, in this order:
 
 1. Pistol as an inventory item
 2. Pickup and persist
@@ -130,9 +109,18 @@ slice:
 4. Locomotion with pistol drawn
 5. Firing at an NPC, damage through existing `HealthComponent` / `take_hit()`
 
-Sequenced after the island because a weapon on the old vertical city is
-wasted effort; a weapon on the readable island crowd is the first real test
-of ACT.
+Step 3 is largely met already — `draw_holster` (`B`) and the stance coupling
+landed with H5 S5 — so the slice starts closer to the middle than the list
+suggests. Steps 1, 2 and 5 are the real work.
+
+**Definition of Done:** a pistol can be found on the island, picked up, kept
+across a save/load and a block unload, drawn and holstered, carried while
+moving, and fired at an NPC who takes damage through the existing health
+path and enters the incident record the same way a punch already does.
+
+---
+
+## Next — promoted when H6 closes
 
 ### H7. Persistent entity state
 
@@ -140,6 +128,43 @@ Doors, named NPCs, dropped items that survive block unload and save/load.
 Requires classifying every world object into Ephemeral / Persistent /
 Simulated / Global. Cost of deferring rises with every object added before
 the registry exists.
+
+### H3 / H4 refinement
+
+Both closed as concepts (see Closed). What was deferred rather than done:
+the SILHOUETTE observation level is unreachable under current tuning
+(`attribution.md` §7), `observation_level` is still written and read by
+nothing, no reaction is differentiated by it, and archetype readability is
+still flat placeholder colour rather than mesh or material variants. None of
+this blocks H6. Revisit after it.
+
+---
+
+## Out of plan
+
+Work that happened but was never on this page. Recorded here rather than
+back-dated into a horizon: this file governs a limited time budget, and a
+budget that only shows planned work is fiction. An entry here is not a
+demotion — it is how unplanned work stops being invisible.
+
+### ISOMETRIC camera feel (Phases 1 → 5B)
+
+Arrived as a separate brief while the island horizon was open, and ran
+alongside it. Eight `CHANGELOG.md` entries, 2026-08-26 onward: directional
+yaw replacing the four-position orbit, octant yaw and cursor bias, head
+turn, critically damped output, wall safety and screen-edge framing,
+look-ahead, adaptive turn character, destination reversal.
+
+**Not finished.** Collision response and a refactoring pass remain
+outstanding. It continues outside the H-series order and is tracked in its
+own working session, not here — this section exists to record that it
+happened and that it is still open, not to schedule it.
+
+Two things it changed that other work must not undo: `IsometricCameraState`
+now owns the ISOMETRIC yaw as well as the follow point, and the four-position
+orbit (`OrbitalPosition`, Q/E stepping) plus `toggle_follow` (`P`) are left
+in `OnFootCameraComponent` unreached, pending removal once the feel is
+settled.
 
 ---
 

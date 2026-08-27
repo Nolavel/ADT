@@ -12,6 +12,66 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Scope review: island and H3/H4 closed, H6 promoted, camera recorded as out of plan
+
+Documents only. No engine code changed.
+
+**The island horizon was done and the page did not know it.** `scope_horizon.md`
+still had step 5 — the building generator — marked "Open. This is what *now*
+means," last reviewed 2026-08-25. It is closed, and by evidence rather than
+assertion: `tools/city_generator/` holds all four files, `map_source.tscn`
+carries 151 `GBX_` markers (exactly the dry-run figure), and
+`data/world_data.tres` holds 152 `BlockData` entries — `landmark`, `tower_001`
+and `cty_001`–`cty_150`. So Export ran and the runtime streams the generated
+city. The 2026-08-25 entry's own caveat, that markers actually appearing in
+`BLOCKS` would be Stan's first run, is discharged.
+
+**H3 and H4 closed as concepts**, by Stan's decision. Closing them means they
+stop gating the next horizon, not that they are finished; refinement is
+deliberately deferred past H6 and is now its own entry under Next.
+
+**The §7 witness slice was measured before being called closed.** A throwaway
+probe scene drove `IdleNPCController._on_incident_reported()` against a Clerk
+and read the same getters the observation panel uses. A, B, D and E pass. C
+does not, and the reason is arithmetic: SILHOUETTE needs distance > 30 m, but
+`earshot_radius` (25 m) and Clerk's `vision_range` (16 m) both close first, so
+the reachable witness envelope is 0–16 m and the top rung of the ceiling
+ladder is unreachable by construction. Recorded in `attribution.md` §7 with the
+boundary probes (12 m → EQUIPMENT, 20 m → no report) rather than fixed — it is
+a tuning decision, not a defect in the chain.
+
+Two smaller notes landed with it: `_cancel_active_witness_report()` nulls the
+report after setting CANCELLED, so the panel reads `n/a` instead of the
+terminal status — behaviour correct, observability thin; and case D's reaction
+varies run to run, which is `flee_probability` working, not flakiness.
+
+**H6 (pistol chain) promoted to Now.** Its only prerequisite, H5, closed
+2026-08-23; the island reason to hold a weapon back is spent; H3/H4 no longer
+gate it. Step 3 (draw/holster) is largely met by H5 S5 already, so the slice
+starts nearer the middle than its own list suggests.
+
+**The ISOMETRIC camera work is recorded under a new "Out of plan" heading.**
+Phases 1 → 5B ran alongside the island horizon without ever appearing on the
+page, and it is **not finished** — collision response and a refactoring pass
+remain. It is tracked in its own session, not in the H-series order; the
+section exists so the time budget this file governs does not look as though it
+went entirely to plan.
+
+Also corrected: `core_loop.md` §8 said "six archetypes" where the design and
+the data have always had five, and its "one blocking gap" now carries a note
+that the blocker is closed while the fidelity is not.
+
+> *Ревизия скоупа, только документы. Островной горизонт был закрыт по факту, но
+> страница об этом не знала — шаг 5 подтверждён данными: 151 маркер в сцене, 152
+> блока в `world_data.tres`. H3 и H4 закрыты как концепты (доработка — сильно
+> позже), но перед закрытием прогнаны тест-кейсы §7: A, B, D, E проходят, C не
+> может пройти в принципе — SILHOUETTE требует >30 м, а слух 25 м и зрение
+> клерка 16 м закрываются раньше. Пистолет поднят в Now. Фазы изо-камеры внесены
+> отдельным разделом «вне плана» с пометкой, что работа не закончена.*
+- `docs/scope_horizon.md`, `docs/attribution.md`, `docs/core_loop.md`
+
+---
+
 ## 2026-08-27 - Front half of the turn circle softened; destination reversal (Phase 5B)
 
 Splits the circle in two and lets each half behave the way it actually
