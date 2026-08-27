@@ -42,7 +42,7 @@ project/assembly_name="ADT"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot_ai/plugin.cfg", "res://addons/item_fitter/plugin.cfg")
 
 [file_customization]
 

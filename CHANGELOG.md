@@ -12,6 +12,50 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - An editor tool for fitting items to hands; tools/ audited
+
+**`addons/item_fitter/`** — an `EditorPlugin` dock. Pick an `ItemResource`,
+pick the hand, pick and scrub one of the character's animation clips, drag the
+mesh with the ordinary 3D gizmo, Save. It writes `HeldFit` back onto the item
+and knows no item by name, so the next weapon or tool works without a line
+changed. The preview is a real node parented to the same `GripPivot` the game
+uses at runtime — the editor's gizmo works on it for free, and the numbers
+under it are metres because the pivot cancels the rig scale. Spawned with
+`owner = null` so it can never be saved into the character scene.
+
+Second addon after `godot_ai`, and the reason it is not in `tools/` is
+recorded in `CLAUDE.md`: `tools/` holds one-shot `EditorScript`s and runtime
+debug panels, and fitting an object to a hand needs a dock, a live gizmo and
+to survive a scene switch — three things only an `EditorPlugin` provides.
+
+**`tools/` audited**, folder by folder, by what actually references each.
+Everything is live except one: `input_debugger`, `stats_display` and
+`scan_folder_files` are instanced in `world.tscn`; `island_generator`,
+`build_aogashima_terrain`, `city_generator` and `block_generator` are each the
+only reproducible path to committed content; `tests/noir_room` is cited by
+`votive_projector.gd`. **`tools/checker_indicators/` is deleted** — two orphan
+scripts with no scene and no instance anywhere, `@onready`-ing children
+(`$IncreaseHP`, `$DecreaseHP`) that exist in no file, and mentioned only by
+two comments that both named the wrong path. Those two comments are fixed.
+
+**`CLAUDE.md` named a file that has never existed.** Both the project header
+and the hard-constraints list said the only C# in the repo was
+`tools/scan_folder_files/project_scanner.cs`; that path holds
+`project_scanner.gd`, and `git log --all --diff-filter=AD -- '*.cs'` finds
+nothing — no C# file has ever been committed here. `project.godot` carries an
+empty `[dotnet] assembly_name="ADT"` from someone opening the project once in
+the .NET editor, with no `.csproj` and no `.sln`. So the "drop C# entirely"
+backlog item was closed by never having started. Fourth recorded drift in
+that file, corrected there the way the previous three are.
+
+*Добавлен плагин редактора `addons/item_fitter/` — выбираешь предмет, руку и
+анимацию, двигаешь меш обычным гизмо и сохраняешь посадку на сам предмет.
+Папка `tools/` разобрана: всё живое, кроме `checker_indicators` — удалено.
+В `CLAUDE.md` исправлено утверждение про единственный C#-файл: C# в этом
+репозитории не было никогда.*
+
+---
+
 ## 2026-08-27 - The carbine sits in the hand, the shot reads, and there is a reserve
 
 Playing the carbine surfaced three complaints, and each had one measurable

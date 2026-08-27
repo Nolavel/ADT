@@ -19,8 +19,10 @@
 # - OnFootCameraComponent
 #
 # Notes
-# A debug tool, not a gameplay prototype — unlike checker_indicators, this
-# may be deleted once the constants are settled.
+# A debug tool, and one that may be deleted once the constants are settled.
+# (This line used to draw the contrast against tools/checker_indicators;
+# those were two orphan scripts with no scene and no instance anywhere, and
+# they were deleted on 2026-08-27.)
 #
 # Add as a child of a CanvasLayer and give it full-rect anchors. Toggle
 # through visible; when hidden it does no work at all.

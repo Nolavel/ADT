@@ -9,7 +9,7 @@ current state by replaying the log.
 
 ## Project
 
-Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"Vertical Trespass"** (`config/name`); public title **"Another Digital Thriller"** — use the public title only in store-facing material, never in code or docs. Almost entirely GDScript — the only C# file is `tools/scan_folder_files/project_scanner.cs` (an editor utility). Do not introduce C# for gameplay code unless asked; the codebase convention is GDScript. Dropping C# entirely is an open backlog item.
+Godot 4.7 (Forward+ renderer) project. Repository `ADT`; internal build name **"Vertical Trespass"** (`config/name`); public title **"Another Digital Thriller"** — use the public title only in store-facing material, never in code or docs. **Entirely GDScript.** Do not introduce C#; the codebase convention is GDScript. This line used to name `tools/scan_folder_files/project_scanner.cs` as "the only C# file" and called dropping C# an open backlog item — that file has never existed (`git log --all --diff-filter=AD -- '*.cs'` finds nothing; the path holds `project_scanner.gd`), so the backlog item was closed by never having started. `project.godot` carries an empty `[dotnet] assembly_name="ADT"` from someone opening the project once in the .NET editor; there is no `.csproj` and no `.sln`. Corrected 2026-08-27 — fourth recorded drift in this file.
 
 ## Working with the running editor
 Startup scene: `res://world/world.tscn`.
@@ -33,6 +33,8 @@ Startup scene: `res://world/world.tscn`.
 | `docs/MORPHS_INTEGRATION.md` | Morph icons — what a `MorphIcon` is, attaching one to a widget in the editor, and writing the next one |
 | `docs/visual_language.md` | **How the game looks and states things** — the comic/noir frame, the onomatopoeia rules, and how the comic layer relates to archetype readability, BlackRock and the Votive. Artist- and animator-facing. |
 | `docs/island_rescope_brief.md` | Island transition (Aogashima) — ordered steps, numbers, hard constraints |
+
+**Two addons, and the split is deliberate.** `addons/godot_ai/` is the MCP server below; `addons/item_fitter/` is an `EditorPlugin` dock for fitting a held item to the hand (see `docs/architecture/items_and_equipment.md`). Everything else that could be called tooling lives in `tools/`, which holds exactly two kinds of thing: one-shot `EditorScript`s run with File → Run (the island heightmap, the terrain build, the city and block generators — each the only reproducible path to committed content) and runtime debug panels instanced into `world.tscn` (`input_debugger`, `stats_display`, `scan_folder_files`). A tool goes in `addons/` only when it needs what an `EditorPlugin` alone provides — a dock, the editor's own 3D gizmo on a live node, and surviving a scene switch. `item_fitter` needs all three; nothing else in the project does.
 
 This repo has the **godot-ai MCP server** wired in (`addons/godot_ai/`, enabled in `project.godot` under `[editor_plugins]`, autoloaded as `_mcp_game_helper`). When the Godot editor is open, prefer the `mcp__godot-ai__*` tools over hand-editing `.tscn`/resource files or shelling out to the Godot CLI:
 - `editor_state` — check what scene is open / whether the editor is ready before issuing other calls.
@@ -137,7 +139,7 @@ this went wrong the first time.
 ## Hard constraints — do not suggest changing these
 - Renderer: **Forward+** — this is what `project.godot` actually runs (no `renderer/rendering_method` override is set, so the Forward+ default applies). Switched from Forward Mobile on 2026-07-21, accepting a ~20–25% FPS cost on the development machine in exchange for access to the full lighting and post stack (volumetric fog, SSIL, SSR, `AreaLight3D`), which the game's noir look depends on. The performance target is low-end integrated graphics at ~55 FPS — the budget is tight and every effect added is a real cost, but Forward+ features are not off-limits. Do not switch back without explicit discussion.
   - This line previously claimed Forward Mobile and forbade Forward+ features outright, contradicting both `project.godot` and the header of this file for roughly three weeks. Third recorded drift of this kind; see the `CLAUDE.md` update rule under Workflow.
-- **GDScript for all gameplay code.** The single existing C# file (`tools/scan_folder_files/project_scanner.cs`) is an editor utility; do not introduce new C#.
+- **GDScript for all gameplay code, and for everything else.** There is no C# in this repository and there never has been — see the correction in the Project section above. Do not introduce any.
 - `lights_and_shadows/directional_shadow/size` is tuned to 1024 for the FPS target — don't raise it. (This is the directional shadow map, not the positional shadow atlas; `shadow_atlas/size` is not overridden and sits at its default.) Both soft-shadow filter qualities are set to 0 for the same reason.
 
 ## Architecture rules
