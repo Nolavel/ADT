@@ -701,23 +701,60 @@ func _on_destination_reached() -> void:
 ## Nothing is destroyed on a refusal. A caller that gets false leaves the
 ## object in the world, which is the honest outcome of "there is nowhere to
 ## put it".
-## The draw key. With something in hand it holsters; otherwise it draws the
-## first drawable thing on the body. "First" is good enough while there is
-## one weapon — a real weapon-selection UI is H6's problem, not this key's.
+## The draw key (Tab). Cycles the drawable things on the body: empty hands
+## draw the first, pressing again holsters that one and draws the next, and
+## the press after the last empties the hands.
+##
+## A cycle rather than "draw the first drawable", which is what this was and
+## what made the pistol unreachable: the starter scrap pipe sat in an
+## earlier pocket, so the key produced the pipe every time and the click
+## fell through to a punch. Picking the first of several is only ever
+## correct when there is one.
+##
+## Deliberately not a ranking — no "prefer a firearm" rule. Which of two
+## things in your pockets you want in your hand is a decision, and a cycle
+## lets the player make it; a hierarchy in code would only have to be
+## renegotiated with every third item. A real selection UI is still H6+'s
+## problem, but this key is no longer lying about being one.
 func _on_draw_holster_pressed() -> void:
 	if _equipment == null or PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
-	if _equipment.get_drawn() != &"":
+
+	## The hands are checked BEFORE the pocket list, not after. A drawn item
+	## is in no pocket — that is the whole point of drawn versus stowed — so
+	## while something is held the list is short by exactly that item, and
+	## for a single weapon it is empty. Testing "is there anything to draw"
+	## first therefore refused to holster, which is what a run caught.
+	var drawn_from := _equipment.get_drawn_from()
+	if drawn_from != &"":
+		## Holster first: draw() refuses on HANDS_FULL by design. This also
+		## puts the item back in the slot it came from, so the list built
+		## immediately after is the full one and the index means something.
 		_equipment.holster()
+		var after := _drawable_slot_paths()
+		var next := after.find(drawn_from) + 1
+		if next > 0 and next < after.size():
+			_equipment.draw(after[next])
 		return
+
+	var slots := _drawable_slot_paths()
+	if not slots.is_empty():
+		_equipment.draw(slots[0])
+
+
+## Slot paths of everything on the body that can be held, in the order
+## EquipmentComponent lists its pockets — the cycle's order, and stable
+## across a holster because an item returns to the slot it left.
+func _drawable_slot_paths() -> Array[StringName]:
+	var slots: Array[StringName] = []
 	for pocket in _equipment.get_available_pockets():
 		var item_id: StringName = pocket["item_id"]
 		if item_id == &"":
 			continue
 		var item := ItemCatalog.get_item(item_id)
 		if item != null and item.can_use_in_hands:
-			_equipment.draw(_equipment.pocket_path(pocket["body_slot"], pocket["pocket"]))
-			return
+			slots.append(_equipment.pocket_path(pocket["body_slot"], pocket["pocket"]))
+	return slots
 
 
 ## Drawing something the world reads as a threat IS the declaration — you

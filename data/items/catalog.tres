@@ -5,9 +5,8 @@
 [ext_resource type="Resource" path="res://data/items/test_can.tres" id="2_test_can"]
 [ext_resource type="Resource" path="res://data/items/starter_jumpsuit.tres" id="3_starter_jumpsuit"]
 [ext_resource type="Resource" path="res://data/items/starter_boots.tres" id="4_starter_boots"]
-[ext_resource type="Resource" path="res://data/items/scrap_pipe.tres" id="5_scrap_pipe"]
 [ext_resource type="Resource" path="res://data/items/pistol.tres" id="6_pistol"]
 
 [resource]
 script = ExtResource("1_catalog")
-items = Array[ExtResource("1_item")]([ExtResource("2_test_can"), ExtResource("3_starter_jumpsuit"), ExtResource("4_starter_boots"), ExtResource("5_scrap_pipe"), ExtResource("6_pistol")])
+items = Array[ExtResource("1_item")]([ExtResource("2_test_can"), ExtResource("3_starter_jumpsuit"), ExtResource("4_starter_boots"), ExtResource("6_pistol")])
