@@ -35,6 +35,21 @@ class_name HeldFit
 ## two-handed weapon is still attached to one, with the other placed by
 ## whatever the animation clips do — there is no second attachment and a
 ## wrong-looking off hand is an animation question, not a fit one.
+##
+## TODO(equipment): a parallel design (`ItemPose`, prototyped in
+## tools/for_claude_addon_item_/ and deleted on 2026-08-27 — see the
+## CHANGELOG for why) went further here and is worth taking if the carbine's
+## off hand reads wrong: a SECOND mesh instance in the other hand with its
+## own independent transform, so a long gun is posed at both grips rather
+## than at one. That is two more Vector3 fields on this resource, a second
+## instance in EquipmentVisualsComponent, and a second preview in the
+## fitter. Not built, because nothing has been judged wrong by eye yet.
+##
+## The same prototype also proposed optional grip MARKERS on the item (a
+## NodePath to a Marker3D, so the transform becomes a fine offset from a
+## named point rather than from the mesh origin). That one is already
+## answered differently: the carbine mesh has its origin AT its grip, which
+## buys the same thing without a node per item.
 enum Hand {
 	RIGHT,
 	LEFT,
