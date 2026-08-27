@@ -205,12 +205,36 @@ func _store_item(object: InteractableObject) -> void:
 		push_warning("[Interact] player has no store_item() — %s left in the world" % object.name)
 		return
 	if player.call(&"store_item", object.item):
+		_play_pickup_gesture(object)
 		object.queue_free()
+
+
+## Asks the player to animate the pickup, passing WHERE the thing was — the
+## player picks the clip from its height (play_pickup_gesture()). This
+## component says what happened, not what it should look like: the same split
+## _store_item() already makes for where the item ends up.
+##
+## Fired on success only, and after the store: a refused pickup must not
+## produce a reach for something that stayed on the ground. Duck-typed
+## through has_method(), the same idiom store_item() above uses — player.gd
+## carries no class_name, so there is no type to hold it by.
+##
+## The object's global_position is read BEFORE queue_free() — a freed node
+## has no transform to ask.
+func _play_pickup_gesture(object: InteractableObject) -> void:
+	if player == null or not player.has_method(&"play_pickup_gesture"):
+		return
+	player.call(&"play_pickup_gesture", object.global_position)
 			
 func _pickup_item(item: InteractableObject) -> void:
 	if carried_item: return
 	
 	carried_item = item
+	
+	## Same gesture as an inventory pickup, and for the same reason: what
+	## the hands do depends on where the thing was, not on which of the two
+	## routes it takes afterwards.
+	_play_pickup_gesture(item)
 	
 	## даем знать item, что он подобран
 	item.on_picked_up()

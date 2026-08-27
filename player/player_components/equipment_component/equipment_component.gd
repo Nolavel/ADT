@@ -50,7 +50,8 @@ enum Refusal {
 	TOO_LARGE,
 	## Reads as a threat, and this slot puts its contents on display.
 	READS_AS_THREAT,
-	## Not a garment, or a garment for a different body slot.
+	## A garment aimed at a body slot that is not its own, or gear aimed at
+	## a body slot that only takes clothing — see can_equip().
 	WRONG_BODY_SLOT,
 	## A garment cannot come off while its own pockets still hold something.
 	POCKETS_NOT_EMPTY,
@@ -166,8 +167,21 @@ func can_equip(slot_id: StringName, item_id: StringName) -> Refusal:
 	var item := ItemCatalog.get_item(item_id)
 	if item == null:
 		return Refusal.UNKNOWN_ITEM
-	if item.garment == null or item.garment.body_slot_id != slot_id:
+
+	## Two different questions, depending on what is being put there. A
+	## GARMENT names the one body slot it belongs in and may go nowhere
+	## else — a jacket is not footwear. Anything else is gear rather than
+	## clothing, and the slot decides whether it takes gear at all
+	## (EquipmentSlotDefinition.accepts_non_garment, true on the two back
+	## slots and nowhere else). Without that second path a carbine has no
+	## legal place on the body: it is CARRIED, so no pocket takes it, and
+	## body slots used to be garments-only.
+	if item.garment != null:
+		if item.garment.body_slot_id != slot_id:
+			return Refusal.WRONG_BODY_SLOT
+	elif not definition.accepts_non_garment:
 		return Refusal.WRONG_BODY_SLOT
+
 	return _check_fit(definition, item)
 
 
@@ -318,7 +332,8 @@ func holster() -> StringName:
 
 
 ## Put an item away wherever it fits on the body: its own body slot if it is
-## a garment, otherwise the first empty pocket that takes it.
+## a garment, otherwise the first empty pocket that takes it — and failing
+## that, the first empty body slot that accepts gear (the back).
 ##
 ## This is equipment deciding where something goes, which is the whole reason
 ## it sits between interaction and inventory. It still knows nothing about
@@ -346,6 +361,23 @@ func stow_anywhere(item_id: StringName) -> Refusal:
 		var refusal: Refusal = can_stow(pocket["body_slot"], pocket["pocket"], item_id)
 		if refusal == Refusal.NONE:
 			return stow(pocket["body_slot"], pocket["pocket"], item_id)
+		reason = refusal
+
+	## Pockets first, the body only after — so a can never ends up strapped
+	## to the back while a pocket is free, and only what no pocket takes
+	## (a carbine) gets there. Layout order decides which back slot wins,
+	## and refuses_threatening is what keeps a weapon off back_unique: that
+	## slot is the one that puts its contents on open display, and slinging
+	## something threatening there is meant to be a deliberate act, not the
+	## side effect of walking over it. Picking a thing up is not that act.
+	for body_slot in layout.body_slots:
+		if body_slot == null or not body_slot.accepts_non_garment:
+			continue
+		if get_equipped(body_slot.id) != &"":
+			continue
+		var refusal: Refusal = can_equip(body_slot.id, item_id)
+		if refusal == Refusal.NONE:
+			return equip(body_slot.id, item_id)
 		reason = refusal
 	return reason
 

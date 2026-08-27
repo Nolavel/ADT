@@ -137,7 +137,6 @@ is the layer that lets **player components** reach a save.
 Present in `project.godot`, read by nothing:
 
 - `crouch` — bound to `C` / `Ctrl`, unread
-- `weapon_reload` — bound to `R`, unread (no weapons)
 - `debug_info` — bound to `Enter`, unread
 - `crafting` — **no binding at all and unread**
 

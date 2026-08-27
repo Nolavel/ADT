@@ -42,7 +42,15 @@ standing down to PEACE holsters (H5, `player.gd`).
 rather than "draw the first drawable". Both changes have the same cause: the
 starter scrap pipe occupied an earlier pocket than the picked-up pistol, so the
 key produced the pipe every time and the pistol was unreachable. The pipe is
-gone and the key now steps through whatever is on the body.
+gone and the key now steps through whatever is on the body. The cycle walks
+pockets **and** the back body slots, since the carbine that replaced the pistol
+is too large to pocket and lives on the back.
+
+`weapon_reload` (`R`) got its first consumer on 2026-08-27, having been bound
+and unread since the map was written: it refills the drawn weapon's magazine
+(`player.gd._on_weapon_reload_pressed()`). Refused, with no gesture, when
+nothing is drawn, when what is drawn does not feed from a magazine, or when
+that magazine is already full.
 
 **`toggle_tabs` was retired to free `Tab`.** It was documented here as "tap —
 notifier; hold — status camera", but nothing in the project ever subscribed to
@@ -73,6 +81,7 @@ view is embedded in the editor.
 | `status` | `X` | Status | Статус |
 | `toggle_stance` | `T` | Toggle `PlayerState.Stance` PEACE ⇄ COMBAT | Смена стойки |
 | `draw_holster` | `Tab` | Draw / holster — **cycles** through the drawable items on the body (`EquipmentComponent`) | Достать / убрать — перебор по предметам |
+| `weapon_reload` | `R` | Refill the drawn weapon's magazine (`WeaponComponent`) | Перезарядка магазина |
 
 ---
 
@@ -212,7 +221,6 @@ the input map; removed at the next review if still unread.
 | Action | Key | Note |
 |---|---|---|
 | `crouch` | `C`, `Ctrl` | No crouch state on the player |
-| `weapon_reload` | `R` | No weapons |
 | `debug_info` | `Enter` | Superseded by `toggle_stream_debug` |
 | `crafting` | *(unbound)* | No binding and no reader |
 

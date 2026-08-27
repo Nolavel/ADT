@@ -69,29 +69,67 @@ const ANIM_COMBAT_PUNCH: StringName = &"new4/punch1"
 ## play_weapon_gesture() and _setup_animation_tree()'s own comment on why
 ## draw, holster and fire share a single node rather than getting one each.
 ##
-## Two draw clips, not one: the gesture has to start where the item actually
-## was, and EquipmentComponent decides that, not this file. A chest pocket
-## reads as a hip-level grab, a thigh pocket as a reach down the leg. The
-## caller passes the clip; this file only names them.
+## Three draw clips, not one: the gesture has to start where the item
+## actually was, and EquipmentComponent decides that, not this file. A chest
+## pocket reads as a hip-level grab, a thigh pocket as a reach down the leg,
+## a back slot as a long gun coming off the shoulder. The caller passes the
+## clip; this file only names them.
 const ANIM_DRAW_CHEST: StringName = &"new4/equip-hip-fast"
 const ANIM_DRAW_THIGH: StringName = &"new4/equip-thigh"
+const ANIM_DRAW_SHOULDER: StringName = &"new4/equip-shoulder-r"
 
 ## Holster, bare MeleeLib (empty prefix). ShooterLib has six equip-* clips
-## and nothing that puts a weapon away, so the choice is between this and
-## playing a draw backwards; a reversed clip usually reads wrong at the
-## wrists. Confirm by eye — if it reads as a draw rather than a stow, the
-## fallback is one constant.
+## and nothing that puts a weapon away, so the choice is between these two
+## and playing a draw backwards; a reversed clip usually reads wrong at the
+## wrists. _back is the long-gun stow (the carbine lives on the back, see
+## player.gd._holster_clip_for_slot()), _hip the pocket one. Confirm by eye
+## — if either reads as a draw rather than a stow, the fallback is one
+## constant.
 const ANIM_HOLSTER: StringName = &"WeaponChange_hip"
+const ANIM_HOLSTER_BACK: StringName = &"WeaponChange_back"
 
-## Firing, ShooterLib (new4/). The pistol-specific clip, not shoot-hip.
-const ANIM_SHOOT_PISTOL: StringName = &"new4/shoot-pistol"
+## Firing, ShooterLib (new4/). The light rifle clip (0.25s), not
+## shoot-rifle-heavy (0.42s, and imported as LOOPING, which a one-shot
+## gesture must never be) and not shoot-hip, which is fired from the waist.
+const ANIM_SHOOT_RIFLE: StringName = &"new4/shoot-rifle-light"
 
-## COMBAT idle while something is drawn, substituted into the combat blend
-## space's centre point (see set_drawn_idle()). The eight directional points
-## are deliberately NOT swapped — a full pistol locomotion set exists in the
-## project if the walk reads wrong with a weapon in hand, but that is a
-## larger change and this one reverts in a line.
-const ANIM_COMBAT_IDLE_PISTOL: StringName = &"new4/idle-pistol"
+## Magazine reload, ShooterLib (new4/). 1.62s, non-looping. ShooterLib also
+## carries reload-barrelfed and reload-revolver — a different feed each,
+## neither of them this weapon — and a -fps variant of every one, which is
+## a first-person arms-only clip and wrong for a third-person body.
+const ANIM_RELOAD_RIFLE: StringName = &"new4/reload-rifle"
+
+## Picking something up, ShooterLib (new4/). Two clips, chosen by how high
+## off the ground the thing is — see InteractComponent's own comment. A
+## crouch-and-take for something lying in the dirt, a reach-out-and-press
+## for something at body height.
+const ANIM_PICKUP_GROUND: StringName = &"new4/pickup_item"
+const ANIM_PICKUP_BODY: StringName = &"new4/interact-button"
+
+## Locomotion while a long gun is in the hands — the rifle pack (new3/),
+## used whole rather than sampled. Carrying a weapon changes how a body
+## moves, and this is the only clip set in the project that can actually
+## show it: eight directions, all looping, all 0.50s, which is exactly the
+## geometry the peace/combat blend spaces already use.
+##
+## The same eight clips also exist under new2/ with identical names and
+## lengths — one pack mounted twice. new3/ is the one named for it
+## (rifle_locomotion_pack.res), so that is the one addressed.
+##
+## Two honest gaps:
+##   * The pack has ONE forward clip, while the geometry splits forward into
+##     a walk point (walk_blend_radius) and a run point. Both get it, so a
+##     walk reads as a run with a weapon out. A playback-speed scale would
+##     fix it; whether it is worth one is a judgement to make by eye.
+##   * backward_left/backward_right exist in the pack and have no point to
+##     go to — the existing geometry has no rear diagonals in any stance.
+const ANIM_WEAPON_IDLE: StringName = &"new3/rifle_new_idle"
+const ANIM_WEAPON_FORWARD: StringName = &"new3/rifle_locomotion_run_forward"
+const ANIM_WEAPON_RETREAT: StringName = &"new3/rifle_locomotion_run_backward"
+const ANIM_WEAPON_STRAFE_LEFT: StringName = &"new3/rifle_locomotion_run_left"
+const ANIM_WEAPON_STRAFE_RIGHT: StringName = &"new3/rifle_locomotion_run_right"
+const ANIM_WEAPON_STRAFE_45L: StringName = &"new3/rifle_locomotion_run_forward_left"
+const ANIM_WEAPON_STRAFE_45R: StringName = &"new3/rifle_locomotion_run_forward_right"
 
 ## Death clip, ShooterLib (new4/). Non-looping — an AnimationNodeAnimation
 ## holds the last frame once a non-looping clip finishes, which is exactly
@@ -127,6 +165,13 @@ const HEAD_LOOK_FADE_SPEED: float = 4.0
 ## walk_speed/run_speed — tuned by eye, only needs to sit noticeably
 ## closer to the centre than run (radius 1.0).
 @export var walk_blend_radius: float = 0.45
+
+@export_group("Weapon")
+## How long the crossfade into and out of the weapon locomotion blend space
+## takes. Longer than stance_transition_time on purpose: the stance switch
+## is a posture change, this one is a whole gait changing, and snapping
+## between two full locomotion sets reads as a glitch. A feel value.
+@export var weapon_transition_time: float = 0.3
 
 @export_group("Head Look Limits")
 ## LookAtModifier3D's clamp angles and the smoothing time when the target
@@ -164,9 +209,11 @@ var _anim_tree: AnimationTree
 ## gesture at a time, see play_weapon_gesture().
 var _weapon_clip: AnimationNodeAnimation = null
 
-## The COMBAT blend space's centre point, held so set_drawn_idle() can swap
-## which idle plays without rebuilding the tree.
-var _combat_idle: AnimationNodeAnimation = null
+## 0 = whatever the stance blend produced, 1 = the weapon locomotion blend
+## space. Target is set only by set_weapon_locomotion(); eased toward every
+## frame in update_animation_blend(), the same way _stance_blend_amount is.
+var _weapon_blend_amount: float = 0.0
+var _weapon_blend_target: float = 0.0
 
 var _skeleton: Skeleton3D
 var _head_lookat: LookAtModifier3D
@@ -209,11 +256,17 @@ func update_animation_blend(delta: float) -> void:
 	var movement_blend_position: Vector2 = _player.get_movement_vector_relative_to_facing()
 	_anim_tree.set("parameters/peace/blend_position", movement_blend_position)
 	_anim_tree.set("parameters/combat/blend_position", movement_blend_position)
+	_anim_tree.set("parameters/weapon/blend_position", movement_blend_position)
 
 	_stance_blend_amount = move_toward(
 		_stance_blend_amount, _stance_blend_target, delta / maxf(stance_transition_time, 0.001)
 	)
 	_anim_tree.set("parameters/stance_blend/blend_amount", _stance_blend_amount)
+
+	_weapon_blend_amount = move_toward(
+		_weapon_blend_amount, _weapon_blend_target, delta / maxf(weapon_transition_time, 0.001)
+	)
+	_anim_tree.set("parameters/weapon_blend/blend_amount", _weapon_blend_amount)
 
 
 func update_sprint_blend(delta: float) -> void:
@@ -318,13 +371,15 @@ func is_weapon_gesture_active() -> bool:
 	return bool(_anim_tree.get("parameters/weapon_oneshot/active"))
 
 
-## Substitutes the COMBAT idle for the drawn-weapon one, or puts it back.
-## Called from player.gd on the equipment's own drawn_changed, so the idle
+## Crossfades the whole locomotion into or out of the weapon blend space.
+## Called from player.gd on the equipment's own drawn_changed, so the gait
 ## reflects what is in the hands rather than this file tracking it.
-func set_drawn_idle(drawn: bool) -> void:
-	if _combat_idle == null:
-		return
-	_combat_idle.animation = ANIM_COMBAT_IDLE_PISTOL if drawn else ANIM_COMBAT_IDLE
+##
+## Was set_drawn_idle(), which swapped one clip at the centre point and left
+## the eight directional points empty-handed. The name changed with the
+## behaviour on purpose: it is no longer the idle that differs.
+func set_weapon_locomotion(carrying: bool) -> void:
+	_weapon_blend_target = 1.0 if carrying else 0.0
 
 
 ## Fires the one-way, irreversible switch to the death pose. Deliberately
@@ -472,7 +527,6 @@ func _setup_animation_tree() -> void:
 
 	var combat_idle := AnimationNodeAnimation.new()
 	combat_idle.animation = ANIM_COMBAT_IDLE
-	_combat_idle = combat_idle
 	var combat_forward := AnimationNodeAnimation.new()
 	combat_forward.animation = ANIM_COMBAT_FORWARD
 	var combat_run := AnimationNodeAnimation.new()
@@ -508,6 +562,56 @@ func _setup_animation_tree() -> void:
 	tree_root.connect_node("stance_blend", 0, "peace")
 	tree_root.connect_node("stance_blend", 1, "combat")
 
+	## A THIRD blend space, same geometry as the other two, holding the
+	## rifle pack — carrying a long gun changes the whole gait, not just
+	## what the character does while standing still. It used to be the
+	## standing-still half only: set_drawn_idle() substituted one clip into
+	## the combat centre point and the eight directional points kept
+	## playing empty-handed, so the character sprinted with a carbine as if
+	## nothing were in its hands.
+	##
+	## Chained after stance_blend on a second Blend2 rather than replacing
+	## the combat branch: what is in the hands and what stance the character
+	## is in are two independent questions (a drawn torch is not COMBAT),
+	## and this way the weapon layer sits on top of whichever the stance
+	## crossfade produced instead of having to be folded into both.
+	var weapon_idle := AnimationNodeAnimation.new()
+	weapon_idle.animation = ANIM_WEAPON_IDLE
+	var weapon_forward := AnimationNodeAnimation.new()
+	weapon_forward.animation = ANIM_WEAPON_FORWARD
+	## Deliberately the same clip as the walk point — the pack has one
+	## forward clip, see ANIM_WEAPON_FORWARD's own comment.
+	var weapon_run := AnimationNodeAnimation.new()
+	weapon_run.animation = ANIM_WEAPON_FORWARD
+	var weapon_retreat := AnimationNodeAnimation.new()
+	weapon_retreat.animation = ANIM_WEAPON_RETREAT
+	var weapon_strafe_left := AnimationNodeAnimation.new()
+	weapon_strafe_left.animation = ANIM_WEAPON_STRAFE_LEFT
+	var weapon_strafe_right := AnimationNodeAnimation.new()
+	weapon_strafe_right.animation = ANIM_WEAPON_STRAFE_RIGHT
+	var weapon_strafe_45l := AnimationNodeAnimation.new()
+	weapon_strafe_45l.animation = ANIM_WEAPON_STRAFE_45L
+	var weapon_strafe_45r := AnimationNodeAnimation.new()
+	weapon_strafe_45r.animation = ANIM_WEAPON_STRAFE_45R
+
+	var weapon := AnimationNodeBlendSpace2D.new()
+	weapon.min_space = Vector2(-1.0, -1.0)
+	weapon.max_space = Vector2(1.0, 1.0)
+	weapon.add_blend_point(weapon_idle, Vector2(0.0, 0.0), -1, &"idle")
+	weapon.add_blend_point(weapon_forward, Vector2(0.0, walk_blend_radius), -1, &"forward")
+	weapon.add_blend_point(weapon_run, Vector2(0.0, 1.0), -1, &"run")
+	weapon.add_blend_point(weapon_retreat, Vector2(0.0, -1.0), -1, &"retreat")
+	weapon.add_blend_point(weapon_strafe_left, Vector2(-1.0, 0.0), -1, &"strafe_left")
+	weapon.add_blend_point(weapon_strafe_right, Vector2(1.0, 0.0), -1, &"strafe_right")
+	weapon.add_blend_point(weapon_strafe_45l, Vector2(-0.7071, 0.7071), -1, &"strafe_45l")
+	weapon.add_blend_point(weapon_strafe_45r, Vector2(0.7071, 0.7071), -1, &"strafe_45r")
+	tree_root.add_node("weapon", weapon)
+
+	var weapon_blend := AnimationNodeBlend2.new()
+	tree_root.add_node("weapon_blend", weapon_blend)
+	tree_root.connect_node("weapon_blend", 0, "stance_blend")
+	tree_root.connect_node("weapon_blend", 1, "weapon")
+
 	## Punch layered on top of the stance crossfade via AnimationNodeOneShot,
 	## not a second Blend2 or a state machine: layered blending (upper body
 	## only) isn't built in this project yet (see the ADS report), so a punch
@@ -520,7 +624,7 @@ func _setup_animation_tree() -> void:
 	var punch_oneshot := AnimationNodeOneShot.new()
 	tree_root.add_node("punch_clip", punch_clip)
 	tree_root.add_node("punch_oneshot", punch_oneshot)
-	tree_root.connect_node("punch_oneshot", 0, "stance_blend")
+	tree_root.connect_node("punch_oneshot", 0, "weapon_blend")
 	tree_root.connect_node("punch_oneshot", 1, "punch_clip")
 
 	## Weapon gestures — draw, holster, shot — on a SECOND OneShot chained
@@ -581,6 +685,14 @@ func _setup_animation_tree() -> void:
 	_stance_blend_amount = 1.0 if PlayerState.stance == PlayerState.Stance.COMBAT else 0.0
 	_stance_blend_target = _stance_blend_amount
 	_anim_tree.set("parameters/stance_blend/blend_amount", _stance_blend_amount)
+
+	## The weapon layer needs no equivalent read of live state: nothing can
+	## be in the hands before EquipmentComponent has run, and when a save
+	## restores a drawn item it re-emits drawn_changed, which reaches
+	## set_weapon_locomotion() through player.gd like any other draw. Set
+	## explicitly all the same, so a Blend2 built by hand is never left
+	## relying on its own default.
+	_anim_tree.set("parameters/weapon_blend/blend_amount", _weapon_blend_amount)
 
 	## AnimationNodeTransition has no meaningful default state — without an
 	## explicit request the node holds no input at all and the skeleton falls

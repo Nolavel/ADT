@@ -1,7 +1,8 @@
 # =============================================================================
 # player_hud.gd — PlayerHUD.
 #
-# Top-left status stack: health now, hunger and rest later. Instantiated from
+# Top-left status stack: health and the magazine now, hunger and rest later.
+# Instantiated from
 # world.gd's WORLD_UI_SCENES list and handed the world context, same as
 # aim_reticle — see world.gd's own comment on the three categories.
 #
@@ -25,8 +26,11 @@ extends Control
 @export var gauge_spacing: float = 6.0
 
 @onready var _health_bar: StatusBarWidget = $StatusStack/HealthRow/HealthBar
+@onready var _ammo: AmmoIndicator = $StatusStack/AmmoIndicator
 
 var _health: HealthComponent = null
+var _weapon: WeaponComponent = null
+var _equipment: EquipmentComponent = null
 
 
 func _ready() -> void:
@@ -68,6 +72,32 @@ func on_world_ready(context: WorldContext) -> void:
 	_on_health_changed(_health.current_health, _health.max_health)
 	_on_condition_changed(_health.conditions)
 
+	_bind_ammo(context)
+
+
+## The ammo row needs BOTH components, and they answer different halves of
+## the question: EquipmentComponent says which weapon is in the hands (and so
+## whether to show the row at all), WeaponComponent says how many rounds are
+## in it. Neither is an autoload, which is why this is wired here rather than
+## read directly the way StanceIndicator reads PlayerState.
+##
+## Missing either one is not an error worth a warning on every start: a
+## character without a weapon component simply never shows an ammo row, the
+## same way NPCs carry a HealthComponent with nothing subscribed to it.
+func _bind_ammo(context: WorldContext) -> void:
+	_weapon = context.player.get_node_or_null("WeaponComponent") as WeaponComponent
+	_equipment = context.player.get_node_or_null("EquipmentComponent") as EquipmentComponent
+	if _weapon == null or _equipment == null:
+		return
+
+	_weapon.ammo_changed.connect(_on_ammo_changed)
+	_equipment.drawn_changed.connect(_on_drawn_changed)
+
+	# Same initial-paint reasoning as health above — and it is not always a
+	# no-op: a loaded save restores the drawn item before this subscription
+	# exists.
+	_on_drawn_changed(_equipment.get_drawn())
+
 
 func _on_health_changed(current: float, maximum: float) -> void:
 	_health_bar.set_ratio(current / maximum)
@@ -75,3 +105,23 @@ func _on_health_changed(current: float, maximum: float) -> void:
 
 func _on_condition_changed(_conditions: int) -> void:
 	_health_bar.set_labels(_health.get_condition_names())
+
+
+## What is in the hands decides whether the row is on screen at all. Empty
+## hands, a torch, or anything that does not feed from a magazine clears it
+## rather than leaving the last weapon's count sitting there.
+func _on_drawn_changed(item_id: StringName) -> void:
+	var capacity := _weapon.get_capacity(item_id)
+	if capacity <= 0:
+		_ammo.clear()
+		return
+	_ammo.set_ammo(_weapon.get_rounds(item_id), capacity)
+
+
+## Only the weapon actually in the hands is drawn. WeaponComponent tracks a
+## magazine per weapon id and will happily report on one that is stowed —
+## which is the right thing for it to do and the wrong thing to show.
+func _on_ammo_changed(item_id: StringName, rounds: int, capacity: int) -> void:
+	if _equipment.get_drawn() != item_id:
+		return
+	_ammo.set_ammo(rounds, capacity)

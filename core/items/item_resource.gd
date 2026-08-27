@@ -68,3 +68,19 @@ class_name ItemResource
 ## the character (player.gd's shot_range, next to punch_reach), the same way
 ## the punch's reach already is.
 @export var ranged_damage: float = 0.0
+
+## Rounds one full magazine holds, and by being non-zero, the fact that this
+## weapon feeds from one at all. Zero is "not a magazine weapon" — the same
+## shape ranged_damage above already uses for "not a firearm", and for the
+## same reason: a count and a flag beside it could disagree.
+##
+## The COUNT is not here. This is the item, and an ItemResource is shared —
+## every carbine in the game is this one .tres, so a live round count on it
+## would be a round count for all of them. WeaponComponent holds the running
+## number, per weapon id, on the character carrying it.
+##
+## Reserve ammunition is deliberately absent: today the magazine is the only
+## number the player manages and a reload always refills it (see
+## WeaponComponent.reload()). A reserve pool is a second number and a second
+## place to run out, and it is not wanted yet.
+@export var magazine_size: int = 0

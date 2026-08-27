@@ -33,3 +33,18 @@ class_name EquipmentSlotDefinition
 ## a statement the player should have to make deliberately, not a storage
 ## decision. A pocket does not need this — its contents are not on display.
 @export var refuses_threatening: bool = false
+
+## May something that is NOT a garment go here. False everywhere clothing is
+## worn (legs/torso/feet) and on every pocket — a pocket already holds loose
+## items, and this question is only about BODY slots.
+##
+## True on the two back slots, because a long gun has nowhere else to be:
+## it is CARRIED, so no jacket pocket takes it, and refusing it on the body
+## too would mean a rifle could be picked up and then instantly dropped for
+## want of anywhere to put it. max_size cannot answer this on its own —
+## legs/torso/feet are CARRIED-sized as well, and a carbine strapped to a
+## leg is not what that slot means.
+##
+## refuses_threatening still applies on top, and still decides which of the
+## two back slots an automatic stow may use.
+@export var accepts_non_garment: bool = false

@@ -41,6 +41,7 @@
 [ext_resource type="Script" uid="uid://jr1uohu8mjbp" path="res://player/player_components/equipment_component/equipment_component.gd" id="39_equipment"]
 [ext_resource type="Resource" uid="uid://b7wuq4aqbuymd" path="res://data/equipment/player_layout.tres" id="39_layout"]
 [ext_resource type="Script" uid="uid://cmvotwt0ok5dp" path="res://player/player_components/equipment_visuals_component/equipment_visuals_component.gd" id="40_eqvisuals"]
+[ext_resource type="Script" path="res://player/player_components/weapon_component/weapon_component.gd" id="41_weapon"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_sneet"]
 radius = 0.38763407
@@ -1509,3 +1510,6 @@ script = ExtResource("40_eqvisuals")
 held_offset = Vector3(0.33, 0.15, 0.05)
 held_rotation_deg = Vector3(0, 0, 90)
 debug_log = true
+
+[node name="WeaponComponent" type="Node" parent="." unique_id=1587176807]
+script = ExtResource("41_weapon")
