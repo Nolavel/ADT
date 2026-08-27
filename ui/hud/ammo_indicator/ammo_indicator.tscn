@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/hud/ammo_indicator/ammo_indicator.gd" id="1_ammo"]
+
+[node name="AmmoIndicator" type="Control"]
+script = ExtResource("1_ammo")

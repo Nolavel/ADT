@@ -14,7 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://dfgnksifqyewk" path="res://world/aogashima/aogashima_island.tscn" id="9_dqqhb"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/clerk.tres" id="10_clerk"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/patrolman.tres" id="11_patrolman"]
-[ext_resource type="PackedScene" path="res://world/interactables/pistol/pistol.tscn" id="12_pistol"]
+[ext_resource type="PackedScene" path="res://world/interactables/carbine/carbine.tscn" id="12_carbine"]
 
 [node name="World" type="Node3D" unique_id=2119433318 groups=["world_root"]]
 script = ExtResource("1_tcf2h")
@@ -182,8 +182,8 @@ actor_id = &"police_drone_4"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 220, 130.062, -120)
 room_id = &"1"
 
-[node name="Pistol" parent="StreamContainer" unique_id=1572542073 instance=ExtResource("12_pistol")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 223, 128.89, -137)
+[node name="Carbine" parent="StreamContainer" unique_id=1572542073 instance=ExtResource("12_carbine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 223, 128.917, -137)
 freeze = true
 
 [node name="AogashimaIsland" parent="." unique_id=1854643265 instance=ExtResource("9_dqqhb")]

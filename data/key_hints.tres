@@ -45,6 +45,13 @@ description = "Draw / holster — cycles what is on you"
 modes = Array[int]([0])
 sort_order = 25
 
+[sub_resource type="Resource" id="Resource_kh24"]
+script = ExtResource("1_entry")
+action_name = &"weapon_reload"
+description = "Reload the magazine"
+modes = Array[int]([0])
+sort_order = 26
+
 [sub_resource type="Resource" id="Resource_kh06"]
 script = ExtResource("1_entry")
 action_name = &"toggle_stance"
@@ -190,4 +197,4 @@ sort_order = 10
 
 [resource]
 script = ExtResource("2_catalog")
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh01"), SubResource("Resource_kh02"), SubResource("Resource_kh03"), SubResource("Resource_kh04"), SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh08"), SubResource("Resource_kh09"), SubResource("Resource_kh10"), SubResource("Resource_kh11"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21"), SubResource("Resource_kh22"), SubResource("Resource_kh23")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh01"), SubResource("Resource_kh02"), SubResource("Resource_kh03"), SubResource("Resource_kh04"), SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh08"), SubResource("Resource_kh09"), SubResource("Resource_kh10"), SubResource("Resource_kh11"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21"), SubResource("Resource_kh22"), SubResource("Resource_kh23"), SubResource("Resource_kh24")])

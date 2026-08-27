@@ -114,6 +114,21 @@ const ACTOR_ID: StringName = &"player"
 ## than punch_hit_delay: a trigger pull has no wind-up to buffer, and the
 ## same "no animation event system in this project" caveat applies.
 @export var shot_hit_delay: float = 0.06
+## Delay from starting the reload gesture to the magazine actually being
+## full, seconds. Sits inside the clip (new4/reload-rifle is 1.62s) rather
+## than at either end of it, so the number on the HUD moves at roughly the
+## moment the hands do — the same stand-in-for-an-animation-event approach
+## punch_hit_delay and shot_hit_delay already use, and for the same reason:
+## there is no animation event system in this project.
+@export var reload_time: float = 1.0
+
+@export_subgroup("Interaction")
+## Height above the player's own origin (its feet) at which a pickup stops
+## being "off the ground" and becomes "at body height", metres. Below it the
+## crouch-and-take clip plays, at or above it the reach-out one — see
+## play_pickup_gesture(). A feel value: roughly knee height, which is where
+## a reach stops needing a crouch.
+@export var pickup_ground_height: float = 0.6
 ## Reach of the wind-up's INTENT search, as a multiple of punch_reach. The
 ## intent target is who this punch was thrown at — resolved once, at the
 ## moment the button is accepted — and the body turns toward them while the
@@ -191,6 +206,14 @@ var _punch_intent_id: int = 0
 ## (a cone at arm's length versus a line with line-of-sight) and merging
 ## them would need a branch in every one of them anyway.
 var _is_shooting: bool = false
+## The slot the currently drawn item came out of, kept because
+## EquipmentComponent has already cleared its own copy by the time
+## drawn_changed(&"") arrives — and the holster gesture has to know where
+## the thing is going back to. See _on_drawn_changed().
+var _last_drawn_from: StringName = &""
+var _is_reloading: bool = false
+var _reload_timer: float = 0.0
+var _reload_applied: bool = false
 var _shot_timer: float = 0.0
 var _shot_resolved: bool = false
 
@@ -255,6 +278,10 @@ var _last_health_seen: float = -1.0
 ## other exists. See store_item().
 @onready var _equipment: EquipmentComponent = $EquipmentComponent
 @onready var _inventory: InventoryComponent = $InventoryComponent
+## How many rounds are in the magazine. Separate from equipment on purpose —
+## see weapon_component.gd's own header on why a count cannot live on the
+## item or in the slot.
+@onready var _weapon: WeaponComponent = $WeaponComponent
 ## Same node type npc_base.gd carries (core/components/votive_projector/) —
 ## driven every physics frame below, same "dumb component" pattern
 ## _animation_component already follows. Nothing drives its state past IDLE
@@ -300,6 +327,7 @@ func _ready() -> void:
 	## value and holster() returns early with empty hands, so
 	## PEACE -> holster -> set_stance(PEACE) dies on the second hop.
 	InputSystems.draw_holster_pressed.connect(_on_draw_holster_pressed)
+	InputSystems.weapon_reload_pressed.connect(_on_weapon_reload_pressed)
 	PlayerState.stance_changed.connect(_on_stance_changed_for_equipment)
 	if _equipment:
 		_equipment.drawn_changed.connect(_on_drawn_changed)
@@ -338,6 +366,8 @@ func _physics_process(delta: float) -> void:
 		_update_punch(delta)
 	if _is_shooting:
 		_update_shot(delta)
+	if _is_reloading:
+		_update_reload(delta)
 
 	if not movement_enabled:
 		return
@@ -745,6 +775,13 @@ func _on_draw_holster_pressed() -> void:
 ## Slot paths of everything on the body that can be held, in the order
 ## EquipmentComponent lists its pockets — the cycle's order, and stable
 ## across a holster because an item returns to the slot it left.
+##
+## Body slots are walked too, not only pockets: a carbine is CARRIED, so no
+## pocket takes it and it lives on the back (see EquipmentComponent's
+## stow_anywhere()). Walking pockets alone made the one weapon in the game
+## unreachable by the key that exists to reach it — the same failure the
+## starter scrap pipe caused from the other direction. Pockets first so the
+## cycle's order does not change for items that were already in one.
 func _drawable_slot_paths() -> Array[StringName]:
 	var slots: Array[StringName] = []
 	for pocket in _equipment.get_available_pockets():
@@ -754,6 +791,17 @@ func _drawable_slot_paths() -> Array[StringName]:
 		var item := ItemCatalog.get_item(item_id)
 		if item != null and item.can_use_in_hands:
 			slots.append(_equipment.pocket_path(pocket["body_slot"], pocket["pocket"]))
+
+	if _equipment.layout != null:
+		for body_slot in _equipment.layout.body_slots:
+			if body_slot == null or not body_slot.accepts_non_garment:
+				continue
+			var item_id := _equipment.get_equipped(body_slot.id)
+			if item_id == &"":
+				continue
+			var item := ItemCatalog.get_item(item_id)
+			if item != null and item.can_use_in_hands:
+				slots.append(body_slot.id)
 	return slots
 
 
@@ -766,12 +814,19 @@ func _on_drawn_changed(item_id: StringName) -> void:
 	## equipment itself: player.gd owns both components, so the tie between
 	## them is its business — the same reasoning store_item() already
 	## carries for equipment-versus-inventory.
-	_animation_component.set_drawn_idle(item_id != &"")
+	_animation_component.set_weapon_locomotion(item_id != &"")
 
 	if item_id == &"":
-		_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_HOLSTER)
+		## get_drawn_from() is already cleared by the time this fires, so the
+		## slot the item went back to is gone — _last_drawn_from is kept for
+		## exactly this, so a long gun stows over the shoulder rather than at
+		## the hip.
+		_animation_component.play_weapon_gesture(_holster_clip_for_slot(_last_drawn_from))
+		_last_drawn_from = &""
 		PlayerState.set_stance(PlayerState.Stance.PEACE)
 		return
+
+	_last_drawn_from = _equipment.get_drawn_from()
 
 	_animation_component.play_weapon_gesture(_draw_clip_for_slot(_equipment.get_drawn_from()))
 	var item := ItemCatalog.get_item(item_id)
@@ -788,9 +843,31 @@ func _on_drawn_changed(item_id: StringName) -> void:
 ## jacket's chest pocket once jackets exist. So the animation follows the
 ## data, not the other way round.
 func _draw_clip_for_slot(slot_path: StringName) -> StringName:
+	if _is_back_slot(slot_path):
+		return PlayerAnimationComponent.ANIM_DRAW_SHOULDER
 	if String(slot_path).contains("thigh"):
 		return PlayerAnimationComponent.ANIM_DRAW_THIGH
 	return PlayerAnimationComponent.ANIM_DRAW_CHEST
+
+
+## The same question on the way back — a long gun goes over the shoulder,
+## a pocket item to the hip.
+func _holster_clip_for_slot(slot_path: StringName) -> StringName:
+	if _is_back_slot(slot_path):
+		return PlayerAnimationComponent.ANIM_HOLSTER_BACK
+	return PlayerAnimationComponent.ANIM_HOLSTER
+
+
+## Is this path one of the back BODY slots, rather than a pocket. The
+## separator test is what makes it the body slot itself: a pocket path is
+## "<body_slot>/<pocket>", so a future garment worn on the back would give
+## "back_pack/<something>" — a pocket that happens to be on the back, which
+## is not where a shoulder stow reaches.
+func _is_back_slot(slot_path: StringName) -> bool:
+	var path := String(slot_path)
+	if path.contains(EquipmentComponent.POCKET_SEPARATOR):
+		return false
+	return path.begins_with("back")
 
 
 ## The other half. Standing down puts the weapon away, whatever route the
@@ -802,6 +879,29 @@ func _on_stance_changed_for_equipment(
 	) -> void:
 	if new_stance == PlayerState.Stance.PEACE and _equipment:
 		_equipment.holster()
+
+
+## Plays the gesture for picking something up, chosen by how high off the
+## ground the thing was: a crouch-and-take for something in the dirt, a
+## reach-out for something at body height.
+##
+## HEIGHT, not interaction_type: the question is literally where the hands
+## have to go, and a can on a table is not a button. Called by
+## InteractComponent through has_method() — this file carries no class_name,
+## the same reason store_item() is reached that way.
+##
+## The gesture shares weapon_oneshot with draw/holster/fire/reload, so a
+## pickup during a draw cuts the draw short; they are the same hands and
+## cannot both be doing something. Movement is deliberately NOT locked, unlike
+## a punch or a shot: reaching for a thing is not a commitment, and taking
+## control away from someone walking past a pickup would feel like a stumble.
+func play_pickup_gesture(object_position: Vector3) -> void:
+	if _animation_component == null:
+		return
+	var height := object_position.y - global_position.y
+	var clip := PlayerAnimationComponent.ANIM_PICKUP_BODY if height >= pickup_ground_height \
+			else PlayerAnimationComponent.ANIM_PICKUP_GROUND
+	_animation_component.play_weapon_gesture(clip)
 
 
 func store_item(item: ItemResource) -> bool:
@@ -912,7 +1012,7 @@ func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 		return
 	if PlayerState.stance != PlayerState.Stance.COMBAT:
 		return
-	if _is_punching or _is_shooting or not movement_enabled:
+	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
 		return
 	if speed > punch_max_speed:
 		return
@@ -927,6 +1027,24 @@ func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 		_start_shot()
 		return
 	_start_punch()
+
+
+## Whether the drawn firearm has a round to spend. An empty magazine refuses
+## the whole shot — no gesture, no damage, no incident — rather than playing
+## a click: there is no dry-fire clip in the libraries, and a gesture that
+## does nothing reads as the shot having missed. The count is spent HERE, at
+## the trigger, not at _resolve_shot(): a shot that is fired is a round gone
+## whether or not it finds anyone.
+func _try_spend_round() -> bool:
+	var item := _drawn_firearm()
+	if item == null or _weapon == null:
+		return false
+	if item.magazine_size <= 0:
+		## Not a magazine weapon at all. Nothing to spend, nothing to
+		## refuse — the same "zero means it does not apply" contract
+		## ranged_damage uses.
+		return true
+	return _weapon.consume_round(item.id)
 
 
 ## The firearm currently in hand, or null — for anything that is not a
@@ -1111,11 +1229,68 @@ func _find_punch_target(reach: float, angle_deg: float) -> NPCBase:
 ## only the resolution — a line instead of a cone, plus a line-of-sight
 ## check the punch has no need for at arm's length.
 func _start_shot() -> void:
+	if not _try_spend_round():
+		return
 	_is_shooting = true
 	_shot_timer = 0.0
 	_shot_resolved = false
 	set_movement_enabled(false)
-	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_SHOOT_PISTOL)
+	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_SHOOT_RIFLE)
+
+
+## --- Reload (R) ---
+## Refused unless a magazine weapon is in the hands and its magazine has
+## room. Every one of those is a reason not to play the gesture: a reload
+## animation with nothing to reload is a lie about what the character did.
+##
+## The refill lands with the gesture rather than on the key press, so the
+## count on the HUD moves when the hands do. Movement is locked for the
+## duration, same as a shot — this is a commitment, and the clip has nothing
+## to blend with over locomotion (no layered upper-body mixing in this
+## project yet, see the punch's own comment).
+func _on_weapon_reload_pressed() -> void:
+	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
+		return
+	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+		return
+	var item := _drawn_firearm()
+	if item == null or _weapon == null:
+		return
+	if item.magazine_size <= 0 or _weapon.is_full(item.id):
+		return
+
+	_is_reloading = true
+	_reload_timer = 0.0
+	_reload_applied = false
+	set_movement_enabled(false)
+	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_RELOAD_RIFLE)
+
+
+## Called from _physics_process() even while movement is locked — same
+## reason _update_punch() and _update_shot() are.
+func _update_reload(delta: float) -> void:
+	var is_first_frame := _reload_timer <= 0.0
+	_reload_timer += delta
+
+	if not _reload_applied and _reload_timer >= reload_time:
+		_reload_applied = true
+		var item := _drawn_firearm()
+		## Re-read rather than captured at the press: the hands could have
+		## been emptied mid-clip (a stance change holsters), and refilling a
+		## weapon that is no longer held would be a magazine appearing out of
+		## nowhere.
+		if item != null and _weapon != null:
+			_weapon.reload(item.id)
+
+	if is_first_frame:
+		## Same AnimationTree cadence trap the punch and the shot document:
+		## asking is_weapon_gesture_active() on the frame the request was
+		## made can still read the pre-fire state.
+		return
+
+	if not _animation_component.is_weapon_gesture_active():
+		_is_reloading = false
+		set_movement_enabled(true)
 
 
 ## Called from _physics_process() even while movement is locked — same

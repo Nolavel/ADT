@@ -1,17 +1,18 @@
 [gd_resource type="Resource" script_class="ItemResource" format=3]
 
 [ext_resource type="Script" uid="uid://c51f455owg8fl" path="res://core/items/item_resource.gd" id="1_item"]
-[ext_resource type="ArrayMesh" path="res://data/items/meshes/pistol_placeholder.res" id="2_mesh"]
+[ext_resource type="ArrayMesh" path="res://data/items/meshes/carbine_placeholder.res" id="2_mesh"]
 
 [resource]
 script = ExtResource("1_item")
-id = &"pistol"
-display_name = "Pistol"
-weight = 0.9
+id = &"carbine"
+display_name = "Carbine"
+weight = 3.2
 max_stack = 1
 can_throw = false
 can_use_in_hands = true
-size_class = 0
+size_class = 1
 readability = 2
 held_mesh = ExtResource("2_mesh")
-ranged_damage = 34.0
+ranged_damage = 150.0
+magazine_size = 8

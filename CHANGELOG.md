@@ -12,6 +12,88 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - The pistol becomes a carbine, and gets ammunition
+
+The pistol was the wrong weapon for this project's animation library. It has
+four or five clips; the rifle set has an idle, an aim, three fires, two reloads,
+turns — and a full **eight-direction locomotion pack** (`new3/rifle_locomotion_run_*`)
+that maps one-to-one onto the eight outer points the existing `BlendSpace2D`
+already uses. Carrying a weapon should change how the character moves, and only
+the rifle set can show it.
+
+**The carbine replaces the pistol.** `data/items/carbine.tres`,
+`data/items/meshes/carbine_placeholder.res` (one `ArrayMesh`, three surfaces:
+receiver/barrel, stock, grip) and `world/interactables/carbine/carbine.tscn`;
+`pistol.tres`, `pistol_placeholder.res` and `world/interactables/pistol/` are
+gone. The world placement was **re-measured, not carried over** — the new mesh's
+AABB minimum is −0.1447 against the pistol's −0.118, which moved the authored Y
+from 128.89 to 128.917 against a ground ray at 128.762.
+
+**Carrying a weapon now changes the whole locomotion.** A third `BlendSpace2D`
+(`weapon`) with the same eight-point geometry, filled from the rifle pack, chained
+after `stance_blend` on a second `Blend2`. `set_drawn_idle(bool)` became
+`set_weapon_locomotion(bool)` — the old one substituted a single clip at the combat
+centre point and left the eight directional points empty-handed, so the character
+sprinted with a weapon out as if nothing were in its hands. Two honest gaps left
+in place and commented: the pack has one forward clip where the geometry wants a
+walk and a run, and its rear diagonals have no point to go to.
+
+**One shot kills**, and it is only the damage number: `ranged_damage = 150.0`
+against a default `max_health` of 100. `NPCBase._update_knockdown()` already had a
+terminal `DOWN` phase entered at zero health and never left, so "they get back up
+after being shot" was never a missing state.
+
+**Ammunition.** `ItemResource.magazine_size` on the item, and a new
+`WeaponComponent` (a direct child of `Player`) holding `{item_id: rounds}` — not on
+the item, which is shared, and not on `EquipmentComponent`, which stores ids and
+knows nothing that differs between two identical items. Firing spends a round at
+the trigger; an empty magazine refuses the whole shot, gesture included.
+`weapon_reload` (`R`), bound and unread since the input map was written, gets its
+first consumer. Reserve ammunition is deliberately absent. It saves through
+`PlayerPersistenceSystem` with no further wiring.
+
+**A carbine is `CARRIED`, so no pocket takes it** — which used to mean it had
+nowhere to go, since body slots were garments-only. `EquipmentSlotDefinition`
+gained `accepts_non_garment` (true on `back_pack` and `back_unique` only;
+`max_size` cannot answer it, as legs/torso/feet are `CARRIED`-sized too),
+`stow_anywhere()` gained a third pass over those slots **after** pockets, and the
+draw cycle walks them too. `refuses_threatening` still keeps an automatic stow off
+`back_unique`, so the display slot stays a deliberate act. Draw and holster pick
+the shoulder clips (`new4/equip-shoulder-r`, `WeaponChange_back`) from that slot.
+
+**Pickup is animated, and the clip is chosen by height** — `new4/pickup_item` below
+0.6 m, `new4/interact-button` at or above. Height rather than `interaction_type`,
+because the question is where the hands have to go and a can on a table is not a
+button. Movement is deliberately not locked for it.
+
+**HUD:** a new `AmmoIndicator` (pips plus "3 / 8") directly under the health row,
+wired by `PlayerHUD` in `on_world_ready()` — it needs `WeaponComponent` and
+`EquipmentComponent`, neither an autoload. Visible only while a magazine weapon is
+in the hands.
+
+Verified through the real paths in `world.tscn` — 32 assertions, all green: pickup
+detection and both gesture branches, draw from the back, the weapon blend reaching
+1.0 and returning to 0.0, eight shots emptying the magazine with no incident from
+any of them, the shot at zero starting nothing, the reload refilling and releasing
+movement, a save/load round-trip of the count, one shot taking an NPC to zero
+health and leaving it in the terminal phase six seconds later, and the HUD row
+appearing, tracking and hiding. Import pass and headless boot clean.
+
+**Left for eyes:** whether the carbine reads as two-handed in the hands (the held
+mesh attaches to `RightHand` only — the left hand is placed by the clips and the
+mesh will not track it), whether the rifle locomotion blends cleanly, whether the
+walk-uses-the-run-clip gap matters, and whether the ammo row sits right.
+H6 is **not** closed in `docs/scope_horizon.md` — that waits on a clean playtest.
+
+*Пистолет заменён на двуручный карабин: под него в проекте есть полный набор
+анимаций, включая восьминаправленную локомоцию, чего у пистолета нет. Выстрел
+убивает с одного раза (урон 150 против 100 здоровья). Добавлены магазин
+(`WeaponComponent`, перезарядка на `R`) и строка патронов в HUD под здоровьем.
+Анимация подбора выбирается по высоте предмета. Карабин не влезает в карман —
+носится на спине, для чего слоты тела научились принимать не-одежду.*
+
+---
+
 ## 2026-08-26 - Tab draws and holsters, the key cycles, the scrap pipe is gone
 
 Picking the pistol up wasn't enough to hold it: the draw key produced a punch.

@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://ui/hud/status_bar/status_bar_widget.tscn" id="2_bar"]
 [ext_resource type="PackedScene" path="res://ui/hud/player_hud/key_hints_panel.tscn" id="3_hints"]
 [ext_resource type="PackedScene" path="res://ui/hud/stance_indicator/stance_indicator.tscn" id="4_stance"]
+[ext_resource type="PackedScene" path="res://ui/hud/ammo_indicator/ammo_indicator.tscn" id="5_ammo"]
 
 [node name="PlayerHUD" type="Control"]
 layout_mode = 3
@@ -20,6 +21,9 @@ theme_override_constants/separation = 8
 layout_mode = 2
 
 [node name="StanceIndicator" parent="StatusStack/HealthRow" instance=ExtResource("4_stance")]
+layout_mode = 2
+
+[node name="AmmoIndicator" parent="StatusStack" instance=ExtResource("5_ammo")]
 layout_mode = 2
 
 [node name="KeyHintsPanel" parent="." instance=ExtResource("3_hints")]

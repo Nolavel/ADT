@@ -93,7 +93,7 @@ horizon marked done; see `CLAUDE.md`'s Architecture rules.
 
 ## Now — current horizon
 
-### H6. Pistol chain
+### H6. Firearm chain
 
 **Why this is Now:** H5 (`EquipmentComponent`) closed on 2026-08-23 and was
 its only prerequisite. The island closed on 2026-08-26, so the reason to hold
@@ -103,20 +103,29 @@ This is the demo's TIER 2 target and the first real test of ACT.
 
 Built as one connected slice, in this order:
 
-1. Pistol as an inventory item
+1. The weapon as an inventory item
 2. Pickup and persist
 3. Draw / holster through `EquipmentComponent`
-4. Locomotion with pistol drawn
+4. Locomotion with the weapon drawn
 5. Firing at an NPC, damage through existing `HealthComponent` / `take_hit()`
 
 Step 3 is largely met already — `draw_holster` (`B`) and the stance coupling
 landed with H5 S5 — so the slice starts closer to the middle than the list
 suggests. Steps 1, 2 and 5 are the real work.
 
-**Definition of Done:** a pistol can be found on the island, picked up, kept
+**Definition of Done:** the weapon can be found on the island, picked up, kept
 across a save/load and a block unload, drawn and holstered, carried while
 moving, and fired at an NPC who takes damage through the existing health
 path and enters the incident record the same way a punch already does.
+
+**The weapon is a carbine, not a pistol** (2026-08-27). The chain shipped as
+a pistol on 2026-08-26 and was rebuilt around a two-handed carbine the next
+day: the pistol has four or five clips in this project's libraries, while
+the rifle set has an idle, an aim, fires, reloads, turns and — decisively —
+a full eight-direction locomotion pack, which is the only clip set that can
+actually show step 4. Ammunition (a magazine, a reload key and a HUD row)
+came with it and was not in the original list. **This does not close H6** —
+that stays held for a clean playtest.
 
 ---
 

@@ -55,6 +55,14 @@ signal debug_load_pressed()
 ## anything to draw.
 signal draw_holster_pressed()
 
+## --- Weapon reload (H6, docs/scope_horizon.md) ---
+## The action has been bound to R since the input map was written and had no
+## consumer at all until there was a magazine to refill. Relayed
+## unconditionally like every other action here — player.gd decides whether
+## anything is drawn, whether it feeds from a magazine, and whether that
+## magazine has room.
+signal weapon_reload_pressed()
+
 ## --- Key hints HUD toggle (H2, docs/scope_horizon.md) ---
 signal key_hints_enabled_changed(enabled: bool)
 
@@ -144,6 +152,7 @@ func _physics_process(delta: float) -> void:
 	_handle_stance_toggle()
 	_handle_debug_save_load()
 	_handle_draw_holster()
+	_handle_weapon_reload()
 	_handle_lodging_hours()
 	_handle_key_hints_toggle()
 
@@ -254,6 +263,14 @@ func _handle_debug_save_load() -> void:
 func _handle_draw_holster() -> void:
 	if Input.is_action_just_pressed("draw_holster"):
 		draw_holster_pressed.emit()
+
+
+## ============================================
+## WEAPON RELOAD — see weapon_reload_pressed's own comment.
+## ============================================
+func _handle_weapon_reload() -> void:
+	if Input.is_action_just_pressed("weapon_reload"):
+		weapon_reload_pressed.emit()
 
 
 ## ============================================
