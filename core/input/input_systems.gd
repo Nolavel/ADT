@@ -68,11 +68,6 @@ signal key_hints_enabled_changed(enabled: bool)
 signal lodging_hours_increase_pressed()
 signal lodging_hours_decrease_pressed()
 
-## Tap/hold on "toggle_tabs" — press timing is a property of the physical
-## input, so the timer lives here, not in the consumer.
-signal tabs_key_tapped()
-signal tabs_key_held()
-
 ## ── Interact routing ──────────────────────────────────────────────────
 ## While a claim is held (player at a hover door or aboard one), interact
 ## goes straight to the claim's owner; the interact_pressed signal is NOT
@@ -98,11 +93,7 @@ var key_hints_enabled: bool = true:
 		key_hints_enabled = value
 		key_hints_enabled_changed.emit(key_hints_enabled)
 
-const TABS_HOLD_TIME: float = 0.5
 const RUN_TRIGGER_TIME: float = 0.5
-
-var _tabs_pressed_time: float = 0.0
-var _tabs_pressing: bool = false
 
 var _secondary_click_duration: float = 0.0
 var _secondary_click_active: bool = false
@@ -149,7 +140,6 @@ func _physics_process(delta: float) -> void:
 	_handle_interact()
 	_handle_primary_click()
 	_handle_secondary_click(delta)
-	_handle_tabs_key(delta)
 	_handle_ui_hotkeys()
 	_handle_stance_toggle()
 	_handle_debug_save_load()
@@ -221,23 +211,14 @@ func _handle_secondary_click(delta: float) -> void:
 
 
 ## ============================================
-## TABS KEY (tap = notifier, hold = status camera) — the consumer
-## interprets tap/hold itself; we just tell them apart by timing.
+## TABS KEY — retired 2026-08-26. The action, its tap/hold timer and the
+## tabs_key_tapped/tabs_key_held signals are gone: Tab now carries
+## draw_holster (see input_map.md). Nothing ever subscribed to either
+## signal, and both features they were emitted for — the notifier and the
+## status camera — were never built, so this relayed a press to no one for
+## its whole life. The timer pattern itself survives in git history if the
+## notifier wants it on a different key later.
 ## ============================================
-func _handle_tabs_key(delta: float) -> void:
-	if Input.is_action_just_pressed("toggle_tabs"):
-		_tabs_pressed_time = 0.0
-		_tabs_pressing = true
-
-	if _tabs_pressing:
-		_tabs_pressed_time += delta
-		if Input.is_action_just_released("toggle_tabs"):
-			if _tabs_pressed_time < TABS_HOLD_TIME:
-				tabs_key_tapped.emit()
-			else:
-				tabs_key_held.emit()
-			_tabs_pressing = false
-
 
 ## ============================================
 ## OTHER UI HOTKEYS

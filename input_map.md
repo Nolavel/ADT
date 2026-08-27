@@ -38,10 +38,19 @@ raised fists are already a statement on their own. The two are coupled the
 other way instead — drawing something that reads as a threat sets COMBAT, and
 standing down to PEACE holsters (H5, `player.gd`).
 
-`B` is arbitrary and provisional. `X` would be the conventional holster key but
-is taken by `status`, one of the actions defined here and never implemented
-(see `docs/planned_scope.md`); repurposing a reserved binding is Stan's call,
-not a side effect of this feature.
+`draw_holster` moved from `B` to `Tab` on 2026-08-26, and became a **cycle**
+rather than "draw the first drawable". Both changes have the same cause: the
+starter scrap pipe occupied an earlier pocket than the picked-up pistol, so the
+key produced the pipe every time and the pistol was unreachable. The pipe is
+gone and the key now steps through whatever is on the body.
+
+**`toggle_tabs` was retired to free `Tab`.** It was documented here as "tap —
+notifier; hold — status camera", but nothing in the project ever subscribed to
+`tabs_key_tapped` or `tabs_key_held` and neither feature was built — the action
+relayed a press to no one for its whole life. **The notifier and the status
+camera now have no key**; they need one assigned when either is actually built,
+and this paragraph is the reminder. The tap/hold timer pattern itself is in git
+history (`InputSystems._handle_tabs_key`) if the notifier wants it.
 
 `debug_save`/`debug_load` were originally bound to `F5`/`F9` (2026-08-12) and rebound
 to `K`/`L` the same day: `F5` collides with the Godot editor's own "Run Project"
@@ -62,9 +71,8 @@ view is embedded in the editor.
 | `inventory` | `I` | Inventory | Инвентарь |
 | `map` | `M` | Map | Карта |
 | `status` | `X` | Status | Статус |
-| `toggle_tabs` | `Tab` | Tap — notifier; hold — status camera | Тап/холд — уведомление/статус-камера |
 | `toggle_stance` | `T` | Toggle `PlayerState.Stance` PEACE ⇄ COMBAT | Смена стойки |
-| `draw_holster` | `B` | Draw the first drawable item on the body, or holster what is in hand (`EquipmentComponent`) | Достать / убрать |
+| `draw_holster` | `Tab` | Draw / holster — **cycles** through the drawable items on the body (`EquipmentComponent`) | Достать / убрать — перебор по предметам |
 
 ---
 

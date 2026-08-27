@@ -82,10 +82,17 @@ const POCKET_SEPARATOR: String = "/"
 
 ## Stowed from the first frame, wherever stow_anywhere() puts them.
 ##
-## FIXTURE, not content: the pipe exists so draw/holster can be exercised
-## before H6's pistol does it for real. Empty this once there is a weapon
-## the player actually finds in the world.
-@export var starter_stowed_ids: Array[StringName] = [&"scrap_pipe"]
+## Empty since 2026-08-26, and this list said to empty it: it held a scrap
+## pipe as a FIXTURE so draw/holster could be exercised before H6's pistol
+## existed, with the instruction "empty this once there is a weapon the
+## player actually finds in the world". H6 landed and that did not happen —
+## so the pipe, sitting in an earlier pocket, won the draw key every time
+## and the pistol could not be reached at all.
+##
+## Kept as an export because starting with something in a pocket is a
+## legitimate thing to author. It just must not be a second DRAWABLE while
+## the draw key is the only way to choose between them.
+@export var starter_stowed_ids: Array[StringName] = []
 
 ## Prints every accepted and refused change. Off by default; there is no UI
 ## for equipment yet, so this is the only way to see it work.
