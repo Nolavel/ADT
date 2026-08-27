@@ -12,6 +12,69 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Tab draws and holsters, the key cycles, the scrap pipe is gone
+
+Picking the pistol up wasn't enough to hold it: the draw key produced a punch.
+
+Three causes, all from the H6 work. `_on_draw_holster_pressed()` drew the
+**first** item with `can_use_in_hands`, and the starter `scrap_pipe` sat in
+`torso/chest_left`, ahead of the pistol in `chest_right` — so the key always
+handed over the pipe, whose `ranged_damage` is 0, so the click fell through to
+the punch. The function's own comment had admitted the shortcut: *"First is good
+enough while there is one weapon — a real weapon-selection UI is H6's problem"*.
+H6 was the job and this was left. And `starter_stowed_ids` carried its own
+instruction — *"empty this once there is a weapon the player actually finds in
+the world"* — which H6 also walked past.
+
+**The key now cycles**: empty hands draw the first drawable, pressing again
+holsters it and draws the next, the press after the last leaves the hands empty.
+Deliberately no ranking — no "prefer a firearm" rule. Which of two things in your
+pockets you want in your hand is a decision, and a hierarchy in code only has to
+be renegotiated with every third item.
+
+**`draw_holster` moved from `B` to `Tab`**, and `toggle_tabs` was retired to free
+it. That action was documented as "tap — notifier; hold — status camera", but
+nothing in the project ever subscribed to `tabs_key_tapped` or `tabs_key_held`
+and neither feature exists — it relayed a press to no one for its whole life.
+Two actions cannot share a key, and the choice was between one named for what it
+does and one named after a key for features never built. `input_map.md` records
+that the notifier and status camera now have **no** key and need one assigned
+when either lands, so the idea does not vanish quietly.
+
+**The scrap pipe is deleted** — `starter_stowed_ids` emptied, `scrap_pipe.tres`
+and its catalog entry removed. Nothing in any scene referenced it.
+
+**And the HUD now says the key exists.** `draw_holster` was missing from
+`data/key_hints.tres` entirely, so the panel whose whole job is showing the
+currently valid actions never mentioned it. That omission is what turned a wrong
+binding into "how do I even get it out".
+
+One bug the run caught in the new code before it shipped: the cycle checked "is
+there anything to draw" before checking the hands, and a drawn item is in no
+pocket — so with a single weapon the list was empty while it was held and the
+key refused to holster. Hands first, then the list.
+
+Verified in `world.tscn` through the real signals, not by calling `draw()`:
+empty starter body → press is a no-op; walk up and `try_interact()` → pistol in a
+pocket; `draw_holster_pressed` → `get_drawn() == "pistol"`; click → `_drawn_firearm()`
+resolves and an NPC on a clear line goes 1.000 → 0.660; press again → hands empty
+and the pistol back in the slot it came from; once more → drawn again. Second
+import pass 0 errors / 0 warnings, boot 0 script errors, no `scrap_pipe` left
+anywhere outside this log.
+
+> *Пистолет подбирался, но в руки не шёл: клавиша доставала стартовую трубу из
+> более раннего кармана, а у трубы нет `ranged_damage`, поэтому клик уходил в
+> удар. Теперь клавиша перебирает предметы, а не берёт первый; переехала с `B`
+> на `Tab`, ради чего снят `toggle_tabs` — его никто никогда не слушал, обе
+> обещанные фичи не построены, и в `input_map.md` записано, что им нужна новая
+> клавиша. Труба удалена совсем. И главное: `draw_holster` вообще не было в
+> подсказках — панель молчала про клавишу. Прогон поймал ещё и мою свежую
+> ошибку: проверка «есть ли что доставать» стояла до проверки рук, а вынутый
+> предмет ни в одном кармане не лежит, поэтому убрать оружие было нельзя.*
+- `project.godot`, `core/input/input_systems.gd`, `player/player.gd`, `equipment_component.gd`, `data/key_hints.tres`, `data/items/catalog.tres`, `input_map.md`, `docs/architecture/items_and_equipment.md`; deleted `data/items/scrap_pipe.tres`
+
+---
+
 ## 2026-08-26 - The pistol was lying below the player's focus cast
 
 No tick over it, and `F` did nothing — reported from playtest.
