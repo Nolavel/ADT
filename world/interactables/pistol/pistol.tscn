@@ -10,7 +10,7 @@
 size = Vector3(0.06, 0.16, 0.22)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_area"]
-size = Vector3(0.5, 0.5, 0.6)
+size = Vector3(0.7, 2.4, 0.7)
 
 [node name="Pistol" type="RigidBody3D"]
 collision_layer = 512
@@ -33,7 +33,7 @@ shape = SubResource("BoxShape3D_body")
 [node name="Area" type="Area3D" parent="."]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0.02)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.02)
 shape = SubResource("BoxShape3D_area")
 
 [node name="InteractiveVisualIndicator" type="Node3D" parent="."]
