@@ -12,6 +12,54 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - The camera never left ISOMETRIC: restoring a deleted else
+
+Pressing `V` changed `PlayerState.view_mode` but left the camera sitting in its
+isometric position — reported from playtest as "camera behaves oddly, doesn't
+fully switch to TPS".
+
+`dae379e` ("ISOMETRIC look-ahead, and the wall clamp moved after the spring")
+removed two lines along with the exponential it replaced:
+
+```gdscript
+	else:
+		camera_current_pos = camera_current_pos.lerp(camera_target_pos, …position_follow_speed…)
+```
+
+That `else` was the position filter for TPS **and for both directions of the view
+transition**. Without it `camera_current_pos` was written nowhere except inside
+`if view_mode == ISOMETRIC and not view_mode_animating` — so `V` set
+`view_mode_animating`, skipped the block, and froze the camera body; when the
+transition finished the mode was TPS and the block was skipped again. Rotation
+kept lerping on its own line below, which is why it read as strange rather than
+dead. The comment above the branch still described "the exponential everywhere
+else" the whole time, so the code and its own documentation disagreed rather than
+the design having changed.
+
+Restored, with the history in a comment so it is not deleted a second time.
+`position_follow_speed` was already computed immediately above and already
+resolves correctly for both cases, so nothing else moved.
+
+Measured, in `world.tscn`, driving the real transition: before, the camera
+travelled **0.00 m** on the switch and stayed 10.06 m from the character; after,
+7.29 m and 2.87 m. Toggling back returns it to 8.44 m. The check was run against
+the unfixed file first — a test that has not failed on the bug is not evidence.
+
+Not from the H6 pistol work, which touches no camera or `PlayerState` file; found
+by `git log -S` on the deleted expression while checking that claim rather than
+asserting it.
+
+> *Камера не уходила в TPS: коммит `dae379e` вместе с заменённой экспонентой
+> удалил ветку `else`, которая двигала камеру в TPS и во время самого перехода.
+> Позиция обновлялась только в блоке «изо и переход не идёт», поэтому нажатие V
+> её замораживало. Поворот продолжал работать отдельной строкой — отсюда
+> «странно». Возвращено, с историей в комментарии. Проверено прогоном: было 0.00
+> м смещения, стало 7.29 м; сначала прогнал на несломанном файле, чтобы тест
+> точно ловил баг.*
+- `camera/camera_component/on_foot_camera_component.gd`, `docs/architecture/player_and_camera.md`
+
+---
+
 ## 2026-08-26 - Draw it, carry it, fire it (H6 S3-S5) — the slice closes
 
 **One gesture node, three clips.** A second `AnimationNodeOneShot`

@@ -1763,6 +1763,24 @@ func _update_camera_position(delta):
 		# the spring from holding a position inside the wall to snap back
 		# out to when the obstruction clears.
 		camera_current_pos = _apply_iso_wall_clamp(delta, camera_current_pos)
+	else:
+		## TPS, and BOTH directions of the view transition. Restored after
+		## being lost in the commit that moved the wall clamp after the
+		## spring (dae379e): with this branch gone, camera_current_pos was
+		## written nowhere except the ISOMETRIC block above, so pressing V
+		## set view_mode_animating, skipped that block, and froze the camera
+		## body exactly where isometric had left it — for the whole
+		## transition and then for all of TPS, because the mode no longer
+		## matched either. Rotation kept lerping on its own line below,
+		## which is why it read as "the camera behaves oddly" rather than
+		## "the camera is dead".
+		##
+		## The comment above this if/else already described this branch as
+		## "the exponential everywhere else" throughout, so the code and its
+		## own documentation disagreed rather than the design changing.
+		camera_current_pos = camera_current_pos.lerp(
+			camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta)
+		)
 
 	if not view_mode_animating:
 		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, Smoothing.damp_factor(rotation_follow_speed, delta))
