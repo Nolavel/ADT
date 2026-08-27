@@ -16,3 +16,4 @@ readability = 2
 held_mesh = ExtResource("2_mesh")
 ranged_damage = 150.0
 magazine_size = 8
+reserve_capacity = 80

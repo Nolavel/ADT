@@ -12,6 +12,115 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - An editor tool for fitting items to hands; tools/ audited
+
+**`addons/item_fitter/`** — an `EditorPlugin` dock. Pick an `ItemResource`,
+pick the hand, pick and scrub one of the character's animation clips, drag the
+mesh with the ordinary 3D gizmo, Save. It writes `HeldFit` back onto the item
+and knows no item by name, so the next weapon or tool works without a line
+changed. The preview is a real node parented to the same `GripPivot` the game
+uses at runtime — the editor's gizmo works on it for free, and the numbers
+under it are metres because the pivot cancels the rig scale. Spawned with
+`owner = null` so it can never be saved into the character scene.
+
+Second addon after `godot_ai`, and the reason it is not in `tools/` is
+recorded in `CLAUDE.md`: `tools/` holds one-shot `EditorScript`s and runtime
+debug panels, and fitting an object to a hand needs a dock, a live gizmo and
+to survive a scene switch — three things only an `EditorPlugin` provides.
+
+**`tools/` audited**, folder by folder, by what actually references each.
+Everything is live except one: `input_debugger`, `stats_display` and
+`scan_folder_files` are instanced in `world.tscn`; `island_generator`,
+`build_aogashima_terrain`, `city_generator` and `block_generator` are each the
+only reproducible path to committed content; `tests/noir_room` is cited by
+`votive_projector.gd`. **`tools/checker_indicators/` is deleted** — two orphan
+scripts with no scene and no instance anywhere, `@onready`-ing children
+(`$IncreaseHP`, `$DecreaseHP`) that exist in no file, and mentioned only by
+two comments that both named the wrong path. Those two comments are fixed.
+
+**`CLAUDE.md` named a file that has never existed.** Both the project header
+and the hard-constraints list said the only C# in the repo was
+`tools/scan_folder_files/project_scanner.cs`; that path holds
+`project_scanner.gd`, and `git log --all --diff-filter=AD -- '*.cs'` finds
+nothing — no C# file has ever been committed here. `project.godot` carries an
+empty `[dotnet] assembly_name="ADT"` from someone opening the project once in
+the .NET editor, with no `.csproj` and no `.sln`. So the "drop C# entirely"
+backlog item was closed by never having started. Fourth recorded drift in
+that file, corrected there the way the previous three are.
+
+*Добавлен плагин редактора `addons/item_fitter/` — выбираешь предмет, руку и
+анимацию, двигаешь меш обычным гизмо и сохраняешь посадку на сам предмет.
+Папка `tools/` разобрана: всё живое, кроме `checker_indicators` — удалено.
+В `CLAUDE.md` исправлено утверждение про единственный C#-файл: C# в этом
+репозитории не было никогда.*
+
+---
+
+## 2026-08-27 - The carbine sits in the hand, the shot reads, and there is a reserve
+
+Playing the carbine surfaced three complaints, and each had one measurable
+cause rather than being a matter of taste.
+
+**Every held item in the project was rendered at 38.8% of its real size.**
+`player.tscn`'s `player_base_mesh` carries a uniform 0.38763407 scale and it
+is the only scale between the player and the hand bones, and
+`EquipmentVisualsComponent` parented the held mesh straight to
+`RightHandAttachment` — so a 73 cm carbine appeared as 28 cm, and every offset
+written for one was silently in skeleton units rather than metres (the
+pistol's `held_offset` of 0.33 was 12.8 cm). Nothing warned; it looked like
+the numbers needed tuning. A **`GripPivot` under each hand attachment** now
+carries the reciprocal scale (2.5797526), so everything below it is metric,
+and `_check_grip_scale()` warns if that ever stops being true. A
+`LeftHandAttachment` was added alongside the right one.
+
+**The pose moved off the component and onto the item.** New `HeldFit`
+(`core/items/held_fit.gd`, optional `ItemResource.held_fit`) — hand, offset,
+rotation, scale. `EquipmentVisualsComponent.held_offset`/`held_rotation_deg`
+are gone: one pose shared by everything ever drawn is how a component ends up
+holding a pose for geometry it knows nothing about. The carbine placeholder
+was regenerated with its **origin in the grip** (all vertices shifted
+`(0, +0.088, +0.088)`), so a zero fit already puts it in the fist instead of
+holding it by the middle of the barrel; the world placement Y was re-measured
+against the new AABB, 128.917 → **128.829**, by ground ray.
+
+**The shot and the reload now come from the same pack as the locomotion.**
+`new4/shoot-rifle-light` is 0.25 s and from ShooterLib while the idle and all
+eight locomotion points are `new3/` — a quarter-second snap to a different
+rifle pose and back, which is why it read as no animation at all.
+`new4/reload-rifle` had the same mismatch, and that is the other half of
+"after the reload it's as if there's nothing left": the magazine did refill,
+it just did not look like a reload. Now **`new3/rifle_shot`** (1.17 s) and
+**`new3/rifle_reload_2`** (1.88 s), both non-looping — which rules out every
+shorter candidate, since a looping clip under a `OneShot` can fail to
+terminate and would lock movement permanently. `weapon_oneshot`'s fade times
+are set explicitly rather than left at a default.
+
+**Reserve ammunition**, 80 rounds behind the magazine
+(`ItemResource.reserve_capacity`, `WeaponComponent._reserves`). A reload moves
+`min(missing, reserve)`; a partial reload is a success, since refusing one
+would strand the last rounds. **`can_reload()` is asked before the gesture
+starts** — caught by the probe suite: `player.gd` locks movement at the key
+press and only reaches `reload()` a second into the clip, so the first version
+played a full reload animation for a weapon with an empty reserve. The HUD row
+reads `8 / 8 · 72`, the reserve dimmer than the magazine and red at zero.
+The reserve is finite and nothing restores it; an ammunition pickup is the
+follow-up, deliberately not built here.
+
+39 assertions in `world.tscn` through the real input paths, all green —
+including the two that would have caught the scale bug and did not exist
+before (the held mesh's global scale is 1.0, its world length 0.734 m), the
+gesture timings, the reserve draining to zero and refusing the eleventh
+reload, and the HUD immediately after a reload rather than only at zero.
+
+*Найдено: любой предмет в руке рендерился в 38.8% размера — у `player_base_mesh`
+масштаб 0.38763, а меш вешался прямо на кость. Добавлены пивоты `GripPivot` с
+обратным масштабом, посадка предмета переехала на сам предмет (`HeldFit`),
+начало координат меша карабина перенесено в рукоять. Выстрел и перезарядка
+переведены на тот же пак анимаций, что и локомоция, — отсюда «анимации нет».
+Добавлен запас в 80 патронов.*
+
+---
+
 ## 2026-08-27 - The pistol becomes a carbine, and gets ammunition
 
 The pistol was the wrong weapon for this project's animation library. It has

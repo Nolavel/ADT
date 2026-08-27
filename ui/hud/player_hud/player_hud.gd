@@ -115,13 +115,15 @@ func _on_drawn_changed(item_id: StringName) -> void:
 	if capacity <= 0:
 		_ammo.clear()
 		return
-	_ammo.set_ammo(_weapon.get_rounds(item_id), capacity)
+	_ammo.set_ammo(
+		_weapon.get_rounds(item_id), capacity, _weapon.get_reserve(item_id)
+	)
 
 
 ## Only the weapon actually in the hands is drawn. WeaponComponent tracks a
 ## magazine per weapon id and will happily report on one that is stowed —
 ## which is the right thing for it to do and the wrong thing to show.
-func _on_ammo_changed(item_id: StringName, rounds: int, capacity: int) -> void:
+func _on_ammo_changed(item_id: StringName, rounds: int, capacity: int, reserve: int) -> void:
 	if _equipment.get_drawn() != item_id:
 		return
-	_ammo.set_ammo(rounds, capacity)
+	_ammo.set_ammo(rounds, capacity, reserve)

@@ -115,12 +115,12 @@ const ACTOR_ID: StringName = &"player"
 ## same "no animation event system in this project" caveat applies.
 @export var shot_hit_delay: float = 0.06
 ## Delay from starting the reload gesture to the magazine actually being
-## full, seconds. Sits inside the clip (new4/reload-rifle is 1.62s) rather
+## full, seconds. Sits inside the clip (new3/rifle_reload_2 is 1.88s) rather
 ## than at either end of it, so the number on the HUD moves at roughly the
 ## moment the hands do — the same stand-in-for-an-animation-event approach
 ## punch_hit_delay and shot_hit_delay already use, and for the same reason:
 ## there is no animation event system in this project.
-@export var reload_time: float = 1.0
+@export var reload_time: float = 1.2
 
 @export_subgroup("Interaction")
 ## Height above the player's own origin (its feet) at which a pickup stops
@@ -1257,7 +1257,12 @@ func _on_weapon_reload_pressed() -> void:
 	var item := _drawn_firearm()
 	if item == null or _weapon == null:
 		return
-	if item.magazine_size <= 0 or _weapon.is_full(item.id):
+	## Asked BEFORE the gesture starts, not after it finishes. The refill
+	## lands a second into the clip, so a check made there would already have
+	## played a full reload animation for a weapon with nothing to load —
+	## a full magazine, or an empty reserve behind it. can_reload() answers
+	## both in the one place that owns the numbers.
+	if not _weapon.can_reload(item.id):
 		return
 
 	_is_reloading = true

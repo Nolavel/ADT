@@ -2,8 +2,10 @@
 # world_border_debug.gd — debug-only визуализация границ World Zone.
 #
 # Владелец: world.gd, WORLD_SYSTEM_SCRIPTS. Рисует проволочный бокс точно по
-# WorldSystems.WORLD_ZONE_SIZE / GAMEPLAY_HEIGHT — чисто debug-инструмент,
-# не путать с core/checker_indicators (те — gameplay-прототипы, не debug).
+# WorldSystems.WORLD_ZONE_SIZE / GAMEPLAY_HEIGHT — чисто debug-инструмент.
+# (Здесь стояло «не путать с core/checker_indicators»; тех скриптов не было
+# по указанному пути, они лежали в tools/ и были удалены 2026-08-27 как
+# осиротевшие — ни сцены, ни единого инстанса.)
 # Переключается export'ом в инспекторе, не горячей клавишей.
 # =============================================================================
 extends Node3D

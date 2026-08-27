@@ -183,7 +183,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 220, 130.062, -120)
 room_id = &"1"
 
 [node name="Carbine" parent="StreamContainer" unique_id=1572542073 instance=ExtResource("12_carbine")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 223, 128.917, -137)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 223, 128.829, -137)
 freeze = true
 
 [node name="AogashimaIsland" parent="." unique_id=1854643265 instance=ExtResource("9_dqqhb")]

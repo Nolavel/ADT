@@ -2,10 +2,14 @@
 # ammo_indicator.gd — AmmoIndicator.
 #
 # The magazine, on the HUD, directly under the health row: how many rounds
-# are left and how many the weapon holds. Drawn as pips plus the number,
-# because a magazine is a small discrete count and both readings are useful
-# at different distances — the pips answer "am I nearly out" without being
-# read, the number answers "how many exactly".
+# are in it, how many it holds, and how many are left behind it. Drawn as
+# pips plus the numbers, because a magazine is a small discrete count and
+# both readings are useful at different distances — the pips answer "am I
+# nearly out" without being read, the numbers answer "how many exactly".
+#
+# The reserve is a number only, never pips: eighty pips is not a thing anyone
+# reads, and the reserve is the figure you check between fights rather than
+# during one.
 #
 # Not a StatusBarWidget instance, for the reason StanceIndicator already
 # records for itself: that widget is a ratio gauge with thirds, a drain
@@ -46,10 +50,14 @@ extends Control
 ## the same reasoning StanceIndicator records for COMBAT.
 @export var empty_color: Color = Color(0.68, 0.10, 0.08, 0.95)
 @export var text_color: Color = Color(0.92, 0.92, 0.92, 0.95)
+## The reserve figure, dimmer than the magazine's — it is the secondary
+## reading, and giving both the same weight makes neither stand out.
+@export var reserve_color: Color = Color(0.62, 0.62, 0.62, 0.9)
 @export var font_size: int = 12
 
 var _rounds: int = 0
 var _capacity: int = 0
+var _reserve: int = 0
 
 
 func _ready() -> void:
@@ -61,12 +69,13 @@ func _ready() -> void:
 ## Show a weapon's magazine. A capacity of zero is treated as "nothing to
 ## show" rather than an error: it is the same answer for a torch, for empty
 ## hands, and for a firearm that does not feed from a magazine.
-func set_ammo(rounds: int, capacity: int) -> void:
+func set_ammo(rounds: int, capacity: int, reserve: int) -> void:
 	if capacity <= 0:
 		clear()
 		return
 	_rounds = clampi(rounds, 0, capacity)
 	_capacity = capacity
+	_reserve = maxi(reserve, 0)
 	_apply_minimum_size()
 	visible = true
 	queue_redraw()
@@ -75,6 +84,7 @@ func set_ammo(rounds: int, capacity: int) -> void:
 func clear() -> void:
 	_rounds = 0
 	_capacity = 0
+	_reserve = 0
 	visible = false
 	queue_redraw()
 
@@ -90,13 +100,25 @@ func _apply_minimum_size() -> void:
 	var font: Font = get_theme_default_font()
 	if font != null:
 		text_width = font.get_string_size(
-			_label_text(), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size
+			_label_text() + _reserve_text(), HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size
 		).x
 	custom_minimum_size = Vector2(pips_width + text_gap + text_width, badge_height)
 
 
 func _label_text() -> String:
 	return "%d / %d" % [_rounds, _capacity]
+
+
+## Empty string for a weapon with no reserve at all — the separator would
+## otherwise dangle after the magazine and read as a missing number.
+func _reserve_text() -> String:
+	if _reserve <= 0 and _capacity > 0 and _rounds >= _capacity:
+		## Full magazine, nothing behind it: worth saying, since that is the
+		## last magazine in the game for this weapon.
+		return "  ·  0"
+	if _reserve <= 0:
+		return ""
+	return "  ·  %d" % _reserve
 
 
 func _draw() -> void:
@@ -121,12 +143,33 @@ func _draw() -> void:
 	if font == null:
 		return
 	var baseline := (badge_height + font.get_ascent(font_size) - font.get_descent(font_size)) * 0.5
+	var text_x := x - pip_spacing + text_gap
+	var magazine_text := _label_text()
 	draw_string(
 		font,
-		Vector2(x - pip_spacing + text_gap, baseline),
-		_label_text(),
+		Vector2(text_x, baseline),
+		magazine_text,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1.0,
 		font_size,
 		empty_color if is_empty else text_color
+	)
+
+	var reserve_text := _reserve_text()
+	if reserve_text == "":
+		return
+	## Drawn as a second string rather than one concatenated label so the two
+	## numbers can carry different colours — the reserve is the quieter of
+	## the two until it reaches zero, and then it is the loudest thing here.
+	text_x += font.get_string_size(
+		magazine_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size
+	).x
+	draw_string(
+		font,
+		Vector2(text_x, baseline),
+		reserve_text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1.0,
+		font_size,
+		empty_color if _reserve <= 0 else reserve_color
 	)

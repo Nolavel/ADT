@@ -1,0 +1,75 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/item_fitter/item_fitter_dock.gd" id="1_dock"]
+
+[node name="ItemFitter" type="Control"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_dock")
+
+[node name="Layout" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+theme_override_constants/separation = 6
+
+[node name="ItemLabel" type="Label" parent="Layout"]
+layout_mode = 2
+text = "Item"
+
+[node name="ItemPicker" type="EditorResourcePicker" parent="Layout"]
+layout_mode = 2
+
+[node name="HandRow" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="HandLabel" type="Label" parent="Layout/HandRow"]
+layout_mode = 2
+text = "Hand"
+
+[node name="HandButton" type="OptionButton" parent="Layout/HandRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AnimationRow" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="AnimationLabel" type="Label" parent="Layout/AnimationRow"]
+layout_mode = 2
+text = "Pose"
+
+[node name="AnimationButton" type="OptionButton" parent="Layout/AnimationRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TimeSlider" type="HSlider" parent="Layout"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="Buttons" type="HBoxContainer" parent="Layout"]
+layout_mode = 2
+
+[node name="SaveButton" type="Button" parent="Layout/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Save to item"
+
+[node name="RevertButton" type="Button" parent="Layout/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Revert"
+
+[node name="Status" type="Label" parent="Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 3
+text = "..."
