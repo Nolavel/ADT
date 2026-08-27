@@ -12,6 +12,50 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-27 - tools/for_claude_addon_item_/ removed — it broke ItemResource
+
+`main` did not compile its own item system. `tools/for_claude_addon_item_/`
+held a staged concept for an item-pose addon, and two of its files declared
+`class_name ItemResource` and `class_name EquipmentVisualsComponent` — names
+the real `core/items/item_resource.gd` and
+`player/.../equipment_visuals_component.gd` already own. Godot treats a
+duplicate global class as a parse error, so on a cold import
+`core/items/item_resource.gd` itself failed to load, and
+`addons/item_fitter/item_fitter_dock.gd` failed with it ("Cannot infer the
+type of 'fit'"). Measured before the deletion and after: three import passes
+and a headless boot are clean now, and the fitter plugin loads again.
+
+The folder was a drop-box, not a system: two edited copies of live scripts, a
+competing `ItemPose` resource, an authoring scene, a plugin, a design note, a
+`carbine_pose.tres` pointing at `res://core/items/item_pose.gd` — a path that
+does not exist on `main` — and a half-finished browser download
+(`Unconfirmed 300846.crdownload`, actually a `plugin.cfg`).
+
+**Its design was not thrown away.** That prototype reached the same
+conclusions the merged work did — the pose belongs on the item, authored
+visually against a live animation, by an editor plugin — and went one step
+further in one place: a **second mesh in the off hand with its own
+transform**, so a long gun is posed at both grips. That is now
+`TODO(equipment)` on `HeldFit.hand` and a line in the architecture contract,
+to be taken if the carbine's left hand reads wrong by eye. Its other idea,
+grip markers on the item, is already answered differently — the carbine mesh's
+origin *is* its grip.
+
+**Its numbers do not transfer.** `carbine_pose.tres` held
+`position (0.03, -0.02, 0.08)`, `rotation (12, 94, -3)`, but it parented to
+the `BoneAttachment3D` rather than to a `GripPivot`, so those are skeleton
+units against the old mid-barrel mesh origin — the same 38.8% scale bug the
+merged work fixed. Re-author with the fitter instead.
+
+*`tools/for_claude_addon_item_/` удалена: два файла в ней объявляли
+`class_name ItemResource` и `EquipmentVisualsComponent`, из-за чего настоящий
+`item_resource.gd` не компилировался, а плагин `item_fitter` падал. Идея
+второй руки из этого концепта сохранена как `TODO(equipment)` в `HeldFit`;
+числа из `carbine_pose.tres` не переносятся — они в единицах скелета от
+старого начала координат меша.*
+
+---
+
 ## 2026-08-27 - An editor tool for fitting items to hands; tools/ audited
 
 **`addons/item_fitter/`** — an `EditorPlugin` dock. Pick an `ItemResource`,

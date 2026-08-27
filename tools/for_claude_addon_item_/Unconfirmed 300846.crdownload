@@ -1,7 +1,0 @@
-[plugin]
-
-name="Item Pose Editor"
-description="Author ItemPose resources by placing the item on a live player in idle (or any animation). Move with gizmos, press Save. Supports single-hand and two-hand."
-author="ADT"
-version="0.1"
-script="plugin.gd"
