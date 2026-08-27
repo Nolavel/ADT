@@ -12,6 +12,171 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Draw it, carry it, fire it (H6 S3-S5) — the slice closes
+
+**One gesture node, three clips.** A second `AnimationNodeOneShot`
+(`weapon_oneshot`) chained after the punch's and feeding `death_transition`,
+with a single `weapon_clip` whose animation is rewritten immediately before
+each request. Two one-shots rather than one, because `is_punch_active()` and
+`is_weapon_gesture_active()` are what `player.gd` polls to know when to give
+movement back and sharing a node would make the two questions
+indistinguishable; but one clip node, because draw, holster and fire are
+mutually exclusive uses of the same hands. Every clip was already in the
+project — `new4/equip-hip-fast`, `new4/equip-thigh`, `WeaponChange_hip`,
+`new4/shoot-pistol`. Nothing imported, nothing mounted.
+
+**The draw follows the slot, not the other way round.** `EquipmentComponent`
+gained `get_drawn_from()`, and `player.gd` picks `equip-thigh` or
+`equip-hip-fast` from the slot id. `stow_anywhere()` keeps choosing the pocket
+— per Stan, a firearm belongs in a future jacket's chest pocket, so forcing a
+slot would have been backwards.
+
+**Carrying** substitutes `new4/idle-pistol` into the COMBAT blend space's
+centre point while something is drawn (`set_drawn_idle()`), leaving all eight
+directional points alone. Verified that a live `AnimationNodeAnimation.animation`
+write is picked up by a running `AnimationTree`.
+
+**The held mesh now waits for the hand.** `draw_attach_delay` (0.22 s) on
+`EquipmentVisualsComponent`, with a re-check after the wait so a quick
+draw-then-holster cannot leave a pistol floating in an empty hand. The delay
+lives with the mesh rather than on `player.gd`: "when does it appear" is a
+presentation question, and a second copy of the number in another file is the
+duplication this project keeps getting bitten by.
+
+**Firing** mirrors the punch — same COMBAT/ON_FOOT/standing-still gates, a
+one-shot, a timer for the impact frame — and differs in two places: the target
+search runs at `shot_range` with a narrow `shot_angle_deg` instead of a fist's
+cone, and a single ray against `CollisionLayers.SIGHT` refuses a shot through a
+wall. Damage goes through the existing `take_hit()`, so knockdown, the witness
+chain and the comic layer all follow unchanged. A blocked or missed shot emits
+the existing `punch_missed`, so a shot at nothing is noticed exactly as a
+whiffed swing is.
+
+**One new field, and it earns its place.** `ItemResource.ranged_damage`
+(0 = not a firearm). `readability` cannot separate a pistol from a scrap pipe —
+both are THREATENING and `can_use_in_hands` — and the equipment contract's "no
+invented is-a-weapon flag was needed" was about *drawing*, which genuinely
+needed none. One field rather than a bool beside a number, because a flag can
+disagree with the number. Range stays on `player.gd` next to `punch_reach`:
+reach belongs to whoever is holding the thing.
+
+`IncidentRegistry` subscribes to `shot_landed` alongside `punch_landed`, both
+duck-typed, both `Kind.ASSAULT`.
+
+**A bug only running could find.** `_has_clear_shot()` originally aimed
+chest-to-chest — but `get_chest_height()` exists on the player and *not* on
+`NPCBase`, which exposes only eye and shoulder. The call failed silently and
+the check returned false for every shot, including across open sea. Now
+shoulder-to-shoulder, which both carry and which the TPS camera already pivots
+on.
+
+Two things the probe taught about the world, worth writing down: tower
+silhouettes sit on `CollisionLayers.WALL`, so a character standing inside a
+generated block's footprint has no clear line to anything — correct behaviour
+for the mask, surprising the first time it bites. And an occlusion test that
+relies on a generated building standing in the right place is not a test; the
+committed check authors its own wall.
+
+Verified in `world.tscn` with the real player, a real NPC and the live
+registry: draw sets COMBAT and fires the gesture; a shot at 2.5 m takes health
+1.000 → 0.660 (34 of 100) and puts one ASSAULT incident in the registry under
+`player`; the same shot through an authored wall does neither and reports a
+miss; a shot at nothing reports a miss; holstering returns the pistol to
+`torso/chest_right` and it survives in the save payload. Second import pass 0
+errors / 0 warnings; boot 0 script errors and only the three pre-existing
+warnings. Probes deleted, not committed.
+
+**H6's Definition of Done is met** — found on the island, picked up, saved,
+drawn, carried, fired, damage through the existing path, incident recorded.
+Not seen by eye: whether the placeholder reads as a pistol, whether the draw
+reads as a draw, whether `idle-pistol` blends cleanly, and whether the held
+offsets sit right in the palm.
+
+> *Слайс закрыт. Жест один узел на три клипа — все клипы уже были в проекте.
+> Анимация доставания выбирается по слоту, а не слот под анимацию. Меш
+> появляется в руке с задержкой и с перепроверкой, чтобы не повис в пустой
+> ладони. Выстрел — копия удара, но луч вместо конуса плюс проверка стены;
+> урон и инцидент идут по существующим путям. Новое поле ranged_damage: по
+> readability пистолет от трубы не отличить. Найден настоящий баг: у NPC нет
+> get_chest_height(), из-за чего проверка линии огня всегда возвращала «занято»
+> — перешёл на плечи. Проверено в живом мире: 34 урона из 100, запись в
+> реестре, за стеной — промах.*
+- `player/player.gd`, `player_animation_component.gd`, `equipment_component.gd`, `equipment_visuals_component.gd`, `core/items/item_resource.gd`, `data/items/pistol.tres`, `core/world/incident_registry/incident_registry.gd`
+
+---
+
+## 2026-08-26 - Pistol as an item, and the first thing in the world you can pick up (H6 S1-S2)
+
+**The pistol exists as data.** `data/items/pistol.tres` — `size_class = POCKET`
+(the size model was written with "a pistol must fit a jacket pocket" as its
+worked example), `readability = THREATENING`, `can_use_in_hands = true`,
+`can_throw = false` — registered in `data/items/catalog.tres` and resolving
+through `ItemCatalog.get_item(&"pistol")`.
+
+**The placeholder mesh is one `ArrayMesh` with two surfaces**, grip and barrel,
+generated once by a throwaway tool and committed as
+`data/items/meshes/pistol_placeholder.res`. `ItemResource.held_mesh` takes a
+single `Mesh` by deliberate contract; widening it to accept a scene for the sake
+of temporary art would have spent a real design decision on a placeholder.
+Barrel along +Z, matching the project's visual-forward convention.
+
+**`world/interactables/pistol/pistol.tscn` is the first object in this project
+that can actually be picked up.** `test_can` and `scrap_pipe` were item resources
+with nothing in the world holding them, and the only `InteractableObject`
+instance anywhere was `LodgingRoom`'s `BedPoint`. So this scene is the shape
+later pickups copy, and its parts are not optional: the `Area3D` must be named
+`Area` and the indicator must be a child named `InteractiveVisualIndicator`,
+both being `@onready` path lookups that fail silently on a rename.
+`interaction_type = INVENTORY_ONLY` routes it to the body through
+`player.gd`'s `store_item()`.
+
+**The tick over a spotted object needed a texture, not code.**
+`InteractiveVisualIndicator._ready()` returns early unless
+`indicator_sprite_texture` is set — which is why `BedPoint`'s indicator has
+never shown anything. The pistol assigns `assets/icons/icon_interactive.png`.
+
+**A placed pickup is frozen, and the reason was measured rather than assumed.**
+A downward ray at the spawn area reports a **22 degree slope**, and a
+box-shaped `RigidBody3D` there never sleeps: first placement drifted 2.15 m in
+three seconds and was still moving. `freeze = true` is set on the instance in
+`world.tscn`, not in `pistol.tscn`, so the scene stays physical for a future
+dropped instance while the authored one holds position (re-measured: 0.0000 m
+drift over five seconds). Height comes from the ground ray (Y 128.762) plus the
+mesh AABB minimum, not from `world_data.tres`'s `spawn_point` — that value is Y
+130.062, nearly two metres above the ground it names.
+
+**Persistence needed no work, which is worth stating because it looks like it
+should.** Verified by round-trip rather than by reading: storing the pistol puts
+it in `torso/chest_right`, `EquipmentComponent.get_save_data()` carries
+`{"pockets": {"torso/chest_right": "pistol"}, ...}`, and a fresh component fed
+that payload has it back.
+
+One finding that changes a plan decision: **`stow_anywhere()` picks the first
+EMPTY pocket and takes no preference argument**, so the pistol lands in
+`chest_right` (the starter `scrap_pipe` holds `chest_left`), not the thigh
+pocket the plan named. Forcing a slot would need new API. The better shape, for
+S3: choose the draw clip from `_drawn_from` at draw time —
+`new4/equip-hip-fast` for a chest pocket, `new4/equip-thigh` for a thigh one.
+
+Verified: second import pass 0 errors / 0 warnings; `world.tscn` boots headless
+with 0 script errors and only the three pre-existing warnings (UI anchors,
+`NavigationRegion3D`, ObjectDB at exit). Probes and the mesh generator were
+deleted, not committed. Not seen by eye — whether the placeholder reads as a
+pistol is Stan's call.
+
+> *Пистолет появился как предмет и как первая подбираемая вещь в проекте.
+> Плейсхолдер-меш — один `ArrayMesh` из двух поверхностей (рукоять и дуло),
+> сгенерирован разово. Сцена подбора — образец для всех будущих: `Area` и
+> индикатор ищутся по имени и молча ломаются при переименовании. Галочке нужна
+> была текстура, а не код. Размещённый экземпляр заморожен: у спавна склон 22°,
+> и коробка на нём не засыпает — уползала на 2 м за три секунды. Сохранение
+> работало и так, проверено круговым тестом. Карман выбирает сам
+> `stow_anywhere()` — не бедренный, а первый свободный; анимацию доставания на
+> S3 надо брать от слота, а не наоборот.*
+- `data/items/pistol.tres`, `data/items/meshes/pistol_placeholder.res`, `data/items/catalog.tres`, `world/interactables/pistol/pistol.tscn`, `world/world.tscn`, `docs/architecture/items_and_equipment.md`
+
+---
+
 ## 2026-08-26 - Scope review: island and H3/H4 closed, H6 promoted, camera recorded as out of plan
 
 Documents only. No engine code changed.

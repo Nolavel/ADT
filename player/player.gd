@@ -33,6 +33,12 @@ signal punch_landed(position: Vector3)
 ## connecting to it the same lazy way it resolves IncidentRegistry (see that
 ## file's _try_connect_player_swing()); player.gd never learns who listened.
 signal punch_missed(position: Vector3)
+## Emitted once per shot that actually hits an NPC, after take_hit() has run
+## — the ranged twin of punch_landed, and subscribed to by IncidentRegistry
+## the same duck-typed way. A separate signal rather than reusing
+## punch_landed: a shot is not a punch, and a registry reading a truthful
+## name costs one line over there. Both enter the record as Kind.ASSAULT.
+signal shot_landed(position: Vector3)
 
 ## --- Movement State ---
 enum MovementState { IDLE, WALKING, RUNNING, DECELERATING }
@@ -93,6 +99,21 @@ const ACTOR_ID: StringName = &"player"
 ## this project yet), so it reads as sliding. Standing still is also what
 ## makes the attack a decision rather than a click spam.
 @export var punch_max_speed: float = 0.5
+
+@export_subgroup("Ranged")
+## How far a shot reaches, metres. On the character rather than on the item
+## (see ItemResource.ranged_damage's own comment): reach is a property of
+## who is holding the thing, the same reasoning punch_reach already carries.
+@export var shot_range: float = 40.0
+## Full angular width of the shot's target search, degrees. Narrow enough to
+## be a line rather than a cone — this is aiming, not swinging — but not
+## zero: the search reuses the punch's own target finder, which needs an
+## angle, and a true zero would demand pixel-perfect facing.
+@export var shot_angle_deg: float = 6.0
+## Delay from pulling the trigger to the shot resolving, seconds. Shorter
+## than punch_hit_delay: a trigger pull has no wind-up to buffer, and the
+## same "no animation event system in this project" caveat applies.
+@export var shot_hit_delay: float = 0.06
 ## Reach of the wind-up's INTENT search, as a multiple of punch_reach. The
 ## intent target is who this punch was thrown at — resolved once, at the
 ## moment the button is accepted — and the body turns toward them while the
@@ -163,6 +184,15 @@ var _punch_hit_resolved: bool = false
 ## checked lookup (is_instance_id_valid()) instead of a dangling reference
 ## this node would otherwise be keeping alive for the length of a swing.
 var _punch_intent_id: int = 0
+
+## --- Shot state (a drawn firearm, COMBAT only) ---
+## Mirrors the punch's three fields exactly; kept separate rather than
+## generalised into one "attack" struct because the two resolve differently
+## (a cone at arm's length versus a line with line-of-sight) and merging
+## them would need a branch in every one of them anyway.
+var _is_shooting: bool = false
+var _shot_timer: float = 0.0
+var _shot_resolved: bool = false
 
 ## Injected by ClickToMoveSystem.register_player() at world-init time (see
 ## that file's on_world_ready()) — a separate route from the WorldContext
@@ -306,6 +336,8 @@ func _physics_process(delta: float) -> void:
 	## must keep running or it would never unlock itself.
 	if _is_punching:
 		_update_punch(delta)
+	if _is_shooting:
+		_update_shot(delta)
 
 	if not movement_enabled:
 		return
@@ -692,12 +724,36 @@ func _on_draw_holster_pressed() -> void:
 ## cannot hold it quietly. Drawing something ordinary (a torch, a tool) says
 ## nothing, which is why the check is on readability and not on "is drawn".
 func _on_drawn_changed(item_id: StringName) -> void:
+	## The gesture and the idle both follow what is in the hands. Driven
+	## from here rather than from the animation component subscribing to
+	## equipment itself: player.gd owns both components, so the tie between
+	## them is its business — the same reasoning store_item() already
+	## carries for equipment-versus-inventory.
+	_animation_component.set_drawn_idle(item_id != &"")
+
 	if item_id == &"":
+		_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_HOLSTER)
 		PlayerState.set_stance(PlayerState.Stance.PEACE)
 		return
+
+	_animation_component.play_weapon_gesture(_draw_clip_for_slot(_equipment.get_drawn_from()))
 	var item := ItemCatalog.get_item(item_id)
 	if item != null and item.readability == ItemTraits.Readability.THREATENING:
 		PlayerState.set_stance(PlayerState.Stance.COMBAT)
+
+
+## Which draw clip matches the slot the item actually came from. A chest
+## pocket reads as a hip-level grab, a thigh pocket as a reach down the leg.
+##
+## Matched on the slot id rather than forcing the item into a chosen slot:
+## EquipmentComponent.stow_anywhere() picks the first EMPTY pocket and takes
+## no preference argument, which is by design — a firearm belongs in a
+## jacket's chest pocket once jackets exist. So the animation follows the
+## data, not the other way round.
+func _draw_clip_for_slot(slot_path: StringName) -> StringName:
+	if String(slot_path).contains("thigh"):
+		return PlayerAnimationComponent.ANIM_DRAW_THIGH
+	return PlayerAnimationComponent.ANIM_DRAW_CHEST
 
 
 ## The other half. Standing down puts the weapon away, whatever route the
@@ -819,13 +875,38 @@ func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 		return
 	if PlayerState.stance != PlayerState.Stance.COMBAT:
 		return
-	if _is_punching or not movement_enabled:
+	if _is_punching or _is_shooting or not movement_enabled:
 		return
 	if speed > punch_max_speed:
 		return
 	if PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC:
 		_face_punch_target(screen_pos)
+
+	## A drawn firearm takes the click. Same gates either way — a shot is at
+	## least as much of a commitment as a punch, so it earns no exemption
+	## from standing still, and reusing the gate avoids inventing a second
+	## rule for the same button.
+	if _drawn_firearm() != null:
+		_start_shot()
+		return
 	_start_punch()
+
+
+## The firearm currently in hand, or null — for anything that is not a
+## firearm (a scrap pipe, a torch) and for empty hands alike.
+##
+## ranged_damage is what separates them; readability cannot, since a pipe is
+## THREATENING too. See ItemResource.ranged_damage's own comment.
+func _drawn_firearm() -> ItemResource:
+	if _equipment == null:
+		return null
+	var drawn := _equipment.get_drawn()
+	if drawn == &"":
+		return null
+	var item := ItemCatalog.get_item(drawn)
+	if item == null or item.ranged_damage <= 0.0:
+		return null
+	return item
 
 
 ## ISOMETRIC has no camera-driven facing to fall back on (unlike TPS, see
@@ -985,6 +1066,92 @@ func _find_punch_target(reach: float, angle_deg: float) -> NPCBase:
 			best = npc
 
 	return best
+
+
+## --- Shot (a drawn firearm, COMBAT only) ---
+## Same shape as the punch, deliberately: lock movement, fire a one-shot,
+## let a timer stand in for the impact frame, resolve once. What differs is
+## only the resolution — a line instead of a cone, plus a line-of-sight
+## check the punch has no need for at arm's length.
+func _start_shot() -> void:
+	_is_shooting = true
+	_shot_timer = 0.0
+	_shot_resolved = false
+	set_movement_enabled(false)
+	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_SHOOT_PISTOL)
+
+
+## Called from _physics_process() even while movement is locked — same
+## reason _update_punch() is, see that function's own comment.
+func _update_shot(delta: float) -> void:
+	var is_first_frame := _shot_timer <= 0.0
+	_shot_timer += delta
+
+	if not _shot_resolved and _shot_timer >= shot_hit_delay:
+		_shot_resolved = true
+		_resolve_shot()
+
+	if is_first_frame:
+		## Same AnimationTree cadence trap play_punch() documents: asking
+		## is_weapon_gesture_active() on the frame the request was made can
+		## still read the pre-fire state and end the shot before it started.
+		return
+
+	if not _animation_component.is_weapon_gesture_active():
+		_is_shooting = false
+		set_movement_enabled(true)
+
+
+## Nearest NPC on the firing line, damaged through the same take_hit() a
+## punch uses so knockdown, the witness chain and the comic layer all follow
+## unchanged.
+##
+## Target selection reuses _find_punch_target() at rifle range with a narrow
+## angle rather than raycasting for the NPC directly: that search already
+## filters GROUP_PERCEIVED_ACTOR to NPCBase and is already verified, and the
+## NPC bodies carry no collision layer a ray could select on without
+## inventing one. The ray that IS cast asks a different, smaller question —
+## is there a wall in the way — against CollisionLayers.SIGHT, the same
+## wall-only mask PerceptionComponent uses to decide whether an NPC can see
+## the player. Composing the two gives honest occlusion without a new mask.
+func _resolve_shot() -> void:
+	var item := _drawn_firearm()
+	if item == null:
+		return
+
+	var target := _find_punch_target(shot_range, shot_angle_deg)
+	if target == null:
+		## An air shot is as observable as an air swing, and reaches the
+		## same subscribers — see punch_missed's own comment on why neither
+		## goes anywhere near IncidentRegistry.
+		punch_missed.emit(global_position)
+		return
+
+	if not _has_clear_shot(target):
+		## The wall took it. Deliberately still a miss rather than nothing:
+		## the shot was fired, and anyone watching saw it happen.
+		punch_missed.emit(global_position)
+		return
+
+	target.take_hit(global_position, item.ranged_damage)
+	shot_landed.emit(target.global_position)
+
+
+## Whether a wall stands between this character's shoulders and the target's.
+##
+## Shoulder height on both ends rather than origin-to-origin: both origins
+## sit at the feet, and a floor-level line would be blocked by every kerb.
+## get_shoulder_height() specifically, not get_chest_height(): the player
+## carries all three body landmarks but NPCBase exposes only eye and
+## shoulder, and calling the missing one here silently failed the whole
+## check — every shot read as blocked, including across open sea. Shoulder
+## is also the landmark the TPS camera already pivots on.
+func _has_clear_shot(target: NPCBase) -> bool:
+	var from := global_position + Vector3(0.0, get_shoulder_height(), 0.0)
+	var to := target.global_position + Vector3(0.0, target.get_shoulder_height(), 0.0)
+	var query := PhysicsRayQueryParameters3D.create(from, to, CollisionLayers.SIGHT)
+	query.collide_with_areas = false
+	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 
 
 ## --- Stamina consumption (drains while running) ---

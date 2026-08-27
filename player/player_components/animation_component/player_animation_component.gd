@@ -65,6 +65,34 @@ const ANIM_COMBAT_RETREAT: StringName = &"new3/legs_locomotion_run_backward_2"
 ## eye against the actual swing the next time this runs.
 const ANIM_COMBAT_PUNCH: StringName = &"new4/punch1"
 
+## Weapon-gesture clips, all fired through the one weapon_oneshot node — see
+## play_weapon_gesture() and _setup_animation_tree()'s own comment on why
+## draw, holster and fire share a single node rather than getting one each.
+##
+## Two draw clips, not one: the gesture has to start where the item actually
+## was, and EquipmentComponent decides that, not this file. A chest pocket
+## reads as a hip-level grab, a thigh pocket as a reach down the leg. The
+## caller passes the clip; this file only names them.
+const ANIM_DRAW_CHEST: StringName = &"new4/equip-hip-fast"
+const ANIM_DRAW_THIGH: StringName = &"new4/equip-thigh"
+
+## Holster, bare MeleeLib (empty prefix). ShooterLib has six equip-* clips
+## and nothing that puts a weapon away, so the choice is between this and
+## playing a draw backwards; a reversed clip usually reads wrong at the
+## wrists. Confirm by eye — if it reads as a draw rather than a stow, the
+## fallback is one constant.
+const ANIM_HOLSTER: StringName = &"WeaponChange_hip"
+
+## Firing, ShooterLib (new4/). The pistol-specific clip, not shoot-hip.
+const ANIM_SHOOT_PISTOL: StringName = &"new4/shoot-pistol"
+
+## COMBAT idle while something is drawn, substituted into the combat blend
+## space's centre point (see set_drawn_idle()). The eight directional points
+## are deliberately NOT swapped — a full pistol locomotion set exists in the
+## project if the walk reads wrong with a weapon in hand, but that is a
+## larger change and this one reverts in a line.
+const ANIM_COMBAT_IDLE_PISTOL: StringName = &"new4/idle-pistol"
+
 ## Death clip, ShooterLib (new4/). Non-looping — an AnimationNodeAnimation
 ## holds the last frame once a non-looping clip finishes, which is exactly
 ## the permanent collapsed pose play_death() needs.
@@ -130,6 +158,15 @@ var _stance_blend_target: float = 0.0
 var _is_dead: bool = false
 
 var _anim_tree: AnimationTree
+
+## The clip node the weapon one-shot plays. Held as a member because its
+## `animation` is rewritten immediately before every request — one node, one
+## gesture at a time, see play_weapon_gesture().
+var _weapon_clip: AnimationNodeAnimation = null
+
+## The COMBAT blend space's centre point, held so set_drawn_idle() can swap
+## which idle plays without rebuilding the tree.
+var _combat_idle: AnimationNodeAnimation = null
 
 var _skeleton: Skeleton3D
 var _head_lookat: LookAtModifier3D
@@ -256,6 +293,38 @@ func is_punch_active() -> bool:
 	if not _anim_tree:
 		return false
 	return bool(_anim_tree.get("parameters/punch_oneshot/active"))
+
+
+## Fires one weapon gesture — a draw, a holster or a shot — layered over
+## whichever stance branch is mixed in, the same way play_punch() is.
+##
+## The clip is set on the shared node immediately before the request rather
+## than each gesture owning a node: the three are mutually exclusive things
+## to do with the same hands, so a second one playing simultaneously would
+## be a bug and not a feature. Re-firing while active restarts from the top;
+## player.gd gates each caller behind its own "not already busy" check.
+func play_weapon_gesture(clip: StringName) -> void:
+	if not _anim_tree or _weapon_clip == null:
+		return
+	_weapon_clip.animation = clip
+	_anim_tree.set("parameters/weapon_oneshot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## True while a weapon gesture is still playing — polled by player.gd to
+## know when to hand movement back, same contract as is_punch_active().
+func is_weapon_gesture_active() -> bool:
+	if not _anim_tree:
+		return false
+	return bool(_anim_tree.get("parameters/weapon_oneshot/active"))
+
+
+## Substitutes the COMBAT idle for the drawn-weapon one, or puts it back.
+## Called from player.gd on the equipment's own drawn_changed, so the idle
+## reflects what is in the hands rather than this file tracking it.
+func set_drawn_idle(drawn: bool) -> void:
+	if _combat_idle == null:
+		return
+	_combat_idle.animation = ANIM_COMBAT_IDLE_PISTOL if drawn else ANIM_COMBAT_IDLE
 
 
 ## Fires the one-way, irreversible switch to the death pose. Deliberately
@@ -403,6 +472,7 @@ func _setup_animation_tree() -> void:
 
 	var combat_idle := AnimationNodeAnimation.new()
 	combat_idle.animation = ANIM_COMBAT_IDLE
+	_combat_idle = combat_idle
 	var combat_forward := AnimationNodeAnimation.new()
 	combat_forward.animation = ANIM_COMBAT_FORWARD
 	var combat_run := AnimationNodeAnimation.new()
@@ -453,6 +523,23 @@ func _setup_animation_tree() -> void:
 	tree_root.connect_node("punch_oneshot", 0, "stance_blend")
 	tree_root.connect_node("punch_oneshot", 1, "punch_clip")
 
+	## Weapon gestures — draw, holster, shot — on a SECOND OneShot chained
+	## after the punch's rather than sharing it. Sharing would mean a shot
+	## and a punch could never be told apart by is_*_active(), which is what
+	## player.gd polls to know when to give movement back; two nodes keep
+	## the two questions separate for one node's cost. Only one clip node
+	## underneath, though: the three gestures are mutually exclusive uses of
+	## the same hands, so _weapon_clip's animation is rewritten per request
+	## (see play_weapon_gesture()) instead of three clip nodes idling.
+	var weapon_clip := AnimationNodeAnimation.new()
+	weapon_clip.animation = ANIM_DRAW_CHEST
+	_weapon_clip = weapon_clip
+	var weapon_oneshot := AnimationNodeOneShot.new()
+	tree_root.add_node("weapon_clip", weapon_clip)
+	tree_root.add_node("weapon_oneshot", weapon_oneshot)
+	tree_root.connect_node("weapon_oneshot", 0, "punch_oneshot")
+	tree_root.connect_node("weapon_oneshot", 1, "weapon_clip")
+
 	## Death branch, an AnimationNodeTransition at the tree's root rather than
 	## another AnimationNodeOneShot: a OneShot's non-looping clip snaps back
 	## to whatever is underneath the instant it finishes playing — exactly
@@ -478,7 +565,7 @@ func _setup_animation_tree() -> void:
 	death_transition.set_input_name(1, "death")
 	tree_root.add_node("death_clip", death_clip)
 	tree_root.add_node("death_transition", death_transition)
-	tree_root.connect_node("death_transition", 0, "punch_oneshot")
+	tree_root.connect_node("death_transition", 0, "weapon_oneshot")
 	tree_root.connect_node("death_transition", 1, "death_clip")
 	tree_root.connect_node("output", 0, "death_transition")
 

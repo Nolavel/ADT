@@ -49,6 +49,10 @@ class_name EquipmentVisualsComponent
 ## be found by looking at it. These are meant to be dragged in the inspector
 ## until the thing sits in the fist — they are not defaults anybody computed.
 @export var held_offset: Vector3 = Vector3.ZERO
+## Seconds between a draw starting and the item appearing in the hand.
+## Roughly a third of the draw clip, so the two land together. Set to 0 for
+## the old snap-attach behaviour; nothing else changes.
+@export var draw_attach_delay: float = 0.22
 @export var held_rotation_deg: Vector3 = Vector3.ZERO
 
 @export var debug_log: bool = false
@@ -109,12 +113,29 @@ func refresh_all() -> void:
 ## Builds the held mesh on draw, frees it on holster. Freed rather than
 ## hidden: the next drawn item is a different mesh, so a kept instance would
 ## only have to be rebuilt anyway.
+##
+## Appearing is delayed by draw_attach_delay so the item arrives as the hand
+## reaches the pocket rather than at the frame the key was pressed;
+## disappearing is not, because a hand that has let go should read as empty
+## immediately. The delay lives here rather than on player.gd because it
+## answers "when does the mesh show", which is a presentation question — the
+## same reason this component still owns no equipment state.
 func _on_drawn_changed(item_id: StringName) -> void:
 	if _held_instance != null:
 		_held_instance.queue_free()
 		_held_instance = null
 	if item_id == &"" or _hand_attachment == null:
 		return
+
+	if draw_attach_delay > 0.0:
+		await get_tree().create_timer(draw_attach_delay).timeout
+		## Holstered, swapped or streamed out while the hand was still
+		## travelling — without this re-check the mesh would appear in an
+		## empty hand a fifth of a second after the player put it away.
+		if not is_instance_valid(self) or _equipment == null:
+			return
+		if _equipment.get_drawn() != item_id or _hand_attachment == null:
+			return
 
 	var item := ItemCatalog.get_item(item_id)
 	if item == null or item.held_mesh == null:
