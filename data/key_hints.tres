@@ -38,20 +38,6 @@ description = "Interact / pick up / board"
 modes = Array[int]([0])
 sort_order = 10
 
-[sub_resource type="Resource" id="Resource_kh23"]
-script = ExtResource("1_entry")
-action_name = &"draw_holster"
-description = "Draw / holster — cycles what is on you"
-modes = Array[int]([0])
-sort_order = 25
-
-[sub_resource type="Resource" id="Resource_kh24"]
-script = ExtResource("1_entry")
-action_name = &"weapon_reload"
-description = "Reload the magazine"
-modes = Array[int]([0])
-sort_order = 26
-
 [sub_resource type="Resource" id="Resource_kh06"]
 script = ExtResource("1_entry")
 action_name = &"toggle_stance"
@@ -194,6 +180,20 @@ action_name = &"interact"
 description = "Exit hover (near-zero speed only)"
 modes = Array[int]([1])
 sort_order = 10
+
+[sub_resource type="Resource" id="Resource_kh23"]
+script = ExtResource("1_entry")
+action_name = &"draw_holster"
+description = "Draw / holster — cycles what is on you"
+modes = Array[int]([0])
+sort_order = 25
+
+[sub_resource type="Resource" id="Resource_kh24"]
+script = ExtResource("1_entry")
+action_name = &"weapon_reload"
+description = "Reload the magazine"
+modes = Array[int]([0])
+sort_order = 26
 
 [resource]
 script = ExtResource("2_catalog")

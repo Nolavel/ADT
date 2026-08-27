@@ -214,6 +214,7 @@ var _last_drawn_from: StringName = &""
 var _is_reloading: bool = false
 var _reload_timer: float = 0.0
 var _reload_applied: bool = false
+var _reload_item_id: StringName = &""
 var _shot_timer: float = 0.0
 var _shot_resolved: bool = false
 
@@ -1262,6 +1263,7 @@ func _on_weapon_reload_pressed() -> void:
 	_is_reloading = true
 	_reload_timer = 0.0
 	_reload_applied = false
+	_reload_item_id = item.id
 	set_movement_enabled(false)
 	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_RELOAD_RIFLE)
 
@@ -1274,13 +1276,15 @@ func _update_reload(delta: float) -> void:
 
 	if not _reload_applied and _reload_timer >= reload_time:
 		_reload_applied = true
-		var item := _drawn_firearm()
+		#var item := _drawn_firearm()
 		## Re-read rather than captured at the press: the hands could have
 		## been emptied mid-clip (a stance change holsters), and refilling a
 		## weapon that is no longer held would be a magazine appearing out of
 		## nowhere.
-		if item != null and _weapon != null:
-			_weapon.reload(item.id)
+		#if item != null and _weapon != null:
+			#_weapon.reload(item.id)
+		if _reload_item_id != &"" and _weapon != null:
+			_weapon.reload(_reload_item_id)
 
 	if is_first_frame:
 		## Same AnimationTree cadence trap the punch and the shot document:
