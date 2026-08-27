@@ -12,6 +12,41 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - The pistol was lying below the player's focus cast
+
+No tick over it, and `F` did nothing — reported from playtest.
+
+`PlayerFocusCast` is a capsule at y 1.3 with radius 0.4: it sees roughly 0.9 m to
+1.7 m above the feet, and `player.tscn` marks that reach as a deliberate
+gameplay choice. The pistol was placed on the terrain, 0.13 m above ground, so it
+never entered the volume — `on_detected_by_player()` never fired, no tick,
+`current_interactable` stayed null, and the interact key had nothing to act on.
+
+Fixed on the object rather than the player: the pistol's detection `Area3D` grew
+from a snug `0.5 × 0.5 × 0.6` to `0.7 × 2.4 × 0.7` centred a metre above its
+origin. A small thing on the ground is entitled to a tall detection volume —
+that is what the `Area` is for — and the player's tuned capsule stays untouched.
+
+**The reporting failure behind this is the part worth keeping.** The S1–S2 probe
+called `player.store_item()` and checked the save round-trip, and the entry
+claimed pickup was verified. Those are the second half. The half that was broken
+— `detect_interactable()` → `on_detected_by_player()` → tick → `try_interact()` —
+had never been executed once. The replacement probe drives that path: it stands
+the player in front of the pistol in `world.tscn` and asserts
+`current_interactable`, then the indicator's own `is_sprite_visible`, and only
+then storage. It was run against the unfixed scene first and failed at step one,
+which is what makes the pass meaningful.
+
+> *Пистолет лежал ниже зоны обнаружения игрока: капсула фокуса видит примерно
+> 0.9–1.7 м над ступнями, а он был в 0.13 м. Увеличена зона самого объекта
+> (0.7 × 2.4 × 0.7, центр на метр выше origin), капсула игрока не тронута.
+> Важнее сам урок: прошлый зонд дёргал store_item() напрямую и объявил подбор
+> проверенным, ни разу не пройдя путь обнаружения. Новый зонд идёт настоящим
+> путём и сначала был прогнан на сломанной сцене.*
+- `world/interactables/pistol/pistol.tscn`, `docs/architecture/items_and_equipment.md`
+
+---
+
 ## 2026-08-26 - The camera never left ISOMETRIC: restoring a deleted else
 
 Pressing `V` changed `PlayerState.view_mode` but left the camera sitting in its
