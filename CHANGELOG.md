@@ -12,6 +12,78 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-26 - Pistol as an item, and the first thing in the world you can pick up (H6 S1-S2)
+
+**The pistol exists as data.** `data/items/pistol.tres` — `size_class = POCKET`
+(the size model was written with "a pistol must fit a jacket pocket" as its
+worked example), `readability = THREATENING`, `can_use_in_hands = true`,
+`can_throw = false` — registered in `data/items/catalog.tres` and resolving
+through `ItemCatalog.get_item(&"pistol")`.
+
+**The placeholder mesh is one `ArrayMesh` with two surfaces**, grip and barrel,
+generated once by a throwaway tool and committed as
+`data/items/meshes/pistol_placeholder.res`. `ItemResource.held_mesh` takes a
+single `Mesh` by deliberate contract; widening it to accept a scene for the sake
+of temporary art would have spent a real design decision on a placeholder.
+Barrel along +Z, matching the project's visual-forward convention.
+
+**`world/interactables/pistol/pistol.tscn` is the first object in this project
+that can actually be picked up.** `test_can` and `scrap_pipe` were item resources
+with nothing in the world holding them, and the only `InteractableObject`
+instance anywhere was `LodgingRoom`'s `BedPoint`. So this scene is the shape
+later pickups copy, and its parts are not optional: the `Area3D` must be named
+`Area` and the indicator must be a child named `InteractiveVisualIndicator`,
+both being `@onready` path lookups that fail silently on a rename.
+`interaction_type = INVENTORY_ONLY` routes it to the body through
+`player.gd`'s `store_item()`.
+
+**The tick over a spotted object needed a texture, not code.**
+`InteractiveVisualIndicator._ready()` returns early unless
+`indicator_sprite_texture` is set — which is why `BedPoint`'s indicator has
+never shown anything. The pistol assigns `assets/icons/icon_interactive.png`.
+
+**A placed pickup is frozen, and the reason was measured rather than assumed.**
+A downward ray at the spawn area reports a **22 degree slope**, and a
+box-shaped `RigidBody3D` there never sleeps: first placement drifted 2.15 m in
+three seconds and was still moving. `freeze = true` is set on the instance in
+`world.tscn`, not in `pistol.tscn`, so the scene stays physical for a future
+dropped instance while the authored one holds position (re-measured: 0.0000 m
+drift over five seconds). Height comes from the ground ray (Y 128.762) plus the
+mesh AABB minimum, not from `world_data.tres`'s `spawn_point` — that value is Y
+130.062, nearly two metres above the ground it names.
+
+**Persistence needed no work, which is worth stating because it looks like it
+should.** Verified by round-trip rather than by reading: storing the pistol puts
+it in `torso/chest_right`, `EquipmentComponent.get_save_data()` carries
+`{"pockets": {"torso/chest_right": "pistol"}, ...}`, and a fresh component fed
+that payload has it back.
+
+One finding that changes a plan decision: **`stow_anywhere()` picks the first
+EMPTY pocket and takes no preference argument**, so the pistol lands in
+`chest_right` (the starter `scrap_pipe` holds `chest_left`), not the thigh
+pocket the plan named. Forcing a slot would need new API. The better shape, for
+S3: choose the draw clip from `_drawn_from` at draw time —
+`new4/equip-hip-fast` for a chest pocket, `new4/equip-thigh` for a thigh one.
+
+Verified: second import pass 0 errors / 0 warnings; `world.tscn` boots headless
+with 0 script errors and only the three pre-existing warnings (UI anchors,
+`NavigationRegion3D`, ObjectDB at exit). Probes and the mesh generator were
+deleted, not committed. Not seen by eye — whether the placeholder reads as a
+pistol is Stan's call.
+
+> *Пистолет появился как предмет и как первая подбираемая вещь в проекте.
+> Плейсхолдер-меш — один `ArrayMesh` из двух поверхностей (рукоять и дуло),
+> сгенерирован разово. Сцена подбора — образец для всех будущих: `Area` и
+> индикатор ищутся по имени и молча ломаются при переименовании. Галочке нужна
+> была текстура, а не код. Размещённый экземпляр заморожен: у спавна склон 22°,
+> и коробка на нём не засыпает — уползала на 2 м за три секунды. Сохранение
+> работало и так, проверено круговым тестом. Карман выбирает сам
+> `stow_anywhere()` — не бедренный, а первый свободный; анимацию доставания на
+> S3 надо брать от слота, а не наоборот.*
+- `data/items/pistol.tres`, `data/items/meshes/pistol_placeholder.res`, `data/items/catalog.tres`, `world/interactables/pistol/pistol.tscn`, `world/world.tscn`, `docs/architecture/items_and_equipment.md`
+
+---
+
 ## 2026-08-26 - Scope review: island and H3/H4 closed, H6 promoted, camera recorded as out of plan
 
 Documents only. No engine code changed.
