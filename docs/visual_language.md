@@ -113,8 +113,10 @@ event, and the game may well want one without the other.
 
 ## 6. The words are data
 
-Every event's word pool, colour, size, duration and radius is a resource
-under `data/comic_effects/`, one file per event, gathered by a catalog.
+Every event's word pool, emphasis and radius is a resource under
+`data/comic_effects/`, one file per event, gathered by a catalog. How it is
+drawn — colour, type, border, timing — is a second resource under
+`data/comic_effects/profiles/`, shared by a whole class of events (§7).
 
 This is deliberate and load-bearing for this document's purpose: **the
 vocabulary is expected to grow, and growing it is not a programming task.**
@@ -140,7 +142,55 @@ Current events, and the character each pool is written to:
 
 ---
 
-## 7. Where this sits in the rest of the look
+## 7. The panel around the word
+
+A word does not float on its own. It arrives on a small **panel**: a
+near-black plate, a very faint print grid inside it, and an inked border that
+is not quite straight. The panel is drawn, not textured — every one is built
+from the same handful of numbers, so retuning the look is retuning data, the
+same way the vocabulary is (§6).
+
+**Why a panel at all.** Bare outlined text on a city street is competing with
+whatever is behind it. A plate gives the word its own ground, which is what a
+comic page does for a sound effect, and it lets the frame get loud once
+(§1) without raising the type size.
+
+**The panel has no tail.** A pointer aimed at whoever made the sound would
+turn the plate into a speech bubble — the character's voice instead of the
+frame's — and §2 is the whole reason that is wrong. The link to the source is
+already made: the panel sits on it and rises from it. If a tail ever appears,
+that rule went with it.
+
+**Colour lives in the border and the outline, not in the fill.** A large
+coloured rectangle reads as a UI tooltip, which is the one thing this device
+must not look like. The plate stays near-black in every register.
+
+**Four registers, not one per event.** A `ComicVisualProfile` is shared by a
+whole class of events, so the panel says *what kind of thing this is* rather
+than *which exact event fired*:
+
+| Register | Border | Used by |
+|---|---|---|
+| `npc` | Hard rectangle, slight corner wander | Everything the crowd does |
+| `player` | Eased corners, warmer ink | The player's own effort and stance |
+| `player_hurt` | Skewed and broken, heavier ink | Damage to the player |
+| `environment` | Thin, exact, no wander | The world and its machines — no consumer yet |
+
+This is a deliberate reduction: the events used to carry thirteen separate
+colours. Thirteen is a legend, and §8 is explicit that a legend the player
+memorises is the thing to avoid. Four is a register — *whose noise is this* —
+which is closer to how a page is inked than to how a HUD is coloured. It is
+still the nearest this document comes to that line, and it is named here so
+that the next person can argue with it rather than discover it.
+
+**The panel is timed, not just faded.** It pops in fast with a small
+overshoot, holds at full contrast while it is being read, then fades as it
+drifts up. The old behaviour started fading on the first frame, which meant a
+word was never at full contrast while anyone was actually reading it.
+
+---
+
+## 8. Where this sits in the rest of the look
 
 The comic layer is one device among several, and it should read as part of
 the same design rather than an effect bolted on:
@@ -167,7 +217,7 @@ the same design rather than an effect bolted on:
 
 ---
 
-## 8. This grows
+## 9. This grows
 
 The event set and the word pools are both expected to expand as the core
 loop does — reactions to intent, surveillance, advertising, district-specific

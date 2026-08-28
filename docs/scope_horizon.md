@@ -29,7 +29,7 @@ constraint on everything below. A horizon that assumes more is fiction.
 **Sequencing is by dependency, not by date.** Items unlock each other. Calendar
 dates appear only where an external commitment exists.
 
-Last reviewed: 2026-08-26
+Last reviewed: 2026-08-28
 
 ---
 
@@ -174,6 +174,32 @@ now owns the ISOMETRIC yaw as well as the follow point, and the four-position
 orbit (`OrbitalPosition`, Q/E stepping) plus `toggle_follow` (`P`) are left
 in `OnFootCameraComponent` unreached, pending removal once the feel is
 settled.
+
+### Comic panels (the word gets a frame)
+
+The floating comic word became a drawn panel — plate, faint print grid, inked
+border — with four shared visual registers instead of thirteen per-event
+colours, and pop → hold → fade timing instead of a fade that started on the
+first frame. `docs/visual_language.md` §7 is the art-direction record;
+`CHANGELOG.md` 2026-08-28 is the dated one.
+
+**This was never on this page, and it is not a horizon.** It came out of an
+idea worth trying and was built the same week it was had. The trade is stated
+plainly rather than dressed up: development here is one person with a limited
+budget and no external plan to answer to, so experimenting with what the
+interface feels like is part of the work rather than a distraction from it —
+but it spends time H6 was holding. The intent is to keep such work in the
+form of targeted follow-up edits, not reverted merges.
+
+**What it did not touch, on purpose:** the vocabulary, the distance gate, and
+`MAX_ACTIVE` — `docs/visual_language.md` §4 makes those art direction, and
+this change had no art-direction argument for moving them.
+
+**Open:** the `environment` register exists with no consumer, waiting for a
+first world event rather than for an event invented to justify it. And the
+look itself is unverified — headless proves the geometry, the phases and the
+absence of leaks, not whether the panel reads as a comic panel rather than a
+UI tooltip. That needs eyes.
 
 ---
 
