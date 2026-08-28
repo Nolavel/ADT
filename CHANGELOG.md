@@ -12,6 +12,69 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - The candidate decal: "I will walk there" vs "I can reach it"
+
+PR #40 gave `InteractComponent` an intent tier, so the game already knew what
+the player was aimed at and already walked the character over on F. What was
+missing was any quiet way of saying so. Now a ground decal sits under the
+targeted object and changes colour: **dim** while pressing F would walk the
+character over, **bright** once it is within arm's reach.
+
+**The two states are not read from which tier found the object.** That would
+lie: `PlayerFocusCast` reaches about 1.8 m forward while `pickup_distance` is
+0.9 m, so a focus-cast hit can still need an approach. `in_reach` is computed
+with the same `_flat_distance_to(object) <= pickup_distance` that
+`try_interact()` uses to decide, so the colour cannot drift from the
+behaviour by construction rather than by luck.
+
+`InteractComponent` gained one signal — `interact_target_changed(object,
+in_reach)` — and still knows nothing about widgets. `TargetIndicator` gained a
+`decal_only` mode (ring and arrow are not created at all), two colours and
+`show_candidate()`, and still knows nothing about items, equipment or pickup;
+it is told "appear here, this colour". `HUDComponent` connects the two, which
+is where it belongs — it already owns the indicator and already receives the
+world context.
+
+**A second node of the same class, not a second mode on the existing one.** In
+ISOMETRIC "where I am walking" and "what I am reaching for" can be on screen
+at once, so one node would have had to choose. The move marker is unchanged in
+every respect: ring, arrow, walk/run/invalid palette, and its ON_FOOT +
+ISOMETRIC gate. The candidate decal deliberately drops the ISOMETRIC half of
+that gate — interacting works the same in both views.
+
+**A real bug, older than this change, found by the probe.** In Godot a freed
+Object compares **equal to null**. `detect_interactable()` gates its whole
+update on `new_interactable != current_interactable`, so after a pickup —
+`new` is null, `current` is freed — that reads as *no change*: the branch is
+skipped and `current_interactable` keeps pointing at a dead object **forever**,
+while also answering `== null` truthfully to anyone who asks. It had no
+visible symptom before there was a widget following that value; the decal
+made it visible by staying on an empty patch of ground.
+
+Fixed at the source: `detect_interactable()` normalises an invalid target to
+null before anything else looks at it, so `on_lost_by_player()` and every
+consumer see an honest null. The new edge test compares instance ids for the
+same reason, and `HUDComponent` asks `is_instance_valid()` rather than
+`== null`, since those two questions look identical here and only one of them
+is unambiguous.
+
+24 assertions in `world.tscn`, all green, negative control first: with
+`intent_radius = 0` the decal never appears. Colours are read back out of the
+live shader parameter rather than from the exports, so the test proves what is
+actually on screen, and two assertions pin Godot's freed-equals-null behaviour
+directly so the reasoning above is not folklore.
+
+*Под предметом, на который нацелен игрок, появляется декаль: тусклая — «дойду»,
+яркая — «дотянусь». Граница берётся тем же выражением, которое потом и решает,
+идти или брать, поэтому цвет не может разойтись с поведением.
+`InteractComponent` отдаёт один сигнал и ничего не знает про виджеты;
+`TargetIndicator` получил режим «только декаль» и ничего не знает про предметы.
+Пойман баг старше этой правки: освобождённый объект в Godot равен null, из-за
+чего `current_interactable` после подбора навсегда залипал на мёртвой ссылке —
+симптома не было, пока за этим значением не начал следить виджет.*
+
+---
+
 ## 2026-08-27 - F means "pick that up", not "you are standing correctly"
 
 Picking something up made the player position the character for the UI rather

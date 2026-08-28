@@ -24,6 +24,20 @@ class_name InteractComponent
 @onready var debug_label: Label = $Label
 ## через него видем какой обьект в фокусе, name, его возможности, количество
 
+## What the player is aimed at, and whether they can already reach it.
+## `object` is null when nothing is targeted.
+##
+## `in_reach` is the SAME question try_interact() asks before deciding whether
+## to walk: distance <= pickup_distance. Deliberately not "which tier found
+## it" — PlayerFocusCast reaches about 1.8 m while pickup_distance is 0.9, so
+## a focus-cast hit can still need an approach, and a display keyed to the
+## tier would say "in reach" where the character is about to walk. Sharing the
+## expression is what keeps the two from drifting apart.
+##
+## Emitted on a change of EITHER value, so walking up to an already-chosen
+## object is an edge too.
+signal interact_target_changed(object: InteractableObject, in_reach: bool)
+
 @export_group("Intent")
 ## Radius of the INTENT search, metres — the second detection tier, used when
 ## PlayerFocusCast finds nothing.
@@ -55,7 +69,10 @@ class_name InteractComponent
 @export var approach_timeout: float = 4.0
 
 var current_interactable: InteractableObject = null
-var previous_interactable: InteractableObject = null ## Для отслеживания смены объекта
+## The target as of the last interact_target_changed emit. Declared here from
+## the start and never actually written until that signal existed; it is what
+## makes the signal an edge instead of a per-frame report.
+var previous_interactable: InteractableObject = null
 var carried_item: InteractableObject = null
 var closest_distance: float = INF
 var detected_count: int = 0
@@ -64,6 +81,19 @@ var detected_count: int = 0
 ## Null whenever no approach is in flight — which is also how every abort
 ## path (timeout, the player taking over, the object being freed) reports
 ## itself: it clears this and nothing else.
+## Last value emitted through interact_target_changed, so the signal stays an
+## edge rather than a per-frame report.
+var _last_in_reach: bool = false
+## Instance id of the target at that same emit, 0 for none.
+##
+## An id and NOT the reference, because in Godot a freed Object compares
+## EQUAL to null: picking something up frees it, so "the thing we were
+## pointing at is gone" read as "nothing changed" and left the candidate
+## decal sitting on an empty patch of ground. Only visible when the pickup
+## happened without in_reach also flipping, which is exactly what an
+## auto-approach does.
+var _last_target_id: int = 0
+
 var _pending_interactable: InteractableObject = null
 var _approach_elapsed: float = 0.0
 ## The body stopped while an approach was pending. NOT itself a cancel: the
@@ -109,6 +139,16 @@ func _physics_process(delta: float) -> void:
 	update_debug_label()
 	
 func detect_interactable() -> void:
+	## A picked-up object is freed, and in Godot a freed Object compares EQUAL
+	## to null. So "new is null, current is freed" reads as "nothing changed"
+	## further down, the reference sticks forever, and every consumer is handed
+	## a dead object that also claims to be null. Normalise first and the rest
+	## of this function — including on_lost_by_player() — sees an honest null.
+	if not is_instance_valid(current_interactable):
+		current_interactable = null
+	if not is_instance_valid(previous_interactable):
+		previous_interactable = null
+
 	var new_interactable: InteractableObject = null  # ✅ Всегда null по умолчанию
 	closest_distance = INF
 	detected_count = 0
@@ -164,6 +204,25 @@ func detect_interactable() -> void:
 			print("👁️ Объект обнаружен: ", new_interactable.name_interactable_object)
 		
 		current_interactable = new_interactable
+
+	_emit_target_if_changed()
+
+
+## Announces what is targeted and whether it is already within arm's reach.
+## Called every frame but emits only on an edge — the object changing, or the
+## player crossing pickup_distance without changing target.
+func _emit_target_if_changed() -> void:
+	## A freed target answers false here and 0 below, so a picked-up object
+	## reports as "nothing targeted" rather than being dereferenced.
+	var in_reach := current_interactable != null \
+			and _flat_distance_to(current_interactable) <= pickup_distance
+	var target_id: int = current_interactable.get_instance_id() if current_interactable else 0
+	if target_id == _last_target_id and in_reach == _last_in_reach:
+		return
+	previous_interactable = current_interactable
+	_last_target_id = target_id
+	_last_in_reach = in_reach
+	interact_target_changed.emit(current_interactable, in_reach)
 
 func update_debug_label() -> void:
 	if not debug_label:
