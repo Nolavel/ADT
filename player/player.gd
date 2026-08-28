@@ -23,6 +23,11 @@ extends CharacterBody3D
 
 ## --- Signals ---
 signal movement_started
+
+## R was pressed on a weapon that has nothing to load — a full magazine, or
+## an empty reserve behind it. The HUD flashes the ammo row; nothing else
+## subscribes, and nothing here decides what the refusal should look like.
+signal reload_refused(item_id: StringName)
 signal movement_stopped
 signal state_changed(new_state: MovementState)
 ## Emitted once per punch that actually connects with an NPC, after
@@ -1086,6 +1091,15 @@ func _try_spend_round() -> bool:
 ## instead of a dot while something is aimed with. One asker, one answer:
 ## a UI re-deriving "is this a firearm" from the catalog would be a second
 ## definition free to disagree with this one.
+## True while a draw / holster / fire / reload clip is still playing. Exposed
+## because MouseCursorUI has to tell "the hands are empty" from "the hands are
+## busy" — an empty answer during a gesture is a moment, not a state.
+func is_weapon_gesture_active() -> bool:
+	if _animation_component == null:
+		return false
+	return _animation_component.is_weapon_gesture_active()
+
+
 func get_drawn_firearm() -> ItemResource:
 	if _equipment == null:
 		return null
@@ -1296,6 +1310,12 @@ func _on_weapon_reload_pressed() -> void:
 	## a full magazine, or an empty reserve behind it. can_reload() answers
 	## both in the one place that owns the numbers.
 	if not _weapon.can_reload(item.id):
+		## Refused, and SAID so. This returned silently for as long as reload
+		## existed: a full magazine or an empty reserve produced no gesture,
+		## no message and no sound, which from the outside is the same picture
+		## as a key that does nothing. Measured 2026-08-28 — the reload path
+		## itself works end to end; the refusal was the whole complaint.
+		reload_refused.emit(item.id)
 		return
 
 	_is_reloading = true

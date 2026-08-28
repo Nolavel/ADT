@@ -54,10 +54,17 @@ extends Control
 ## reading, and giving both the same weight makes neither stand out.
 @export var reserve_color: Color = Color(0.62, 0.62, 0.62, 0.9)
 @export var font_size: int = 12
+## Colour the row flashes when a reload is refused.
+@export var refusal_color: Color = Color(0.90, 0.32, 0.18, 1.0)
+## How long that flash takes to fade, seconds.
+@export var refusal_flash_time: float = 0.45
 
 var _rounds: int = 0
 var _capacity: int = 0
 var _reserve: int = 0
+## 1 at the moment of a refused reload, easing to 0. Tints every pip.
+var _refusal_flash: float = 0.0
+var _refusal_tween: Tween = null
 
 
 func _ready() -> void:
@@ -78,6 +85,28 @@ func set_ammo(rounds: int, capacity: int, reserve: int) -> void:
 	_reserve = maxi(reserve, 0)
 	_apply_minimum_size()
 	visible = true
+	queue_redraw()
+
+
+## A refused reload, made visible. Pressing R with a full magazine or an empty
+## reserve used to do nothing at all and say nothing — no gesture, no sound,
+## no message — which is indistinguishable from the key being broken. That is
+## exactly how it was reported ("the weapon does not reload"), and the
+## measurement said the reload path itself was fine.
+##
+## The refusal is drawn where the answer already is, rather than as a new
+## widget: the row that shows the rounds flashes, so the eye lands on the
+## number that explains the refusal.
+func flash_refusal() -> void:
+	_refusal_flash = 1.0
+	if _refusal_tween != null and _refusal_tween.is_valid():
+		_refusal_tween.kill()
+	_refusal_tween = create_tween()
+	_refusal_tween.tween_method(_set_refusal_flash, 1.0, 0.0, refusal_flash_time)
+
+
+func _set_refusal_flash(value: float) -> void:
+	_refusal_flash = value
 	queue_redraw()
 
 
@@ -136,6 +165,8 @@ func _draw() -> void:
 			## magazine is a state to notice, and "nothing lit" reads the
 			## same as the widget having failed to update.
 			fill = empty_color
+		if _refusal_flash > 0.0:
+			fill = fill.lerp(refusal_color, _refusal_flash)
 		draw_rect(Rect2(Vector2(x, top), Vector2(pip_width, pip_height)), fill, true)
 		x += pip_width + pip_spacing
 
