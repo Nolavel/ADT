@@ -1,3 +1,30 @@
+# =============================================================================
+# dynamic_cursor_ui.gd — MouseCursorUI.
+#
+# One job: say what the player is aimed at. Nothing else.
+#
+# It used to say two things at once — what is under the cursor AND how much
+# stamina is left, with arcs, recovery rings, a jump charge and walk/sprint
+# icons all stacked on the same few pixels. Aiming is a fast, precise read;
+# stamina is a slow, ambient one, and stacked together the aiming half loses.
+# All of the stamina and movement visuals moved to StaminaIndicator3D, which
+# draws them on the ground around the character's feet. This file no longer
+# references StaminaComponent at all.
+#
+# Three states, and that is the whole vocabulary:
+#
+#   nothing under it   dim grey ring
+#   NPC or item        the same ring, brightened
+#   firearm in hand    brackets instead of a ring, breathing with speed
+#
+# The brackets are [ ✛ ] — spine outwards, tips toward the target. They open
+# as the character moves and close as they settle, driven by a spring off the
+# REAL speed rather than off is_running, so the movement reads as continuous
+# rather than as two states.
+#
+# Dependencies: PlayerState (mode), the player (parent — speed, and
+# get_drawn_firearm() for the bracket state).
+# =============================================================================
 extends Control
 class_name MouseCursorUI
 
@@ -7,42 +34,34 @@ signal button_3d_clicked(button_name: String)
 @export_group("Основной курсор")
 @export var cursor_radius: float = 8.0
 @export var cursor_thickness: float = 2.0
-@export var cursor_color: Color = Color.WHITE
+## Ничего под курсором — приглушённый серый.
+@export var cursor_color_idle: Color = Color(0.62, 0.64, 0.66, 0.75)
+## Под курсором NPC или предмет.
+@export var cursor_color_target: Color = Color(1.0, 1.0, 1.0, 0.95)
+## Скорость перехода между ними. Не мгновенно: подсветка, появляющаяся
+## рывком, читается как мигание, а не как отклик.
+@export var cursor_color_speed: float = 10.0
 
-# === НАСТРОЙКИ ИНДИКАЦИИ ДВИЖЕНИЯ ===
-@export_group("Индикация движения")
-@export var walk_indicator_texture: Texture2D  # 🔥 Текстура ходьбы
-@export var sprint_indicator_texture: Texture2D  # 🔥 Текстура спринта
-@export var indicator_size: Vector2 = Vector2(32, 32)
-@export var indicator_offset: float = 16.0
-@export var indicator_fade_speed: float = 8.0  # 🔥 Скорость появления/исчезновения
-@export var indicator_scale_bounce: float = 1.2  # 🔥 Масштаб при появлении
+@export_group("Прицельные скобки")
+## Смещение скобок от центра, когда персонаж стоит.
+@export var bracket_offset_min: float = 10.0
+## ...и когда бежит во весь опор.
+@export var bracket_offset_max: float = 34.0
+@export var bracket_width: float = 8.0
+@export var bracket_height: float = 20.0
+@export var bracket_color: Color = Color(0.3, 0.8, 1.0, 0.9)
+## Пружина, а не lerp: скобки должны слегка проскакивать и оседать, иначе
+## движение читается как переключение состояния.
+@export var bracket_spring_stiffness: float = 90.0
+@export var bracket_spring_damping: float = 14.0
 
-# === НАСТРОЙКИ ДУГ СПРИНТА ===
-@export_group("Дуги спринта")
-@export var sprint_arc_thickness: float = 6.0
-@export var sprint_arc_color: Color = Color(0.8, 0.9, 1.0, 1.0)
-@export var sprint_animation_speed: float = 2.0
-
-# === НАСТРОЙКИ ВОССТАНОВЛЕНИЯ ===
-@export_group("Восстановление стамины")
-@export var recovery_ring_thickness: float = 3.0
-@export var recovery_pulse_speed: float = 3.0
-@export var recovery_glow_color: Color = Color(0.4, 1.0, 0.6, 1.0)
-@export var recovery_show_inner_glow: bool = true
-@export var recovery_gradient_segments: int = 64  # 🔥 Сегменты для градиента
-
-# === НАСТРОЙКИ СТАТИЧНОСТИ ===
 @export_group("Статичность")
 @export var mouse_stationary_px: float = 2.0
-@export var player_move_stationary_speed: float = 0.05
 
 # === НАСТРОЙКИ 3D КУРСОРА ===
 @export_group("3D UI")
-@export var bracket_3d_width: float = 8.0
-@export var bracket_3d_height: float = 20.0
-@export var bracket_3d_offset: float = 12.0  # Начальное расстояние от центра
-@export var bracket_3d_max_offset: float = 30.0  # Максимальное расстояние при наведении
+@export var bracket_3d_offset: float = 12.0
+@export var bracket_3d_max_offset: float = 30.0
 @export var bracket_3d_color: Color = Color(0.3, 0.8, 1.0, 0.9)
 @export var bracket_3d_animation_speed: float = 8.0
 
@@ -54,7 +73,6 @@ var bracket_offset_current: float = 12.0
 
 # === ССЫЛКИ ===
 @onready var player: CharacterBody3D = $".."
-@onready var stamina_component: StaminaComponent = $"../StaminaComponent"
 
 # === СОСТОЯНИЕ КУРСОРА ===
 var current_cursor_color: Color
@@ -63,76 +81,40 @@ var mouse_stationary_timer: float = 0.0
 var last_mouse_pos: Vector2 = Vector2.ZERO
 var last_player_pos: Vector3 = Vector3.ZERO
 
-# === СОСТОЯНИЕ ИНДИКАЦИИ ДВИЖЕНИЯ ===
-var is_player_moving: bool = false
-var is_player_sprinting: bool = false
-var wants_to_sprint: bool = false  # 🔥 Игрок хочет бежать, но не может
-var sprint_progress: float = 0.0
-var sprint_arc_angle: float = 0.0
+## Что-то интерактивное под курсором прямо сейчас.
+var is_over_target: bool = false
+## Огнестрел в руках — курсор становится скобками.
+var has_firearm: bool = false
 
-# 🔥 Альфа для каждого индикатора отдельно
-var walk_indicator_alpha: float = 0.0
-var sprint_indicator_alpha: float = 0.0
-var no_stamina_indicator_alpha: float = 0.0  # Красный спринт
+## Разведение прицельных скобок и его скорость (пружина).
+var aim_bracket_offset: float = 0.0
+var _aim_bracket_velocity: float = 0.0
 
-# 🔥 Масштаб для bounce эффекта
-var walk_indicator_scale: float = 1.0
-var sprint_indicator_scale: float = 1.0
-var no_stamina_indicator_scale: float = 1.0
-
-var sprint_arcs_alpha: float = 0.0
-
-# === СОСТОЯНИЕ СТАМИНЫ ДЛЯ UI ===
-var current_stamina_ratio: float = 1.0
-var is_stamina_recovering: bool = false
-var recovery_pulse_time: float = 0.0
-
-# === СОСТОЯНИЕ ПРЫЖКА ===
-var jump_arc_alpha: float = 0.0
-var jump_arc_progress: float = 0.0
-var jump_is_charging: bool = false
-var jump_animation_tween: Tween
-var jump_time: float = 0.0
-
-# === ТВИНЫ ===
-var walk_tween: Tween
-var sprint_tween: Tween
-var no_stamina_tween: Tween
-var arcs_tween: Tween
 
 func _ready() -> void:
-	current_cursor_color = cursor_color
+	current_cursor_color = cursor_color_idle
+	aim_bracket_offset = bracket_offset_min
 	PlayerState.mode_changed.connect(_on_player_state_mode_changed)
 	_apply_cursor_for_mode(PlayerState.mode)
 
 	if player:
 		last_player_pos = player.global_transform.origin
-		
-		if stamina_component == null:
-			push_warning("⚠️ StaminaManager не найден!")
-		
-		# Подключаемся к сигналам стамины
-		if stamina_component:
-			stamina_component.stamina_changed.connect(_on_stamina_changed)
-			stamina_component.stamina_depleted.connect(_on_stamina_depleted)
-			stamina_component.stamina_recovered.connect(_on_stamina_recovered)
-			stamina_component.jump_performed.connect(_on_jump_performed)
-			print("✅ Курсор: Подключен к StaminaManager")
 	else:
 		push_error("❌ Player не найден!")
-			
+
 	last_mouse_pos = get_viewport().get_mouse_position()
-	
+
+
 func _on_player_state_mode_changed(_old_mode, new_mode) -> void:
 	_apply_cursor_for_mode(new_mode)
+
 
 func _process(delta: float) -> void:
 	if not player:
 		return
 
-	cursor_position = get_viewport().get_mouse_position()
+	cursor_position = _resolve_cursor_position()
 
-	# 1) Курсор стоит?
 	var mouse_moved: bool = cursor_position.distance_to(last_mouse_pos) > mouse_stationary_px
 	if mouse_moved:
 		mouse_stationary_timer = 0.0
@@ -140,210 +122,131 @@ func _process(delta: float) -> void:
 	else:
 		mouse_stationary_timer += delta
 
-	# 2) Игрок стоит?
 	var player_pos: Vector3 = player.global_transform.origin
 	var lin_speed: float = (player_pos - last_player_pos).length() / max(delta, 0.0001)
 	last_player_pos = player_pos
-	var player_stationary: bool = lin_speed <= player_move_stationary_speed
 
-	# 3) Обновление состояния движения
-	_update_movement_state(delta, player_stationary)
-	# 6) Обновление 3D UI состояния
+	_update_target_state(delta)
+	_update_firearm_state()
+	_update_aim_brackets(delta, lin_speed)
 	_update_3d_ui_state(delta)
-
-	# 4) Прыжок
-	if jump_is_charging:
-		jump_time += delta
-	else:
-		jump_time = 0.0
-	
-	# 5) Обновление состояния восстановления
-	_update_recovery_state(delta)
 
 	queue_redraw()
 
-func _update_movement_state(delta: float, player_stationary: bool) -> void:
-	var was_sprinting: bool = is_player_sprinting
-	var was_moving: bool = is_player_moving
-	
-	is_player_moving = not player_stationary
-	is_player_sprinting = player.is_currently_sprinting(player.velocity)
-	
-	# 🔥 ИСПРАВЛЕНА ЛОГИКА: Используем новый метод is_wanting_to_run()
-	var wants_sprint = player.is_wanting_to_run() and is_player_moving
-	var can_sprint = stamina_component and stamina_component.is_sprint_allowed()
-	wants_to_sprint = wants_sprint and not can_sprint
-	
-	# Получаем прогресс спринта
-	sprint_progress = player.get_sprint_blend()
-	
-	# Обновляем стамину из StaminaComponent
-	if stamina_component:
-		current_stamina_ratio = stamina_component.get_stamina_ratio()
-	
-	sprint_progress = clamp(sprint_progress, 0.0, 1.0)
-	
-	# 🔥 ЛОГИКА ИНДИКАТОРОВ
-	if wants_to_sprint:
-		# Игрок хочет бежать, но нет стамины → красный спринт
-		_show_no_stamina_indicator()
-	elif is_player_sprinting:
-		# Игрок бежит → синий спринт
-		_show_sprint_indicator()
-	elif is_player_moving:
-		# Игрок идёт → зелёный walk
-		_show_walk_indicator()
-	else:
-		# Не движется → скрываем всё
-		_hide_all_indicators()
-	
-	# Дуги видны ВСЕГДА когда есть стамина
-	var target_arcs_alpha: float = current_stamina_ratio if is_player_moving else current_stamina_ratio * 0.5
-	sprint_arcs_alpha = lerp(sprint_arcs_alpha, target_arcs_alpha, 6.0 * delta)
-	
-	if is_player_sprinting:
-		sprint_arc_angle += sprint_animation_speed * delta * (0.5 + sprint_progress * 0.5)
-		if sprint_arc_angle > TAU:
-			sprint_arc_angle -= TAU
-	else:
-		sprint_arc_angle += 0.3 * delta
-		if sprint_arc_angle > TAU:
-			sprint_arc_angle -= TAU
-	
-	# Отслеживание зарядки прыжка
-	var player_on_floor = player.is_on_floor()
-	var jump_charging = InputSystems.is_jump_held() and player_on_floor
 
-	if jump_charging and not jump_is_charging:
-		jump_is_charging = true
-		jump_arc_alpha = 0.6
-	elif not jump_charging and jump_is_charging:
-		jump_is_charging = false
-		if player_on_floor:
-			jump_arc_alpha = 0.0
+## В TPS мышь захвачена (InputSystems ставит MOUSE_MODE_CAPTURED), так что
+## водить курсором нельзя — целятся камерой. Значит и рисовать его, и бить
+## луч надо из центра экрана: это и есть направление взгляда. В ISOMETRIC
+## курсор по-прежнему идёт за мышью.
+func _resolve_cursor_position() -> Vector2:
+	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
+		return get_viewport().get_visible_rect().size * 0.5
+	return get_viewport().get_mouse_position()
 
-	jump_is_charging = jump_charging
 
-# 🔥 ПОКАЗАТЬ ИНДИКАТОР ХОДЬБЫ
-func _show_walk_indicator() -> void:
-	if walk_indicator_alpha < 0.9:
-		_animate_indicator_appear("walk")
-	_animate_indicator_fade("sprint", 0.0)
-	_animate_indicator_fade("no_stamina", 0.0)
+# -----------------------------------------------------------------------------
+# ## ENG: What is under the cursor
+# -----------------------------------------------------------------------------
 
-# 🔥 ПОКАЗАТЬ ИНДИКАТОР СПРИНТА
-func _show_sprint_indicator() -> void:
-	if sprint_indicator_alpha < 0.9:
-		_animate_indicator_appear("sprint")
-	_animate_indicator_fade("walk", 0.0)
-	_animate_indicator_fade("no_stamina", 0.0)
+## One ray, from the camera through the cursor, against characters and
+## interactables. Deliberately NOT reusing InteractComponent's answer: that
+## one asks "what would F act on", which is a question about the character's
+## position and facing. This asks "what is the player pointing at", which in
+## ISOMETRIC is a different thing entirely.
+func _update_target_state(delta: float) -> void:
+	var target_found := false
+	var cam := get_viewport().get_camera_3d()
+	var space := get_world_3d()
+	if cam != null and space != null:
+		var from: Vector3 = cam.project_ray_origin(cursor_position)
+		var to: Vector3 = from + cam.project_ray_normal(cursor_position) * 1000.0
+		var params := PhysicsRayQueryParameters3D.create(from, to)
+		params.collision_mask = CollisionLayers.CHARACTERS | CollisionLayers.INTERACTABLES
+		params.collide_with_areas = true
+		params.collide_with_bodies = true
+		## Иначе луч из камеры за спиной упирается в самого игрока и курсор
+		## белеет всегда.
+		params.exclude = [player.get_rid()]
+		var hit := space.direct_space_state.intersect_ray(params)
+		target_found = not hit.is_empty() and _is_targetable(hit.get("collider"))
 
-# 🔥 ПОКАЗАТЬ КРАСНЫЙ ИНДИКАТОР (НЕТ СТАМИНЫ)
-func _show_no_stamina_indicator() -> void:
-	if no_stamina_indicator_alpha < 0.9:
-		_animate_indicator_appear("no_stamina")
-	_animate_indicator_fade("walk", 0.0)
-	_animate_indicator_fade("sprint", 0.0)
+	is_over_target = target_found
+	var wanted: Color = cursor_color_target if is_over_target else cursor_color_idle
+	current_cursor_color = current_cursor_color.lerp(
+		wanted, clampf(cursor_color_speed * delta, 0.0, 1.0)
+	)
 
-# 🔥 СКРЫТЬ ВСЕ ИНДИКАТОРЫ
-func _hide_all_indicators() -> void:
-	_animate_indicator_fade("walk", 0.0)
-	_animate_indicator_fade("sprint", 0.0)
-	_animate_indicator_fade("no_stamina", 0.0)
 
-# 🔥 АНИМАЦИЯ ПОЯВЛЕНИЯ С BOUNCE
-func _animate_indicator_appear(type: String) -> void:
-	match type:
-		"walk":
-			if walk_tween:
-				walk_tween.kill()
-			walk_tween = create_tween()
-			walk_tween.set_parallel(true)
-			walk_tween.tween_property(self, "walk_indicator_alpha", 1.0, 0.2)
-			walk_tween.tween_property(self, "walk_indicator_scale", indicator_scale_bounce, 0.1)
-			walk_tween.chain().tween_property(self, "walk_indicator_scale", 1.0, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-		
-		"sprint":
-			if sprint_tween:
-				sprint_tween.kill()
-			sprint_tween = create_tween()
-			sprint_tween.set_parallel(true)
-			sprint_tween.tween_property(self, "sprint_indicator_alpha", 1.0, 0.2)
-			sprint_tween.tween_property(self, "sprint_indicator_scale", indicator_scale_bounce, 0.1)
-			sprint_tween.chain().tween_property(self, "sprint_indicator_scale", 1.0, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-		
-		"no_stamina":
-			if no_stamina_tween:
-				no_stamina_tween.kill()
-			no_stamina_tween = create_tween()
-			no_stamina_tween.set_parallel(true)
-			no_stamina_tween.tween_property(self, "no_stamina_indicator_alpha", 1.0, 0.2)
-			no_stamina_tween.tween_property(self, "no_stamina_indicator_scale", indicator_scale_bounce, 0.1)
-			no_stamina_tween.chain().tween_property(self, "no_stamina_indicator_scale", 1.0, 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+## Является ли то, во что упёрся луч, целью — NPC или интерактивный объект.
+##
+## Проверка ПО ТИПУ, а не только по маске слоя, и на то есть измеренная
+## причина: терраин острова стоит с collision_layer = 3, то есть сидит и на
+## слое CHARACTERS вместе с персонажами. Маской их не разделить, и без этой
+## проверки курсор белел от одного взгляда на землю.
+##
+## Побочно это даёт честное перекрытие: луч возвращает БЛИЖАЙШЕЕ попадание,
+## так что NPC за холмом отсекается вместе с самим холмом — что и правильно.
+func _is_targetable(collider: Variant) -> bool:
+	if collider is NPCBase or collider is InteractableObject:
+		return true
+	## Предмет предлагает себя через дочернюю Area — тот же разбор, что
+	## делает InteractComponent.
+	return collider is Area3D and collider.get_parent() is InteractableObject
 
-# 🔥 АНИМАЦИЯ ИСЧЕЗНОВЕНИЯ
-func _animate_indicator_fade(type: String, target_alpha: float) -> void:
-	match type:
-		"walk":
-			if walk_tween:
-				walk_tween.kill()
-			walk_tween = create_tween()
-			walk_tween.tween_property(self, "walk_indicator_alpha", target_alpha, 0.3)
-		
-		"sprint":
-			if sprint_tween:
-				sprint_tween.kill()
-			sprint_tween = create_tween()
-			sprint_tween.tween_property(self, "sprint_indicator_alpha", target_alpha, 0.3)
-		
-		"no_stamina":
-			if no_stamina_tween:
-				no_stamina_tween.kill()
-			no_stamina_tween = create_tween()
-			no_stamina_tween.tween_property(self, "no_stamina_indicator_alpha", target_alpha, 0.3)
 
-# 🔥 Обновление состояния восстановления
-func _update_recovery_state(delta: float) -> void:
-	if not stamina_component:
-		return
-	
-	is_stamina_recovering = stamina_component.is_recovering()
-	
-	if is_stamina_recovering:
-		recovery_pulse_time += delta * recovery_pulse_speed
-		if recovery_pulse_time > TAU:
-			recovery_pulse_time -= TAU
+## Скобки — прицел, поэтому вопрос ровно один: в руках ли то, чем стреляют.
+## Ответ берётся у игрока (get_drawn_firearm()), а не выводится заново из
+## каталога: два определения «это оружие» рано или поздно разойдутся.
+func _update_firearm_state() -> void:
+	has_firearm = player.has_method(&"get_drawn_firearm") \
+			and player.call(&"get_drawn_firearm") != null
+
+
+## Разведение ведётся от НЕПРЕРЫВНОЙ скорости, а не от is_running: между
+## «стоит» и «бежит» есть всё остальное, и именно оно делает прицел живым.
+## Пружина вместо lerp — скобки слегка проскакивают и оседают.
+func _update_aim_brackets(delta: float, lin_speed: float) -> void:
+	var speed_ratio: float = 0.0
+	if player.run_speed > 0.0:
+		speed_ratio = clampf(lin_speed / player.run_speed, 0.0, 1.0)
+	var target: float = lerpf(bracket_offset_min, bracket_offset_max, speed_ratio)
+
+	var to_target: float = target - aim_bracket_offset
+	_aim_bracket_velocity += to_target * bracket_spring_stiffness * delta
+	_aim_bracket_velocity -= _aim_bracket_velocity * bracket_spring_damping * delta
+	aim_bracket_offset += _aim_bracket_velocity * delta
+
 
 func _draw() -> void:
-	# Внешний контур основного курсора
-	_draw_circle_outline(cursor_position, cursor_radius, current_cursor_color, cursor_thickness)
+	if has_firearm:
+		## Огнестрел в руках — вместо кружка прицельные скобки.
+		_draw_aim_brackets()
+	else:
+		_draw_circle_outline(cursor_position, cursor_radius, current_cursor_color, cursor_thickness)
+		var inner_color: Color = current_cursor_color
+		inner_color.a *= 0.3
+		draw_circle(cursor_position, cursor_radius * 0.3, inner_color)
 
-	# Внутренний мягкий круг
-	var inner_color: Color = current_cursor_color
-	inner_color.a *= 0.3
-	draw_circle(cursor_position, cursor_radius * 0.3, inner_color)
-
-	# === ИНДИКАЦИЯ ДВИЖЕНИЯ ===
-	
-	# 🔥 Индикаторы (walk/sprint/no_stamina)
-	_draw_movement_indicators()
-
-	# 🔥 Дуги стамины
-	if sprint_arcs_alpha > 0.01:
-		_draw_sprint_arcs()
-	
-	# 🔥 Эффект восстановления стамины (с шейдером)
-	if is_stamina_recovering and current_stamina_ratio < 0.95:
-		_draw_recovery_effect_shader()
-		
-	# Дуга прыжка
-	if jump_arc_alpha > 0.0:
-		_draw_jump_arc()
-		
-	# === 3D UI КУРСОР ===
+	## Скобки 3D-UI живут отдельно от прицельных: это указатель на кнопку в
+	## мире, а не на цель, и он должен работать и с пустыми руками.
 	if is_over_3d_ui:
 		_draw_3d_ui_brackets()
-		
+
+
+func _draw_aim_brackets() -> void:
+	var color: Color = bracket_color
+	if is_over_target:
+		color = bracket_color.lightened(0.35)
+	_draw_bracket_left(
+		cursor_position.x - aim_bracket_offset, cursor_position.y,
+		bracket_width, bracket_height, color
+	)
+	_draw_bracket_right(
+		cursor_position.x + aim_bracket_offset, cursor_position.y,
+		bracket_width, bracket_height, color
+	)
+
+
 func _update_3d_ui_state(delta: float) -> void:
 	# Проверяем raycast для 3D UI
 	var viewport := get_viewport()
@@ -394,164 +297,22 @@ func _update_3d_ui_state(delta: float) -> void:
 			is_over_3d_button = false
 			bracket_offset_current = lerp(bracket_offset_current, bracket_3d_offset, bracket_3d_animation_speed * delta)
 
+
 func get_world_3d() -> World3D:
 	if player:
 		return player.get_world_3d()
 	return get_viewport().get_world_3d()
 
-# 🔥 Рисуем индикаторы движения
-func _draw_movement_indicators() -> void:
-	var indicator_pos = cursor_position + Vector2(0, cursor_radius + indicator_offset)
-	
-	# 1. Индикатор ходьбы (зелёный)
-	if walk_indicator_alpha > 0.01 and walk_indicator_texture:
-		var size = indicator_size * walk_indicator_scale
-		var texture_rect = Rect2(indicator_pos - size * 0.5, size)
-		var modulate_color = Color.WHITE
-		modulate_color.a = walk_indicator_alpha
-		draw_texture_rect(walk_indicator_texture, texture_rect, false, modulate_color)
-	
-	# 2. Индикатор спринта (синий)
-	if sprint_indicator_alpha > 0.01 and sprint_indicator_texture:
-		var size = indicator_size * sprint_indicator_scale
-		var texture_rect = Rect2(indicator_pos - size * 0.5, size)
-		var modulate_color = Color.WHITE
-		modulate_color.a = sprint_indicator_alpha
-		draw_texture_rect(sprint_indicator_texture, texture_rect, false, modulate_color)
-	
-	# 3. Индикатор нехватки стамины (красный спринт)
-	if no_stamina_indicator_alpha > 0.01 and sprint_indicator_texture:
-		var size = indicator_size * no_stamina_indicator_scale
-		var texture_rect = Rect2(indicator_pos - size * 0.5, size)
-		var modulate_color = Color.RED  # 🔥 КРАСНЫЙ!
-		modulate_color.a = no_stamina_indicator_alpha
-		draw_texture_rect(sprint_indicator_texture, texture_rect, false, modulate_color)
-
-func _draw_sprint_arcs() -> void:
-	var base_color: Color = sprint_arc_color
-
-	# Меняем цвет в зависимости от уровня стамины
-	if current_stamina_ratio > 0.5:
-		var t: float = (1.0 - current_stamina_ratio) * 2.0
-		base_color = base_color.lerp(Color(1.0, 1.0, 0.0), t)
-	elif current_stamina_ratio > 0.25:
-		var t: float = (0.5 - current_stamina_ratio) * 4.0
-		base_color = Color(1.0, 1.0, 0.0).lerp(Color(1.0, 0.5, 0.0), t)
-	else:
-		var t: float = (0.25 - current_stamina_ratio) * 4.0
-		base_color = Color(1.0, 0.5, 0.0).lerp(Color(1.0, 0.0, 0.0), t)
-
-	base_color.a *= sprint_arcs_alpha
-
-	var arc_radius: float = cursor_radius + 4.0
-	
-	var quarter_length: float
-	if is_player_sprinting:
-		quarter_length = PI * 0.5 * sprint_progress * current_stamina_ratio
-	else:
-		quarter_length = PI * 0.5 * current_stamina_ratio
-
-	for i in range(4):
-		var base_angle: float = i * PI * 0.5 + sprint_arc_angle
-		_draw_arc(cursor_position, arc_radius, base_angle, base_angle + quarter_length, base_color, sprint_arc_thickness)
-
-# 🔥 ШЕЙДЕРНЫЙ эффект восстановления стамины
-func _draw_recovery_effect_shader() -> void:
-	var pulse_alpha = (sin(recovery_pulse_time) * 0.5 + 0.5)
-	
-	var recovery_radius = cursor_radius + 8.0 + sin(recovery_pulse_time * 2.0) * 2.0
-	var outer_radius = recovery_radius + 4.0
-	
-	# 🔥 Рисуем градиентное кольцо (имитация шейдера через много сегментов)
-	var segments = recovery_gradient_segments
-	for i in range(segments):
-		var angle_start = (TAU / segments) * i
-		var angle_end = (TAU / segments) * (i + 1)
-		
-		# 🔥 Градиент от зелёного к прозрачному (эффект зарядки)
-		var gradient_progress = fmod(i / float(segments) - recovery_pulse_time / TAU + 1.0, 1.0)
-		var gradient_alpha = smoothstep(0.0, 0.3, gradient_progress) * (1.0 - smoothstep(0.7, 1.0, gradient_progress))
-		
-		var segment_color = recovery_glow_color
-		segment_color.a = gradient_alpha * pulse_alpha * 0.6
-		
-		_draw_arc(cursor_position, recovery_radius, angle_start, angle_end, segment_color, recovery_ring_thickness)
-	
-	# 🔥 Второе внешнее кольцо
-	for i in range(segments):
-		var angle_start = (TAU / segments) * i
-		var angle_end = (TAU / segments) * (i + 1)
-		
-		var gradient_progress = fmod(i / float(segments) - recovery_pulse_time / TAU * 1.5 + 1.0, 1.0)
-		var gradient_alpha = smoothstep(0.0, 0.2, gradient_progress) * (1.0 - smoothstep(0.8, 1.0, gradient_progress))
-		
-		var segment_color = recovery_glow_color
-		segment_color.a = gradient_alpha * pulse_alpha * 0.4
-		
-		_draw_arc(cursor_position, outer_radius, angle_start, angle_end, segment_color, recovery_ring_thickness * 0.6)
-	
-	# 🔥 Внутреннее свечение
-	if recovery_show_inner_glow:
-		var inner_glow_color = recovery_glow_color
-		inner_glow_color.a = pulse_alpha * 0.3
-		draw_circle(cursor_position, cursor_radius + 3.0, inner_glow_color)
-
-func _draw_arc(center: Vector2, radius: float, start_angle: float, end_angle: float, color: Color, thickness: float) -> void:
-	var segments: int = max(8, int(abs(end_angle - start_angle) * radius * 0.5))
-	var angle_step: float = (end_angle - start_angle) / segments
-	
-	for i in range(segments):
-		var angle1: float = start_angle + i * angle_step
-		var angle2: float = start_angle + (i + 1) * angle_step
-		
-		var point1: Vector2 = center + Vector2(cos(angle1), sin(angle1)) * radius
-		var point2: Vector2 = center + Vector2(cos(angle2), sin(angle2)) * radius
-		
-		draw_line(point1, point2, color, thickness)
 
 func _draw_circle_outline(center: Vector2, radius: float, color: Color, thickness: float) -> void:
 	var segments: int = 32
-	var points: Array[Vector2] = []
-	points.resize(segments + 1)
-
+	var points: PackedVector2Array = PackedVector2Array()
 	for i in range(segments + 1):
-		var angle: float = (i / float(segments)) * TAU
-		points[i] = center + Vector2(cos(angle), sin(angle)) * radius
-
+		var angle: float = (TAU / segments) * i
+		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
 	for i in range(segments):
-		draw_line(points[i], points[i + 1], color, thickness)
-		
-func _draw_jump_arc() -> void:
-	var jump_radius = cursor_radius + 12.0
-	var jump_color: Color = Color(0.4, 0.8, 1.0, jump_arc_alpha)
+		draw_line(points[i], points[i + 1], color, thickness, true)
 
-	if current_stamina_ratio > 0.5:
-		jump_color = jump_color.lerp(Color(1, 1, 0), (1.0 - current_stamina_ratio) * 2.0)
-	elif current_stamina_ratio > 0.25:
-		jump_color = Color(1, 1, 0).lerp(Color(1, 0.5, 0), (0.5 - current_stamina_ratio) * 4.0)
-	else:
-		jump_color = Color(1, 0.5, 0).lerp(Color(1, 0, 0), (0.25 - current_stamina_ratio) * 4.0)
-
-	jump_color.a *= jump_arc_alpha
-
-	if jump_is_charging:
-		var base_arc_length = PI * 0.2
-		var pulse = sin(jump_time * 20.0) * 0.1
-		var total_arc_length = base_arc_length + pulse + (PI * 0.3 * jump_arc_progress)
-		var center_angle = PI * 0.5
-		var start_angle = center_angle - total_arc_length * 0.5
-		var end_angle = center_angle + total_arc_length * 0.5
-		_draw_arc(cursor_position, jump_radius, start_angle, end_angle, jump_color, 2.0)
-	else:
-		var full_progress = clamp(jump_arc_progress, 0.0, 1.0)
-		var circle_center_angle = PI * 1.5
-		var start_angle = circle_center_angle - TAU * 0.5 * full_progress
-		var end_angle = circle_center_angle + TAU * 0.5 * full_progress
-
-		if full_progress >= 1.0:
-			_draw_circle_outline(cursor_position, jump_radius, jump_color, 2.0)
-		else:
-			_draw_arc(cursor_position, jump_radius, start_angle, end_angle, jump_color, 2.0)
 
 func _draw_3d_ui_brackets() -> void:
 	var color = bracket_3d_color
@@ -560,11 +321,11 @@ func _draw_3d_ui_brackets() -> void:
 	
 	# Левая скобка [
 	var left_offset = bracket_offset_current
-	_draw_bracket_left(cursor_position.x - left_offset, cursor_position.y, bracket_3d_width, bracket_3d_height, color)
+	_draw_bracket_left(cursor_position.x - left_offset, cursor_position.y, bracket_width, bracket_height, color)
 	
 	# Правая скобка ]
 	var right_offset = bracket_offset_current
-	_draw_bracket_right(cursor_position.x + right_offset, cursor_position.y, bracket_3d_width, bracket_3d_height, color)
+	_draw_bracket_right(cursor_position.x + right_offset, cursor_position.y, bracket_width, bracket_height, color)
 
 func _draw_bracket_left(x: float, y: float, width: float, height: float, color: Color) -> void:
 	var half_h = height / 2.0
@@ -588,37 +349,18 @@ func _draw_bracket_right(x: float, y: float, width: float, height: float, color:
 	draw_line(top, top_left, color, 2.5, true)
 	draw_line(bottom, bottom_left, color, 2.5, true)
 
-func _on_jump_performed() -> void:
-	if jump_animation_tween:
-		jump_animation_tween.kill()
-	jump_animation_tween = create_tween()
-	jump_animation_tween.set_parallel(true)
-	
-	jump_animation_tween.tween_method(_set_jump_arc_progress, 0.0, 1.0, 0.15)
-	jump_animation_tween.tween_method(_set_jump_arc_progress, 1.0, 0.0, 0.25).set_delay(0.15)
-	jump_animation_tween.tween_method(_set_jump_arc_alpha, 0.8, 0.0, 0.4)
-	
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if is_over_3d_button:
 			_on_3d_button_clicked(current_3d_button_name)
 			get_viewport().set_input_as_handled()
 
+
 func _on_3d_button_clicked(button_name: String) -> void:
 	button_3d_clicked.emit(button_name)
 
-func _set_jump_arc_progress(value: float) -> void:
-	jump_arc_progress = value
 
-func _set_jump_arc_alpha(value: float) -> void:
-	jump_arc_alpha = value
-
-func _on_stamina_changed(current_stamina: float, max_stamina: float) -> void:
-	current_stamina_ratio = current_stamina / max_stamina
-
-func _on_stamina_depleted() -> void:
-	print("💥 Курсор: Стамина истощена!")
-	
 ## Кастомный курсор (нарисованный вручную) актуален только в ON_FOOT.
 ## В остальных режимах (MENU, VEHICLE_HOVER, TUBE_TRANSIT) прячем его
 ## и возвращаем системный курсор — иначе в меню не видно, куда кликать.
@@ -629,6 +371,3 @@ func _apply_cursor_for_mode(mode) -> void:
 	else:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		visible = false
-
-func _on_stamina_recovered() -> void:
-	print("✨ Курсор: Стамина восстановлена!")

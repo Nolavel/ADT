@@ -1052,7 +1052,7 @@ func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 	## least as much of a commitment as a punch, so it earns no exemption
 	## from standing still, and reusing the gate avoids inventing a second
 	## rule for the same button.
-	if _drawn_firearm() != null:
+	if get_drawn_firearm() != null:
 		_start_shot()
 		return
 	_start_punch()
@@ -1065,7 +1065,7 @@ func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 ## the trigger, not at _resolve_shot(): a shot that is fired is a round gone
 ## whether or not it finds anyone.
 func _try_spend_round() -> bool:
-	var item := _drawn_firearm()
+	var item := get_drawn_firearm()
 	if item == null or _weapon == null:
 		return false
 	if item.magazine_size <= 0:
@@ -1081,7 +1081,12 @@ func _try_spend_round() -> bool:
 ##
 ## ranged_damage is what separates them; readability cannot, since a pipe is
 ## THREATENING too. See ItemResource.ranged_damage's own comment.
-func _drawn_firearm() -> ItemResource:
+##
+## Public because the CURSOR asks the same question — it draws brackets
+## instead of a dot while something is aimed with. One asker, one answer:
+## a UI re-deriving "is this a firearm" from the catalog would be a second
+## definition free to disagree with this one.
+func get_drawn_firearm() -> ItemResource:
 	if _equipment == null:
 		return null
 	var drawn := _equipment.get_drawn()
@@ -1282,7 +1287,7 @@ func _on_weapon_reload_pressed() -> void:
 		return
 	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
 		return
-	var item := _drawn_firearm()
+	var item := get_drawn_firearm()
 	if item == null or _weapon == null:
 		return
 	## Asked BEFORE the gesture starts, not after it finishes. The refill
@@ -1309,7 +1314,7 @@ func _update_reload(delta: float) -> void:
 
 	if not _reload_applied and _reload_timer >= reload_time:
 		_reload_applied = true
-		#var item := _drawn_firearm()
+		#var item := get_drawn_firearm()
 		## Re-read rather than captured at the press: the hands could have
 		## been emptied mid-clip (a stance change holsters), and refilling a
 		## weapon that is no longer held would be a magazine appearing out of
@@ -1364,7 +1369,7 @@ func _update_shot(delta: float) -> void:
 ## wall-only mask PerceptionComponent uses to decide whether an NPC can see
 ## the player. Composing the two gives honest occlusion without a new mask.
 func _resolve_shot() -> void:
-	var item := _drawn_firearm()
+	var item := get_drawn_firearm()
 	if item == null:
 		return
 
