@@ -16,7 +16,16 @@ extends RefCounted
 
 const STIFFNESS: float = 180.0
 const DAMPING: float = 22.0
-## Longest step this integrator is allowed to take, seconds.
+## Longest step a semi-implicit Euler spring in this project may take,
+## seconds. Referenced by name from outside this file since 2026-08-28 —
+## dynamic_cursor_ui.gd, hold_prompt.gd and tps_combat_camera_state.gd all
+## clamp against it — so it is no longer a morph-family number. The reasoning
+## below is what makes it the right one for any of them; copy the constant,
+## never the digits.
+##
+## It was learned the expensive way: the cursor's aim-bracket spring was
+## written without this clamp, diverged to NaN on a single long frame, and
+## printed 7714 warnings in one session because NaN never comes back.
 ##
 ## Semi-implicit Euler on a spring is only stable while the step stays under
 ## roughly 2/DAMPING — about 0.09s here. At the project's ~55 FPS target the

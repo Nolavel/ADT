@@ -113,16 +113,37 @@ jobs:
       # (NavigationRegion3D absent, non-equal opposite anchors). Surfacing
       # them makes a NEW one visible without turning the known pair into a
       # permanent red.
+      #
+      # COUNTED, not de-duplicated. This step used to end in `sort -u`, which
+      # was a real defect in what this workflow reports: a warning printed
+      # once and a warning printed 7714 times looked identical. That is not
+      # hypothetical — a spring in dynamic_cursor_ui.gd diverged to NaN and
+      # printed six warnings per frame for a whole session, and a summary
+      # like the old one would have shown a single tidy line.
       - name: Warnings on this head
         if: always()
         run: |
           {
-            echo "### Godot warnings"
+            echo "### Godot warnings (count x message)"
             echo
             echo '```'
-            grep -hE '^WARNING' godot-import-2.log godot-boot.log 2>/dev/null | sort -u || true
+            grep -hE '^WARNING' godot-import-2.log godot-boot.log 2>/dev/null \
+              | sort | uniq -c | sort -rn || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # A warning repeating hundreds of times is not a warning, it is a bug
+      # running every frame. Unique text stays free; volume does not.
+      - name: Fail on a warning flood
+        run: |
+          worst=$(grep -hE '^WARNING' godot-import-2.log godot-boot.log 2>/dev/null \
+            | sort | uniq -c | sort -rn | head -1 | awk '{print $1}')
+          worst=${worst:-0}
+          echo "most repeated warning: ${worst}x"
+          if [ "$worst" -gt 50 ]; then
+            echo "::error title=Warning flood::One warning repeats ${worst} times — that is per-frame code, not a notice."
+            exit 1
+          fi
 
       - name: Upload Godot logs
         if: failure()
@@ -130,4 +151,86 @@ jobs:
         with:
           name: godot-logs
           path: godot-*.log
+          retention-days: 7
+
+  # A second job, because it answers a different question and fails for
+  # different reasons: does the game actually DRAW. The job above runs the
+  # dummy driver, which never compiles a shader or calls _draw(), so every
+  # visual defect is invisible to it. This one renders on software OpenGL and
+  # keeps the frames.
+  #
+  # It is the Compatibility renderer and the project ships Forward+, so a
+  # green run here says the geometry and the UI are there — never that the
+  # lighting is right. See tools/render_probe/render_probe.sh.
+  render:
+    name: Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned Godot version
+        id: godot
+        run: |
+          version="$(sed -n 's/^VERSION="\(.*\)"$/\1/p' .claude/hooks/ensure_godot.sh)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare the Godot directory
+        run: sudo install -d -o "$(id -u)" -g "$(id -g)" /opt/godot
+
+      - name: Cache Godot ${{ steps.godot.outputs.version }}
+        uses: actions/cache@v4
+        with:
+          path: /opt/godot
+          key: godot-${{ steps.godot.outputs.version }}-linux-x86_64
+
+      - name: Install Godot and Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb
+          sudo sh .claude/hooks/ensure_godot.sh
+          godot --version
+
+      # The import has to run first here too: a cold checkout has no .godot,
+      # and the first pass is the one that lies (see the job above).
+      - name: Import the project
+        run: |
+          godot --headless --editor --quit-after 2000 > /dev/null 2>&1
+          godot --headless --editor --quit-after 2000 > /dev/null 2>&1
+
+      - name: Render frames
+        run: sh tools/render_probe/render_probe.sh 120 "$PWD/render-out"
+
+      - name: Gate the render log
+        run: |
+          log="render-out/render.log"
+          # Environment noise, not the project's: this runner has no GPU, no
+          # audio device and no Forward+ renderer.
+          ignore='Screen-space AA is only available|Could not set V-Sync|All audio drivers failed|Vulkan|GPU'
+          if grep -E '^(ERROR|SCRIPT ERROR|USER ERROR|USER SCRIPT ERROR)' "$log" \
+              | grep -vE "$ignore"; then
+            echo "::error title=Render errors::The game drew with errors. Lines above."
+            exit 1
+          fi
+          worst=$(grep -hE '^WARNING' "$log" | grep -vE "$ignore" \
+            | sort | uniq -c | sort -rn | head -1 | awk '{print $1}')
+          worst=${worst:-0}
+          echo "most repeated render warning: ${worst}x"
+          if [ "$worst" -gt 50 ]; then
+            echo "::error title=Warning flood while drawing::One warning repeats ${worst} times."
+            exit 1
+          fi
+
+      # The last frame is uploaded on every run, not only on failure: the
+      # point is that a human can look at what the build looks like without
+      # checking it out.
+      - name: Upload the last frame
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-frame
+          path: |
+            render-out/frame*.png
+            render-out/render.log
           retention-days: 7

@@ -55,6 +55,21 @@ signal button_3d_clicked(button_name: String)
 @export var bracket_spring_stiffness: float = 90.0
 @export var bracket_spring_damping: float = 14.0
 
+## The step clamp comes from SpringPoint.MAX_STEP (ui/widgets/morphs/), which
+## is not a morph-only number: it is the bound every semi-implicit Euler
+## spring in this project needs, and that file already states why in its own
+## header — "a hitch past that bound does not degrade gracefully: it
+## diverges".
+##
+## What that costs when it is missing, measured on Stan's machine 2026-08-28:
+## this spring is stable only while the step stays under roughly
+## 2 / bracket_spring_damping, about 0.14 s. One frame longer — a streaming
+## hitch, a breakpoint, the editor stealing focus — and the offset runs to
+## infinity and then to NaN. NaN never comes back, so every later frame drew
+## the brackets at a non-finite position, and each antialiased draw_line()
+## normalized it and warned. 7714 warnings in one session, six per frame,
+## forever. Reusing the constant instead of copying the number is the point.
+
 @export_group("Статичность")
 @export var mouse_stationary_px: float = 2.0
 
@@ -211,10 +226,22 @@ func _update_aim_brackets(delta: float, lin_speed: float) -> void:
 		speed_ratio = clampf(lin_speed / player.run_speed, 0.0, 1.0)
 	var target: float = lerpf(bracket_offset_min, bracket_offset_max, speed_ratio)
 
+	## Clamped, not raw: see the note on SpringPoint.MAX_STEP above. A long frame plays back
+	## slightly slow, which is invisible on a cursor and cannot explode.
+	var step: float = minf(delta, SpringPoint.MAX_STEP)
 	var to_target: float = target - aim_bracket_offset
-	_aim_bracket_velocity += to_target * bracket_spring_stiffness * delta
-	_aim_bracket_velocity -= _aim_bracket_velocity * bracket_spring_damping * delta
-	aim_bracket_offset += _aim_bracket_velocity * delta
+	_aim_bracket_velocity += to_target * bracket_spring_stiffness * step
+	_aim_bracket_velocity -= _aim_bracket_velocity * bracket_spring_damping * step
+	aim_bracket_offset += _aim_bracket_velocity * step
+
+	## Recovery, not just prevention. The clamp makes divergence impossible
+	## from THIS integrator, but a non-finite value arriving from anywhere
+	## else — a NaN speed out of the player, a bad export — would still be
+	## permanent, because every later frame feeds it back into itself. Two
+	## comparisons a frame turn a permanent break into one lost frame.
+	if not is_finite(aim_bracket_offset) or not is_finite(_aim_bracket_velocity):
+		aim_bracket_offset = bracket_offset_min
+		_aim_bracket_velocity = 0.0
 
 
 func _draw() -> void:
@@ -327,7 +354,13 @@ func _draw_3d_ui_brackets() -> void:
 	var right_offset = bracket_offset_current
 	_draw_bracket_right(cursor_position.x + right_offset, cursor_position.y, bracket_width, bracket_height, color)
 
+## The guard exists because antialiased draw_line() normalizes the segment
+## direction: one non-finite coordinate is a warning PER LINE PER FRAME, and
+## it never stops on its own. The spring above should make this unreachable
+## — this is what keeps "should" from being load-bearing.
 func _draw_bracket_left(x: float, y: float, width: float, height: float, color: Color) -> void:
+	if not _is_bracket_drawable(x, y, width, height):
+		return
 	var half_h = height / 2.0
 	var top = Vector2(x, y - half_h)
 	var bottom = Vector2(x, y + half_h)
@@ -339,6 +372,8 @@ func _draw_bracket_left(x: float, y: float, width: float, height: float, color: 
 	draw_line(bottom, bottom_right, color, 2.5, true)
 
 func _draw_bracket_right(x: float, y: float, width: float, height: float, color: Color) -> void:
+	if not _is_bracket_drawable(x, y, width, height):
+		return
 	var half_h = height / 2.0
 	var top = Vector2(x, y - half_h)
 	var bottom = Vector2(x, y + half_h)
@@ -348,6 +383,24 @@ func _draw_bracket_right(x: float, y: float, width: float, height: float, color:
 	draw_line(top, bottom, color, 2.5, true)
 	draw_line(top, top_left, color, 2.5, true)
 	draw_line(bottom, bottom_left, color, 2.5, true)
+
+
+## Tested AS A Vector2, not as floats, and the difference is the whole point.
+## GDScript floats are 64-bit, so a diverged spring stays "finite" there for a
+## very long time — measured on the real integrator, 1e150 after 200 long
+## frames. Vector2 stores 32-bit components, so that same number is already
+## inf by the time draw_line() sees it. A guard written with is_finite() on
+## the floats passed exactly the value that caused this bug; the probe caught
+## that, which is why it is written this way now.
+##
+## The size test is separate and just as necessary: a zero-length antialiased
+## segment normalizes a zero vector and warns exactly as loudly as a NaN one.
+static func _is_bracket_drawable(x: float, y: float, width: float, height: float) -> bool:
+	if not Vector2(x, y).is_finite():
+		return false
+	if not Vector2(x + width, y + height).is_finite():
+		return false
+	return absf(width) > 0.001 and absf(height) > 0.001
 
 
 func _input(event: InputEvent) -> void:

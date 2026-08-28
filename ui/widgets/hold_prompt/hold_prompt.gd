@@ -233,14 +233,23 @@ func _advance_commit_lock(delta: float) -> void:
 
 
 func _advance_springs(delta: float) -> void:
+	## Clamped for the reason SpringPoint.MAX_STEP gives: both springs here
+	## are semi-implicit Euler and diverge past roughly 2 / damping — 0.10 s
+	## for appear, 0.17 s for shake. A diverged _shake_x reaches the panel's
+	## position and then draw_polyline(), which is exactly how the cursor's
+	## own spring produced thousands of warnings before this was understood.
+	## _appear is clamped to 0..1 below and could not run away, but _shake_x
+	## has no such ceiling.
+	var step: float = minf(delta, SpringPoint.MAX_STEP)
+
 	var appear_target: float = 1.0 if _shown else 0.0
 	var a_acc: float = (appear_target - _appear) * APPEAR_STIFFNESS - _appear_vel * APPEAR_DAMPING
-	_appear_vel += a_acc * delta
-	_appear = clampf(_appear + _appear_vel * delta, 0.0, 1.0)
+	_appear_vel += a_acc * step
+	_appear = clampf(_appear + _appear_vel * step, 0.0, 1.0)
 
 	var s_acc: float = (0.0 - _shake_x) * SHAKE_STIFFNESS - _shake_vel * SHAKE_DAMPING
-	_shake_vel += s_acc * delta
-	_shake_x += _shake_vel * delta
+	_shake_vel += s_acc * step
+	_shake_x += _shake_vel * step
 	if absf(_shake_x) < 0.04 and absf(_shake_vel) < 0.8:
 		_shake_x = 0.0
 		_shake_vel = 0.0
