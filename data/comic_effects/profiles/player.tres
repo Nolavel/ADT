@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ComicVisualProfile" format=3]
+
+[ext_resource type="Script" path="res://core/ui/comic_effect/comic_visual_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+id = &"player"
+primary_color = Color(0.94, 0.89, 0.78, 1)
+border_color = Color(0.86, 0.72, 0.42, 1)
+background_color = Color(0.05, 0.045, 0.04, 0.86)
+pattern_color = Color(0.6, 0.56, 0.5, 0.07)
+font_size = 24
+outline_size = 5
+outline_color = Color(0, 0, 0, 0.9)
+border_style = 1
+border_thickness = 2.2
+padding = Vector2(13, 7)
+corner_jitter = 1.5
+pattern_step = 5.0
+duration = 1.1
+pop_time = 0.1
+hold_ratio = 0.45
+rise_px = 26.0
+pop_overshoot = 1.06

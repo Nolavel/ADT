@@ -12,6 +12,80 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - The comic word gets a panel
+
+The floating reaction word was a `Label` with an outline: the only thing
+anyone could ever author was the type itself. It now arrives on a drawn
+**panel** — near-black plate, very faint print grid, inked border that is not
+quite straight — with the whole frame built procedurally from data.
+
+**`ComicVisualProfile`** (new, `core/ui/comic_effect/`) owns how a panel is
+drawn: colours, type, border style/thickness/corner jitter, padding, grid
+step, and the pop/hold/fade timings. It is shared by a **class** of events,
+not owned by one: four profiles in `data/comic_effects/profiles/` — `npc`,
+`player`, `player_hurt`, `environment` — replace thirteen per-event colours.
+That reduction is the argued part of this change: thirteen hues are a legend
+the player memorises, which `docs/visual_language.md` warns against; four
+registers say *whose noise is this*. The cost is named in
+`docs/architecture/npc_and_incidents.md` — `player_combat` no longer borrows
+`StanceIndicator.combat_color`, and that tie is now carried by the stance
+badge alone.
+
+**`ComicEffectLabel` is a `Control` that draws itself** — background, grid,
+border, text outline, text, in that order. Outline strictly before the text
+(reversed, it hides the glyphs inside their own outline and merely looks
+muddy). Corner jitter is sampled once at `setup()`, never inside `_draw()`, so
+a hanging panel cannot change shape when something forces a redraw. The grid
+is one tiled `draw_texture_rect` off a static per-step `ImageTexture` cache —
+a loop of `draw_rect` would be thousands of calls a frame at eight live
+panels. Alpha now rises, **holds at full while the word is being read**, then
+fades; the old curve started fading on frame one.
+
+**Nothing renders differently by accident.** `ComicEffectDef.resolve_profile()`
+synthesises a profile from the legacy `color`/`font_size`/`duration`/`rise_px`
+fields when none is set, so a def with no profile still draws — migration is
+per-def and optional. `ComicEffectDef.get_font_size()` is the single place the
+drawn size is decided; the label does not recompute it.
+
+**Untouched on purpose:** the vocabulary, the distance gate, `MAX_ACTIVE` (8)
+and `POOL_SIZE` (12), the anti-repeat and the catalog. `docs/visual_language.md`
+§4 makes those art direction, and this change had no art-direction argument
+for moving them. `ComicEffectSystem` changed in two places only.
+
+**Verified** by a throwaway probe scene (run, read, deleted — 40 assertions,
+all passing): a profile-less def still spawns a sized, visible panel; the
+catalog still loads 13 defs with their texts intact; no vocabulary entry
+contains `!` and every entry is capitalised, which is `visual_language.md` §2
+checked literally; the distance gate still blocks; panel width is exactly text
++ padding × 2; the profile's duration wins over the legacy field; alpha rises,
+holds 25 samples at full, ends at zero; all four border styles draw without
+error; after every panel dies `_active` is empty, the pool is intact and
+nothing was freed. Import passes and a `world.tscn` boot are clean — the two
+warnings present are the two already on `main`.
+
+**Not verified, and honestly so:** headless has no picture. Whether the panel
+reads as a comic panel rather than a UI tooltip, whether the grid fights the
+letters, and whether eight at once clutter the screen all need eyes.
+
+**Out of plan, deliberately** — recorded as such in `docs/scope_horizon.md`
+under *Out of plan*, with the trade against H6 stated rather than hidden.
+
+*Комикс-слово теперь рисуется как панель: подложка, слабая печатная сетка,
+неровная рамка. Новый ресурс `ComicVisualProfile` описывает вид целого класса
+событий — четыре регистра вместо тринадцати цветов. Альфа теперь нарастает,
+держится и только потом гаснет. Словарь, дистанционный гейт и лимит
+одновременных слов не тронуты. Работа вне плана, отмечено в scope_horizon.*
+
+- `core/ui/comic_effect/comic_visual_profile.gd` (new),
+  `core/ui/comic_effect/comic_effect_def.gd`,
+  `core/ui/comic_effect/comic_effect_label.gd`,
+  `core/ui/comic_effect/comic_effect_system.gd`,
+  `data/comic_effects/profiles/*.tres` (new, 4),
+  `data/comic_effects/*.tres` (13), `docs/visual_language.md`,
+  `docs/architecture/npc_and_incidents.md`, `docs/scope_horizon.md`
+
+---
+
 ## 2026-08-28 - Stamina moves to the feet; the cursor becomes an aim
 
 `MouseCursorUI` was doing two unrelated jobs on the same few pixels: saying

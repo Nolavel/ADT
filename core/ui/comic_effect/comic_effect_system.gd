@@ -93,7 +93,7 @@ func try_spawn(id: StringName, world_pos: Vector3, follow: Node3D = null) -> voi
 		return
 
 	var text: String = _pick_text(def)
-	label.setup(text, def.color, def.font_size, def.duration, def.rise_px)
+	label.setup(text, def.resolve_profile(), def.get_font_size())
 	if is_instance_valid(follow):
 		label.set_follow(follow, DEFAULT_OFFSET)
 	else:
@@ -116,11 +116,11 @@ func _build_pool() -> void:
 	for _i in POOL_SIZE:
 		var label := ComicEffectLabel.new()
 		label.visible = false
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-		label.add_theme_constant_override("outline_size", 4)
+		# Alignment and outline used to be set here as Label properties and
+		# theme overrides. The panel draws its own type now, from its
+		# ComicVisualProfile — setting them here would be a second, silent
+		# source for the same two decisions.
 		_pool.append(label)
 		call_deferred("_attach_label", label)
 
