@@ -1,0 +1,133 @@
+# The verification ladder from CLAUDE.md, run by the repository instead of by
+# whoever happens to remember it. Three facts it establishes on every PR:
+# every script parses, every res:// path resolves, and world.tscn actually
+# boots with its autoloads, _ready() and physics live.
+#
+# WHAT IT CANNOT SEE, 1 — an ORPHAN SCRIPT. Measured 2026-08-28: a .gd file
+# that no scene, autoload or other script references is never compiled by the
+# import pass, so a syntax error in it passes CI green. A break in anything
+# actually reachable IS caught (verified by breaking core/input/input_systems.gd
+# on purpose: 14 gated lines on the import pass, 18 on the boot). There is no
+# cheap fix — CLAUDE.md explains why `--check-only --script` is a trap here,
+# it compiles one file with no autoloads registered and invents
+# "Identifier not found" for a third of the project. Adding a file and
+# wiring nothing to it is the case to watch by hand.
+#
+# WHAT IT CANNOT SEE, 2 — anything visual. The terrain is drawn by a vertex
+# shader the dummy driver never runs, so a green run proves the player stands
+# on the ground and not that the ground looks like ground. Held-item offsets,
+# clipping, silhouette and every UI widget's actual appearance still need
+# eyes, and a green check must never be read as saying otherwise.
+#
+# NOT TRIGGERED ON entire/checkpoints/v1. That is Entire's own branch, it
+# carries session transcripts that are deliberately never pushed
+# (docs/ENTIRE_SETUP.md), and nothing here should ever check it out. The push
+# trigger is restricted to main for that reason among others; do not widen it
+# to '**'.
+name: Godot
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: godot-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Godot exits 0 even when scripts fail to parse, so the gate is the log,
+  # never the exit code. Defined once and used by both gated steps.
+  GODOT_LOG_FAIL: '^(ERROR|SCRIPT ERROR|USER ERROR|USER SCRIPT ERROR)'
+
+jobs:
+  import-and-boot:
+    name: Import and boot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Single source of truth for the engine version is the hook, not this
+      # file: bumping it there busts the cache here automatically.
+      - name: Read the pinned Godot version
+        id: godot
+        run: |
+          version="$(sed -n 's/^VERSION="\(.*\)"$/\1/p' .claude/hooks/ensure_godot.sh)"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Owned by the runner user so actions/cache can write it; the installer
+      # below still needs sudo for the /usr/local/bin symlink.
+      - name: Prepare the Godot directory
+        run: sudo install -d -o "$(id -u)" -g "$(id -g)" /opt/godot
+
+      - name: Cache Godot ${{ steps.godot.outputs.version }}
+        uses: actions/cache@v4
+        with:
+          path: /opt/godot
+          key: godot-${{ steps.godot.outputs.version }}-linux-x86_64
+
+      - name: Install Godot
+        run: |
+          sudo sh .claude/hooks/ensure_godot.sh
+          # The hook is deliberately fail-soft (`|| exit 0`) so it can never
+          # block an agent session from starting. Here a failed download has
+          # to be a failed run, so assert the binary actually works.
+          godot --version
+
+      # Ungated ON PURPOSE. On a cold cache this pass compiles scripts before
+      # the autoloads they reference exist and invents errors that are simply
+      # not true — measured on this repo, 2026-08-28: 17 ERROR lines,
+      # including "Cannot infer the type of ..." for four files and a failure
+      # to load the project font, all of which vanish on the second pass.
+      # CLAUDE.md states the same rule; this is why it exists.
+      - name: Import — first pass (warm-up, not checked)
+        run: godot --headless --editor --quit-after 2000 2>&1 | tee godot-import-1.log
+
+      - name: Import — second pass (authoritative)
+        run: |
+          set -o pipefail
+          godot --headless --editor --quit-after 2000 2>&1 | tee godot-import-2.log
+          if grep -nE "$GODOT_LOG_FAIL" godot-import-2.log; then
+            echo "::error title=Import failed::A script failed to parse or a res:// path did not resolve. Lines above."
+            exit 1
+          fi
+
+      # Autoloads, _ready(), physics and every print/push_warning are live
+      # here; only rendering is not.
+      - name: Boot world.tscn
+        run: |
+          set -o pipefail
+          godot --headless --quit-after 400 2>&1 | tee godot-boot.log
+          if grep -nE "$GODOT_LOG_FAIL" godot-boot.log; then
+            echo "::error title=Boot failed::world.tscn did not come up cleanly. Lines above."
+            exit 1
+          fi
+
+      # Warnings do not fail the run — two are long-standing on main
+      # (NavigationRegion3D absent, non-equal opposite anchors). Surfacing
+      # them makes a NEW one visible without turning the known pair into a
+      # permanent red.
+      - name: Warnings on this head
+        if: always()
+        run: |
+          {
+            echo "### Godot warnings"
+            echo
+            echo '```'
+            grep -hE '^WARNING' godot-import-2.log godot-boot.log 2>/dev/null | sort -u || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Godot logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-logs
+          path: godot-*.log
+          retention-days: 7

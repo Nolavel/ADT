@@ -203,6 +203,30 @@ UI tooltip. That needs eyes.
 
 ---
 
+### CI for the verification ladder
+
+`.github/workflows/godot.yml` — the import-twice-then-boot ladder, run by the
+repository on every PR and on a push to `main`, reusing
+`.claude/hooks/ensure_godot.sh` so the engine version stays pinned in one
+place. There was no `.github/` directory in this repo at all before this.
+
+**Not a horizon and not on the H-series.** It came out of a question about
+what such a folder would even be for, and was built the same hour. It costs
+close to nothing to run (the repo is public, so Actions minutes are free) and
+about an hour to build, which is an hour H6 was holding.
+
+**What it deliberately does not do:** no test suite (see the note below —
+that trade is unchanged), no `CHANGELOG`/contract gate (considered, dropped
+as likely to be worked around rather than obeyed), no PR template. Those can
+be added later without touching what is here.
+
+**Open:** an orphan script — a `.gd` nothing references — is never compiled by
+the import pass, so a syntax error in it still passes green. Measured, not
+assumed. There is no cheap fix and the case is documented in `CLAUDE.md`
+rather than papered over.
+
+---
+
 ## A note on automated tests
 
 Both external architecture reviews (August 2026) flagged the absence of automated
@@ -213,6 +237,15 @@ This is recorded as an accepted trade, not an oversight, so that it stops being
 re-raised as a finding. Revisit when a second person is working in the repo —
 at that point the cost of a regression is paid by someone who did not write the
 change, which is when tests start earning their keep.
+
+**CI, added 2026-08-28, does not reverse that trade — it is a different thing.**
+`.github/workflows/godot.yml` runs the existing verification ladder from
+`CLAUDE.md` (import twice, boot `world.tscn`) and asserts nothing about
+behaviour: it catches a script that does not parse, a `res://` path that does
+not resolve, and a world that does not come up. No test suite, no GUT, no
+assertions about what the code *does*. The trade above still stands; what
+changed is only that the ladder now runs by itself instead of depending on
+whoever remembers it.
 
 ---
 
