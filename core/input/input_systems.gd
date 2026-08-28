@@ -24,11 +24,17 @@ signal secondary_click_released(screen_pos: Vector2)
 
 
 ## --- Interact ---
-## The hold-timer prototype for Interact was removed (it wasn't actually
-## what was needed — holding R for ~1s as a separate action).
-## For now this just forwards just_pressed. Hold behaviour comes back as
-## its own task once the final design is settled.
+## A hold timer for Interact existed once, was removed as the wrong shape
+## (holding R for ~1 s as a SEPARATE action), and comes back here in the
+## shape the design settled on: same key, three edges, no interpretation.
+##
+## This relay reports WHEN and FOR HOW LONG, never "that was a tap" or "that
+## counts as a hold" — the threshold belongs to whoever acts on it
+## (HoverEntryTrigger owns its own interact_hold_time; InteractComponent
+## treats a press as a press and has no threshold at all).
 signal interact_pressed()
+signal interact_held(duration: float)
+signal interact_released(duration: float)
 
 ## --- UI hotkeys (no consumers yet — just relayed) ---
 signal pause_pressed()
@@ -78,10 +84,23 @@ signal lodging_hours_decrease_pressed()
 
 ## ── Interact routing ──────────────────────────────────────────────────
 ## While a claim is held (player at a hover door or aboard one), interact
-## goes straight to the claim's owner; the interact_pressed signal is NOT
+## goes straight to the claim's owner; NONE of the three signals above are
 ## emitted — InteractComponent is blind during that time. One owner makes
 ## the decision, instead of subscribers racing each other.
+##
+## The claim contract mirrors those signals, and a claimant implements as
+## much of it as it needs:
+##
+##   on_interact_claimed()                  the key went down   (required)
+##   on_interact_held(duration: float)      every frame it is down
+##   on_interact_released(duration: float)  the key came up
+##
+## The last two are duck-typed through has_method(), so a claimant that only
+## wants a press keeps working with the one method it always had.
 var _interact_claimant: Node = null
+## Seconds the interact key has been down, 0 while it is up.
+var _interact_duration: float = 0.0
+var _interact_active: bool = false
 
 ## ── Key hints HUD switch (H2, docs/scope_horizon.md) ──────────────────
 ## Deliberately placed on InputSystems rather than on KeyHintsPanel itself,
@@ -145,7 +164,7 @@ func _physics_process(delta: float) -> void:
 		_frame_look_delta = _mouse_look_delta
 		_mouse_look_delta = Vector2.ZERO
 	
-	_handle_interact()
+	_handle_interact(delta)
 	_handle_primary_click()
 	_handle_secondary_click(delta)
 	_handle_ui_hotkeys()
@@ -178,19 +197,52 @@ func _apply_mouse_mode() -> void:
 ## ============================================
 ## INTERACT
 ## ============================================
-func _handle_interact() -> void:
+## Same shape as _handle_secondary_click(): press / held-with-duration /
+## release-with-duration, and the duration is the only thing measured.
+func _handle_interact(delta: float) -> void:
+	var claimed: bool = is_instance_valid(_interact_claimant)
+
 	if Input.is_action_just_pressed("interact"):
-		if is_instance_valid(_interact_claimant):
+		_interact_duration = 0.0
+		_interact_active = true
+		if claimed:
 			_interact_claimant.on_interact_claimed()
 		else:
 			interact_pressed.emit()
-		
+
+	if _interact_active and Input.is_action_pressed("interact"):
+		_interact_duration += delta
+		if claimed:
+			if _interact_claimant.has_method(&"on_interact_held"):
+				_interact_claimant.on_interact_held(_interact_duration)
+		else:
+			interact_held.emit(_interact_duration)
+
+	if Input.is_action_just_released("interact"):
+		if _interact_active:
+			if claimed:
+				if _interact_claimant.has_method(&"on_interact_released"):
+					_interact_claimant.on_interact_released(_interact_duration)
+			else:
+				interact_released.emit(_interact_duration)
+		_interact_active = false
+		_interact_duration = 0.0
+
+
 func claim_interact(claimant: Node) -> void:
 	_interact_claimant = claimant
 
 func release_interact(claimant: Node) -> void:
 	if _interact_claimant == claimant:
 		_interact_claimant = null
+
+
+## Whether someone currently owns the interact key. A state read, the same
+## category as is_jump_just_pressed() — it interprets nothing. Exists so
+## InteractComponent can keep its own prompt off the screen while the claim
+## owner is putting one there.
+func is_interact_claimed() -> bool:
+	return is_instance_valid(_interact_claimant)
 
 
 ## ============================================
