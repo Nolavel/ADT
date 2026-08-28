@@ -252,9 +252,15 @@ func _explore_result(player: Node3D, current_yaw: float, delta: float) -> Dictio
 
 	# Spring-damper instead of a plain lerp — gives viscosity, not a rubber-band snap.
 	var diff := wrapf(target_yaw - current_yaw, -PI, PI)
+	## Step clamped per SpringPoint.MAX_STEP — the same bound every
+	## semi-implicit Euler spring in this project needs. This one is the
+	## least exposed of the three (damping 6 puts the bound at ~0.33 s), but
+	## a diverged yaw is a NaN camera basis, which is permanent and takes the
+	## whole view with it. One line.
+	var step := minf(delta, SpringPoint.MAX_STEP)
 	var accel := diff * explore_spring_stiffness - _yaw_velocity * explore_spring_damping
-	_yaw_velocity += accel * delta
-	var new_yaw := current_yaw + _yaw_velocity * delta
+	_yaw_velocity += accel * step
+	var new_yaw := current_yaw + _yaw_velocity * step
 
 	# Breathing: small noise on pitch, amplitude grows with tension.
 	_noise_time += delta

@@ -12,6 +12,85 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - The cursor spring diverged to NaN; and a way to actually look
+
+Stan reported 7714 errors in one editor session. The stack trace named the
+file: `dynamic_cursor_ui.gd:338 @ _draw_bracket_left()` —
+`Vector2 cannot be normalized, the elements must be finite`.
+
+**Root cause.** The aim-bracket spring integrates with semi-implicit Euler and
+is stable only while the step stays under roughly `2 / damping` — about
+0.14 s at damping 14. One frame longer than that (a streaming hitch, a
+breakpoint, the editor stealing focus) makes it diverge; the offset runs away
+and never comes back, because every later frame feeds the poisoned value into
+itself. Each frame then drew six antialiased lines at a non-finite position,
+and every one called `Vector2.normalize()` and warned. Not a burst — a
+permanent flood.
+
+**The project already had the answer.** `SpringPoint.MAX_STEP`
+(`ui/widgets/morphs/`) clamps exactly this, and its header already said why:
+"a hitch past that bound does not degrade gracefully: it diverges". Three
+springs were written without it — the cursor's, and both of
+`hold_prompt.gd`'s, which are a day old. All three now clamp against that
+constant **by name** rather than copying the number, and `spring_point.gd`'s
+header no longer claims it is a morph-family value.
+`tps_combat_camera_state.gd` gets the same one-line clamp: it is far less
+exposed (damping 6 puts the bound at 0.33 s) but a diverged yaw is a NaN
+camera basis, which takes the whole view with it.
+
+**A second, smaller bug, found by the probe rather than by reading.** The
+first version of the draw guard tested the floats with `is_finite()` and let
+the offending value straight through: GDScript floats are 64-bit, so a
+diverged spring is still "finite" there — measured, 1e150 — while `Vector2`
+stores 32-bit components and the same number is already `inf` by the time
+`draw_line()` sees it. The guard now tests the `Vector2`.
+
+**Why none of this was caught here.** Headless is the dummy driver: it never
+compiles a shader and never calls `_draw()`. Every check in this repository
+was silent and green while the game printed six warnings a frame. That is not
+a gap in attention, it is a gap in method, and it is why this entry also adds
+a way to see.
+
+`tools/render_probe/render_probe.sh` runs the game under Xvfb on software
+OpenGL and writes a PNG sequence with Godot's own `--write-movie` — no
+ffmpeg, xwd or ImageMagick, none of which exist in the container. The
+capability was there the whole time and had never been tried. Its limits are
+stated in its own header and in `CLAUDE.md`: it is the **Compatibility**
+renderer against a **Forward+** project, so geometry, placement, orientation
+and UI layout are trustworthy and lighting is not.
+
+**CI corrected, twice over.** The warning summary ended in `sort -u`, so one
+warning and seven thousand identical ones rendered as the same tidy line —
+a real defect in what I built four days ago. Warnings now report with counts,
+and any single warning repeating more than 50 times fails the run. A second
+job, `Render`, runs the probe, gates its log, and uploads the last frame on
+every run so the build can be looked at without checking it out.
+
+**Verified.** A probe reproduced the divergence directly (run, read, deleted):
+at 60 fps clamped and unclamped agree exactly, so the fix changes nothing in
+normal play; at a 0.2 s step the unclamped integrator passes 1e30 while the
+clamped one settles on the target; the draw guard refuses the diverged value
+and a zero-height bracket, and still allows a healthy one. Nine assertions,
+all passing. The render probe produced 60 frames with zero errors, and the
+frame is legible.
+
+*Пружина прицельных скобок расходилась в NaN на одном длинном кадре и дальше
+печатала по шесть предупреждений в кадр — отсюда 7714 у Стэна. В проекте уже
+была константа `SpringPoint.MAX_STEP` ровно от этого, с объяснением; три
+пружины были написаны мимо неё. Теперь все клампятся по имени этой константы.
+Отдельно: headless не рисует вообще, поэтому ни одна моя проверка этого
+увидеть не могла — добавлен `tools/render_probe/`, запуск игры под Xvfb с
+сохранением кадров, и второй job в CI, который прикладывает кадр к каждому
+прогону. CI больше не сворачивает одинаковые предупреждения в одну строку.*
+
+- `ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd`,
+  `ui/widgets/hold_prompt/hold_prompt.gd`,
+  `camera/tps_combat_camera_state.gd`, `ui/widgets/morphs/spring_point.gd`,
+  `tools/render_probe/render_probe.sh` (new),
+  `.github/workflows/godot.yml`, `CLAUDE.md`
+
+---
+
 ## 2026-08-28 - CI: the verification ladder runs by itself
 
 There was no `.github/` directory in this repository at all. Every claim that
