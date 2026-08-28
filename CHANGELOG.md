@@ -12,6 +12,88 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - Hold Prompt: F → ○ → ●, and boarding becomes hold-to-confirm
+
+Interaction had no on-screen feedback at all: `InteractComponent` found a
+candidate, `HUDComponent` put a decal under it, and nothing said which key
+took it. New **`HoldPrompt`** (`ui/widgets/hold_prompt/`, a `WORLD_UI_SCENES`
+entry) draws a tapered plate with the letter `F` over the candidate —
+entrance with a shake and a smear that resolves into a hard edge, a slow
+pulse at rest; holding the key turns it yellow, spins the `F` out and morphs
+it into a circle and then a filled dot. Ported from a canvas study, with its
+spring and morph constants carried over unchanged.
+
+**The widget decides nothing.** No inventory, no `store_item()`, no
+threshold. `set_progress()` is a **target** it eases toward: rising fast, so
+a commit never lands before the dot is drawn, and falling slowly, so a
+cancelled hold rolls back without the caller animating anything — truth
+belongs to the caller, feel belongs to the widget. Found by group, the way
+`ComicEffectSystem` is, because `HoverEntryTrigger` never receives a
+`WorldContext`. Delete the node and every interaction still works.
+
+**`InputSystems` gets its interact hold timer back**, in the shape the
+removed prototype got wrong: not a separate action on another key, but three
+edges on the same one — `interact_pressed`, `interact_held(duration)`,
+`interact_released(duration)` — measured exactly the way
+`_handle_secondary_click()` already measures the right mouse button. It
+reports how long and never "that was a tap". The claim contract mirrors the
+three (`on_interact_claimed()` required, the other two duck-typed) and is
+**corrected rather than doubled**: there is one claimant in the project, so
+no legacy path was kept beside it. Plus `is_interact_claimed()`, a state
+read of the same category as `is_jump_just_pressed()`.
+
+**Boarding and exiting a hover are now hold-to-confirm** (0.7 s,
+`HoverEntryTrigger.interact_hold_time`). The threshold lives with the thing
+that decides, not in the relay. Getting into a vehicle is the one mis-press
+here that is expensive to undo, and this trigger is the only claimant, so the
+hold sits on the claim contract instead of becoming a general property of
+interaction. **Pickup is deliberately unchanged** — F still commits on the
+press, because an auto-approach commits on arrival seconds later and a
+tap-vs-hold arbitration at release has nothing to attach to there. The tap
+gets the same morph through `instant_complete()`, which holds the panel up
+for ~0.24 s: a pickup frees the world object, so the panel would otherwise be
+told to leave one frame after the morph began.
+
+**Verified** by a throwaway probe (run, read, deleted — 49 assertions, all
+passing) driving **real input** via `Input.action_press("interact")`, so the
+relay itself is under test rather than a stand-in. Negative control ran
+first, with no `HoldPrompt` anywhere in the tree: boarding and pickup behaved
+exactly as before. Then: one `pressed` and one `released` per press with a
+monotonic duration that resets between presses; no signal escapes while
+claimed and the claimant gets all three; a hold under the threshold does not
+board, crossing it boards once, and a still-held key does not board twice;
+the bottom edge is narrower than the top by `2 * bottom_taper`; a cancelled
+hold eases back instead of snapping; `instant_complete()` reaches the dot in
+0.120 s; an anchor behind the camera hides the panel. Import passes and a
+`world.tscn` boot are clean — the two warnings present are the two already on
+`main`.
+
+Two bugs the probe caught, both mine: the freed-Object-equals-null trap again
+(`_follow != null` reads false for a freed anchor, so the panel hung on a
+dead reference — `is_instance_valid()` alone is the fix), and a taper
+assertion that was measuring a sampled polyline to exact equality.
+
+**Not verified:** headless has no picture. Whether the taper reads as a
+shield pointing down rather than a clipped rectangle, whether the entrance
+shake fights the candidate decal that appears on the same frame, and whether
+0.7 s to board is right all need eyes.
+
+*Появился экранный prompt взаимодействия: рамка с буквой F над кандидатом,
+при удержании — жёлтый цвет и морф F → круг → точка. Виджет ничего не решает,
+прогресс приходит снаружи как цель. В `InputSystems` вернулось удержание
+interact тремя рёбрами; контракт claim'а зеркалит их. Посадка и высадка из
+ховера теперь через удержание 0.7 с; подбор намеренно остался мгновенным.*
+
+- `ui/widgets/hold_prompt/hold_prompt.gd` + `.tscn` (new), `world/world.gd`,
+  `core/input/input_systems.gd`,
+  `player/player_components/interact_component/interact_component.gd`,
+  `core/controllers/transport/hover_entry_trigger.gd`,
+  `docs/architecture/autoloads_and_bootstrap.md`,
+  `docs/architecture/player_and_camera.md`,
+  `docs/architecture/items_and_equipment.md`, `input_map.md`
+
+---
+
 ## 2026-08-28 - The comic word gets a panel
 
 The floating reaction word was a `Label` with an outline: the only thing

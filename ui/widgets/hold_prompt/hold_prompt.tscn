@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/widgets/hold_prompt/hold_prompt.gd" id="1_prompt"]
+
+[node name="HoldPrompt" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 76.0
+offset_bottom = 76.0
+script = ExtResource("1_prompt")

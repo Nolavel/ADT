@@ -103,6 +103,12 @@ var _approach_elapsed: float = 0.0
 ## whose walk finished a few centimetres outside the arrival radius.
 var _approach_body_stopped: bool = false
 
+## Screen prompt, resolved by group and cached. Null is a normal state, not
+## an error: the widget is decoration over an interaction that has to keep
+## working either way, so every call site null-checks and nothing here waits
+## for it. Same relationship ComicEffectSystem consumers have with the words.
+var _hold_prompt: HoldPrompt = null
+
 func _ready() -> void:
 	## вкл допом программно
 	player_focus_cast.enabled = true
@@ -136,6 +142,7 @@ func _on_interact_pressed() -> void:
 func _physics_process(delta: float) -> void:
 	detect_interactable()
 	_update_approach(delta)
+	_update_hold_prompt()
 	update_debug_label()
 	
 func detect_interactable() -> void:
@@ -223,6 +230,37 @@ func _emit_target_if_changed() -> void:
 	_last_target_id = target_id
 	_last_in_reach = in_reach
 	interact_target_changed.emit(current_interactable, in_reach)
+
+
+## Puts the key prompt over the candidate, or takes it away.
+##
+## Called every physics frame rather than off interact_target_changed,
+## because the other half of the condition — whether someone else owns the
+## interact key — changes without the target changing at all: walking into a
+## hover door's zone claims the key while the candidate stays exactly where
+## it was. HoldPrompt itself ignores a repeat show for the same node, so the
+## entrance still plays once per candidate.
+##
+## Silent while the key is claimed: at a hover door the claim holder is
+## already showing a prompt of its own, and two panels for one key is worse
+## than none.
+func _update_hold_prompt() -> void:
+	var prompt: HoldPrompt = _resolve_hold_prompt()
+	if prompt == null:
+		return
+	if current_interactable == null or InputSystems.is_interact_claimed():
+		prompt.hide_prompt()
+		return
+	prompt.show_prompt(current_interactable)
+
+
+func _resolve_hold_prompt() -> HoldPrompt:
+	if is_instance_valid(_hold_prompt):
+		return _hold_prompt
+	_hold_prompt = get_tree().get_first_node_in_group(
+		HoldPrompt.GROUP_HOLD_PROMPT
+	) as HoldPrompt
+	return _hold_prompt
 
 func update_debug_label() -> void:
 	if not debug_label:
@@ -385,6 +423,13 @@ func try_interact() -> void:
 func _perform_interaction(object: InteractableObject) -> void:
 	if object == null or not is_instance_valid(object):
 		return
+
+	## The tap payoff, fired here rather than in try_interact() for the same
+	## reason the match below lives here: this is the ONE point both the
+	## immediate path and the on-arrival path pass through.
+	var prompt: HoldPrompt = _resolve_hold_prompt()
+	if prompt != null:
+		prompt.instant_complete()
 
 	## Проверяем тип взаимодействия
 	match object.interaction_type:

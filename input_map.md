@@ -71,7 +71,7 @@ view is embedded in the editor.
 
 | Action | Key | Description | RU |
 |---|---|---|---|
-| `interact` | `F` | Pick up / drop item, activate object, board a hover | Взаимодействие |
+| `interact` | `F` | Pick up / drop item, activate object; **hold** to board a hover | Взаимодействие |
 | `zoom_in` | Wheel down | Zoom camera in | Приблизить |
 | `zoom_out` | Wheel up | Zoom camera out | Отдалить |
 | `toggle_view` | `V` | Toggle `ISOMETRIC` ⇄ `TPS` | Смена вида |
@@ -181,7 +181,8 @@ a known TODO, blocked on a raycast service that does not exist yet.
 
 ## 5. HOVER
 
-Entered through `HoverEntryTrigger` (`interact` near a hover). `Space` and
+Entered through `HoverEntryTrigger` (**hold** `interact` near a hover — see
+`interact_hold_time` on the trigger). `Space` and
 `Ctrl` are shared with `jump` / `crouch` by design — the modes are mutually
 exclusive, so the bindings do not conflict at runtime.
 
@@ -192,7 +193,7 @@ exclusive, so the bindings do not conflict at runtime.
 | `hover_up` | `Space` | Ascend; release engages altitude hold | Набор высоты |
 | `hover_down` | `Ctrl` | Descend; release engages altitude hold | Сброс высоты |
 | `toggle_view` | `V` | Camera `CHASE` ⇄ `COCKPIT` | Смена камеры |
-| `interact` | `F` | Exit — near-zero speed only | Выход |
+| `interact` | `F` | **Hold** to exit — near-zero speed only | Выход |
 
 Input reaches the vehicle through `InputHoverController`
 (`core/controllers/transport/base/input_hover_controller.gd`), which calls

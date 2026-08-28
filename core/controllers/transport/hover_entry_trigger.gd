@@ -25,6 +25,14 @@
 #
 # Анимации персонажа нет намеренно: твин позиции — плейсхолдер под
 # мокап-пайплайн. Вся индикация — консоль-лог (решение 2026-07-16).
+#
+# BOARDING AND EXITING ARE HOLD-TO-CONFIRM (2026-08-28). A press starts the
+# hold; the transition only runs once the key has been down for
+# interact_hold_time. Getting into a vehicle by brushing a key is the one
+# mis-press in this build that is expensive to undo, and this trigger is the
+# only claimant in the project, so the claim contract carries the hold rather
+# than InteractComponent — the threshold belongs to whoever decides, and
+# InputSystems relays a duration and nothing else.
 # =============================================================================
 
 extends Area3D
@@ -44,11 +52,22 @@ enum State { IDLE, BOARDING, SEATED, EXITING }
 ## Пока hover_base не реализован, скорость считается нулевой.
 @export var exit_speed_threshold: float = 0.5
 
+## Сколько держать interact, чтобы сесть или выйти, сек. Порог живёт здесь,
+## а не в InputSystems: решение принимает этот триггер, реле только сообщает
+## длительность.
+@export var interact_hold_time: float = 0.7
+
 var _state: State = State.IDLE
 var _hover: Node3D = null
 var _player: Node3D = null            # игрок в зоне (IDLE) или на борту
 var _door_anchor: Marker3D = null
 var _controller: InputHoverController = null
+## Удержание уже сработало — чтобы переход не запускался каждый кадр, пока
+## клавиша всё ещё зажата.
+var _hold_committed: bool = false
+## Экранный prompt, ищется по группе и кэшируется. null — нормальное
+## состояние: виджет только рисует, посадка работает и без него.
+var _prompt: HoldPrompt = null
 
 func _ready() -> void:
 	_set_entry_light_enabled(false)
@@ -86,21 +105,78 @@ func _on_body_exited(body: Node3D) -> void:
 	_player = null
 	_set_entry_light_enabled(false)
 	InputSystems.release_interact(self)
+	_end_hold()
 	print("[HoverEntryTrigger] Игрок отошёл от '%s'" % _hover.name)
 
 
 # ── Маршрутизированный interact (вызывает InputSystems, не сигнал) ──────────
 
+## Нажатие. Больше не выполняет переход — только начинает удержание.
 func on_interact_claimed() -> void:
+	if not _can_start_hold():
+		return
+	_hold_committed = false
+	var prompt := _resolve_prompt()
+	if prompt != null and _door_anchor != null:
+		prompt.show_prompt(_door_anchor)
+		prompt.set_holding(true)
+		prompt.set_progress(0.0)
+
+
+## Каждый кадр, пока клавиша зажата. Переход выполняется ровно один раз, при
+## пересечении порога.
+func on_interact_held(duration: float) -> void:
+	if _hold_committed or not _can_start_hold():
+		return
+	var t: float = clampf(duration / maxf(interact_hold_time, 0.01), 0.0, 1.0)
+	var prompt := _resolve_prompt()
+	if prompt != null:
+		prompt.set_progress(t)
+	if t < 1.0:
+		return
+
+	_hold_committed = true
 	match _state:
 		State.IDLE:
-			if _player != null:
-				PlayerState.current_hover = _hover
-				_begin_boarding()
+			PlayerState.current_hover = _hover
+			_begin_boarding()
 		State.SEATED:
 			_begin_exiting()
-		_:
-			pass   # BOARDING/EXITING — переходы не прерываем
+	_end_hold()
+
+
+## Отпустили. Раньше порога — откат; после — уже ничего не значит.
+func on_interact_released(_duration: float) -> void:
+	if _hold_committed:
+		_hold_committed = false
+		return
+	_end_hold()
+
+
+## Удержание имеет смысл только в двух состояниях: у двери снаружи и сидя
+## внутри. BOARDING/EXITING — переходы, их не прерываем.
+func _can_start_hold() -> bool:
+	if _state == State.IDLE:
+		return _player != null
+	return _state == State.SEATED
+
+
+func _end_hold() -> void:
+	var prompt := _resolve_prompt()
+	if prompt == null:
+		return
+	prompt.set_holding(false)
+	prompt.set_progress(0.0)
+	prompt.hide_prompt()
+
+
+func _resolve_prompt() -> HoldPrompt:
+	if is_instance_valid(_prompt):
+		return _prompt
+	_prompt = get_tree().get_first_node_in_group(
+		HoldPrompt.GROUP_HOLD_PROMPT
+	) as HoldPrompt
+	return _prompt
 
 
 # ── Посадка ──────────────────────────────────────────────────────────────────
