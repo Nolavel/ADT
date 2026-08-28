@@ -12,6 +12,70 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - CI: the verification ladder runs by itself
+
+There was no `.github/` directory in this repository at all. Every claim that
+"the import is clean and the world boots" rested on someone having run the
+ladder by hand and reported it accurately — which is exactly how
+`tools/for_claude_addon_item_/` reached `main` and broke it.
+
+`.github/workflows/godot.yml` now runs that ladder on every pull request and
+on a push to `main`: import twice, then boot `world.tscn`. It **reuses**
+`.claude/hooks/ensure_godot.sh` rather than restating the download, so the
+engine version stays pinned in exactly one place and bumping it there busts
+the CI cache automatically. One correction on top of the reuse: the hook is
+deliberately fail-soft (`|| exit 0`, so it can never block a session from
+starting), so the workflow asserts `godot --version` afterwards — otherwise a
+failed download would look like a pass.
+
+**Everything about the design was measured on a genuinely cold cache, not
+assumed.** Import pass one takes 36 s and prints **17 `ERROR` lines that are
+all false** — four `Cannot infer the type of X`, a failure to load the
+project font, a missing albedo texture — every one of which is gone by pass
+two (31 s, completely silent). That is why only the second pass is gated, and
+`CLAUDE.md` now carries the numbers instead of just the rule. The boot takes
+12 s and prints exactly the two warnings already standing on `main`.
+
+**The gate is the log, never the exit code:** Godot exits 0 with a script
+that does not parse — confirmed directly. Warnings do not fail a run, but
+every unique one is written into the run summary, so a new warning is visible
+without making the known pair permanently red. Logs upload as an artifact on
+failure.
+
+**Verified in both directions.** Forward: the gate is silent on a clean tree
+(import pass two and boot, zero matches). Backward — the one that makes green
+mean something: a deliberate syntax error in `core/input/input_systems.gd`
+produced 14 gated lines on the import pass and 18 on the boot, and the file
+was restored. The version-extraction `sed`, the grep gate and the warning
+summary were each run against the real captured logs, and the YAML was
+parsed.
+
+**A real limitation, found by the first attempt at that backward test and
+written down rather than hidden:** a `.gd` file that no scene, autoload or
+other script references is never compiled by the import pass, so a syntax
+error in an orphan file passes CI green. There is no cheap fix —
+`--check-only --script` is the trap `CLAUDE.md` already describes. Recorded
+in the workflow header, in `CLAUDE.md` and in `docs/scope_horizon.md`.
+
+Deliberately **not** included: no test suite (the accepted trade in
+`scope_horizon.md` is unchanged — this asserts nothing about behaviour), no
+`CHANGELOG`/contract gate (considered, dropped as more likely to be worked
+around than obeyed), no PR template. The push trigger is restricted to `main`
+and must not be widened to `**`: `entire/checkpoints/v1` is Entire's own
+branch and nothing in CI should ever check it out.
+
+*Появился `.github/workflows/godot.yml` — лестница проверки из `CLAUDE.md`
+(двойной импорт + загрузка мира) теперь гоняется репозиторием на каждый PR и
+на push в `main`, а не с моих слов. Переиспользует `ensure_godot.sh`, так что
+версия движка закреплена в одном месте. Гейт — по логу, не по коду выхода:
+Godot возвращает 0 даже при ошибке парсинга. Первый холодный проход даёт 17
+ложных ошибок и поэтому не проверяется — это измерено. Тестов не добавлено,
+принятый компромисс из scope_horizon не тронут.*
+
+- `.github/workflows/godot.yml` (new), `CLAUDE.md`, `docs/scope_horizon.md`
+
+---
+
 ## 2026-08-28 - Hold Prompt: F → ○ → ●, and boarding becomes hold-to-confirm
 
 Interaction had no on-screen feedback at all: `InteractComponent` found a
