@@ -12,6 +12,71 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - Stamina moves to the feet; the cursor becomes an aim
+
+`MouseCursorUI` was doing two unrelated jobs on the same few pixels: saying
+how much wind the character has left, and saying what they are aiming at.
+Aiming is a fast, precise read; stamina is a slow, ambient one, and stacked
+together the aiming half loses.
+
+**Stamina moved into the world.** New `StaminaIndicator3D`
+(`player/player_components/stamina_indicator/`) draws it as a ring on the
+ground around the character's feet. It owns no arithmetic — `StaminaComponent`
+still does all of it, and this node subscribes and renders, the same contract
+`EquipmentVisualsComponent` already states for itself. The visual is a **port,
+not a rewrite**: the four arcs and their full → yellow → orange → red ramp, the
+two chasing recovery rings with their pulse, the jump-charge arc and the
+walk/sprint/no-stamina icons all keep their original formulas and timings —
+only the surface changed, from a 2D canvas to a shader on a ground quad, the
+same approach `TargetIndicator` already uses. Two details that are easy to
+lose in a port and were kept deliberately: the ring dims by half while
+standing still, and the arcs spin faster in proportion to the sprint blend.
+
+**`top_level = true`, position copied each frame.** The node is a child of the
+player but must not inherit their rotation: in COMBAT the body turns to face
+the camera constantly, and a ground ring welded to that yaw would swing on
+every turn. Verified — turn the player 90°, the ring stays at 0°.
+
+**The icons became billboarded `Sprite3D`s** above the ring rather than lying
+flat on it: flat, they read only from directly overhead, which is the one
+angle TPS never gives.
+
+**The cursor now says one thing.** Dim grey when nothing is under it, brighter
+when an NPC or an item is, and **brackets instead of a ring while a firearm is
+in hand** — `player.gd._drawn_firearm()` became public `get_drawn_firearm()`
+so that question has one asker and one answer instead of the UI re-deriving it
+from the catalog. The brackets breathe off the **continuous** speed rather than
+off `is_running`, through a spring rather than a lerp, so they open as the
+character moves and settle as they stop. Their shape is unchanged: `[ ✛ ]`,
+spine outwards, tips toward the target.
+
+**In TPS the cursor is pinned to screen centre.** The mouse is captured there,
+so it cannot be moved and the camera is what aims; the ray is cast from the
+same point, which makes it an honest sight down the camera's own direction.
+
+**Found while testing, not fixed here:** the island terrain carries
+`collision_layer = 3`, so it sits on `CHARACTERS` alongside actual characters.
+Nothing separates them by mask, and the first version of the cursor lit up
+from a plain look at the ground. Rather than change that layer — which would
+touch physics across the project — the cursor checks the *type* of what the
+ray hit (`NPCBase`, `InteractableObject`, or an `InteractableObject`'s `Area`).
+That also buys honest occlusion for free: the ray returns the nearest hit, so
+an NPC behind a hill is rejected along with the hill. **The layer itself is
+still wrong and worth a look on its own.**
+
+24 assertions in `world.tscn`, all green, including that the cursor no longer
+holds a `StaminaComponent` reference at all and is not subscribed to any of
+its signals.
+
+*Стамина уехала из курсора в мир — кольцо на земле вокруг ног, вся анимация
+перенесена дословно, считает по-прежнему `StaminaComponent`. Кольцо не
+наследует поворот тела. Курсор теперь говорит одно: серый / белый по наведению
+и скобки при огнестреле, живущие от непрерывной скорости через пружину. В TPS
+курсор прибит к центру экрана. Попутно найдено: терраин острова стоит на слое
+CHARACTERS — здесь не чиню, но это стоит посмотреть.*
+
+---
+
 ## 2026-08-28 - The candidate decal: "I will walk there" vs "I can reach it"
 
 PR #40 gave `InteractComponent` an intent tier, so the game already knew what

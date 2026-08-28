@@ -31,6 +31,7 @@
 [ext_resource type="Script" uid="uid://c6fdejgw4480v" path="res://player/player_components/stamina_component/stamina_component.gd" id="31_dssci"]
 [ext_resource type="Texture2D" uid="uid://ceh8jk4l2pydw" path="res://assets/textures/pins/pin_step_walk.png" id="32_fp3m1"]
 [ext_resource type="Script" uid="uid://7ft3gsmqmrmi" path="res://ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd" id="32_ftrmt"]
+[ext_resource type="Script" path="res://player/player_components/stamina_indicator/stamina_indicator_3d.gd" id="42_stamring"]
 [ext_resource type="Texture2D" uid="uid://cwk3afcvrxb21" path="res://assets/textures/pins/pin_step_sprint.png" id="33_wmpjg"]
 [ext_resource type="Script" uid="uid://dfrq4uw3iba6d" path="res://player/player_components/inventory_component/inventory_component.gd" id="35_q28gw"]
 [ext_resource type="PackedScene" uid="uid://5fn1xrmc4k84" path="res://player/player_components/nav_component/nav_component.tscn" id="36_ge24q"]
@@ -1465,8 +1466,6 @@ transform = Transform3D(2.5797526, 0, 0, 0, 2.5797526, 0, 0, 0, 2.5797526, -0.03
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("32_ftrmt")
-walk_indicator_texture = ExtResource("32_fp3m1")
-sprint_indicator_texture = ExtResource("33_wmpjg")
 
 [node name="StaminaComponent" type="Node" parent="." unique_id=768721075]
 script = ExtResource("31_dssci")
@@ -1522,3 +1521,8 @@ debug_log = true
 
 [node name="WeaponComponent" type="Node" parent="." unique_id=1587176807]
 script = ExtResource("41_weapon")
+
+[node name="StaminaIndicator3D" type="Node3D" parent="." unique_id=1587176808]
+script = ExtResource("42_stamring")
+walk_icon = ExtResource("32_fp3m1")
+sprint_icon = ExtResource("33_wmpjg")
