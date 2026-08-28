@@ -53,3 +53,10 @@ script = ExtResource("2_rlc05")
 
 [node name="GroundDecal" type="MeshInstance3D" parent="TargetIndicator" unique_id=2105001289]
 mesh = SubResource("PlaneMesh_ow0l6")
+
+[node name="CandidateIndicator" type="Node3D" parent="." unique_id=681512926]
+script = ExtResource("2_rlc05")
+decal_only = true
+
+[node name="GroundDecal" type="MeshInstance3D" parent="CandidateIndicator" unique_id=2105001290]
+mesh = SubResource("PlaneMesh_ow0l6")

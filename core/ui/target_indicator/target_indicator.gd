@@ -28,11 +28,38 @@ var arrow_root: Node3D
 @export var color_run: Color = Color(1.0, 0.53, 0.0, 0.9)
 @export var color_invalid: Color = Color(1.0, 0.0, 0.27, 0.9)
 
+## SECOND ROLE: an interaction candidate, not a move order. Same node type,
+## same appear/disappear, different palette — see show_candidate().
+##
+## Two colours because the two states mean different things to the player:
+## dim = pressing F walks the character over, bright = pressing F acts right
+## now. Which one applies is decided by InteractComponent, not here.
+@export_group("Colors - Interaction Candidate")
+## "I will walk there."
+@export var color_candidate: Color = Color(0.55, 0.62, 0.70, 0.55)
+## "I can reach it from here."
+@export var color_in_reach: Color = Color(0.95, 0.85, 0.35, 0.9)
+
+@export_group("Role")
+## Build the ground decal only, with no hover ring and no arrow.
+##
+## The arrow points back at the player, which is exactly right for "your
+## destination is over there" and pure noise on a thing lying at your feet;
+## the ring is a second animated element competing with the decal for the
+## same reading. A candidate marker wants one quiet shape, so the two are not
+## created at all rather than created and hidden — a hidden TorusMesh with a
+## shader still costs its setup every spawn.
+@export var decal_only: bool = false
+
 # === СОСТОЯНИЕ ===
 var is_visible_indicator := false
 var time_alive := 0.0
 var is_running := false
 var current_color := Color.WHITE
+## Which of the two palettes _update_color() reads. Set by show_candidate() /
+## show_at_position(), never guessed from state.
+var _is_candidate_role := false
+var _candidate_in_reach := false
 
 # === МАТЕРИАЛЫ ===
 var ground_material: ShaderMaterial
@@ -46,6 +73,8 @@ var player_ref: Node3D = null
 func _ready():
 	visible = false
 	_create_ground()
+	if decal_only:
+		return
 	_create_hover_ring()
 	_create_arrow() 
 
@@ -207,6 +236,7 @@ void fragment() {
 # ============================================
 func show_at_position(pos: Vector3, is_run: bool = false):
 	global_position = pos + Vector3.UP * hover_height
+	_is_candidate_role = false
 	is_running = is_run
 	if not is_visible_indicator:
 		_appear()
@@ -216,8 +246,30 @@ func hide_indicator():
 	if is_visible_indicator:
 		_disappear()
 
+
+## Shows this indicator as an INTERACTION CANDIDATE rather than a move order:
+## the thing the player is currently aimed at, dim while it still needs
+## walking to and bright once it is within arm's reach.
+##
+## Takes a position and a boolean and nothing else. This node knows nothing
+## about items, equipment or pickup — InteractComponent decides what is
+## targeted and HUDComponent decides that the answer should be drawn; this
+## only draws it. Same split show_at_position() already has with
+## ClickToMoveSystem.
+##
+## Safe to call every frame: repositioning an already-visible indicator does
+## not restart the appear tween.
+func show_candidate(pos: Vector3, in_reach: bool) -> void:
+	global_position = pos + Vector3.UP * hover_height
+	_is_candidate_role = true
+	_candidate_in_reach = in_reach
+	if not is_visible_indicator:
+		_appear()
+	_update_color()
+
 func show_invalid_click(pos: Vector3):
 	global_position = pos + Vector3.UP * hover_height
+	_is_candidate_role = false
 	_update_color(true)
 	_appear()
 	await get_tree().create_timer(0.5).timeout
@@ -266,7 +318,8 @@ func _process(delta: float):
 		ring_material.set_shader_parameter("time_param", time_alive)
 
 	rotate_y(delta * rotation_speed)
-	hover_ring.position.y = hover_height * 0.8 + sin(time_alive * hover_speed) * hover_amplitude
+	if hover_ring:
+		hover_ring.position.y = hover_height * 0.8 + sin(time_alive * hover_speed) * hover_amplitude
 	
 	if player_ref and arrow_root:
 		var dist := global_position.distance_to(player_ref.global_position)
@@ -305,6 +358,8 @@ func _update_color(is_error: bool = false):
 	var target: Color
 	if is_error:
 		target = color_invalid
+	elif _is_candidate_role:
+		target = color_in_reach if _candidate_in_reach else color_candidate
 	elif is_running:
 		target = color_run
 	else:
