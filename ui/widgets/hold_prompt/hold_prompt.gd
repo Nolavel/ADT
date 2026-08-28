@@ -126,11 +126,31 @@ func _ready() -> void:
 	visible = false
 
 
-## world.gd hands this over for every WORLD_UI_SCENES entry. The camera is
-## the only thing this widget needs from the world — it unprojects the
-## followed node itself, the same way ComicEffectLabel does.
+## world.gd hands this over for every WORLD_UI_SCENES entry. Kept only as the
+## fallback for the frame before a viewport camera exists — see
+## _active_camera(), which is what the panel actually unprojects with.
 func on_world_ready(context: WorldContext) -> void:
 	_camera = context.camera
+
+
+## The camera that is ACTUALLY rendering, asked every frame.
+##
+## This used to be `context.camera`, captured once at world-ready, and that is
+## why the panel showed at startup and then stopped: unprojecting through a
+## camera that is no longer current puts the panel at coordinates that have
+## nothing to do with what is on screen, and is_position_behind() then hides
+## it outright. Reported by Stan 2026-08-28 — "F appeared initially and then
+## somehow not at the hover door, and seemingly not over the rifle either".
+##
+## get_viewport().get_camera_3d() is how MouseCursorUI and FadeByDistance
+## already do it; this widget was the odd one out.
+func _active_camera() -> Camera3D:
+	var viewport := get_viewport()
+	if viewport != null:
+		var live := viewport.get_camera_3d()
+		if live != null:
+			return live
+	return _camera if is_instance_valid(_camera) else null
 
 
 ## Start showing, anchored to `follow`. Called repeatedly for the same target
@@ -263,14 +283,15 @@ func _advance_progress(delta: float) -> void:
 ## no camera yet, no anchor, or the anchor is behind the viewer, which is the
 ## same rule ComicEffectLabel applies.
 func _update_position() -> bool:
-	if _camera == null or not is_instance_valid(_camera):
+	var camera: Camera3D = _active_camera()
+	if camera == null:
 		return false
 	if not is_instance_valid(_follow):
 		return false
 	var world: Vector3 = _follow.global_position + anchor_offset
-	if _camera.is_position_behind(world):
+	if camera.is_position_behind(world):
 		return false
-	position = _camera.unproject_position(world) - size * 0.5
+	position = camera.unproject_position(world) - size * 0.5
 	return true
 
 

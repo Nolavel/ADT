@@ -30,6 +30,7 @@ Startup scene: `res://world/world.tscn`.
 | `docs/scope_horizon.md` | What is being built **now**, and in what order |
 | `docs/ENTIRE_SETUP.md` | Entire CLI binary location, PATH dependency, git-hook vs Claude-Code-hook wiring, how to check capture is alive |
 | `docs/COLLISION_LAYERS.md` | Single source of truth for 3D physics layers and the named query-mask profiles built from them |
+| `docs/ITEM_FITTER.md` | **How to actually use the Item Fitter dock** — which scene must be open, the fit-against-an-animation step, what it writes, and the two ways it silently does nothing |
 | `docs/MORPHS_INTEGRATION.md` | Morph icons — what a `MorphIcon` is, attaching one to a widget in the editor, and writing the next one |
 | `docs/visual_language.md` | **How the game looks and states things** — the comic/noir frame, the onomatopoeia rules, and how the comic layer relates to archetype readability, BlackRock and the Votive. Artist- and animator-facing. |
 | `docs/island_rescope_brief.md` | Island transition (Aogashima) — ordered steps, numbers, hard constraints |

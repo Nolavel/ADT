@@ -32,7 +32,7 @@ class_name StaminaIndicator3D
 ## Height above the player's origin. The origin sits at the feet, so this is
 ## literally the clearance above the floor — enough that the quad does not
 ## z-fight with the ground it lies on.
-@export var ground_clearance: float = 0.05
+@export var ground_clearance: float = 0.18
 ## Outer radius of the ring, metres. Sized to read as "around this character"
 ## rather than as a puddle they are standing in.
 @export var ring_radius: float = 0.85
@@ -46,6 +46,17 @@ class_name StaminaIndicator3D
 ## Stamina full -> empty. Ported from _draw_sprint_arcs()'s ramp, which walks
 ## this colour toward yellow, then orange, then red as the ratio falls.
 @export var arc_color: Color = Color(0.8, 0.9, 1.0, 1.0)
+## Fraction of each quarter left EMPTY, so four arcs keep reading as four.
+##
+## Without it the drawn length was the stamina ratio alone, which meant a
+## full bar drew a solid ring: the four arcs the 2D cursor had were only
+## visible while stamina was running out. Stan, 2026-08-28 — "you deleted the
+## stamina animations and left a cold grey".
+@export_range(0.0, 0.6, 0.01) var arc_gap: float = 0.28
+## Brightness multiplier for everything the ring draws. Lives here because
+## the shader is `unshaded`, where EMISSION is ignored outright — the port
+## set EMISSION and the glow it was meant to have never arrived.
+@export var ring_glow: float = 2.2
 
 @export_group("Recovery")
 @export var recovery_pulse_speed: float = 3.0
@@ -57,7 +68,13 @@ class_name StaminaIndicator3D
 ## above, which is exactly the angle TPS never gives.
 @export var walk_icon: Texture2D = null
 @export var sprint_icon: Texture2D = null
-@export var icon_height: float = 1.95
+## Height above whatever the icon is standing on.
+##
+## It used to be measured from the player's own origin, which put the icon
+## over the character's head. It now rides the MOVE-TARGET indicator instead —
+## the marker for where the character is going — because that is where a
+## "walking / running" statement belongs. Stan, 2026-08-28.
+@export var icon_height: float = 1.15
 @export var icon_pixel_size: float = 0.0022
 ## Bounce on appear, ported from _animate_indicator_appear().
 @export var icon_scale_bounce: float = 1.2
@@ -74,6 +91,12 @@ var _stamina: StaminaComponent = null
 
 var _ring: MeshInstance3D = null
 var _ring_material: ShaderMaterial = null
+## The move-destination marker the icons ride, resolved by group and cached.
+## Null is normal — there is no destination marker in TPS, and none before the
+## first click in ISOMETRIC.
+var _move_target: TargetIndicator = null
+## Where the icons stand this frame, written by _resolve_icon_anchor().
+var _icon_anchor: Vector3 = Vector3.ZERO
 var _walk_sprite: Sprite3D = null
 var _sprint_sprite: Sprite3D = null
 var _no_stamina_sprite: Sprite3D = null
@@ -182,7 +205,10 @@ func _update_movement_state(delta: float, player_stationary: bool) -> void:
 
 	## The ring dims by half while standing still — present, but not asking
 	## for attention when nothing is being spent. Ported verbatim.
-	var target_alpha: float = _stamina_ratio if _is_moving else _stamina_ratio * 0.5
+	## Dimmer at rest, but still legible: the old 0.5 combined with the
+	## shader's own 0.55 to put a full ring at about a quarter opacity, which
+	## is where "cold grey and nothing happening" came from.
+	var target_alpha: float = _stamina_ratio if _is_moving else _stamina_ratio * 0.75
 	_arcs_alpha = lerpf(_arcs_alpha, target_alpha, arc_alpha_speed * delta)
 
 	## Arcs spin faster the harder the character is running.
@@ -236,6 +262,8 @@ func _push_shader_parameters() -> void:
 	## quarter_length branch in _draw_sprint_arcs().
 	var span: float = _stamina_ratio * (_sprint_progress if _is_sprinting else 1.0)
 	_ring_material.set_shader_parameter("arc_span", clampf(span, 0.0, 1.0))
+	_ring_material.set_shader_parameter("arc_gap", arc_gap)
+	_ring_material.set_shader_parameter("ring_glow", ring_glow)
 	_ring_material.set_shader_parameter("recovery_time", _recovery_pulse_time)
 	_ring_material.set_shader_parameter(
 		"recovery_alpha", 1.0 if (_is_recovering and _stamina_ratio < 0.95) else 0.0
@@ -337,17 +365,58 @@ func _store_icon_tween(which: String, tween: Tween) -> void:
 
 
 func _update_icons(_delta: float) -> void:
-	_apply_icon(_walk_sprite, _walk_alpha, _walk_scale, Color.WHITE)
-	_apply_icon(_sprint_sprite, _sprint_alpha, _sprint_scale, Color.WHITE)
-	_apply_icon(_no_stamina_sprite, _no_stamina_alpha, _no_stamina_scale, Color.RED)
+	var anchored: bool = _resolve_icon_anchor()
+	var anchor: Vector3 = _icon_anchor
+	_apply_icon(_walk_sprite, _walk_alpha, _walk_scale, Color.WHITE, anchor, anchored)
+	_apply_icon(_sprint_sprite, _sprint_alpha, _sprint_scale, Color.WHITE, anchor, anchored)
+	_apply_icon(
+		_no_stamina_sprite, _no_stamina_alpha, _no_stamina_scale, Color.RED, anchor, anchored
+	)
 
 
-func _apply_icon(sprite: Sprite3D, alpha: float, icon_scale: float, tint: Color) -> void:
+## Where the movement icons should stand this frame, and whether there is
+## anywhere at all.
+##
+## They ride the move-destination marker. When there is none — TPS, or
+## ISOMETRIC before the first click — the icons do not fall back to the
+## character's head: that is the placement being moved away from, and putting
+## it back "just for that case" would mean the icon jumps between two
+## completely different places depending on how the player is steering.
+## No destination, no destination icon.
+## Writes _icon_anchor and reports whether it means anything. Deliberately NOT
+## an out-parameter: Vector3 is a value type in GDScript, so assigning to an
+## argument inside a function changes nothing for the caller — the first
+## version of this did exactly that and would have pinned every icon to the
+## origin.
+func _resolve_icon_anchor() -> bool:
+	if not is_instance_valid(_move_target):
+		_move_target = get_tree().get_first_node_in_group(
+			TargetIndicator.GROUP_MOVE_TARGET
+		) as TargetIndicator
+	if not is_instance_valid(_move_target):
+		return false
+	if not _move_target.is_visible_indicator:
+		return false
+	_icon_anchor = _move_target.global_position
+	return true
+
+
+func _apply_icon(
+		sprite: Sprite3D,
+		alpha: float,
+		icon_scale: float,
+		tint: Color,
+		anchor: Vector3,
+		anchored: bool
+	) -> void:
 	if sprite == null:
 		return
-	sprite.visible = alpha > 0.01
+	sprite.visible = anchored and alpha > 0.01
 	if not sprite.visible:
 		return
+	## global_position, not position: this node is welded to the player every
+	## frame, and the icon is deliberately somewhere else entirely.
+	sprite.global_position = anchor + Vector3(0.0, icon_height, 0.0)
 	var colour := tint
 	colour.a = alpha
 	sprite.modulate = colour
@@ -379,6 +448,8 @@ uniform vec3 arc_color : source_color = vec3(0.8, 0.9, 1.0);
 uniform float arc_alpha : hint_range(0.0, 1.0) = 0.0;
 uniform float arc_angle = 0.0;
 uniform float arc_span : hint_range(0.0, 1.0) = 1.0;
+uniform float arc_gap : hint_range(0.0, 0.6) = 0.28;
+uniform float ring_glow = 2.2;
 
 uniform vec3 recovery_color : source_color = vec3(0.4, 1.0, 0.6);
 uniform float recovery_time = 0.0;
@@ -403,10 +474,13 @@ void fragment() {
 	float ang = atan(uv.y, uv.x) - arc_angle;
 	ang = mod(ang, PI2);
 
-	// FOUR quarter arcs, each spanning arc_span of its quarter — the same
-	// geometry the 2D cursor drew with four _draw_arc() calls.
+	// FOUR quarter arcs, each spanning arc_span of the DRAWABLE part of its
+	// quarter — arc_gap keeps a wedge empty at every quarter boundary, which
+	// is what makes four arcs read as four rather than as one closed ring
+	// whenever stamina happens to be full.
 	float quarter = mod(ang, PI2 * 0.25);
-	float in_arc = step(quarter, PI2 * 0.25 * arc_span);
+	float quarter_len = PI2 * 0.25 * (1.0 - arc_gap) * arc_span;
+	float in_arc = step(quarter, quarter_len);
 	float arc_ring = band(dist, 0.82, 0.10) * in_arc * arc_alpha;
 
 	// Recovery: two rings chasing round at different rates, plus a pulse.
@@ -423,10 +497,11 @@ void fragment() {
 	float jump = band(dist, 0.94, 0.05) * step(fract(ang / PI2), jump_progress) * jump_alpha;
 
 	vec3 col = arc_color * arc_ring + recovery_color * rec + arc_color * jump;
-	float alpha = arc_ring * 0.55 + rec * 0.5 + jump * 0.5;
+	float alpha = arc_ring * 0.95 + rec * 0.75 + jump * 0.7;
 
-	ALBEDO = col;
-	EMISSION = col * 2.0;
+	// unshaded ignores EMISSION entirely, so the glow has to be in ALBEDO.
+	// The port set EMISSION and the ring simply never lit.
+	ALBEDO = col * ring_glow;
 	ALPHA = alpha;
 }
 """

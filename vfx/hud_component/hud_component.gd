@@ -38,6 +38,10 @@ func on_world_ready(context: WorldContext) -> void:
 		push_warning("[HUDComponent] InteractComponent не найден — декаль кандидата не появится")
 
 func _ready() -> void:
+	## Only the move-destination one. The candidate decal is a different
+	## statement and must not attract the walk icon.
+	if target_indicator:
+		target_indicator.add_to_group(TargetIndicator.GROUP_MOVE_TARGET)
 	PlayerState.mode_changed.connect(_on_player_state_changed)
 	PlayerState.view_mode_changed.connect(_on_player_state_changed)
 

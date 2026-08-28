@@ -12,6 +12,89 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - Playtest batch 1: fitter docs, walk icons, the stamina ring, the F panel
+
+Four of Stan's eight findings from a live session, in the order he numbered
+them.
+
+**1. `item_fitter` had no instructions.** The plugin is enabled and the files
+are all there, but nothing anywhere said which scene has to be open or what
+the dock actually writes, so it read as broken. `docs/ITEM_FITTER.md` now
+covers it end to end: `player/player.tscn` (or any scene carrying
+`…HandAttachment/GripPivot`) must be open, pick the `ItemResource`, pick the
+hand, **pick an animation and scrub the time slider** so the fit is made
+against the pose the item is really seen in, move the preview with the
+ordinary gizmo, Save. It writes `HeldFit` on the item and nothing else, and
+the preview is spawned with `owner = null` so it can never be serialised into
+the character scene. Both silent-failure modes are named, and so is the rule
+that a size problem belongs to the grip pivot rather than to `HeldFit`.
+
+**2. The walk/sprint icons rode the player's head.** They now ride the
+MOVE-DESTINATION marker — where the character is going, which is what a
+"walking / running" statement is about. `TargetIndicator` grew a lookup group
+(`GROUP_MOVE_TARGET`) that `HUDComponent` puts only its `target_indicator`
+in, deliberately not the candidate decal; `StaminaIndicator3D` resolves it the
+same way it would resolve any node it cannot be handed a reference to.
+**Consequence worth knowing:** with no destination marker — TPS, or ISOMETRIC
+before the first click — there is now no icon at all. It does not fall back
+over the head, because that is the placement being moved away from and a
+symbol that jumps between two unrelated places depending on how you steer is
+worse than one that waits.
+
+**3. The stamina ring had lost its animation and read as cold grey.** Three
+separate defects in the port, all now fixed:
+- the shader is `render_mode … unshaded`, where **`EMISSION` is ignored
+  outright** — the port set `EMISSION = col * 2.0` and the glow it was meant
+  to have simply never arrived. Brightness is in `ALBEDO` now, through a
+  `ring_glow` knob.
+- the drawn length of each arc was the stamina ratio alone, so a **full bar
+  drew a solid ring**: the four arcs were only ever visible while stamina was
+  running out. A new `arc_gap` keeps a wedge empty at every quarter boundary,
+  so four arcs read as four at any level.
+- standing still halved the alpha, and the shader halved it again — a full
+  ring at rest came out around a quarter opacity. 0.5 → 0.75 there, 0.55 →
+  0.95 in the shader.
+
+  `ground_clearance` 0.05 → 0.18, as asked.
+
+**4. The F panel appeared once and then stopped.** It captured
+`context.camera` at world-ready and unprojected through that reference
+forever. A camera that is no longer the current one puts the panel at
+coordinates unrelated to what is on screen, and `is_position_behind()` then
+hides it outright — which is exactly "it showed at startup and then not at
+the hover door, and seemingly not over the rifle". It now asks
+`get_viewport().get_camera_3d()` every frame, which is how `MouseCursorUI`
+and `FadeByDistance` already did it; this widget was the odd one out. The
+context camera stays as the fallback for the frame before a viewport camera
+exists.
+
+**Verified by looking**, which is the part that was missing before: a render
+under Xvfb shows the ring as four separated arcs, visibly brighter, where the
+same frame before the change showed one thin continuous circle. Zero errors
+in the render log and no new warnings. Import passes and a `world.tscn` boot
+are clean.
+
+One bug caught in my own change before it shipped: `_resolve_icon_anchor()`
+was first written to fill an out-parameter, which does nothing in GDScript —
+`Vector3` is a value type, so every icon would have been pinned to the world
+origin.
+
+*Первая четвёрка замечаний Стэна. Написана инструкция к item_fitter. Иконки
+ходьбы переехали с головы игрока на маркер цели хода (следствие: без маркера
+иконки нет вовсе). Кольцу стамины вернули анимацию — `unshaded` глушил
+`EMISSION`, при полной стамине четыре дуги схлопывались в сплошное кольцо, и
+альфа резалась дважды; кольцо поднято выше над полом. Панель F брала камеру
+один раз при старте и переставала попадать в экран — теперь берёт живую
+камеру каждый кадр.*
+
+- `docs/ITEM_FITTER.md` (new), `CLAUDE.md`,
+  `core/ui/target_indicator/target_indicator.gd`,
+  `vfx/hud_component/hud_component.gd`,
+  `player/player_components/stamina_indicator/stamina_indicator_3d.gd`,
+  `ui/widgets/hold_prompt/hold_prompt.gd`
+
+---
+
 ## 2026-08-28 - CI: the verification ladder runs by itself
 
 There was no `.github/` directory in this repository at all. Every claim that
