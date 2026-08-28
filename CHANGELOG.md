@@ -12,6 +12,83 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - Playtest batch 2: comic placement, the carbine's grip, one aim, a refusal with a voice
+
+The second four of Stan's findings.
+
+**5. Comic words sat on top of what they were about.** A word is a remark
+about an event, not a label stuck to it, and dead centre above the head hid
+the face or the item that was the subject. Words now spawn to one SIDE
+(`LATERAL_OFFSET`), at a random angle within an arc so two on one head do not
+overlap, and they hold longer — every profile's `duration` and `hold_ratio`
+went up (npc 1.2 → 1.75 s, player 1.1 → 1.65, hurt 1.0 → 1.5, environment
+1.3 → 1.9). `ComicEffectSystem` also had the **same captured-camera bug** the
+F panel had and now asks the viewport for the live camera each frame.
+
+**6. The carbine lay across the hands, and the cause was that no fit had ever
+been authored.** `data/items/carbine.tres` had **no `held_fit` at all**, so
+`EquipmentVisualsComponent` fell back to `transform = IDENTITY` and the mesh
+hung in whatever orientation it was modelled in. The same story as finding 1:
+the tool for this existed and had no instructions.
+
+  Measured rather than eyeballed. The mesh's long axis is local Z (0.734 m —
+  a 73 cm carbine, origin at the grip). The grip pivot's own axes were read
+  **on a settled pose**, and the barrel aimed along the forearm
+  (`RightLowerArm` → `RightHand`) with the gun's up as close to world up as
+  that allows; the Euler triple came out of `Basis.get_euler()` and was
+  round-tripped before use. First attempt read the grip basis two physics
+  frames in, before the animation tree had blended into idle, and produced a
+  fit for a pose that never appears on screen — the render showed the rifle
+  standing vertically, which is how that was caught.
+
+  Honest limit: this puts the weapon along the forearm with its top up. The
+  last centimetres — seating it in the palm — are exactly what the Item Fitter
+  dock is for, with a gizmo, the real renderer and an eye.
+
+**6 (second). Two aims on screen at once.** `MouseCursorUI` becomes aim
+brackets whenever a firearm is drawn, and `AimReticle` draws a cross at screen
+centre whenever `PlayerState.is_aiming` — so aiming a drawn weapon showed
+both, disagreeing whenever they were not in the same place. `AimReticle` now
+stands down while the cursor is doing the aiming. Separately, `has_firearm` is
+**held through a weapon gesture**: draw, holster and the Tab cycle each pass
+through a frame or two with nothing drawn, and flipping brackets to a circle
+and back inside a quarter second reads as a glitch. The hands being busy is
+not the hands being empty.
+
+**7. "The weapon does not reload" — it does, and that is the finding.**
+Driven through the real key with `Input.action_press("weapon_reload")`: the
+magazine refills at 1.2 s (5 → 8), the reserve pays for it (80 → 77), the
+state clears and movement comes back when the 1.875 s clip ends. What does
+**not** happen is any answer at all when the reload is refused — a full
+magazine or an empty reserve returned silently, with no gesture, no message
+and no sound, which from outside is identical to a dead key. That is now a
+`reload_refused` signal on the player, and `AmmoIndicator` flashes the row
+that shows why.
+
+  I got this wrong once mid-investigation and said the character was left
+  frozen. That was my own probe breaking out of its wait loop the moment the
+  magazine refilled and then asserting the state was clear while the clip was
+  still legitimately playing. Corrected by running the loop to the end.
+
+**Verified**: import and boot clean, a render under Xvfb with zero errors and
+no new warnings, plus before/after renders of the weapon in the hand.
+
+*Вторая четвёрка. Комикс-слова встают сбоку от источника, а не поверх него, и
+держатся дольше; у системы был тот же баг с захваченной камерой, что у панели
+F. У карабина вообще не было `held_fit` — отсюда «поперёк рук»; поворот
+посчитан по устоявшейся позе и направлению предплечья, а не подобран на глаз.
+Прицелов на экране было два одновременно — крест уступает скобкам; скобки
+больше не мигают во время жеста. Перезарядка, измеренная через настоящую
+клавишу, работает — молчал именно отказ, теперь он мигает строкой боезапаса.*
+
+- `core/ui/comic_effect/comic_effect_system.gd`,
+  `data/comic_effects/profiles/*.tres`, `data/items/carbine.tres`,
+  `ui/hud/aim_reticle/aim_reticle.gd`,
+  `ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd`, `player/player.gd`,
+  `ui/hud/ammo_indicator/ammo_indicator.gd`, `ui/hud/player_hud/player_hud.gd`
+
+---
+
 ## 2026-08-28 - The cursor spring diverged to NaN; and a way to actually look
 
 Stan reported 7714 errors in one editor session. The stack trace named the

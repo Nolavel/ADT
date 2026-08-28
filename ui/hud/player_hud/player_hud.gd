@@ -91,6 +91,11 @@ func _bind_ammo(context: WorldContext) -> void:
 		return
 
 	_weapon.ammo_changed.connect(_on_ammo_changed)
+	## The refusal comes from the player, not from WeaponComponent: the
+	## component answers "would a reload do anything", the player is what
+	## decides to ask and therefore what knows the answer was no.
+	if context.player.has_signal(&"reload_refused"):
+		context.player.reload_refused.connect(_on_reload_refused)
 	_equipment.drawn_changed.connect(_on_drawn_changed)
 
 	# Same initial-paint reasoning as health above — and it is not always a
@@ -123,6 +128,12 @@ func _on_drawn_changed(item_id: StringName) -> void:
 ## Only the weapon actually in the hands is drawn. WeaponComponent tracks a
 ## magazine per weapon id and will happily report on one that is stowed —
 ## which is the right thing for it to do and the wrong thing to show.
+## Nothing to load. Flash the row that shows why.
+func _on_reload_refused(_item_id: StringName) -> void:
+	if _ammo != null and _ammo.visible:
+		_ammo.flash_refusal()
+
+
 func _on_ammo_changed(item_id: StringName, rounds: int, capacity: int, reserve: int) -> void:
 	if _equipment.get_drawn() != item_id:
 		return

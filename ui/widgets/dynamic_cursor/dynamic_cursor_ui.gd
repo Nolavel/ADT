@@ -30,6 +30,10 @@ class_name MouseCursorUI
 
 signal button_3d_clicked(button_name: String)
 
+## Lookup group, so AimReticle can ask whether this cursor is already the aim
+## without either widget being able to name the other by path.
+const GROUP_MOUSE_CURSOR: StringName = &"mouse_cursor_ui"
+
 # === НАСТРОЙКИ КУРСОРА ===
 @export_group("Основной курсор")
 @export var cursor_radius: float = 8.0
@@ -107,6 +111,7 @@ var _aim_bracket_velocity: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(GROUP_MOUSE_CURSOR)
 	current_cursor_color = cursor_color_idle
 	aim_bracket_offset = bracket_offset_min
 	PlayerState.mode_changed.connect(_on_player_state_mode_changed)
@@ -213,8 +218,24 @@ func _is_targetable(collider: Variant) -> bool:
 ## Ответ берётся у игрока (get_drawn_firearm()), а не выводится заново из
 ## каталога: два определения «это оружие» рано или поздно разойдутся.
 func _update_firearm_state() -> void:
-	has_firearm = player.has_method(&"get_drawn_firearm") \
+	var drawn: bool = player.has_method(&"get_drawn_firearm") \
 			and player.call(&"get_drawn_firearm") != null
+
+	## Held through a weapon gesture. Draw, holster and the Tab cycle all pass
+	## through a frame or two with nothing drawn, and flipping the cursor from
+	## brackets to a circle and back inside a quarter of a second reads as a
+	## glitch rather than as information — "the aim sometimes doesn't work, a
+	## cursor shows up instead" (Stan, 2026-08-28). The hands being busy is
+	## not the same as the hands being empty.
+	if not drawn and _weapon_gesture_active():
+		return
+	has_firearm = drawn
+
+
+func _weapon_gesture_active() -> bool:
+	if not player.has_method(&"is_weapon_gesture_active"):
+		return false
+	return bool(player.call(&"is_weapon_gesture_active"))
 
 
 ## Разведение ведётся от НЕПРЕРЫВНОЙ скорости, а не от is_running: между

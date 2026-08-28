@@ -30,6 +30,16 @@ const GROUP_COMIC_EFFECT_SYSTEM: StringName = &"comic_effect_system"
 const POOL_SIZE: int = 12
 const MAX_ACTIVE: int = 8
 const DEFAULT_OFFSET: Vector3 = Vector3(0.0, 1.6, 0.0)
+## How far to one side of the source a word is placed, metres.
+##
+## Dead centre above the head put the panel ON the thing it was about, hiding
+## the face or the item that is the actual subject of the moment. A word is a
+## remark about an event, not a label stuck to it — so it stands beside the
+## source and lets it be seen. Stan, 2026-08-28.
+const LATERAL_OFFSET: float = 0.55
+## Sideways placement is randomised within this arc so two words on one head
+## do not land on each other. Radians, centred on "to the side".
+const LATERAL_SPREAD: float = 1.1
 ## Above typical HUD layers (world.gd UI canvas uses 40).
 const CANVAS_LAYER_INDEX: int = 45
 
@@ -59,6 +69,9 @@ func _ready() -> void:
 
 func on_world_ready(context: WorldContext) -> void:
 	_player = context.player
+	## Fallback only — _active_camera() asks the viewport each frame. Capturing
+	## one camera at world-ready was how the F panel stopped appearing: a
+	## reference that is no longer the current camera unprojects to nowhere.
 	_camera = context.camera
 	_build_layer()
 	_build_pool()
@@ -94,14 +107,26 @@ func try_spawn(id: StringName, world_pos: Vector3, follow: Node3D = null) -> voi
 
 	var text: String = _pick_text(def)
 	label.setup(text, def.resolve_profile(), def.get_font_size())
+	var offset: Vector3 = _spawn_offset()
 	if is_instance_valid(follow):
-		label.set_follow(follow, DEFAULT_OFFSET)
+		label.set_follow(follow, offset)
 	else:
-		label.set_world_source(world_pos, DEFAULT_OFFSET)
+		label.set_world_source(world_pos, offset)
 
 	if not label.finished.is_connected(_on_label_finished):
 		label.finished.connect(_on_label_finished)
 	_active.append(label)
+
+
+## Beside the source, not on top of it, at a random angle so two words on one
+## head do not overlap. The vertical part is unchanged.
+func _spawn_offset() -> Vector3:
+	var angle: float = randf_range(-LATERAL_SPREAD, LATERAL_SPREAD)
+	if randf() < 0.5:
+		angle += PI
+	return DEFAULT_OFFSET + Vector3(
+		cos(angle) * LATERAL_OFFSET, 0.0, sin(angle) * LATERAL_OFFSET
+	)
 
 
 func _build_layer() -> void:
@@ -207,11 +232,25 @@ func _on_label_finished(label: ComicEffectLabel) -> void:
 	_active.erase(label)
 
 
+## The camera that is actually rendering. Same fix, same reason, as
+## HoldPrompt._active_camera(): a camera captured once stops being the one on
+## screen the first time the view changes, and every word then unprojects to
+## coordinates that mean nothing.
+func _active_camera() -> Camera3D:
+	var viewport := get_viewport()
+	if viewport != null:
+		var live := viewport.get_camera_3d()
+		if live != null:
+			return live
+	return _camera if is_instance_valid(_camera) else null
+
+
 func _process(delta: float) -> void:
-	if _camera == null:
+	var camera: Camera3D = _active_camera()
+	if camera == null:
 		return
 	# Snapshot — finished can mutate _active mid-loop.
 	var snapshot: Array[ComicEffectLabel] = _active.duplicate()
 	for label in snapshot:
 		if label.is_alive():
-			label.tick(delta, _camera)
+			label.tick(delta, camera)
