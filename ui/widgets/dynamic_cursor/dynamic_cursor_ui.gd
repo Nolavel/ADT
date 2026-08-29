@@ -34,6 +34,13 @@ signal button_3d_clicked(button_name: String)
 ## without either widget being able to name the other by path.
 const GROUP_MOUSE_CURSOR: StringName = &"mouse_cursor_ui"
 
+## Half-angle each bracket arc covers, radians. The pair reads as ( ✛ ) —
+## curved, convex side away from the target, tips pointing at it.
+const BRACKET_ARC_HALF_ANGLE: float = 0.62
+## Straight segments the arc is built from. Enough to read as a curve at the
+## sizes this is drawn, few enough that six of them cost nothing.
+const BRACKET_ARC_SEGMENTS: int = 10
+
 # === НАСТРОЙКИ КУРСОРА ===
 @export_group("Основной курсор")
 @export var cursor_radius: float = 8.0
@@ -375,6 +382,11 @@ func _draw_3d_ui_brackets() -> void:
 	var right_offset = bracket_offset_current
 	_draw_bracket_right(cursor_position.x + right_offset, cursor_position.y, bracket_width, bracket_height, color)
 
+## The brackets are ARCS, not three straight lines — segments of a circle
+## centred on the cursor, so both bow away from the target and their tips
+## point at it. A reticle made of corners reads as a UI frame; one made of
+## arcs reads as something closing on a thing.
+##
 ## The guard exists because antialiased draw_line() normalizes the segment
 ## direction: one non-finite coordinate is a warning PER LINE PER FRAME, and
 ## it never stops on its own. The spring above should make this unreachable
@@ -382,28 +394,41 @@ func _draw_3d_ui_brackets() -> void:
 func _draw_bracket_left(x: float, y: float, width: float, height: float, color: Color) -> void:
 	if not _is_bracket_drawable(x, y, width, height):
 		return
-	var half_h = height / 2.0
-	var top = Vector2(x, y - half_h)
-	var bottom = Vector2(x, y + half_h)
-	var top_right = Vector2(x + width, y - half_h)
-	var bottom_right = Vector2(x + width, y + half_h)
-	
-	draw_line(top, bottom, color, 2.5, true)
-	draw_line(top, top_right, color, 2.5, true)
-	draw_line(bottom, bottom_right, color, 2.5, true)
+	## x is already offset to the left of the cursor, so the distance between
+	## them is the arc's radius and cursor_position is its centre.
+	_draw_bracket_arc(Vector2(x, y), PI, height, width, color)
+
 
 func _draw_bracket_right(x: float, y: float, width: float, height: float, color: Color) -> void:
 	if not _is_bracket_drawable(x, y, width, height):
 		return
-	var half_h = height / 2.0
-	var top = Vector2(x, y - half_h)
-	var bottom = Vector2(x, y + half_h)
-	var top_left = Vector2(x - width, y - half_h)
-	var bottom_left = Vector2(x - width, y + half_h)
-	
-	draw_line(top, bottom, color, 2.5, true)
-	draw_line(top, top_left, color, 2.5, true)
-	draw_line(bottom, bottom_left, color, 2.5, true)
+	_draw_bracket_arc(Vector2(x, y), 0.0, height, width, color)
+
+
+## One bracket. `tip` is where the old straight bracket's spine sat, `facing`
+## is the direction from the cursor to it, and the arc is struck around the
+## cursor through that point.
+##
+## height still sets how much of the circle is covered and width still sets
+## the stroke, so both exports keep meaning roughly what they did — the shape
+## changed, the knobs did not.
+func _draw_bracket_arc(
+		tip: Vector2, facing: float, height: float, width: float, color: Color
+	) -> void:
+	var radius: float = tip.distance_to(cursor_position)
+	if radius < 1.0:
+		## Degenerate: the brackets are sitting on the cursor. An arc of
+		## radius zero is a point, and drawing it antialiased warns.
+		return
+	var half_angle: float = clampf(
+		BRACKET_ARC_HALF_ANGLE * (height / maxf(bracket_height, 0.001)), 0.05, PI * 0.49
+	)
+	var points := PackedVector2Array()
+	for i in BRACKET_ARC_SEGMENTS + 1:
+		var t: float = float(i) / float(BRACKET_ARC_SEGMENTS)
+		var a: float = facing - half_angle + t * half_angle * 2.0
+		points.append(cursor_position + Vector2(cos(a), sin(a)) * radius)
+	draw_polyline(points, color, maxf(width * 0.3, 1.5), true)
 
 
 ## Tested AS A Vector2, not as floats, and the difference is the whole point.

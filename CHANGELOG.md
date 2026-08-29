@@ -12,6 +12,153 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - Playtest round 3: arcs for brackets, the stamina ring put back, a buffered reload
+
+**The stamina ring is restored from the ORIGINAL, not re-invented.** Stan said
+it still is not the effect it was and that reading how it used to be would
+make it clear. It did — `git log -S"_draw_sprint_arcs"` produces the 2D
+version, and three of the differences were mine:
+
+- **The four arcs were never meant to stay separate.** The original drew
+  `quarter_length = PI * 0.5 * ratio` from each quarter's start, so they MEET
+  into a closed ring at full stamina and open into four arcs as it drains.
+  The `arc_gap` added a day earlier kept a permanent wedge empty so "four
+  arcs read as four" — a change to the design dressed up as a fix. Removed.
+- **The alpha was decided twice.** The original set it once
+  (`ratio` moving, `ratio * 0.5` at rest). The shader was multiplying it
+  again. That second factor is gone, and the rest value is back to the
+  original 0.5 — which now actually means half.
+- **`arc_thickness` was declared and never used**, with 0.10 hard-coded in
+  the shader. The 2D version drew 6 px arcs on a 12 px radius — half the
+  radius. Wired up and widened to 0.22 m, which is most of what "not the
+  effect it was" meant: it was a hairline.
+
+  Also restored: the recovery **inner glow**, a soft disc breathing with the
+  same pulse, which the port dropped entirely and without which recovery is
+  two thin sweeps that read as noise.
+
+**The ring can no longer be hidden by the ground it lies on.**
+`depth_test_disabled` plus `ground_clearance` 0.18 → 0.30. On a slope it was
+disappearing into the terrain — "sometimes it is not visible".
+
+**The aim brackets are arcs.** Segments of a circle centred on the cursor, so
+both bow away from the target with their tips pointing at it. Three straight
+lines read as a UI frame; an arc reads as something closing on a thing. The
+`bracket_height` / `bracket_width` exports keep their meaning — height sets
+how much of the circle is covered, width the stroke.
+
+**A reload asked for a fraction of a second early is no longer thrown away.**
+"Reload works, but sometimes R has to be pressed twice" was the press landing
+inside another gesture — mid-punch, mid-shot, or with movement locked — where
+it was silently discarded. It is now buffered for `RELOAD_BUFFER_TIME`
+(0.6 s) and retried the moment the hands are free. A window rather than a
+queue: a reload wanted a second ago is intent, one wanted five seconds ago is
+a stale keystroke firing by itself. The gate itself moved into `_begin_reload()`
+so the key press and the buffered retry run the same path rather than two
+copies that drift.
+
+**Packaging.** `main` had taken the NaN fix and batch 2 but not batch 1, whose
+PR had gone conflicted against them. Batch 1 is carried onto this branch,
+conflict resolved — the resolution dropped two `CHANGELOG.md` entries that
+were already on `main` and they were restored before committing.
+
+*Кольцо стамины восстановлено по исходному коду из истории, а не переделано
+заново: зазор между дугами убран (в оригинале они смыкаются при полной
+стамине), второй множитель альфы в шейдере убран, неиспользуемый
+`arc_thickness` наконец подключён и расширен, вернулось внутреннее свечение
+восстановления. Кольцо больше не прячется в землю. Скобки прицела стали
+дугами. Запрос перезарядки буферизуется, поэтому R больше не надо жать
+дважды. Первая четвёрка перенесена сюда с разрешением конфликта.*
+
+- `player/player_components/stamina_indicator/stamina_indicator_3d.gd`,
+  `ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd`, `player/player.gd`,
+  `CHANGELOG.md`
+
+---
+
+## 2026-08-28 - Playtest batch 1: fitter docs, walk icons, the stamina ring, the F panel
+
+Four of Stan's eight findings from a live session, in the order he numbered
+them.
+
+**1. `item_fitter` had no instructions.** The plugin is enabled and the files
+are all there, but nothing anywhere said which scene has to be open or what
+the dock actually writes, so it read as broken. `docs/ITEM_FITTER.md` now
+covers it end to end: `player/player.tscn` (or any scene carrying
+`…HandAttachment/GripPivot`) must be open, pick the `ItemResource`, pick the
+hand, **pick an animation and scrub the time slider** so the fit is made
+against the pose the item is really seen in, move the preview with the
+ordinary gizmo, Save. It writes `HeldFit` on the item and nothing else, and
+the preview is spawned with `owner = null` so it can never be serialised into
+the character scene. Both silent-failure modes are named, and so is the rule
+that a size problem belongs to the grip pivot rather than to `HeldFit`.
+
+**2. The walk/sprint icons rode the player's head.** They now ride the
+MOVE-DESTINATION marker — where the character is going, which is what a
+"walking / running" statement is about. `TargetIndicator` grew a lookup group
+(`GROUP_MOVE_TARGET`) that `HUDComponent` puts only its `target_indicator`
+in, deliberately not the candidate decal; `StaminaIndicator3D` resolves it the
+same way it would resolve any node it cannot be handed a reference to.
+**Consequence worth knowing:** with no destination marker — TPS, or ISOMETRIC
+before the first click — there is now no icon at all. It does not fall back
+over the head, because that is the placement being moved away from and a
+symbol that jumps between two unrelated places depending on how you steer is
+worse than one that waits.
+
+**3. The stamina ring had lost its animation and read as cold grey.** Three
+separate defects in the port, all now fixed:
+- the shader is `render_mode … unshaded`, where **`EMISSION` is ignored
+  outright** — the port set `EMISSION = col * 2.0` and the glow it was meant
+  to have simply never arrived. Brightness is in `ALBEDO` now, through a
+  `ring_glow` knob.
+- the drawn length of each arc was the stamina ratio alone, so a **full bar
+  drew a solid ring**: the four arcs were only ever visible while stamina was
+  running out. A new `arc_gap` keeps a wedge empty at every quarter boundary,
+  so four arcs read as four at any level.
+- standing still halved the alpha, and the shader halved it again — a full
+  ring at rest came out around a quarter opacity. 0.5 → 0.75 there, 0.55 →
+  0.95 in the shader.
+
+  `ground_clearance` 0.05 → 0.18, as asked.
+
+**4. The F panel appeared once and then stopped.** It captured
+`context.camera` at world-ready and unprojected through that reference
+forever. A camera that is no longer the current one puts the panel at
+coordinates unrelated to what is on screen, and `is_position_behind()` then
+hides it outright — which is exactly "it showed at startup and then not at
+the hover door, and seemingly not over the rifle". It now asks
+`get_viewport().get_camera_3d()` every frame, which is how `MouseCursorUI`
+and `FadeByDistance` already did it; this widget was the odd one out. The
+context camera stays as the fallback for the frame before a viewport camera
+exists.
+
+**Verified by looking**, which is the part that was missing before: a render
+under Xvfb shows the ring as four separated arcs, visibly brighter, where the
+same frame before the change showed one thin continuous circle. Zero errors
+in the render log and no new warnings. Import passes and a `world.tscn` boot
+are clean.
+
+One bug caught in my own change before it shipped: `_resolve_icon_anchor()`
+was first written to fill an out-parameter, which does nothing in GDScript —
+`Vector3` is a value type, so every icon would have been pinned to the world
+origin.
+
+*Первая четвёрка замечаний Стэна. Написана инструкция к item_fitter. Иконки
+ходьбы переехали с головы игрока на маркер цели хода (следствие: без маркера
+иконки нет вовсе). Кольцу стамины вернули анимацию — `unshaded` глушил
+`EMISSION`, при полной стамине четыре дуги схлопывались в сплошное кольцо, и
+альфа резалась дважды; кольцо поднято выше над полом. Панель F брала камеру
+один раз при старте и переставала попадать в экран — теперь берёт живую
+камеру каждый кадр.*
+
+- `docs/ITEM_FITTER.md` (new), `CLAUDE.md`,
+  `core/ui/target_indicator/target_indicator.gd`,
+  `vfx/hud_component/hud_component.gd`,
+  `player/player_components/stamina_indicator/stamina_indicator_3d.gd`,
+  `ui/widgets/hold_prompt/hold_prompt.gd`
+
+---
+
 ## 2026-08-28 - Playtest batch 2: comic placement, the carbine's grip, one aim, a refusal with a voice
 
 The second four of Stan's findings.

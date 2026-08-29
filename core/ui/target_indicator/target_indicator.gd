@@ -1,6 +1,16 @@
 extends Node3D
 class_name TargetIndicator
 
+## Lookup group carried by the ONE instance that marks a move destination.
+## HUDComponent puts its `target_indicator` in it and deliberately leaves
+## `candidate_indicator` out — a walk icon belongs next to where the character
+## is going, not next to a thing they might pick up.
+##
+## Same discovery route ComicEffectSystem and HoldPrompt use, and for the same
+## reason: StaminaIndicator3D is a child of player.tscn and never receives a
+## WorldContext.
+const GROUP_MOVE_TARGET: StringName = &"move_target_indicator"
+
 # === ВИЗУАЛЬНЫЕ КОМПОНЕНТЫ ===
 @onready var ground_decal: MeshInstance3D = $GroundDecal
 var hover_ring: MeshInstance3D

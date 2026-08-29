@@ -130,6 +130,8 @@ const ACTOR_ID: StringName = &"player"
 ## punch_hit_delay and shot_hit_delay already use, and for the same reason:
 ## there is no animation event system in this project.
 @export var reload_time: float = 1.2
+## How long a reload request survives while the hands are busy, seconds.
+const RELOAD_BUFFER_TIME: float = 0.6
 
 @export_subgroup("Interaction")
 ## Height above the player's own origin (its feet) at which a pickup stops
@@ -221,6 +223,9 @@ var _is_shooting: bool = false
 ## the thing is going back to. See _on_drawn_changed().
 var _last_drawn_from: StringName = &""
 var _is_reloading: bool = false
+## Seconds left on a reload asked for while the hands were busy. See
+## _on_weapon_reload_pressed().
+var _reload_buffer: float = 0.0
 var _reload_timer: float = 0.0
 var _reload_applied: bool = false
 var _reload_item_id: StringName = &""
@@ -376,6 +381,7 @@ func _physics_process(delta: float) -> void:
 		_update_punch(delta)
 	if _is_shooting:
 		_update_shot(delta)
+	_update_reload_buffer(delta)
 	if _is_reloading:
 		_update_reload(delta)
 
@@ -1299,8 +1305,43 @@ func _start_shot() -> void:
 func _on_weapon_reload_pressed() -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
+
+	## BUFFERED, not dropped. The press used to be discarded outright while
+	## the hands were busy — mid-punch, mid-shot, mid-draw, or with movement
+	## locked by any of them — so a reload asked for a fraction of a second
+	## too early simply never happened and had to be asked for again. "Reload
+	## works, but sometimes R has to be pressed twice" (Stan, 2026-08-28) is
+	## exactly that: the first press landed inside a gesture.
+	##
+	## Held for RELOAD_BUFFER_TIME and retried in _physics_process(). A window
+	## rather than an unbounded queue: a reload wanted a second ago is intent,
+	## one wanted five seconds ago is a stale keystroke firing on its own.
+	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+		_reload_buffer = RELOAD_BUFFER_TIME
+		return
+	_reload_buffer = 0.0
+	_begin_reload()
+
+
+## Retries a buffered reload the moment the hands are free. Called every
+## physics frame; does nothing at all when nothing is buffered.
+func _update_reload_buffer(delta: float) -> void:
+	if _reload_buffer <= 0.0:
+		return
+	_reload_buffer = maxf(_reload_buffer - delta, 0.0)
 	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
 		return
+	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
+		_reload_buffer = 0.0
+		return
+	_reload_buffer = 0.0
+	_begin_reload()
+
+
+## The reload itself, with the gate that decides whether it happens at all.
+## Split out of the key handler so the buffered retry runs the SAME path —
+## two copies of this gate would drift.
+func _begin_reload() -> void:
 	var item := get_drawn_firearm()
 	if item == null or _weapon == null:
 		return
