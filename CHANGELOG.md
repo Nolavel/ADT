@@ -12,6 +12,66 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-29 - The stamina ring, looked at properly; H6 measured against its own Definition of Done
+
+**Two real defects in the ring, both found by rendering it rather than by
+reading it.** The previous round restored the arc geometry and the alpha, but
+nobody had actually looked at the result:
+
+- **`band()` had no flat part.** It was
+  `1.0 - smoothstep(0.0, width, abs(d - target))` — a gradient spanning the
+  whole width, so at any thickness worth seeing it drew a blurred donut
+  rather than an arc. Widening `arc_thickness` in the last round therefore
+  made it *worse*, not better. It is now a real band: flat across its
+  thickness with a small feather at each edge, and the thickness came back
+  down to 0.13 m.
+- **`ring_glow` at 2.2 saturated the colour away.** The ring blends additive,
+  so 2.2× drove every hue to white and the full → yellow → orange → red ramp
+  simply did not survive. 1.5.
+
+**All five states verified on screen**, each forced in a probe and rendered:
+full and moving (closed cool ring), draining (arcs opening, ramping yellow),
+low (four short red arcs), recovering (two chasing green sweeps plus the
+restored inner glow), and jump charge. The recovery inner glow — the piece
+the original port dropped — is visibly there.
+
+The probe itself had to be corrected twice, and both were the same kind of
+mistake: forcing `_stamina_ratio` while the indicator's own `_process` was
+still recomputing it from `StaminaComponent` every frame, and rendering onto
+a WHITE floor, where an additive ring saturates to white and a red ring looks
+grey. A test scene that does not resemble the real one answers a different
+question.
+
+**H6 measured.** Six of the seven Definition-of-Done clauses were driven in a
+probe rather than judged by eye, and all six pass: found on the island,
+picked up, kept across a save/load (slot *and* spent magazine), drawn and
+holstered, fired at an NPC with damage through `HealthComponent` (100 → 0),
+and entered in `IncidentRegistry`. The seventh — **carried while moving** —
+is the one clause headless cannot answer, and it is now stated as the only
+thing H6 is held for. The horizon is renamed **"Carbine chain"**.
+
+Three probe bugs worth naming, because all three are language traps rather
+than typos: a lambda capturing a local **by value** (so `shot_landed` read as
+a miss while the target took 100 damage), `HealthComponent` exposing
+`current_health` as a property and not a getter (both readings came back
+`-1`), and `IncidentRegistry` only wiring itself to `shot_landed` inside
+`on_world_ready()` — present but deaf until called, which read as an unmet
+requirement.
+
+*Две настоящие ошибки в кольце, обе найдены рендером, а не чтением: `band()`
+не имел плоской части и давал размытый бублик вместо дуги, а `ring_glow` 2.2
+при аддитивном смешивании выжигал цвет в белый. Все пять состояний проверены
+картинкой, включая вернувшееся внутреннее свечение восстановления. H6 измерен
+по своему же определению готовности: шесть пунктов из семи проходят пробой,
+седьмой — «носится в движении» — headless проверить не может, и теперь именно
+он назван единственным, ради чего H6 держат открытым. Горизонт переименован в
+«Carbine chain».*
+
+- `player/player_components/stamina_indicator/stamina_indicator_3d.gd`,
+  `docs/scope_horizon.md`
+
+---
+
 ## 2026-08-28 - Playtest round 3: arcs for brackets, the stamina ring put back, a buffered reload
 
 **The stamina ring is restored from the ORIGINAL, not re-invented.** Stan said
