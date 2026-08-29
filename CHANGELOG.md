@@ -12,6 +12,70 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-08-28 - Playtest round 3: arcs for brackets, the stamina ring put back, a buffered reload
+
+**The stamina ring is restored from the ORIGINAL, not re-invented.** Stan said
+it still is not the effect it was and that reading how it used to be would
+make it clear. It did — `git log -S"_draw_sprint_arcs"` produces the 2D
+version, and three of the differences were mine:
+
+- **The four arcs were never meant to stay separate.** The original drew
+  `quarter_length = PI * 0.5 * ratio` from each quarter's start, so they MEET
+  into a closed ring at full stamina and open into four arcs as it drains.
+  The `arc_gap` added a day earlier kept a permanent wedge empty so "four
+  arcs read as four" — a change to the design dressed up as a fix. Removed.
+- **The alpha was decided twice.** The original set it once
+  (`ratio` moving, `ratio * 0.5` at rest). The shader was multiplying it
+  again. That second factor is gone, and the rest value is back to the
+  original 0.5 — which now actually means half.
+- **`arc_thickness` was declared and never used**, with 0.10 hard-coded in
+  the shader. The 2D version drew 6 px arcs on a 12 px radius — half the
+  radius. Wired up and widened to 0.22 m, which is most of what "not the
+  effect it was" meant: it was a hairline.
+
+  Also restored: the recovery **inner glow**, a soft disc breathing with the
+  same pulse, which the port dropped entirely and without which recovery is
+  two thin sweeps that read as noise.
+
+**The ring can no longer be hidden by the ground it lies on.**
+`depth_test_disabled` plus `ground_clearance` 0.18 → 0.30. On a slope it was
+disappearing into the terrain — "sometimes it is not visible".
+
+**The aim brackets are arcs.** Segments of a circle centred on the cursor, so
+both bow away from the target with their tips pointing at it. Three straight
+lines read as a UI frame; an arc reads as something closing on a thing. The
+`bracket_height` / `bracket_width` exports keep their meaning — height sets
+how much of the circle is covered, width the stroke.
+
+**A reload asked for a fraction of a second early is no longer thrown away.**
+"Reload works, but sometimes R has to be pressed twice" was the press landing
+inside another gesture — mid-punch, mid-shot, or with movement locked — where
+it was silently discarded. It is now buffered for `RELOAD_BUFFER_TIME`
+(0.6 s) and retried the moment the hands are free. A window rather than a
+queue: a reload wanted a second ago is intent, one wanted five seconds ago is
+a stale keystroke firing by itself. The gate itself moved into `_begin_reload()`
+so the key press and the buffered retry run the same path rather than two
+copies that drift.
+
+**Packaging.** `main` had taken the NaN fix and batch 2 but not batch 1, whose
+PR had gone conflicted against them. Batch 1 is carried onto this branch,
+conflict resolved — the resolution dropped two `CHANGELOG.md` entries that
+were already on `main` and they were restored before committing.
+
+*Кольцо стамины восстановлено по исходному коду из истории, а не переделано
+заново: зазор между дугами убран (в оригинале они смыкаются при полной
+стамине), второй множитель альфы в шейдере убран, неиспользуемый
+`arc_thickness` наконец подключён и расширен, вернулось внутреннее свечение
+восстановления. Кольцо больше не прячется в землю. Скобки прицела стали
+дугами. Запрос перезарядки буферизуется, поэтому R больше не надо жать
+дважды. Первая четвёрка перенесена сюда с разрешением конфликта.*
+
+- `player/player_components/stamina_indicator/stamina_indicator_3d.gd`,
+  `ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd`, `player/player.gd`,
+  `CHANGELOG.md`
+
+---
+
 ## 2026-08-28 - Playtest batch 1: fitter docs, walk icons, the stamina ring, the F panel
 
 Four of Stan's eight findings from a live session, in the order he numbered

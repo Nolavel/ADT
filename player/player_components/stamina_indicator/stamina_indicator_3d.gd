@@ -32,27 +32,25 @@ class_name StaminaIndicator3D
 ## Height above the player's origin. The origin sits at the feet, so this is
 ## literally the clearance above the floor — enough that the quad does not
 ## z-fight with the ground it lies on.
-@export var ground_clearance: float = 0.18
+@export var ground_clearance: float = 0.30
 ## Outer radius of the ring, metres. Sized to read as "around this character"
 ## rather than as a puddle they are standing in.
 @export var ring_radius: float = 0.85
 
 @export_group("Arcs")
 ## Four quarter arcs, their length driven by the remaining stamina ratio.
-@export var arc_thickness: float = 0.09
+## Band width of the arcs, metres. Was declared and never used — the shader
+## had 0.10 hard-coded. Wired up and widened to match the ORIGINAL's visual
+## weight: the 2D cursor drew 6 px arcs on a 12 px radius, half the radius,
+## where this was drawing a hairline. That thinness is most of what "it is
+## not the effect it was" meant.
+@export var arc_thickness: float = 0.22
 @export var arc_rotation_speed: float = 2.0
 ## How fast the arcs' own alpha chases its target. Ported unchanged.
 @export var arc_alpha_speed: float = 6.0
 ## Stamina full -> empty. Ported from _draw_sprint_arcs()'s ramp, which walks
 ## this colour toward yellow, then orange, then red as the ratio falls.
 @export var arc_color: Color = Color(0.8, 0.9, 1.0, 1.0)
-## Fraction of each quarter left EMPTY, so four arcs keep reading as four.
-##
-## Without it the drawn length was the stamina ratio alone, which meant a
-## full bar drew a solid ring: the four arcs the 2D cursor had were only
-## visible while stamina was running out. Stan, 2026-08-28 — "you deleted the
-## stamina animations and left a cold grey".
-@export_range(0.0, 0.6, 0.01) var arc_gap: float = 0.28
 ## Brightness multiplier for everything the ring draws. Lives here because
 ## the shader is `unshaded`, where EMISSION is ignored outright — the port
 ## set EMISSION and the glow it was meant to have never arrived.
@@ -205,10 +203,10 @@ func _update_movement_state(delta: float, player_stationary: bool) -> void:
 
 	## The ring dims by half while standing still — present, but not asking
 	## for attention when nothing is being spent. Ported verbatim.
-	## Dimmer at rest, but still legible: the old 0.5 combined with the
-	## shader's own 0.55 to put a full ring at about a quarter opacity, which
-	## is where "cold grey and nothing happening" came from.
-	var target_alpha: float = _stamina_ratio if _is_moving else _stamina_ratio * 0.75
+	## Exactly the original: full while moving, half at rest. The 0.5 was
+	## never the problem — the problem was the SHADER multiplying it again,
+	## which is now gone, so this number finally means what it says.
+	var target_alpha: float = _stamina_ratio if _is_moving else _stamina_ratio * 0.5
 	_arcs_alpha = lerpf(_arcs_alpha, target_alpha, arc_alpha_speed * delta)
 
 	## Arcs spin faster the harder the character is running.
@@ -262,8 +260,8 @@ func _push_shader_parameters() -> void:
 	## quarter_length branch in _draw_sprint_arcs().
 	var span: float = _stamina_ratio * (_sprint_progress if _is_sprinting else 1.0)
 	_ring_material.set_shader_parameter("arc_span", clampf(span, 0.0, 1.0))
-	_ring_material.set_shader_parameter("arc_gap", arc_gap)
 	_ring_material.set_shader_parameter("ring_glow", ring_glow)
+	_ring_material.set_shader_parameter("arc_width", arc_thickness / maxf(ring_radius, 0.001))
 	_ring_material.set_shader_parameter("recovery_time", _recovery_pulse_time)
 	_ring_material.set_shader_parameter(
 		"recovery_alpha", 1.0 if (_is_recovering and _stamina_ratio < 0.95) else 0.0
@@ -442,14 +440,14 @@ func _build_ring() -> void:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
-render_mode blend_add, depth_draw_opaque, cull_disabled, unshaded;
+render_mode blend_add, depth_draw_never, depth_test_disabled, cull_disabled, unshaded;
 
 uniform vec3 arc_color : source_color = vec3(0.8, 0.9, 1.0);
 uniform float arc_alpha : hint_range(0.0, 1.0) = 0.0;
 uniform float arc_angle = 0.0;
 uniform float arc_span : hint_range(0.0, 1.0) = 1.0;
-uniform float arc_gap : hint_range(0.0, 0.6) = 0.28;
 uniform float ring_glow = 2.2;
+uniform float arc_width = 0.26;
 
 uniform vec3 recovery_color : source_color = vec3(0.4, 1.0, 0.6);
 uniform float recovery_time = 0.0;
@@ -474,14 +472,15 @@ void fragment() {
 	float ang = atan(uv.y, uv.x) - arc_angle;
 	ang = mod(ang, PI2);
 
-	// FOUR quarter arcs, each spanning arc_span of the DRAWABLE part of its
-	// quarter — arc_gap keeps a wedge empty at every quarter boundary, which
-	// is what makes four arcs read as four rather than as one closed ring
-	// whenever stamina happens to be full.
+	// FOUR quarter arcs, each spanning arc_span OF ITS WHOLE QUARTER. That
+	// means they meet into a closed ring at full stamina and open into four
+	// separate arcs as it drains — which is exactly what the 2D cursor did
+	// with its four _draw_arc() calls (quarter_length = PI*0.5 * ratio). An
+	// earlier attempt here kept a permanent gap so four arcs "read as four";
+	// that was a change to the design, not a fix, and it is reverted.
 	float quarter = mod(ang, PI2 * 0.25);
-	float quarter_len = PI2 * 0.25 * (1.0 - arc_gap) * arc_span;
-	float in_arc = step(quarter, quarter_len);
-	float arc_ring = band(dist, 0.82, 0.10) * in_arc * arc_alpha;
+	float in_arc = step(quarter, PI2 * 0.25 * arc_span);
+	float arc_ring = band(dist, 0.82, arc_width) * in_arc * arc_alpha;
 
 	// Recovery: two rings chasing round at different rates, plus a pulse.
 	float pulse = sin(recovery_time) * 0.5 + 0.5;
@@ -493,16 +492,27 @@ void fragment() {
 	rec += band(dist, 0.72, 0.05) * grad_b * 0.4;
 	rec *= pulse * recovery_alpha;
 
+	// Inner glow, the one piece of the recovery effect the port dropped: the
+	// 2D version filled a soft disc inside the rings that breathed with the
+	// same pulse. Without it recovery is two thin sweeps and reads as noise.
+	float inner_glow = (1.0 - smoothstep(0.0, 0.5, dist)) * pulse * recovery_alpha * 0.35;
+
 	// Jump charge: a ring that closes as the charge builds.
 	float jump = band(dist, 0.94, 0.05) * step(fract(ang / PI2), jump_progress) * jump_alpha;
 
-	vec3 col = arc_color * arc_ring + recovery_color * rec + arc_color * jump;
-	float alpha = arc_ring * 0.95 + rec * 0.75 + jump * 0.7;
+	vec3 col = arc_color * arc_ring
+		+ recovery_color * (rec + inner_glow)
+		+ arc_color * jump;
+	// No second opacity factor. The arcs' alpha is decided ONCE, in
+	// _update_movement_state(), exactly as the 2D cursor decided it; this
+	// shader used to multiply it again by 0.55 and turn a half-strength ring
+	// into a quarter-strength one.
+	float alpha = arc_ring + rec + inner_glow + jump;
 
 	// unshaded ignores EMISSION entirely, so the glow has to be in ALBEDO.
 	// The port set EMISSION and the ring simply never lit.
 	ALBEDO = col * ring_glow;
-	ALPHA = alpha;
+	ALPHA = clamp(alpha, 0.0, 1.0);
 }
 """
 	_ring_material = ShaderMaterial.new()
