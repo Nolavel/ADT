@@ -44,7 +44,7 @@ class_name StaminaIndicator3D
 ## weight: the 2D cursor drew 6 px arcs on a 12 px radius, half the radius,
 ## where this was drawing a hairline. That thinness is most of what "it is
 ## not the effect it was" meant.
-@export var arc_thickness: float = 0.22
+@export var arc_thickness: float = 0.13
 @export var arc_rotation_speed: float = 2.0
 ## How fast the arcs' own alpha chases its target. Ported unchanged.
 @export var arc_alpha_speed: float = 6.0
@@ -54,7 +54,7 @@ class_name StaminaIndicator3D
 ## Brightness multiplier for everything the ring draws. Lives here because
 ## the shader is `unshaded`, where EMISSION is ignored outright — the port
 ## set EMISSION and the glow it was meant to have never arrived.
-@export var ring_glow: float = 2.2
+@export var ring_glow: float = 1.5
 
 @export_group("Recovery")
 @export var recovery_pulse_speed: float = 3.0
@@ -446,7 +446,7 @@ uniform vec3 arc_color : source_color = vec3(0.8, 0.9, 1.0);
 uniform float arc_alpha : hint_range(0.0, 1.0) = 0.0;
 uniform float arc_angle = 0.0;
 uniform float arc_span : hint_range(0.0, 1.0) = 1.0;
-uniform float ring_glow = 2.2;
+uniform float ring_glow = 1.5;
 uniform float arc_width = 0.26;
 
 uniform vec3 recovery_color : source_color = vec3(0.4, 1.0, 0.6);
@@ -458,9 +458,19 @@ uniform float jump_progress : hint_range(0.0, 1.0) = 0.0;
 
 const float PI2 = 6.28318530718;
 
-// A soft band at `target` radius, `width` thick.
+// A band of `width` centred on `target`: FLAT across its thickness with a
+// small feather at each edge.
+//
+// It used to be `1.0 - smoothstep(0.0, width, abs(d - target))`, which is a
+// gradient spanning the whole width and has no flat part at all — at any
+// thickness worth seeing it reads as a blurred donut rather than an arc.
+// Caught by looking at a render, not by reading.
 float band(float d, float target, float width) {
-	return 1.0 - smoothstep(0.0, width, abs(d - target));
+	float half_w = width * 0.5;
+	float feather = max(width * 0.25, 0.012);
+	float inner = smoothstep(target - half_w - feather, target - half_w, d);
+	float outer = 1.0 - smoothstep(target + half_w, target + half_w + feather, d);
+	return inner * outer;
 }
 
 void fragment() {

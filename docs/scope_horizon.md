@@ -93,7 +93,7 @@ horizon marked done; see `CLAUDE.md`'s Architecture rules.
 
 ## Now — current horizon
 
-### H6. Firearm chain
+### H6. Carbine chain
 
 **Why this is Now:** H5 (`EquipmentComponent`) closed on 2026-08-23 and was
 its only prerequisite. The island closed on 2026-08-26, so the reason to hold
@@ -118,14 +118,36 @@ across a save/load and a block unload, drawn and holstered, carried while
 moving, and fired at an NPC who takes damage through the existing health
 path and enters the incident record the same way a punch already does.
 
-**The weapon is a carbine, not a pistol** (2026-08-27). The chain shipped as
-a pistol on 2026-08-26 and was rebuilt around a two-handed carbine the next
-day: the pistol has four or five clips in this project's libraries, while
-the rifle set has an idle, an aim, fires, reloads, turns and — decisively —
-a full eight-direction locomotion pack, which is the only clip set that can
-actually show step 4. Ammunition (a magazine, a reload key and a HUD row)
-came with it and was not in the original list. **This does not close H6** —
-that stays held for a clean playtest.
+**The weapon is the carbine.** It shipped as a pistol on 2026-08-26 and was
+rebuilt around a two-handed carbine the next day, and the horizon is named
+for the carbine from 2026-08-29 because that is what it is: the pistol has
+four or five clips in this project's libraries, while the rifle set has an
+idle, an aim, fires, reloads, turns and — decisively — a full eight-direction
+locomotion pack, which is the only clip set that can actually show step 4.
+Ammunition (a magazine, a reload key and a HUD row) came with it and was not
+in the original list.
+
+**Measured against the Definition of Done, 2026-08-29.** Six of the seven
+clauses were driven in a throwaway probe rather than judged by eye, and all
+six pass:
+
+| Clause | Result |
+|---|---|
+| found on the island | `world.tscn` carries the placed `carbine.tscn` instance |
+| picked up | `stow_anywhere()` accepts it onto `back_pack` |
+| kept across save/load | the slot AND the spent magazine both survive a `get_save_data()` / `load_save_data()` round trip (6 rounds in, 6 rounds out) |
+| drawn and holstered | `draw()` accepted, `get_drawn()` reads `carbine`, `holster()` returns it, hands empty after |
+| fired at an NPC, damage through the health path | `_resolve_shot()` → `take_hit()` → `HealthComponent`, 100 → 0 |
+| enters the incident record | `IncidentRegistry.get_latest_incident()` is non-null after the shot; `shot_landed` is wired to the same handler `punch_landed` uses |
+
+The seventh — **carried while moving** — is the one clause a headless probe
+cannot answer, because it is entirely about how the eight-direction rifle
+locomotion reads on screen. **That, and only that, is what H6 is still held
+for.** Everything mechanical in the Definition of Done is now evidenced.
+
+Also outstanding and visual, not mechanical: the carbine's `HeldFit` puts
+the weapon along the forearm but has not been seated in the palm with the
+Item Fitter dock (`docs/ITEM_FITTER.md`).
 
 ---
 
