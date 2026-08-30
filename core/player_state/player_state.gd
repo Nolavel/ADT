@@ -13,12 +13,12 @@ enum ViewMode { TPS, ISOMETRIC }
 enum Stance { PEACE, COMBAT }
 
 var mode: Mode = Mode.ON_FOOT   # менять ТОЛЬКО через set_mode()/open_menu()/close_menu()
-var view_mode: ViewMode = ViewMode.ISOMETRIC
+var view_mode: ViewMode = ViewMode.TPS
 var stance: Stance = Stance.PEACE   # change ONLY through set_stance()
 ## Aiming down sights. A modifier on COMBAT, not a stance of its own: it
 ## deepens a commitment already declared, rather than declaring a new one.
 ## Only meaningful while stance == COMBAT and mode == ON_FOOT.
-var is_aiming: bool = false   # change ONLY through set_aiming()
+var is_aiming: bool = true   # change ONLY through set_aiming()
 
 ## Персистентный под-режим камеры ховера (HoverCameraComponent.HoverView):
 ## переживает выход-вход в транспорт. 0 = CHASE, 1 = COCKPIT.

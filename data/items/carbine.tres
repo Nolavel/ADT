@@ -1,23 +1,18 @@
-[gd_resource type="Resource" script_class="ItemResource" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ItemResource" format=3 uid="uid://bpf2kfgn0ag5n"]
 
 [ext_resource type="Script" uid="uid://c51f455owg8fl" path="res://core/items/item_resource.gd" id="1_item"]
 [ext_resource type="ArrayMesh" path="res://data/items/meshes/carbine_placeholder.res" id="2_mesh"]
-[ext_resource type="Script" path="res://core/items/held_fit.gd" id="3_fit"]
+[ext_resource type="Script" uid="uid://drrhj18a7cg0c" path="res://core/items/held_fit.gd" id="3_fit"]
 
 [sub_resource type="Resource" id="Resource_carbine_fit"]
 script = ExtResource("3_fit")
-hand = 0
-offset = Vector3(0, 0, 0)
 rotation_deg = Vector3(-69.589, -125.735, 26.962)
-scale = Vector3(1, 1, 1)
 
 [resource]
 script = ExtResource("1_item")
 id = &"carbine"
 display_name = "Carbine"
 weight = 3.2
-max_stack = 1
-can_throw = false
 can_use_in_hands = true
 size_class = 1
 readability = 2
