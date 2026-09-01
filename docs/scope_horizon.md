@@ -173,29 +173,54 @@ this blocks H6. Revisit after it.
 
 ## Out of plan
 
-Work that happened but was never on this page. Recorded here rather than
-back-dated into a horizon: this file governs a limited time budget, and a
-budget that only shows planned work is fiction. An entry here is not a
-demotion — it is how unplanned work stops being invisible.
+### TPS-only camera migration (resolves the ISOMETRIC entry above)
 
-### ISOMETRIC camera feel (Phases 1 → 5B)
+Triggered by a full-repository audit on 2026-08-30 (HEAD `0d6f6160`,
+commit `tps_camera_first`), recorded at
+`docs/tps_camera_single_mode_audit.md`. Not part of
+H6 and not scheduled ahead of it — this section exists to record that
+the audit happened and what it found, not to promote the work to Now.
 
-Arrived as a separate brief while the island horizon was open, and ran
-alongside it. Eight `CHANGELOG.md` entries, 2026-08-26 onward: directional
-yaw replacing the four-position orbit, octant yaw and cursor bias, head
-turn, critically damped output, wall safety and screen-edge framing,
-look-ahead, adaptive turn character, destination reversal.
+**What the audit established.** No technical blocker to removing
+`IsometricCameraState`, `isometric_camera_debug_overlay.gd`, and the
+ISO branches inside `OnFootCameraComponent` — they are already
+logically isolated (ownership of the final `Camera3D` transform, yaw,
+pitch, player facing and movement basis are each held by exactly one
+writer, TPS and vehicle code included). The risk is not the deletion
+itself; it is the periphery: `PlayerAnimationComponent.update_head_look()`,
+`zoom_ruler_hud.gd`/`ZoomRulerSystem`, and `KeyHintsPanel` all key off
+`PlayerState.view_mode` and are easy to leave stranded by a shallow
+"delete the camera/iso* files" pass.
 
-**Not finished.** Collision response and a refactoring pass remain
-outstanding. It continues outside the H-series order and is tracked in its
-own working session, not here — this section exists to record that it
-happened and that it is still open, not to schedule it.
+**Three product decisions are open before an Ordered Migration Plan can
+be written** (audit §30, items 6/8/13):
 
-Two things it changed that other work must not undo: `IsometricCameraState`
-now owns the ISOMETRIC yaw as well as the follow point, and the four-position
-orbit (`OrbitalPosition`, Q/E stepping) plus `toggle_follow` (`P`) are left
-in `OnFootCameraComponent` unreached, pending removal once the feel is
-settled.
+1. Fate of TPS zoom — `zoom_in`/`zoom_out` currently have no TPS
+   consumer (`_start_zoom` returns early in TPS); removing ISO removes
+   their only functional consumer. Either TPS gains zoom, or the
+   actions and `ZoomRulerSystem`/`zoom_ruler_hud.gd` are removed with it.
+2. Fate of the `lean_left`/`lean_right` bounded-glance behavior —
+   currently ISO-only; decide whether it moves to TPS or is dropped.
+3. Whether CONFLICT-1 (the `TpsCombatCameraState` TRANSITION-state
+   blended yaw that is computed but never applied to
+   `camera_target_yaw`) is fixed as part of this migration or carried
+   over unchanged as a separately tracked, known bug. The audit's
+   explicit instruction: migration must not silently "fix" or "lose"
+   this behavior as a side effect of simplifying `OnFootCameraComponent`.
+
+**Inherited, not renegotiated by this migration:** the sphere-cast
+occlusion contract from ISO (`intersect_shape`/`cast_motion`) is the
+target for the single TPS camera, not the current TPS raycast —
+`CHANGELOG.md` already documents that the project moved from raycast to
+sphere-cast once, deliberately, because a ray answers "has the camera's
+mathematical centre crossed the wall" too late. Re-adopting raycast in
+the final architecture would be an unrecorded reversal of that decision.
+
+**Not started:** the Ordered Migration Plan and Act phase are explicitly
+out of scope for the audit and for this entry. This section records the
+Observe/Orient/Decide output; the plan itself is a separate,
+to-be-scheduled piece of work once the three product decisions above
+are made.
 
 ### Comic panels (the word gets a frame)
 
