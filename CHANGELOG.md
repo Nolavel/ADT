@@ -12,6 +12,156 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-02 - The isometric camera is gone; one TPS with two framings, Q/E lean
+
+**The migration the 2026-08-30 audit was written for, carried out.** Removed:
+`IsometricCameraState` (1278 lines), `isometric_camera_debug_overlay.gd` and
+the `IsoCameraDebug` node, every ISO branch inside `OnFootCameraComponent`
+(2023 lines → 637, taking the orbit and follow-rotation code the audit had
+already found unreachable), `ClickToMoveSystem`, `ZoomRulerSystem` and
+`vfx/hud_component/zoom_ruler/`, the `zoom_in` / `zoom_out` / `toggle_follow`
+actions, and the move-destination indicator.
+
+**Deliberately NOT removed**, exactly as the audit warned: `NavigationComponent`
+and `player.move_to_position()`. `InteractComponent`'s auto-approach walks on
+them; only the click handler died. The candidate decal stays too — it is about
+interaction, not about clicks.
+
+**`ViewMode` survives as a FRAMING, not as a camera.** `TPS` / `TPS_WIDE`:
+one camera, same distance, same pitch, same occlusion, differing by a lens
+shift (`h_offset`/`v_offset`) that puts the character low and to one side.
+Stan's constraint verbatim — *"только смещение, дистанция та же"*. One eased
+scalar replaced the whole view-transition machinery (zoom animation, pitch
+retarget, the `view_mode_animating` gate the position pass had to know about).
+**Only the camera reads `view_mode` now**: movement, mouse capture, head-look,
+the cursor and the HUD decals all lost their branch in the same commit rather
+than keeping a distinction that no longer exists.
+
+**Occlusion inherited the sphere cast, its two lengths could not come with
+it.** `cast_motion()` replaced a ray once already, for a recorded reason, so
+carrying the ray into the last camera would have been an unrecorded rollback.
+But `ISO_COLLISION_MIN_DISTANCE` 3.0 was sized for a 10–17.5 m orbit, and on a
+2.2 m boom it would have disabled occlusion outright through the probe's own
+early-out. Re-derived to 0.70 with a 0.30 radius, and flagged as the part most
+in need of eyes on a real corridor.
+
+**Q/E are a lean, measured before it was written.** `new4/aim-lean-l` /
+`new4/aim-lean-r` exist and every rotation track in them is CONSTANT across
+2.083 s — held poses, not lean-in/lean-out, which is what makes two chained
+`AnimationNodeBlend2` the whole implementation. Rendered and looked at: they
+are *aiming* leans, and with empty hands the character reads as miming a
+rifle, so the body leans only in `COMBAT` while the camera leans always.
+
+**The wide framing's distance stopped being fixed, and that was measured too.**
+It shipped as "offset only, same distance" per the decision, then Stan sent the
+reference frame it is meant to match. Measured against a render at the
+reference's own 2:1: the character sits **6.8%** in from the left edge at
+**~29%** of frame width there, against **20%** and **~14%** from a lens shift
+alone. A lens shift moves a subject across the frame; it cannot make them
+bigger, so the two requirements could not both hold and the distance became an
+export. Counter-intuitive finding from the same pass: moving in needs a
+*smaller* `h_offset`, since the same shift throws a bigger subject further off
+frame — at 1.2 m with `h` 0.90 only a shoulder was left in shot. Defaults are
+Stan's pick of three rendered candidates: **1.30 m / h 0.40 / v 0.20**,
+deliberately short of the reference's exact scale, because at 1.1–1.2 m the
+figure fills a quarter of the frame permanently and the near plane starts
+clipping the shoulder. `wide_distance = TPS_DISTANCE` restores the original
+behaviour exactly — the term is written as a difference for that reason.
+
+Touched: `camera/` (three files deleted, `on_foot_camera_component.gd`
+rewritten), `core/movement/`, `core/ui/`, `core/input/input_systems.gd`,
+`core/player_state/player_state.gd`, `player/player.gd` and its animation
+component, `vfx/hud_component/`, `world/world.gd`, `project.godot`,
+`data/key_hints.tres`, `input_map.md`, `readme.md`, `ARCHITECTURE.md`,
+`CLAUDE.md`, `docs/architecture/*`, `docs/scope_horizon.md`,
+`docs/planned_scope.md`, `docs/core_loop.md`, `docs/NPC_REACTIONS.md`.
+
+Verified: import ×2 clean, `world.tscn` boot clean (one long-standing warning
+left, one fewer than before — the anchors warning came from the deleted
+overlay); framing, both leans and the wide view rendered under Xvfb and looked
+at; mouse capture confirmed on a real display (not visible on foot, visible in
+menu). The auto-approach probe walks 0 m headless — **and so does the same
+probe on pre-migration `main`**, because navigation is disabled without a
+`NavigationRegion3D`, so that is the environment and not a regression; what it
+does prove is that `move_to_position()` still sets an active path, identically
+on both sides.
+
+> *Изо-камера удалена целиком вместе с click-to-move, зумом и линейкой;
+> `OnFootCameraComponent` ужался с 2023 строк до 637. Второй режим остался, но
+> это тот же TPS со сдвигом линзы — герой уходит в нижний левый угол, дистанция
+> та же. Окклюзия унаследовала сферу из изо, но её длины пришлось пересчитать:
+> изометрический минимум 3 м на плече 2.2 м просто отключил бы проверку. Q/E —
+> наклон: клипы замерены (это статические позы), тело наклоняется только в
+> COMBAT, потому что клипы прицельные и с пустыми руками выглядят как имитация
+> винтовки. Дистанция wide перестала быть фиксированной: замер по референсу
+> показал, что сдвиг линзы двигает героя по кадру, но не делает его крупнее —
+> 6.8% от края и 29% ширины в референсе против 20% и 14% при одном сдвиге.
+> Дефолт 1.30 м / h 0.40 / v 0.20, сознательно не доведён до масштаба
+> референса.*
+
+---
+
+## 2026-09-02 - Reload measured instead of guessed; stamina leaves the world for the HUD; input reads edges from events
+
+**The reload bug was mine, and it was arithmetic.** "R only loads on the third
+or fourth press" survived two previous attempts because both of them fixed
+something else. This time the clips were measured: `new3/rifle_shot` is
+**1.167 s** and `new3/rifle_reload_2` is **1.875 s**, plus the
+`weapon_oneshot`'s 0.1 s fadeout — while the reload request buffer added on
+2026-08-28 was a flat **0.6 s** countdown. A reload asked for right after a
+shot therefore expired about half a second before the hands were free, every
+single time. The buffer is now bounded by the BLOCK rather than by a clock:
+`player.gd` holds the request while something is genuinely in the way and
+retries on the first free frame, with `RELOAD_REQUEST_MAX_WAIT` (4 s) as a
+ceiling against a gesture that never reports finished, not as a tuning knob.
+Proven end to end by a probe that fires a shot, presses R 0.2 s in, and
+measures the wait: **0.990 s — dropped by the old window, kept by the new
+one**, magazine 6 → 8, reserve 80 → 77.
+
+**Input now reads edges from events.** `InputSystems` polled
+`Input.is_action_just_pressed()` 21 times inside `_physics_process()`. Measured
+honestly, that is **not** what broke reload — at the project's 60 Hz physics
+the poll path loses nothing — but it is lossy the moment the idle and physics
+rates diverge (120 synthetic taps arrive as **42** at 5 Hz physics, and as
+**120** through the event path at every rate tested). Keyboard actions moved to
+`_unhandled_input()` (GUI keeps first refusal, where `pause` already lived),
+mouse buttons to `_input()` (polling ignored GUI consumption, and moving them
+behind it would change which clicks reach gameplay), matched with separate
+`if`s because wheel up drives both `zoom_out` and `lodging_hours_up`. Query
+methods that must stay polls are answered from an edge latch expired at the
+top of the physics frame — autoloads run before scene nodes, so clearing at the
+bottom would erase it before `camera_follow.gd` looked.
+`is_zoom_*_just_released()` became `is_zoom_*_tick()`.
+
+**Stamina moved from the ground into the HUD.** The ring drew over the player,
+and that was a direct consequence of the `depth_test_disabled` added to keep it
+from sinking into the terrain — a trade, not a fix. `StaminaIndicator3D` is
+deleted; `ui/hud/stamina_gauge/` draws the same effect set as the first cell of
+`PlayerHUD`'s health row, restored from commit `e40eab4`: four quarter arcs
+that close into a ring at full stamina, the cool → yellow → orange → red ramp,
+both recovery sweeps with pulse and inner glow, the jump-charge arc, and the
+walk/sprint icon **inside** the ring. On a flat canvas there is nothing to draw
+over, so the defect is absent rather than tuned away. Six states were rendered
+and looked at under Xvfb before this was called done.
+
+Touched: `core/input/input_systems.gd`, `player/player.gd`,
+`player/player.tscn`, `camera/camera_component/on_foot_camera_component.gd`,
+`ui/hud/stamina_gauge/` (new), `ui/hud/player_hud/`,
+`core/ui/target_indicator/target_indicator.gd`, `ui/widgets/`, `CLAUDE.md`,
+`docs/architecture/autoloads_and_bootstrap.md`,
+`docs/architecture/player_and_camera.md`.
+
+> *Перезарядка: причина найдена измерением — клип выстрела 1.167 с, а окно
+> буфера было 0.6 с, поэтому запрос истекал раньше, чем освобождались руки;
+> теперь ожидание ограничено самой блокировкой, а не таймером. Ввод читает
+> дискретные нажатия из события, а не опросом (замер: 120 нажатий → 42 при
+> опросе на 5 Гц физики, 120 через события на любой частоте) — но честно: не
+> это ломало R. Стамина ушла с земли в HUD рядом с health, эффекты подняты из
+> коммита `e40eab4`, иконки — внутри кольца; рисование поверх игрока исчезло
+> вместе с плоскостью в мире.*
+
+---
+
 ## 2026-08-29 - The stamina ring, looked at properly; H6 measured against its own Definition of Done
 
 **Two real defects in the ring, both found by rendering it rather than by

@@ -9,8 +9,8 @@
 # занимается StreamingSystems (autoload) — грузит/выгружает BlockData по
 # дистанции от игрока, это отдельный, уже существующий и не связанный с
 # этим файлом механизм. WorldContext — исключительно про то, как игровые
-# системы (ClickToMoveSystem, TPSMovementSystem, MenuSystem,
-# ZoomRulerSystem и все следующие) получают нужные им ссылки при старте,
+# системы (TPSMovementSystem, MenuSystem, IncidentRegistry
+# и все следующие) получают нужные им ссылки при старте,
 # без ручного набора register_player()/register_camera() на каждую
 # систему в world.gd.
 # =============================================================================
@@ -22,7 +22,7 @@ var camera: Camera3D
 var stream_container: Node3D
 
 ## Все уже созданные системы из WORLD_SYSTEM_SCRIPTS — на случай, если
-## 3D/UI-сцене нужна конкретная система (например HUD нужен ClickToMoveSystem
+## 3D/UI-сцене нужна конкретная система (например панели нужен SaveSystem
 ## для setup()), а не только player/camera/stream_container.
 var systems: Array[Node] = []
 

@@ -7,7 +7,8 @@ in the same commit as any action added, removed or rebound in
 Project Settings → Input Map.
 
 Mode is owned by `PlayerState.mode` (`ON_FOOT`, `HOVER`, `TUBE_TRANSIT`,
-`MENU`) and `PlayerState.view_mode` (`TPS`, `ISOMETRIC`).
+`MENU`) and `PlayerState.view_mode` (`TPS`, `TPS_WIDE` — both third person,
+differing only in framing).
 `TOPDOWN` was removed from the project — do not reintroduce it.
 
 `InputSystems` (`core/input/input_systems.gd`) is the only script that calls
@@ -67,15 +68,12 @@ view is embedded in the editor.
 
 ---
 
-## 2. ON_FOOT — shared across ISOMETRIC and TPS
+## 2. ON_FOOT
 
 | Action | Key | Description | RU |
 |---|---|---|---|
 | `interact` | `F` | Pick up / drop item, activate object; **hold** to board a hover | Взаимодействие |
-| `zoom_in` | Wheel down | Zoom camera in | Приблизить |
-| `zoom_out` | Wheel up | Zoom camera out | Отдалить |
-| `toggle_view` | `V` | Toggle `ISOMETRIC` ⇄ `TPS` | Смена вида |
-| `toggle_follow` | `P` | Toggle camera-follows-player-rotation — **no effect since the ISOMETRIC camera became directional** (§3); binding kept, unread | Слежение камеры (не действует) |
+| `toggle_view` | `V` | Toggle framing `TPS` ⇄ `TPS_WIDE` | Смена кадра |
 | `inventory` | `I` | Inventory | Инвентарь |
 | `map` | `M` | Map | Карта |
 | `status` | `X` | Status | Статус |
@@ -99,63 +97,44 @@ second confirms it; no new action needed for that part.
 | `lodging_hours_down` | Wheel down | −1 hour, clamped to 1 | −1 час, минимум 1 |
 | `pause` | `Esc` | Cancels the picker (also opens the pause menu, unchanged) | Отмена выбора (плюс меню паузы, как обычно) |
 
-Deliberately separate actions from `zoom_in`/`zoom_out` (same physical wheel,
-§2 above) — reusing the camera-zoom actions for an unrelated "adjust a
-number" UI would overload their meaning everywhere else they're read.
+These were deliberately separate actions from `zoom_in`/`zoom_out`, which sat
+on the same physical wheel until camera zoom was removed with the isometric
+camera (2026-09-02). The wheel is the picker's alone now; the separation is
+kept because it was right for a reason that outlives the clash — a "camera
+zoom" action reused for an unrelated "adjust a number" UI would overload its
+meaning everywhere else it is read.
 
 ---
 
-## 3. ON_FOOT — ISOMETRIC only
-
-Click-to-move navigation. Handled by `NavigationComponent` and
-`ClickToMoveSystem`.
+## 3. ON_FOOT — camera lean
 
 | Action | Key | Description | RU |
 |---|---|---|---|
-| `mouse_left_button` | LMB | `PEACE`: stop movement / cancel move target. `COMBAT`: punch instead — see §4, same action as TPS, standing still only | `PEACE`: отменить цель движения. `COMBAT`: удар (только с места) |
-| `mouse_right_button` | RMB click | Move to clicked point — regardless of `Stance` | Идти в точку |
-| `mouse_right_button` | RMB hold > 0.5 s | Switch to running toward target | Бег к цели |
-| `lean_left` | `Q` **hold** | Look left — temporary, bounded to ±35° from the character's own direction, springs back on release | Осмотреться влево (удержание) |
-| `lean_right` | `E` **hold** | Look right — same bound and spring-back | Осмотреться вправо (удержание) |
+| `lean_left` | `Q` **hold** | Lean out to the left — the camera slides sideways, springs back on release | Выглянуть влево (удержание) |
+| `lean_right` | `E` **hold** | Lean out to the right — same, mirrored | Выглянуть вправо (удержание) |
 
-`lean_left`/`lean_right` were discrete orbital steps until the ISOMETRIC camera
-became directional: yaw now follows the character's movement direction while
-moving and their facing once stopped, so there is no orbit left to step. The
-two keys carry the bounded temporary look instead — held, not tapped. The
-bound (`OnFootCameraComponent.iso_look_yaw_limit_deg`) is what keeps this a
-glance rather than a free orbit by another name.
+Held, never tapped, and level reads rather than edges (`InputSystems`
+exposes only `is_lean_*_pressed()`). These keys have had three meanings: a
+four-position camera orbit, then the isometric camera's bounded glance, and
+now a third-person lean. The first two went with the isometric camera on
+2026-09-02.
 
-Mouse-X drives the look in TPS but deliberately not here: `InputSystems`
-captures the cursor only in TPS (`_apply_mouse_mode()`), because ISOMETRIC
-needs a visible cursor for click-to-move. Mouse look in this view would fire
-on every ordinary movement toward a click target and stall at the screen
-edge. `toggle_follow` (`P`, §2) likewise no longer affects ISOMETRIC — the
-camera follows direction unconditionally now.
-
-`mouse_right_button` moved here from "shared" (2026-08-03): `ClickToMoveSystem`
-has always self-gated to ON_FOOT + ISOMETRIC, so the click-to-move meaning
-never actually applied in TPS — it just had no reader there before this
-table said otherwise. See §4 for what the same physical button now does
-in TPS.
-
-`mouse_left_button` moved here from "shared" (2026-08-06), same reason:
-`ClickToMoveSystem`'s stop-movement handler is gated the same way as its
-move-to-point one, so it never actually fired in TPS either. See §4 for
-what the same physical button does there now.
-
-`mouse_left_button` splits by `Stance` within ISOMETRIC (2026-08-10):
-`ClickToMoveSystem`'s own handler for it (stop/cancel) is unconditional on
-`Stance` — it is `player.gd`'s punch handler that only acts in `COMBAT`, on
-the same signal. The two never conflict: click-to-move itself, including
-`mouse_right_button`, is unaffected by `Stance` and keeps working the same
-in `COMBAT` as in `PEACE`.
+**The camera always leans; the body only leans in COMBAT.** The pose comes
+from `new4/aim-lean-l` / `new4/aim-lean-r`, which are static held poses
+(measured — every rotation track is constant across the clip, which is why a
+plain `AnimationNodeBlend2` is the whole implementation). They are *aiming*
+leans: rendered with empty hands in `PEACE` the character reads as miming a
+rifle, so out of `COMBAT` the lean is the camera sliding sideways and nothing
+else.
 
 ---
 
-## 4. ON_FOOT — TPS only
+## 4. ON_FOOT — movement and combat
 
-Direct movement. `TPSMovementSystem` feeds `player.gd` every physics frame,
-and also drives `PlayerState.is_aiming` from the aim hold below.
+Direct movement, in both framings. `TPSMovementSystem` feeds `player.gd`
+every physics frame and also drives `PlayerState.is_aiming` from the aim hold
+below. It used to be gated on `view_mode == TPS`; with one camera there is
+nothing left to gate on and `ON_FOOT` is the whole condition.
 
 | Action | Key | Description | RU |
 |---|---|---|---|
@@ -170,9 +149,10 @@ and also drives `PlayerState.is_aiming` from the aim hold below.
 | `switch_shoulder` | `Z` | Swap camera shoulder (`TpsShoulderCameraState`) | Смена плеча камеры |
 | `lock_on` | `G` | Toggle Explore ⇄ Locked (`TpsCombatCameraState`) | Захват цели |
 
-`mouse_left_button`/`mouse_right_button` are otherwise unclaimed here — their
-ISOMETRIC meanings (§3) are read by a different, self-gated system, so each
-physical button carries two unrelated meanings depending on `view_mode`.
+`mouse_left_button`/`mouse_right_button` are unclaimed by anything else on
+foot. They used to carry a second, isometric meaning (click-to-move and
+stop/cancel) read by a self-gated system; that system was removed with the
+isometric camera on 2026-09-02, so each button now has one meaning.
 
 `lock_on` searches the `lockable` group. Occlusion-aware target selection is
 a known TODO, blocked on a raycast service that does not exist yet.

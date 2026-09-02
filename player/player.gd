@@ -2,16 +2,16 @@
 # player.gd — Player (CharacterBody3D).
 #
 # Owns physics, the movement state machine and body rotation directly
-# (not delegated to components) for both movement modes: click-to-move/
-# navigation (via NavigationComponent, _handle_navigation) and direct WASD
-# movement (TPS, TPSMovementSystem feeds set_direct_move_input() every
-# physics frame, _apply_direct_movement computes velocity/rotation/
-# animation). Which path runs is decided inside _physics_process() by the
-# view mode AND by whether a scripted path is in flight: navigation is the
-# ISOMETRIC default, but it also takes over in TPS while something is
-# walking the character to a point (see _has_scripted_path()), because an
-# auto-approach has to work in both views. Player input in TPS cancels such
-# a path on the spot.
+# (not delegated to components) for both movement modes: scripted navigation
+# (via NavigationComponent, _handle_navigation) and direct WASD movement
+# (TPSMovementSystem feeds set_direct_move_input() every physics frame,
+# _apply_direct_movement computes velocity/rotation/animation). Which path
+# runs is decided inside _physics_process() by ONE question — is a scripted
+# path in flight? WASD is the default and navigation takes over only while
+# something (today: InteractComponent's auto-approach) is walking the
+# character to a point; player input cancels such a path on the spot. The
+# view mode used to be the other half of that decision and is not any more:
+# click-to-move went with the isometric camera on 2026-09-02.
 # AnimationTree assembly and the procedural Head LookAt are delegated to
 # PlayerAnimationComponent (player_components/animation_component/) —
 # player.gd calls its update_*() methods explicitly at the right point in
@@ -130,8 +130,20 @@ const ACTOR_ID: StringName = &"player"
 ## punch_hit_delay and shot_hit_delay already use, and for the same reason:
 ## there is no animation event system in this project.
 @export var reload_time: float = 1.2
-## How long a reload request survives while the hands are busy, seconds.
-const RELOAD_BUFFER_TIME: float = 0.6
+## Ceiling on how long a remembered reload request may wait for the hands,
+## seconds. NOT a tuning knob and not the window itself: the request is held
+## for as long as something is actually blocking it (see
+## _update_reload_request()), and this only exists so a gesture that never
+## reports finished cannot keep a keystroke alive forever.
+##
+## The window used to be a flat 0.6 s countdown, and that was the whole of the
+## "R has to be pressed three or four times" bug. Measured 2026-09-02:
+## new3/rifle_shot is 1.167 s and new3/rifle_reload_2 is 1.875 s, plus the
+## weapon_oneshot's 0.1 s fadeout — so a reload asked for right after a shot
+## expired roughly half a second before the hands were free, every single
+## time, and only a press that happened to land after the clip did anything.
+## A constant picked without measuring the clip it had to outlast.
+const RELOAD_REQUEST_MAX_WAIT: float = 4.0
 
 @export_subgroup("Interaction")
 ## Height above the player's own origin (its feet) at which a pickup stops
@@ -153,10 +165,9 @@ const RELOAD_BUFFER_TIME: float = 0.6
 ## Wider than punch_angle_deg for the same reason the reach is longer.
 @export var punch_intent_angle_deg: float = 120.0
 ## Rate the body turns toward the intent target during the wind-up. Smoothed
-## rather than snapped (unlike _face_punch_target()'s instant ISOMETRIC turn,
-## which has to be exact before the hit check reads facing): this correction
-## is meant to be visible as the character committing to a swing. Tuned to
-## land most of the turn inside punch_hit_delay, not to guarantee a hit.
+## rather than snapped: this correction is meant to be visible as the
+## character committing to a swing. Tuned to land most of the turn inside
+## punch_hit_delay, not to guarantee a hit.
 @export var punch_intent_turn_smoothing: float = 18.0
 
 @export_group("Jump/Gravity")
@@ -223,24 +234,16 @@ var _is_shooting: bool = false
 ## the thing is going back to. See _on_drawn_changed().
 var _last_drawn_from: StringName = &""
 var _is_reloading: bool = false
-## Seconds left on a reload asked for while the hands were busy. See
-## _on_weapon_reload_pressed().
-var _reload_buffer: float = 0.0
+## A reload was asked for while the hands were busy and is still waiting for
+## them. See _on_weapon_reload_pressed() / _update_reload_request().
+var _reload_requested: bool = false
+## Seconds that request has been waiting, against RELOAD_REQUEST_MAX_WAIT.
+var _reload_request_age: float = 0.0
 var _reload_timer: float = 0.0
 var _reload_applied: bool = false
 var _reload_item_id: StringName = &""
 var _shot_timer: float = 0.0
 var _shot_resolved: bool = false
-
-## Injected by ClickToMoveSystem.register_player() at world-init time (see
-## that file's on_world_ready()) — a separate route from the WorldContext
-## player.gd's own on_world_ready() now also receives (see that method):
-## that context has no dedicated ClickToMoveSystem field, and this
-## injection predates it, so it was left in place rather than rerouted
-## through context.get_system(). Used only to reuse its ground raycast for
-## facing the COMBAT punch toward the click point in ISOMETRIC, see
-## _face_punch_target().
-var _click_to_move_system: ClickToMoveSystem = null
 
 ## --- Direct movement (TPS, WASD) — cached input data, written by
 ## TPSMovementSystem every physics frame via set_direct_move_input().
@@ -348,12 +351,10 @@ func _ready() -> void:
 		_equipment.drawn_changed.connect(_on_drawn_changed)
 
 	## Reuses InputSystems' existing primary_click_pressed signal instead of
-	## adding a new one. ClickToMoveSystem, the signal's other subscriber, is
-	## now self-gated to Stance.PEACE too (on top of ON_FOOT + ISOMETRIC), so
-	## the two subscribers never both react to the same click: in COMBAT this
-	## handler is the only one listening, in either view mode. The gate on
-	## what a press MEANS still lives here, same as every other InputSystems
-	## subscriber.
+	## adding a new one. It had a second subscriber, ClickToMoveSystem, which
+	## went with the isometric camera on 2026-09-02 — this handler is now the
+	## only one listening. The gate on what a press MEANS still lives here,
+	## same as every other InputSystems subscriber.
 	InputSystems.primary_click_pressed.connect(_on_primary_click_pressed)
 
 
@@ -381,7 +382,7 @@ func _physics_process(delta: float) -> void:
 		_update_punch(delta)
 	if _is_shooting:
 		_update_shot(delta)
-	_update_reload_buffer(delta)
+	_update_reload_request(delta)
 	if _is_reloading:
 		_update_reload(delta)
 
@@ -394,31 +395,33 @@ func _physics_process(delta: float) -> void:
 	_apply_gravity(delta)
 
 	## A scripted path (today: InteractComponent walking to something F was
-	## pressed on) owns locomotion while it lasts, in EITHER view. In TPS
-	## that means skipping this too, not just the movement call below:
+	## pressed on) owns locomotion while it lasts. That means skipping this
+	## too, not just the movement call below:
 	## _update_direct_move_target_speed() zeroes target_speed whenever there
 	## is no WASD input, which would drain the approach's own speed to zero
 	## before it moved a metre.
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		if _has_scripted_path() and _direct_move_direction.length() > 0.01:
-			## The player took the controls back. Their input wins
-			## immediately and without ceremony — clearing the path is also
-			## what tells InteractComponent to forget the pickup, through
-			## the movement_stopped signal stop_moving() emits.
-			stop_moving(true)
-		if not _has_scripted_path():
-			_update_direct_move_target_speed()
+	##
+	## No view_mode branch any more — there is one camera, so WASD is always
+	## the input and a scripted path is the only thing that overrides it.
+	if _has_scripted_path() and _direct_move_direction.length() > 0.01:
+		## The player took the controls back. Their input wins immediately
+		## and without ceremony — clearing the path is also what tells
+		## InteractComponent to forget the pickup, through the
+		## movement_stopped signal stop_moving() emits.
+		stop_moving(true)
+	if not _has_scripted_path():
+		_update_direct_move_target_speed()
 
 	_update_speed(delta)
 	_animation_component.update_animation_blend(delta)
 	_animation_component.update_head_look(delta)
 	_votive.update_projection(delta)
 
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS and not _has_scripted_path():
-		_apply_direct_movement(delta)
-	else:
+	if _has_scripted_path():
 		_handle_navigation(delta)
 		_apply_deceleration(delta)
+	else:
+		_apply_direct_movement(delta)
 
 	_pre_move_vertical_speed = velocity.y
 	move_and_slide()
@@ -480,13 +483,6 @@ func set_direct_move_input(direction: Vector3, want_run: bool) -> void:
 	_direct_move_want_run = want_run
 
 
-## Called once by ClickToMoveSystem.register_player() at world-init time.
-## See _click_to_move_system's own comment for why player.gd needs this at
-## all instead of reaching ClickToMoveSystem some other way.
-func set_click_to_move_system(system: ClickToMoveSystem) -> void:
-	_click_to_move_system = system
-
-
 func stop_moving(smooth: bool = true) -> void:
 	if navigation_component:
 		navigation_component.clear_path()
@@ -539,8 +535,9 @@ func is_movement_enabled() -> bool:
 ## InteractComponent's approach alike — both go through move_to_position(),
 ## and neither wants WASD or the camera-facing rules applied on top.
 ##
-## This is what makes ISOMETRIC no longer the only view navigation runs in:
-## before it, move_to_position() in TPS set a path nothing ever consumed.
+## This is now the ONLY thing that puts the character on a path. It was
+## introduced when move_to_position() in TPS still set a path nothing
+## consumed; with click-to-move gone it is the whole navigation trigger.
 func _has_scripted_path() -> bool:
 	return navigation_component != null and navigation_component.has_active_path()
 
@@ -660,6 +657,13 @@ func get_current_speed() -> float:
 
 ## Reexported from PlayerAnimationComponent — see get_sprint_blend()'s
 ## comment for the contract this preserves.
+## Thin passthrough to PlayerAnimationComponent, same shape as the other
+## re-exports here. OnFootCameraComponent owns the lean input and pushes the
+## result in; player.gd does not decide anything about it.
+func set_lean(amount: float) -> void:
+	_animation_component.set_lean(amount)
+
+
 func set_head_look_point(world_pos: Vector3) -> void:
 	_animation_component.set_head_look_point(world_pos)
 
@@ -1019,13 +1023,12 @@ func _on_health_band_changed(band: HealthComponent.Band) -> void:
 
 ## --- Punch (COMBAT only) ---
 ## Only a raised-fists stance earns a punch — this is the action the stance
-## exists for, in both view modes: TPS's mouse_left_button was already
-## unclaimed outside COMBAT (see the connection comment in _ready()), and in
-## ISOMETRIC, ClickToMoveSystem's own click handler reacts to the same
-## signal but never conflicts (see that file's header). ISOMETRIC
-## additionally faces the body to the click point first — TPS never needs
-## this, _apply_direct_movement() already faces the camera every frame,
-## camera and threat being the same direction there.
+## exists for. mouse_left_button is unclaimed outside COMBAT (see the
+## connection comment in _ready()); the click handler that used to share it,
+## ClickToMoveSystem, went with the isometric camera on 2026-09-02, and
+## _face_punch_target() went with it — the body is already facing the camera
+## every frame through _apply_direct_movement(), camera and threat being the
+## same direction now that there is only one view.
 ## Also requires standing still (speed <= punch_max_speed, checked against
 ## actual speed, not input intent): a punch played over locomotion has
 ## nothing to blend with (no layered upper-body mixing in this project yet)
@@ -1056,9 +1059,6 @@ func _on_primary_click_pressed(screen_pos: Vector2) -> void:
 		return
 	if speed > punch_max_speed:
 		return
-	if PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC:
-		_face_punch_target(screen_pos)
-
 	## A drawn firearm takes the click. Same gates either way — a shot is at
 	## least as much of a commitment as a punch, so it earns no exemption
 	## from standing still, and reusing the gate avoids inventing a second
@@ -1118,32 +1118,6 @@ func get_drawn_firearm() -> ItemResource:
 	return item
 
 
-## ISOMETRIC has no camera-driven facing to fall back on (unlike TPS, see
-## _on_primary_click_pressed()'s comment), so without this the punch would
-## fire in whatever direction the body last happened to face. Turns
-## instantly rather than smoothed: punch_hit_delay already buffers the swing
-## before _resolve_punch_hit() reads get_facing_direction(), and an instant
-## turn guarantees that read matches the click, where a smoothed one could
-## still be catching up at resolve time. Reuses ClickToMoveSystem's ground
-## raycast (via _click_to_move_system, see that var's comment) instead of a
-## second raycast from the camera.
-func _face_punch_target(screen_pos: Vector2) -> void:
-	if _click_to_move_system == null:
-		return
-	var point: Variant = _click_to_move_system.raycast_ground_point(screen_pos)
-	if point == null:
-		return
-
-	var to_point: Vector3 = (point as Vector3) - global_position
-	to_point.y = 0.0
-	if to_point.length() < 0.001:
-		return
-
-	# Same convention as _handle_navigation()'s target_angle and
-	# get_facing_direction(): atan2(x, z), +Z forward, not Godot's usual -Z.
-	rotation.y = atan2(to_point.x, to_point.z)
-
-
 func _start_punch() -> void:
 	_is_punching = true
 	_punch_timer = 0.0
@@ -1155,10 +1129,9 @@ func _start_punch() -> void:
 
 ## Who this punch was thrown at, decided once, at the moment the button is
 ## accepted — before punch_hit_delay has had a chance to make the answer
-## stale. Runs after _face_punch_target() in ISOMETRIC (see
-## _on_primary_click_pressed()'s call order), so the search is already
-## centred on the click direction there; in TPS the body is facing the
-## camera and there is nothing to correct first.
+## stale. The body is already facing the camera when this runs, so the
+## search is centred on where the player is looking with nothing to correct
+## first.
 func _acquire_punch_intent() -> void:
 	var target := _find_punch_target(
 		punch_reach * punch_intent_reach_multiplier, punch_intent_angle_deg
@@ -1176,10 +1149,10 @@ func _get_punch_intent_target() -> NPCBase:
 
 
 ## Turns the body toward the intent target while the swing winds up. Same
-## atan2(x, z) convention as _face_punch_target()/get_facing_direction(),
-## and the same Smoothing.damp_factor() form _face_camera() uses, so the
-## rate means the same thing here as everywhere else. Safe to run in both
-## view modes: movement is locked for the whole punch, so nothing else is
+## atan2(x, z) convention as get_facing_direction(), and the same
+## Smoothing.damp_factor() form _face_camera() uses, so the rate means the
+## same thing here as everywhere else. Movement is locked for the whole
+## punch, so nothing else is
 ## writing rotation.y while this does.
 func _face_punch_intent(delta: float) -> void:
 	var target := _get_punch_intent_target()
@@ -1306,36 +1279,52 @@ func _on_weapon_reload_pressed() -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 
-	## BUFFERED, not dropped. The press used to be discarded outright while
+	## REMEMBERED, not dropped. The press used to be discarded outright while
 	## the hands were busy — mid-punch, mid-shot, mid-draw, or with movement
 	## locked by any of them — so a reload asked for a fraction of a second
-	## too early simply never happened and had to be asked for again. "Reload
-	## works, but sometimes R has to be pressed twice" (Stan, 2026-08-28) is
-	## exactly that: the first press landed inside a gesture.
-	##
-	## Held for RELOAD_BUFFER_TIME and retried in _physics_process(). A window
-	## rather than an unbounded queue: a reload wanted a second ago is intent,
-	## one wanted five seconds ago is a stale keystroke firing on its own.
+	## too early simply never happened and had to be asked for again.
 	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
-		_reload_buffer = RELOAD_BUFFER_TIME
+		_reload_requested = true
+		_reload_request_age = 0.0
 		return
-	_reload_buffer = 0.0
+	_clear_reload_request()
 	_begin_reload()
 
 
-## Retries a buffered reload the moment the hands are free. Called every
-## physics frame; does nothing at all when nothing is buffered.
-func _update_reload_buffer(delta: float) -> void:
-	if _reload_buffer <= 0.0:
-		return
-	_reload_buffer = maxf(_reload_buffer - delta, 0.0)
-	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+## Retries a remembered reload the moment the hands are free. Called every
+## physics frame; does nothing at all when nothing is waiting.
+##
+## The wait is bounded by the BLOCK, not by a clock. The first version of
+## this counted down a flat 0.6 s and dropped the request when it hit zero —
+## which meant the fix only worked for gestures shorter than 0.6 s, and the
+## two that block a reload most often are 1.167 s and 1.875 s long. Pressing
+## R right after a shot therefore did nothing, three or four times in a row,
+## which is precisely what Stan kept reporting. Holding the request for as
+## long as something is genuinely in the way cannot be too short by
+## construction; RELOAD_REQUEST_MAX_WAIT is only there so a gesture that
+## never reports finished can't hold a keystroke open indefinitely.
+func _update_reload_request(delta: float) -> void:
+	if not _reload_requested:
 		return
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
-		_reload_buffer = 0.0
+		_clear_reload_request()
 		return
-	_reload_buffer = 0.0
+
+	_reload_request_age += delta
+	if _reload_request_age > RELOAD_REQUEST_MAX_WAIT:
+		_clear_reload_request()
+		return
+
+	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+		return
+
+	_clear_reload_request()
 	_begin_reload()
+
+
+func _clear_reload_request() -> void:
+	_reload_requested = false
+	_reload_request_age = 0.0
 
 
 ## The reload itself, with the gate that decides whether it happens at all.

@@ -5,7 +5,16 @@
 extends Node
 
 enum Mode { ON_FOOT, HOVER, TUBE_TRANSIT, MENU }
-enum ViewMode { TPS, ISOMETRIC }
+## Both values are THIRD PERSON. They differ only in framing — where the
+## character sits in the picture — not in where the camera is: TPS centres
+## them behind the shoulder, TPS_WIDE shifts the lens so they sit low and to
+## one side. The isometric orbit that used to be the second value was removed
+## on 2026-09-02 (docs/tps_camera_single_mode_audit.md).
+##
+## Only OnFootCameraComponent reads this. Everything that used to branch on
+## it — movement, mouse capture, head-look, the cursor — lost its branch in
+## the same commit rather than keeping a distinction that no longer exists.
+enum ViewMode { TPS, TPS_WIDE }
 ## Declared intent, not equipment. Raised fists are already a statement; a
 ## weapon changes the volume of that statement, not its existence. The world
 ## reads this: animation and camera today, NPCs and the evidence system

@@ -7,8 +7,9 @@
 # stamina is left, with arcs, recovery rings, a jump charge and walk/sprint
 # icons all stacked on the same few pixels. Aiming is a fast, precise read;
 # stamina is a slow, ambient one, and stacked together the aiming half loses.
-# All of the stamina and movement visuals moved to StaminaIndicator3D, which
-# draws them on the ground around the character's feet. This file no longer
+# All of the stamina and movement visuals moved out — first to a ring on the
+# ground (StaminaIndicator3D), then, when that turned out to draw through the
+# character it was under, into the HUD as StaminaGauge. This file no longer
 # references StaminaComponent at all.
 #
 # Three states, and that is the whole vocabulary:
@@ -161,14 +162,13 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-## В TPS мышь захвачена (InputSystems ставит MOUSE_MODE_CAPTURED), так что
-## водить курсором нельзя — целятся камерой. Значит и рисовать его, и бить
-## луч надо из центра экрана: это и есть направление взгляда. В ISOMETRIC
-## курсор по-прежнему идёт за мышью.
+## Мышь захвачена всегда, пока игрок пешком (InputSystems ставит
+## MOUSE_MODE_CAPTURED), так что водить курсором нельзя — целятся камерой.
+## Значит и рисовать его, и бить луч надо из центра экрана: это и есть
+## направление взгляда. Ветка «идти за мышью» жила ради изометрии и ушла
+## вместе с ней 2026-09-02.
 func _resolve_cursor_position() -> Vector2:
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		return get_viewport().get_visible_rect().size * 0.5
-	return get_viewport().get_mouse_position()
+	return get_viewport().get_visible_rect().size * 0.5
 
 
 # -----------------------------------------------------------------------------

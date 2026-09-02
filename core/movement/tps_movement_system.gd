@@ -1,12 +1,15 @@
 # =============================================================================
-# tps_movement_system.gd — обычная нода, братан click_to_move_system.gd.
+# tps_movement_system.gd — обычная нода.
 #
-# Владелец: world.gd — создаёт через .new() и регистрирует так же, как
-# ClickToMoveSystem (register_player/register_camera).
+# Владелец: world.gd — создаёт через .new() (WORLD_SYSTEM_SCRIPTS) и отдаёт
+# player/camera через on_world_ready().
 #
-# Активен ТОЛЬКО когда PlayerState.mode == ON_FOOT и
-# view_mode == TPS — сам себя гейтит через PlayerState.mode_changed /
-# view_mode_changed, ровно тот же принцип, что у ClickToMoveSystem.
+# Активен ТОЛЬКО когда PlayerState.mode == ON_FOOT — сам себя гейтит через
+# PlayerState.mode_changed. Раньше в гейте была ещё и половина про
+# view_mode == TPS; она ушла вместе с изометрической камерой 2026-09-02:
+# оба оставшихся view_mode — одна и та же камера от третьего лица, так что
+# WASD там управление в любом случае. Парная система, ClickToMoveSystem,
+# удалена тем же коммитом.
 #
 # WASD/Shift — непрерывный held-инпут, поэтому сигнальная модель не
 # подходит (она для дискретных нажатий, не для аналоговых осей). Физически
@@ -31,7 +34,6 @@ var _is_active: bool = false
 
 func _ready() -> void:
 	PlayerState.mode_changed.connect(_on_player_state_changed)
-	PlayerState.view_mode_changed.connect(_on_player_state_changed)
 	_update_active_state()
 
 
@@ -63,19 +65,16 @@ func _on_player_state_changed(_old, _new) -> void:
 
 
 func _update_active_state() -> void:
-	_is_active = PlayerState.mode == PlayerState.Mode.ON_FOOT \
-		and PlayerState.view_mode == PlayerState.ViewMode.TPS
+	## ON_FOOT is the whole gate now. The view_mode half went with the
+	## isometric camera on 2026-09-02: both remaining view modes are the
+	## same third-person camera with a different lens shift, so WASD is the
+	## input in either of them and there is nothing left to switch on.
+	_is_active = PlayerState.mode == PlayerState.Mode.ON_FOOT
 
 	if not _is_active and player_node:
-		# При выходе из TPS сразу гасим инпут, чтобы игрок не "доехал"
+		# При выходе из ON_FOOT сразу гасим инпут, чтобы игрок не "доехал"
 		# по инерции с зажатой клавишей в другой режим.
 		player_node.set_direct_move_input(Vector3.ZERO, false)
-		# Same reasoning for aiming: PlayerState only auto-clears is_aiming
-		# on leaving COMBAT or ON_FOOT, not on leaving TPS specifically (it
-		# is meaningless in ISOMETRIC, but not disallowed there). Without
-		# this, switching to ISOMETRIC via V while holding right-click would
-		# leave is_aiming stuck true, since nothing would call set_aiming()
-		# again to re-evaluate it.
 		PlayerState.set_aiming(false)
 
 

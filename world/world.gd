@@ -14,15 +14,15 @@
 # намеренно НЕ объединены в одну абстракцию, потому что у них разная
 # природа (как создаются) и разный родитель в дереве сцены:
 #
-#   1) WORLD_SYSTEM_SCRIPTS — Node-классы (ClickToMoveSystem, MenuSystem,
+#   1) WORLD_SYSTEM_SCRIPTS — Node-классы (TPSMovementSystem, MenuSystem,
 #      ...), создаются через .new(), родитель — World (self). Обычно без
 #      визуального представления, чистая логика/оркестрация.
 #
 #   2) WORLD_3D_ENTITY_SCENES — самостоятельные 3D-сцены (.tscn),
 #      создаются через load()+instantiate(), родитель — stream_container
-#      (3D-пространство). Пример: HUDComponent (индикатор клика — это
-#      Node3D, не screen-UI!). Сюда же в будущем — NPC/агенты, "голый"
-#      3D-инвентарь без иконок и т.п.
+#      (3D-пространство). Пример: HUDComponent (декаль кандидата
+#      взаимодействия — это Node3D, не screen-UI!). Сюда же в будущем —
+#      NPC/агенты, "голый" 3D-инвентарь без иконок и т.п.
 #
 #   3) WORLD_UI_SCENES — screen-space UI сцены (.tscn с Control в корне),
 #      создаются через load()+instantiate(), родитель — отдельный общий
@@ -55,10 +55,8 @@ extends Node3D
 var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	GameClockSystem,             # ← время: единственный источник истины
 	EnvironmentLightingSystem,   # ← свет/небо/туман: подписчик часов
-	ClickToMoveSystem,
 	TPSMovementSystem,
 	MenuSystem,
-	ZoomRulerSystem,
 	WorldBorderDebugSystem,
 	WorldBorderGuardSystem,
 	IncidentRegistry,            # ← what the city has on record; actors report, don't remember

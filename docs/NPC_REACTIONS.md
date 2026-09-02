@@ -37,13 +37,13 @@ for a navmesh), memory beyond one ALERT timer, reaction spreading past one
 drone's radius, the witness flag, and everything in sections 2, 3, 5, 6, 7.
 
 Design rule: `mouse_left_button` splits by `PlayerState.Stance`, not by
-camera view. In `COMBAT` it throws the punch, in both `TPS` and `ISOMETRIC`;
-in `PEACE` it is click-to-move's stop/cancel button in `ISOMETRIC` (unclaimed
-in TPS). Raising fists is the same statement regardless of which camera the
-player happens to be using, so the stance axis — not the view — is what
-gates the action. Click-to-move itself (`ClickToMoveSystem`, both mouse
-buttons) is unaffected by `Stance` and keeps working the same in `COMBAT` as
-in `PEACE` — the player can still walk with fists raised, they just can't
+camera view. In `COMBAT` it throws the punch; in `PEACE` it is unclaimed.
+Raising fists is the same statement regardless of how the camera is framed,
+so the stance axis — not the view — is what gates the action. The rule
+predates the isometric removal (2026-09-02), which retired the second
+meaning this button used to carry (click-to-move's stop/cancel) and left the
+rule itself untouched — the player can still walk with fists raised, they
+just can't
 throw a punch while doing it: the punch additionally requires standing
 still, since this project has no animation layering to blend it over
 locomotion.

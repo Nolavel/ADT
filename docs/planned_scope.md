@@ -147,9 +147,10 @@ next review, they go.
 
 ## Known defects
 
-- **The punch is bound in TPS view only.** `COMBAT` stance in ISOMETRIC has
-  no attack. Stance is a `PlayerState` axis and must not depend on the
-  camera view. `player.gd`.
+- ~~**The punch is bound in TPS view only.**~~ Closed 2026-09-02 by the
+  removal of the isometric camera: there is one on-foot camera now, so the
+  view cannot gate the stance's action. The rule it stated still holds —
+  stance is a `PlayerState` axis and must not depend on the camera.
 
 ---
 

@@ -1,15 +1,15 @@
 extends Node3D
 class_name TargetIndicator
 
-## Lookup group carried by the ONE instance that marks a move destination.
-## HUDComponent puts its `target_indicator` in it and deliberately leaves
-## `candidate_indicator` out — a walk icon belongs next to where the character
-## is going, not next to a thing they might pick up.
-##
-## Same discovery route ComicEffectSystem and HoldPrompt use, and for the same
-## reason: StaminaIndicator3D is a child of player.tscn and never receives a
-## WorldContext.
-const GROUP_MOVE_TARGET: StringName = &"move_target_indicator"
+## ROLE NOTE, 2026-09-02. Only the decal_only (interaction candidate) role is
+## instanced today: HUDComponent's move-destination indicator went with
+## click-to-move and the isometric camera, and the group that used to find it
+## went with it. The walk/run/invalid API below — show_at_position(),
+## show_invalid_click(), set_player_reference(), and the ring and arrow they
+## drive — is therefore currently unreached. It is left intact rather than
+## stripped in the same pass: it is working code with a coherent shape, not a
+## placeholder, and deciding whether a destination marker comes back is a
+## design question, not a cleanup.
 
 # === ВИЗУАЛЬНЫЕ КОМПОНЕНТЫ ===
 @onready var ground_decal: MeshInstance3D = $GroundDecal
@@ -264,8 +264,8 @@ func hide_indicator():
 ## Takes a position and a boolean and nothing else. This node knows nothing
 ## about items, equipment or pickup — InteractComponent decides what is
 ## targeted and HUDComponent decides that the answer should be drawn; this
-## only draws it. Same split show_at_position() already has with
-## ClickToMoveSystem.
+## only draws it. Same split show_at_position() had with the click handler
+## that used to drive it.
 ##
 ## Safe to call every frame: repositioning an already-visible indicator does
 ## not restart the appear tween.

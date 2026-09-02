@@ -1,10 +1,10 @@
 # =============================================================================
 # player_hud.gd — PlayerHUD.
 #
-# Top-left status stack: health and the magazine now, hunger and rest later.
-# Instantiated from
-# world.gd's WORLD_UI_SCENES list and handed the world context, same as
-# aim_reticle — see world.gd's own comment on the three categories.
+# Top-left status stack: stamina, health and the magazine now, hunger and rest
+# later. Instantiated from world.gd's WORLD_UI_SCENES list and handed the world
+# context, same as aim_reticle — see world.gd's own comment on the three
+# categories.
 #
 # WHY THIS SITS BETWEEN THE COMPONENT AND THE WIDGET: StatusBarWidget draws a
 # ratio and knows nothing about health; HealthComponent tracks health and knows
@@ -25,6 +25,7 @@ extends Control
 ## Vertical gap between stacked gauges (health, then hunger, then rest).
 @export var gauge_spacing: float = 6.0
 
+@onready var _stamina_gauge: StaminaGauge = $StatusStack/HealthRow/StaminaGauge
 @onready var _health_bar: StatusBarWidget = $StatusStack/HealthRow/HealthBar
 @onready var _ammo: AmmoIndicator = $StatusStack/AmmoIndicator
 
@@ -73,6 +74,12 @@ func on_world_ready(context: WorldContext) -> void:
 	_on_condition_changed(_health.conditions)
 
 	_bind_ammo(context)
+	## Stamina sits FIRST in the row, left of health: it is the gauge that
+	## moves constantly, and reading it should not mean scanning past a bar
+	## that only changes when something hits you. It used to be a ring on the
+	## ground under the player — see stamina_gauge.gd's header for why it is
+	## not there any more.
+	_stamina_gauge.bind(context.player)
 
 
 ## The ammo row needs BOTH components, and they answer different halves of

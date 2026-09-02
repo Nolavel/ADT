@@ -136,7 +136,7 @@ func _ready() -> void:
 
 
 ## WORLD_SYSTEM_SCRIPTS' optional lifecycle hook (world.gd) — same pattern
-## ClickToMoveSystem uses to learn about the player. The wiring this
+## TPSMovementSystem uses to learn about the player. The wiring this
 ## registry does today: resolve GameClockSystem for timestamps, and listen
 ## for the player's own punches. A future witness (NPC-reported incidents)
 ## would connect here the same way, not by widening report()'s signature.

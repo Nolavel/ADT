@@ -176,7 +176,7 @@ stateDiagram-v2
 
 - **`Mode`** — `ON_FOOT`, `HOVER`, `TUBE_TRANSIT`, `MENU`. What the player
   is doing with their body.
-- **`ViewMode`** — `TPS`, `ISOMETRIC`. Camera framing while on foot.
+- **`ViewMode`** — `TPS`, `TPS_WIDE`. Camera FRAMING while on foot, not two cameras: both are third person at the same distance, differing only in a lens shift that pushes the character toward the lower-left of frame. The isometric orbit that used to be the second value was removed on 2026-09-02.
   `V` switches between them at the edges of the zoom range.
 - **`Stance`** — `PEACE`, `COMBAT`, plus an `is_aiming` modifier on top of
   `COMBAT`. Declared intent, not equipment.
@@ -350,39 +350,52 @@ by construction.
 Camera components read input exclusively through `InputSystems` query
 methods.
 
-### ISOMETRIC is directional
+### One on-foot camera, two framings
 
-`IsometricCameraState` owns two things for the isometric view: the follow
-point (dead zone, lead toward the click-to-move destination, a separate
-vertical channel, asymmetric damping) and, since Phase 1 of the directional
-work, the **yaw**.
+The isometric orbit was removed on 2026-09-02 — `IsometricCameraState`, its
+debug overlay, the zoom slider that chained the two views into one continuum,
+`ClickToMoveSystem`, `ZoomRulerSystem`, and the four-position Q/E orbit and P
+follow-toggle that had already been unreachable for weeks. The survey that
+made that safe is `docs/tps_camera_single_mode_audit.md`.
 
-Yaw follows the character: their movement direction while they are moving,
-their facing once they stop. On top of that sits a temporary manual look,
-bounded to ±35°, held on Q/E and spring-returned on release. There is no free
-orbit and no follow toggle — the four-position orbit (Q/E stepping
-`OrbitalPosition`) and `toggle_follow` (P) are no longer reached, and are kept
-in the file only until the directional feel is confirmed.
+`PlayerState.ViewMode` survives as a choice of FRAMING, not of camera. `TPS`
+centres the character behind the shoulder; `TPS_WIDE` shifts the lens
+(`Camera3D.h_offset`/`v_offset`) so they sit low and to one side and shortens
+the boom to `wide_distance`. Pitch, yaw, occlusion and every follow rate are
+identical between them, and the whole difference is one eased scalar. The
+distance was fixed at first — *"только смещение, дистанция та же"* — and
+became a knob once the reference frame was measured: a lens shift moves the
+subject across the frame but cannot make it bigger, and the reference is a
+closer shot as well as an offset one. `wide_distance = TPS_DISTANCE` restores
+the original behaviour exactly. That is why the old view-transition
+machinery — a zoom animation, a pitch retarget and a `view_mode_animating`
+gate the entire position pass had to be aware of — could be deleted rather
+than ported.
 
 Two properties are load-bearing:
 
-- **One yaw source.** `IsometricCameraState._current_yaw` is authoritative.
-  The host's `current_angle` is written *from* it each frame and read only by
-  the debug labels and the next view transition. Before this, the two raced.
-- **One basis per frame.** The host calls `update_orientation()`, reads
-  `get_cam_forward()`/`get_cam_right()` into the `Frame`, and only then calls
-  `update()`. The dead zone is measured in the camera plane, so a follow point
-  advanced against the previous frame's basis while the yaw moved this frame
-  drifts sideways for no visible reason.
+- **Only the camera reads `view_mode`.** Movement, mouse capture, head-look,
+  the cursor and the HUD decals all used to branch on it; every one of those
+  branches was removed in the same commit rather than left keyed on a
+  distinction that no longer exists. A new branch on `view_mode` outside
+  `OnFootCameraComponent` is almost certainly a mistake.
+- **Occlusion is a sphere cast.** The isometric camera's `cast_motion()`
+  probe replaced a ray once already, for a reason recorded in `CHANGELOG.md`
+  — a ray answers "has the camera's centre crossed the wall" late and
+  discontinuously, a sphere reports the surface a radius early and
+  continuously. The single remaining camera inherits the sphere. Its two
+  LENGTHS did not transfer: sized for a 10–17.5 m orbit they would have
+  disabled occlusion outright on a 2.2 m boom, so radius and minimum distance
+  are re-derived for this camera's scale.
 
-The split of ownership is the usual one: the state owns the yaw maths and
-knows nothing about input; the host reads the keys, applies the ±35° clamp,
-and hands over a number of degrees. The limit exists in exactly one place for
-that reason.
+Q/E carry a lean: the camera slides along the same `right` vector as the
+shoulder offset, and in `COMBAT` the body leans with it, blended from two
+static held poses. Out of combat the pose is left off — the clips are aiming
+leans, and with empty hands they read as the character miming a rifle.
 
-Direction crosses the boundary as a **vector**, never a `rotation.y`. This
-project rotates characters with `atan2(dir.x, dir.z)`, making +Z the visual
-forward rather than Godot's usual −Z (see `player.gd`'s
+Direction crosses component boundaries as a **vector**, never a `rotation.y`.
+This project rotates characters with `atan2(dir.x, dir.z)`, making +Z the
+visual forward rather than Godot's usual −Z (see `player.gd`'s
 `get_facing_direction()`), and an angle would carry that convention silently
 into code that has no way to know about it.
 
@@ -391,11 +404,16 @@ into code that has no way to know about it.
 ## Player
 
 `player/player.gd` owns physics, the animation state machine and rotation
-directly, for both movement paths, gated on `PlayerState.view_mode`:
+directly, for both movement paths. Which one runs is decided by a single
+question — is a scripted path in flight? — not by the view mode, which stopped
+being half of that decision when click-to-move was removed:
 
-- **Click-to-move** (`ISOMETRIC`) — driven by `NavigationComponent`
-- **Direct WASD** (`TPS`) — `TPSMovementSystem` feeds `set_direct_move_input()`
-  every physics frame; `player.gd` applies velocity, rotation and animation
+- **Direct WASD**, the default — `TPSMovementSystem` feeds
+  `set_direct_move_input()` every physics frame; `player.gd` applies velocity,
+  rotation and animation
+- **Scripted navigation** — driven by `NavigationComponent`, in flight only
+  while something (today: `InteractComponent`'s auto-approach) has called
+  `move_to_position()`. Player input cancels it on the spot
 
 `player/player_components/` is component-per-concern. Check for an actual
 `.gd` file before assuming a directory means working code — though note the

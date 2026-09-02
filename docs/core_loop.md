@@ -191,7 +191,7 @@ It is written down here so it does not get flattened by accident.
 | MOVE | Walk, run, jump, PEACE/COMBAT stance; hover; world streaming; day and night | Pneumatic tubes, metro, lifts |
 | OBSERVE | `PerceptionComponent` on NPCs; `InteractComponent` — focus, object type and properties; HUD with status bar and key hints | **Crowd readability: nothing.** Every NPC is one mesh. See §8 |
 | DECIDE | — | Nothing to choose between while passers-by are indistinguishable |
-| ACT | Punch in COMBAT — works in both TPS and ISOMETRIC (there the body turns to the click point); `HealthComponent` shared by player and NPC: condition bands, bleeding and fracture as flags, drain on game-clock minutes, `died()`; terminal DOWN phase on NPCs at zero; pick up and carry; inventory with stacks and a weight limit | Searching a downed body; weapons; forced entry |
+| ACT | Punch in COMBAT, aimed by the camera; `HealthComponent` shared by player and NPC: condition bands, bleeding and fracture as flags, drain on game-clock minutes, `died()`; terminal DOWN phase on NPCs at zero; pick up and carry; inventory with stacks and a weight limit | Searching a downed body; weapons; forced entry |
 | WHAT BECAME KNOWN | `IncidentRegistry` with stable actor ids instead of node references; drone goes ALERT on a fact within radius, OBSERVE a rung below, addressed spotlight | Witnesses — NPCs report nothing; cameras; a durable wanted record |
 | ADAPT | Sleep in `LodgingRoom`: advance the clock → notify `LodgingSystem` → write the save | Nothing to recalculate against: ALERT expires on a timer, consequences do not accumulate |
 

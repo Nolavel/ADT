@@ -2,30 +2,33 @@
 # on_foot_camera_component.gd
 # Camera component for PlayerState.Mode.ON_FOOT.
 #
-# Originally a straight relocation of the old monolithic camera_follow.gd.
-# Two of the behaviours that arrived with it are gone: the four-position
-# Q/E orbit (replaced by ISOMETRIC's octant yaw, which left Q/E free for a
-# bounded glance) and the P follow-rotation toggle (nothing reads it any
-# more — see _handle_follow_toggle()). What remains from that era is the
-# V view toggle and wheel zoom.
+# ONE CAMERA. The isometric orbit is gone (2026-09-02) — the class, its
+# debug overlay, the zoom slider that chained the two views together,
+# click-to-move and the whole Q/E-orbit / P-follow layer that had already
+# been dead for weeks. `docs/tps_camera_single_mode_audit.md` is the survey
+# that made the removal safe; read it before reviving any of it from git.
+#
+# WHAT `PlayerState.ViewMode` MEANS NOW. Both values are third person and
+# differ only in FRAMING — where the character sits in the picture, not
+# where the camera sits in the world:
+#
+#   TPS       the character centred behind the shoulder, as before
+#   TPS_WIDE  the same camera at the same distance, with the character
+#             pushed toward the lower-left of frame
+#
+# That is a lens shift (Camera3D.h_offset/v_offset), not a move: distance,
+# pitch, yaw, occlusion and every follow rate are identical between them.
+# Nothing outside this file needs to branch on the view any more, and the
+# systems that used to (movement, mouse capture, head-look, the cursor) had
+# their branches removed in the same commit rather than left keyed on a
+# distinction that no longer exists.
 #
 # The component isn't a Camera3D itself — it gets a reference to the real
 # camera (camera) and the target (target) from its host, and writes
 # directly into camera.global_position/global_rotation while active.
-#
-# It also drives the character's HEAD in ISOMETRIC, through player.gd's
-# set_head_look_point(). That is not camera placement, but the two things
-# worth looking at — the manual glance offset and the cursor ground point —
-# both live here and nowhere else. See _update_iso_head_look().
 # =============================================================================
 extends Node
 class_name OnFootCameraComponent
-
-## The only outward signal about zoom — HUD widgets (the ruler) subscribe
-## here instead of reading Input themselves. _handle_zoom_input() is the
-## only legitimate place in the project where zoom_in/zoom_out is
-## physically read.
-signal zoom_input_received()
 
 ## Not proportional to BODY_HEIGHT on purpose — camera distance is taste, not
 ## anatomy. Proportional to the old 2.6 @ 2.32m body would be ~2.02; 2.2 is
@@ -35,254 +38,18 @@ const TPS_DISTANCE: float = 2.2
 ## "mouse Y feels heavier than mouse X" convention for TPS/FPS cameras.
 const TPS_PITCH_SENSITIVITY_RATIO: float = 0.7
 
-## Position follow rate in TPS, separate from view_transition_speed (which
-## owns the ISOMETRIC <-> TPS transition animation). Steady-state lag behind
-## a target moving at constant speed is roughly speed / this value.
+## Position follow rate. Steady-state lag behind a target moving at constant
+## speed is roughly speed / this value.
 const TPS_FOLLOW_SPEED: float = 16.0
 
-## Rotation follow rate in steady-state TPS. Deliberately much faster than
-## TPS_FOLLOW_SPEED: position lag reads as a spring, rotation lag reads as
-## input lag. Mouse look must feel direct.
+## Rotation follow rate. Deliberately much faster than TPS_FOLLOW_SPEED:
+## position lag reads as a spring, rotation lag reads as input lag. Mouse
+## look must feel direct.
 const TPS_LOOK_SMOOTHING: float = 30.0
-
-## Position and rotation follow rates in steady-state ISOMETRIC. High
-## enough to be near-transparent, and that is the entire point of them.
-##
-## ISOMETRIC used to fall through to view_transition_speed (4.0) for both,
-## which put a SECOND time constant behind IsometricCameraState — a state
-## whose dead zone, soft zone and hard zone are all measured against the
-## follow point it returns, on the assumption that the camera sits there.
-## It did not. At run_speed 15.5 the two stages together trailed by about
-## 8.3 m where the state's own rate accounted for 4.4 of it, the lead was
-## sized for neither, and the hard zone could not clamp anything at all
-## because the point it clamped was not the point being drawn. Rotation had
-## the matching problem: camera_target_pos is built from current_angle (this
-## frame's yaw) while camera.rotation.y came from the lagged
-## camera_current_yaw, so during every turn the camera body orbited ahead of
-## its own look direction and slid the character across the frame.
-##
-## Not removed outright, at either channel. A fast filter still eases the
-## first frames after enter() instead of hard-snapping the camera in from
-## wherever the previous mode left it, and still absorbs a single-frame
-## spike. What it must not do is contribute a lag comparable to the state's
-## own: at 30.0 the residual is around 0.5 m at full run, an order of
-## magnitude under the state's, and FOLLOW_RATE_MOVING's comment accounts
-## for it explicitly rather than pretending it is zero.
-const ISO_FOLLOW_SPEED: float = 30.0
-const ISO_ROTATION_SPEED: float = 30.0
-
-## Smoothing time for the ISOMETRIC camera's POSITION output, as a
-## critically damped spring rather than the exponential above.
-##
-## The two filters answer different faults and only one of them was ever
-## the lag problem. ISO_FOLLOW_SPEED's exponential is first order: it
-## smooths position and passes a step in the target's VELOCITY straight
-## through in the same frame. IsometricCameraState's follow point is
-## assembled from piecewise rules — the dead-zone kink, the moving/settling
-## rate switch at SETTLING_SPEED_THRESHOLD, a lead that collapses when a
-## destination is reached, a cursor bias that drops out when the ray stops
-## hitting the ground. Each is continuous in position and discontinuous in
-## rate of change, and at run_speed 15.5 a rate step is a metre of framing
-## inside a fifth of a second. That is what reads as the camera correcting
-## in jerks rather than moving.
-##
-## A spring is second order, so acceleration is bounded and the output's
-## velocity cannot step regardless of what the target does. That, not
-## slowness, is what it is here for.
-##
-## THIS IS NOT THE SECOND FOLLOW STATE THAT WAS REMOVED. It replaces the
-## position half of the existing output pass rather than joining it — there
-## is still exactly one filter between IsometricCameraState and the camera.
-## The old fault was a second time constant COMPARABLE to the state's own
-## (4.0 against 3.5), which made the zone maths describe a point the camera
-## was nowhere near. The budget here is explicit and small: a spring lags a
-## constant-speed target by speed * smooth_time, so at 0.08 s this trails by
-## 1.24 m at full sprint where the exponential it replaces trailed 0.52 m.
-## The 0.72 m difference is about 35 px at default zoom, it is CONSTANT
-## during a sprint rather than varying, and LEAD_DISTANCE already exists to
-## absorb constant framing offsets. The state's own rate remains an order
-## of magnitude larger and still owns the lag.
-const ISO_POSITION_SMOOTH_TIME: float = 0.08
-
-
-# =============================================================================
-# ISOMETRIC WALL SAFETY
-# =============================================================================
-#
-# The orbit puts the camera 6-10 m above and behind the follow point. In
-# open ground that is fine; against a hillside, an overhang or the inside
-# of a building it puts the camera inside geometry, and ISOMETRIC had no
-# check at all — only TPS did.
-#
-# The shape is a SPHERE cast, not a ray, and that is the whole reason this
-# reads as smooth rather than as a snap. A ray asks "has the camera's
-# mathematical centre crossed the wall yet", which is answered late and
-# discontinuously — the near face of the frustum is already inside the wall
-# by then, and the answer flips the frame the centre crosses a silhouette
-# edge. A sphere of the radius below starts reporting the wall a whole
-# radius early and the reported distance then varies CONTINUOUSLY as the
-# player walks, so the retraction is already a smooth ramp before any
-# filtering is applied to it.
-
-## Radius of the probe. Roughly the near-plane half-extent this camera
-## needs to keep clear — big enough that the frustum's near face does not
-## poke through a wall the sphere cleared, small enough to fit through the
-## gaps a player can walk through.
-const ISO_COLLISION_RADIUS: float = 0.45
-
-## Closest the camera may be pulled to the pivot. Below this the character
-## fills the frame and then the camera enters them; a wall that would ask
-## for less than this is answered with this instead, and the character is
-## allowed to be occluded rather than the camera allowed inside their head.
-const ISO_COLLISION_MIN_DISTANCE: float = 3.0
-
-## How fast the camera returns to its full distance once the obstruction is
-## gone. Deliberately slow, and deliberately NOT symmetric with the retract
-## (see _update_iso_collision_distance): coming out is a luxury, going in is
-## a correctness requirement, and a fast return reads as the camera being
-## shoved outward by a wall it has just cleared.
-const ISO_COLLISION_RESTORE_RATE: float = 2.5
-
-## Extra clearance kept between the camera and the surface the probe hit, so
-## the camera sits in front of the wall rather than touching it. Matches the
-## 0.25 the TPS branch already backs off by.
-const ISO_COLLISION_SURFACE_MARGIN: float = 0.25
-
-
-# =============================================================================
-# ISOMETRIC SCREEN-EDGE FRAMING
-# =============================================================================
-#
-# The cursor asks the frame for room on the side it is pointing at. It does
-# NOT ask for rotation — see _cursor_edge_weight() for why that line is
-# load-bearing and not a matter of taste.
-
-## Fraction of the way to the screen edge at which the bias starts to exist
-## at all. Below this the cursor is in the neutral middle and the frame does
-## not move: the mouse spends most of its life somewhere near the character,
-## and a bias proportional to plain distance-from-centre would mean the
-## frame drifted whenever the player was merely reading the screen.
-const CURSOR_EDGE_DEAD_ZONE: float = 0.65
-
-## How much weaker a corner is than the middle of a side, as a fraction.
-## Both axes engaged at once should not simply add: a corner is a vaguer
-## request than an edge, and letting it be the strongest position on screen
-## would make the frame lurch diagonally every time the cursor rounded one.
-const CURSOR_EDGE_CORNER_SOFTEN: float = 0.25
-
-
-# =============================================================================
-# ISOMETRIC LOOK-AHEAD
-# =============================================================================
-#
-# The camera looks THROUGH the character into the space in front of them
-# rather than AT them, by a small amount, growing with how fast they are
-# moving and how close to the screen edge the cursor is.
-#
-# This is the answer to "the camera is still catching up with my body",
-# and it is a better answer than a faster yaw. A faster yaw trades
-# smoothness for responsiveness and a slower one trades back; there is no
-# setting that gives both, because they are the same quantity. Look-ahead
-# is a different quantity: the camera can show the player the space they
-# are running into BEFORE it has finished physically turning to face it.
-# The information arrives early even though the geometry arrives on its own
-# schedule, so the octant turn never has to be hurried.
-#
-# IT PRODUCES NO YAW, and that is structural rather than a promise. The
-# offset is applied along the camera's own horizontal forward, so the
-# camera, the follow point and the look target stay in one vertical plane
-# and the only angle that can change is pitch. A cursor-driven yaw is
-# exactly the self-moving rotation the octant model was written to remove;
-# it must not come back through this door.
-
-## How far in front of the character the camera aims at full effect.
-##
-## What this is worth, measured rather than predicted: together with the
-## raise and drop below it tilts the view up by +6.05 degrees at 15 m of
-## zoom. The effect is stronger the closer the camera is — +8.71 at the
-## 10 m near edge, +5.25 at the 17.5 m far edge — because a fixed
-## world-space offset is a larger fraction of a tighter shot. That is left
-## as it is on purpose: "aim two metres past the character" is a statement
-## about the world that stays true at any zoom, and normalising it against
-## the zoom would make the same tunable mean something different at each
-## end of the slider.
-const ISO_LOOK_AHEAD_DISTANCE: float = 2.0
-
-## How far the look target rises at full effect.
-##
-## The follow point rides GROUND height, so at rest the camera is aimed at
-## the character's feet. Lifting the target is half framing correction and
-## half the effect itself: combined with the drop below it tilts the view
-## up without moving the camera's own angle by hand.
-const ISO_LOOK_TARGET_RAISE: float = 0.4
-
-## How far the camera itself sinks at full effect. Small — this is not a
-## change of camera height, it is the other half of the tilt. Dropping the
-## eye while raising the aim opens the distance without the camera visibly
-## relocating.
-const ISO_CAMERA_DROP: float = 0.3
-
-## How much of the effect running alone is worth, and how much the cursor
-## at the screen edge adds. They sum and clamp at 1, so a sprint on its own
-## reaches most of it, the cursor tops it up, and either alone does
-## something.
-##
-## Movement is the larger share deliberately: the fault this exists to
-## answer shows up while running, and a player at a dead stop has no space
-## ahead of them that they are about to need.
-const ISO_LOOK_AHEAD_SPEED_SHARE: float = 0.7
-const ISO_LOOK_AHEAD_CURSOR_SHARE: float = 0.5
-
-## Easing rate for the effect's strength. Slow, close to the lead's own
-## rate and for the same reason: speed_ratio and the cursor's edge weight
-## both change abruptly, and an unfiltered weight would step the pitch.
-##
-## Note what is smoothed — a scalar STRENGTH, not a position. The pitch it
-## produces still passes through camera_current_pitch's own exponential at
-## ISO_ROTATION_SPEED, which is near-transparent, so there is one meaningful
-## filter on this channel and not two.
-const ISO_LOOK_AHEAD_RATE: float = 2.2
-
-## How steeply the cursor ray must point down before _cursor_ground_point()
-## trusts its intersection with the ground plane. Below this the ray is
-## near-parallel to the plane and the hit runs away toward the horizon.
-const CURSOR_RAY_MIN_DOWNWARD: float = 0.05
-
-## Distance at which a cursor ground point stops being a real intersection
-## and becomes a direction. Serves two turns in _cursor_ground_point(): a
-## plane hit further out than this is rejected as meaningless, and the
-## synthetic point built for a ray that never meets the ground is placed
-## exactly here. Both consumers saturate long before it — the bias caps at
-## CURSOR_BIAS_DISTANCE, the head-look at its own cone — so any value large
-## enough to be clearly "over there" behaves identically.
-const CURSOR_RAY_MAX_DISTANCE: float = 200.0
-
-## Manual look offset, in degrees, past which the character is considered
-## to be actively glancing and turns their head to match. Small, but not
-## zero: the offset springs back through a long tail of fractions of a
-## degree, and a head that kept following it would never settle.
-const ISO_HEAD_LOOK_PEEK_DEG: float = 5.0
-
-## How far the cursor must be from the character before the head will look
-## at it. Inside this the direction is ill-defined and the head would spin
-## on tiny mouse movements.
-const ISO_HEAD_LOOK_CURSOR_MIN_DISTANCE: float = 1.5
-
-## How far in front of the character to place the peek look point. Only the
-## direction matters to the head, but the distance sets how far the gaze
-## converges, so it should read as looking down the street rather than at
-## something an arm's length away. Deliberately a local constant and not a
-## reach into PlayerAnimationComponent.HEAD_LOOK_DISTANCE: the camera
-## decides where to point the head and the animation component decides how
-## to get it there, and neither should have to be edited because the other
-## changed its mind.
-const ISO_HEAD_LOOK_DISTANCE: float = 5.0
 
 ## Extra camera distance at full run speed, on top of TPS_DISTANCE. Explicit
 ## and tunable — the previous pull-back was an accidental by-product of the
-## follow-lag, not a setting. At run_speed, the residual TPS_FOLLOW_SPEED lag
-## (~0.6m) plus this (0.4m) adds up to roughly 1.0m total, versus the ~2.5m
-## the old shared-lag setup produced by accident.
+## follow-lag, not a setting.
 const TPS_SPRINT_PULLBACK: float = 0.4
 ## How fast the pull-back follows a change of speed. Lower than the follow
 ## rate on purpose, so it eases in instead of snapping when the run starts.
@@ -320,10 +87,78 @@ const TPS_SHOULDER_TRANSLATION_RATIO: float = 0.4
 ## Sign depends on which way `right` points on screen — verify by running the game.
 const TPS_SHOULDER_H_OFFSET_SIGN: float = 1.0
 
-## Vertical FOV assumed when converting screen fractions to world units
-## for the isometric dead zone. Read from the camera at runtime; this is
-## only the fallback if the camera is missing.
-const ISO_FOV_FALLBACK: float = 75.0
+## How fast camera.h_offset / v_offset chase their target. Shared by the
+## shoulder swap and the framing blend so the two cannot ease at different
+## rates and read as two separate moves.
+const LENS_OFFSET_SMOOTHING: float = 8.0
+
+## Q/E lean. A rate rather than a sensitivity multiplier — a key has no
+## delta to scale the way look_sensitivity_x scales mouse motion. At 5.0 the
+## lean reaches full in a fifth of a second, so a tap leans and a hold holds.
+const LEAN_RATE: float = 5.0
+## How fast the lean springs back with neither key held. Faster than
+## LEAN_RATE on purpose — the lean should cost effort to hold and none to
+## abandon. Inherited from the isometric glance this replaces, which used
+## exactly that asymmetry for exactly that reason.
+const LEAN_RETURN_RATE: float = 8.0
+
+## How fast the TPS <-> TPS_WIDE framing blend crosses. A lens shift has no
+## geometry to animate, so this replaces the old view-transition machinery
+## (zoom slider, pitch retarget, a `view_mode_animating` gate the whole
+## position pass had to be aware of) with one scalar.
+const FRAMING_BLEND_SPEED: float = 6.0
+
+
+# =============================================================================
+# WALL AND FLOOR SAFETY
+# =============================================================================
+#
+# The shape is a SPHERE cast, not a ray, and that is inherited deliberately
+# rather than by accident. This camera used to use intersect_ray() while the
+# isometric one used a sphere cast_motion(); CHANGELOG records that the
+# sphere replaced a ray precisely BECAUSE a ray asks whether the camera's
+# mathematical centre has crossed the wall — answered late and
+# discontinuously, with the near face of the frustum already inside the wall
+# — while a sphere reports the surface a whole radius early and its reported
+# distance then varies continuously as the player walks. Carrying the ray
+# into the single remaining camera would have been an unrecorded rollback of
+# a decision the project already made once; the audit says so in §17 and
+# this is that instruction carried out.
+#
+# THE METHOD TRANSFERS, THE MAGNITUDES DO NOT, and that is the one thing
+# that had to be re-derived rather than copied. The isometric numbers were
+# sized for a 10-17.5 m orbit: a 3.0 m minimum distance and a 0.45 m probe.
+# Applied unchanged to a 2.2 m boom the minimum alone would have disabled
+# occlusion outright — the probe's own early-out returns the desired
+# distance whenever it is already at or under the minimum, and 2.2 is under
+# 3.0. The two lengths below are therefore stated in terms of THIS camera's
+# scale, and they are the part of this migration most in need of a look with
+# eyes on a real corridor.
+
+## Radius of the probe. Smaller than the orbit camera's 0.45: this boom is
+## an order of magnitude shorter and lives indoors, where a fat probe would
+## report a retraction in every doorway the character can walk through.
+const CAMERA_COLLISION_RADIUS: float = 0.30
+
+## Closest the camera may be pulled to the pivot. The character may be
+## occluded; the camera may not be inside their head. Under a 1.5-2.6 m
+## working range this leaves the boom room to retract meaningfully instead
+## of being clamped away at the first wall.
+const CAMERA_COLLISION_MIN_DISTANCE: float = 0.70
+
+## How fast the camera returns to its full distance once the obstruction is
+## gone. Deliberately slow, and deliberately NOT symmetric with the retract
+## (see _update_collision_distance): coming out is a luxury, going in is a
+## correctness requirement, and a fast return reads as the camera being
+## shoved outward by a wall it has just cleared. A rate rather than a
+## length, so this one does carry over from the orbit unchanged.
+const CAMERA_COLLISION_RESTORE_RATE: float = 2.5
+
+## Extra clearance kept between the camera and the surface the probe hit, so
+## the camera sits in front of the wall rather than touching it. The same
+## 0.25 the old ray back-off used.
+const CAMERA_COLLISION_SURFACE_MARGIN: float = 0.25
+
 
 ## Runtime pitch accumulated from mouse look. Base tps_angle is the starting offset.
 var _tps_pitch_deg: float = -10.0
@@ -338,64 +173,12 @@ var _warned_missing_speed_ratio: bool = false
 ## Set once _target_horizontal_direction() has warned about a target with no
 ## get_horizontal_direction(), so the warning doesn't spam every frame.
 var _warned_missing_horizontal_direction: bool = false
-## Set once _update_iso_head_look() has warned about a target with no
-## set_head_look_point(), so the warning doesn't spam every frame.
-var _warned_missing_head_look: bool = false
-## Carried velocity for the ISOMETRIC position spring. Owned here rather
-## than inside Smoothing because the filter is stateless by design — the
-## whole point of a second-order filter is that the state is the velocity,
-## and hiding it in a static helper would make two callers share one.
-## Zeroed on enter() and on every frame the spring is not the thing driving
-## the camera, so it cannot carry momentum across a view or mode switch.
-var _iso_pos_velocity: Vector3 = Vector3.ZERO
 
-## Smoothed camera distance after wall retraction — what the orbit is
-## actually built from, as opposed to current_zoom_distance, which stays the
-## player's own zoom setting and keeps driving the HUD ruler. A wall must
-## not silently rewrite what the player chose.
-##
-## Initialised negative to mean "no value yet", so the first ISOMETRIC frame
-## adopts the real distance instead of easing out from zero with the camera
-## sitting on the character's head.
-var _iso_collision_distance: float = -1.0
-
-## Reusable query and shape for the wall probe. Held rather than built per
-## frame — this runs every frame in ISOMETRIC and both objects are pure
-## configuration.
-var _iso_collision_shape := SphereShape3D.new()
-var _iso_collision_query := PhysicsShapeQueryParameters3D.new()
-
-## The distance the camera actually ended up at last frame, read back by
-## _build_iso_frame() so the dead zone keeps its apparent size while the
-## camera is retracted against a wall.
-##
-## Without it the zone is derived from current_zoom_distance, and a camera
-## pulled from 15 m to 5 m would be measuring a rectangle three times too
-## big in world units — the frame would visibly stop tracking exactly when
-## the player is up against something and needs it most.
-##
-## Initialised to zero and treated as "not yet known" by the reader, so the
-## very first frame falls back to the zoom setting.
-var _iso_effective_distance: float = 0.0
-
-## Smoothed look-ahead strength, 0 to 1. Scales the forward aim offset, the
-## look-target raise and the camera drop together, so the three cannot drift
-## apart into three separate effects.
-var _iso_look_ahead: float = 0.0
-
-## Pivot the wall probe casts from, published by the ISOMETRIC branch for
-## the clamp that runs after the spring in the shared tail. Stashed rather
-## than recomputed so the probe and the framing cannot disagree about where
-## the character is this frame.
-var _iso_probe_pivot: Vector3 = Vector3.ZERO
 ## Smoothed sprint pull-back distance, eased toward speed_ratio *
-## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING in TPS, and back toward 0
-## at the same rate in ISOMETRIC (see _update_camera_position) — never
-## frozen, so it can't leak a stale value across a mode switch either way.
+## TPS_SPRINT_PULLBACK at TPS_PULLBACK_SMOOTHING.
 var _tps_sprint_pullback: float = 0.0
 ## Smoothed camera-lead offset, eased toward direction * speed_ratio *
-## TPS_LEAD_DISTANCE at TPS_LEAD_SMOOTHING. Same decay-in-both-modes rule as
-## _tps_sprint_pullback.
+## TPS_LEAD_DISTANCE at TPS_LEAD_SMOOTHING.
 var _tps_lead_offset: Vector3 = Vector3.ZERO
 ## Latest distance_override reported by TpsCombatCameraState.update(), read
 ## every frame in _handle_tps_follow(). -1.0 means "don't override" (that
@@ -404,26 +187,84 @@ var _tps_lead_offset: Vector3 = Vector3.ZERO
 var _tps_lock_distance_override: float = -1.0
 ## Smoothed camera distance. Despite the name (kept from when lock-on was
 ## the only override) it now eases toward whichever of three sources
-## _select_tps_distance_source() picks — see that function for the
-## priority — not just the lock-on one. Decayed back to TPS_DISTANCE in
-## ISOMETRIC by _decay_tps_state(), same rule as every other TPS-only
-## smoothed value.
+## _select_tps_distance_source() picks — see that function for the priority.
 var _tps_lock_distance: float = TPS_DISTANCE
 
-@export var rotation_speed: float = 8.0
+## 0 in TPS, 1 in TPS_WIDE, eased between. The single quantity that makes
+## the two framings different.
+var _framing_blend: float = 0.0
 
-@export_group("Orbit")
-@export var orbit_distance: float = 20.0
-@export var orbit_height: float = 15.0
-@export var camera_angle: float = -35.0
+## How much of the lean POSE is applied on top of the camera lean, 0 to 1,
+## eased. See _handle_lean() for why it is not simply 1.
+var _lean_pose: float = 0.0
 
-@export_group("View Transition")
-@export var view_transition_speed: float = 4.0
+## -1 fully left to +1 fully right. The camera owns this, not the player:
+## Q/E move the CAMERA out from behind cover and the body follows, which is
+## the order every third-person lean works in. The pose is pushed to the
+## character through player.set_lean() — the same "camera decides, animation
+## component applies" split the old isometric head-look used.
+var _lean: float = 0.0
 
-@export_group("TPS View")
-## Placeholder value — tune in place; what matters is that the
-## return-to-ISOMETRIC logic is preserved.
+## Smoothed camera distance after wall retraction. Negative means "no value
+## yet", so the first frame adopts the real distance instead of easing out
+## from zero with the camera sitting on the character's head.
+var _collision_distance: float = -1.0
+## Reusable query and shape for the wall probe. Held rather than built per
+## frame — this runs every frame and both objects are pure configuration.
+var _collision_shape := SphereShape3D.new()
+var _collision_query := PhysicsShapeQueryParameters3D.new()
+## Pivot the probe casts from, written by the position pass and read by the
+## clamp that runs after it. Stashed rather than recomputed so the probe and
+## the framing cannot disagree about where the character is this frame.
+var _probe_pivot: Vector3 = Vector3.ZERO
+
+@export_group("View")
+## Base pitch the camera starts at.
 @export var tps_angle: float = -10.0
+
+@export_group("Lean")
+## How far the camera slides sideways at full lean, metres. Applied along the
+## camera's own right vector, so it is a strafe of the eye and not a roll —
+## global_rotation's z is written as 0 every frame and a roll here would be
+## silently discarded.
+@export var lean_camera_offset: float = 0.45
+
+@export_group("Wide framing")
+#
+# WHY THERE ARE THREE NUMBERS HERE AND NOT TWO, AND WHY THE ORIGINAL
+# CONSTRAINT MOVED.
+#
+# The rule was "только смещение, дистанция та же", and it was built that way
+# first. Then Stan produced the reference frame this view is meant to match,
+# and it was MEASURED against a render rather than eyeballed:
+#
+#   reference    character starts 6.8% in from the left edge, ~29% of the
+#                frame's width, crown at 40% of its height, legs cropped
+#   lens only    20% in from the left, ~14% wide
+#
+# A lens shift moves the subject across the frame; it cannot make them
+# bigger. The reference is a CLOSER camera as well as an offset one, so the
+# two requirements could not both hold and the distance became a knob.
+#
+# Non-obvious consequence, found the same way: moving IN means the SAME
+# h_offset throws the character off the left edge — at 1.2 m with h 0.90
+# only a shoulder was left in shot. Closer camera, SMALLER offset.
+#
+# The three values are Stan's pick of rendered candidates (2026-09-02): the
+# composition of the reference, deliberately held back from its exact scale.
+# At 1.1-1.2 m the figure fills a quarter of the frame permanently and the
+# near plane starts clipping the shoulder on turns — the reference is key
+# art and has no obligation to be playable for eight hours.
+
+## Lens shift applied at full TPS_WIDE, in the same units Camera3D's own
+## h_offset/v_offset use. Signs were confirmed on screen, not derived:
+## positive h pushes the rendered subject LEFT, positive v pushes it DOWN.
+@export var wide_h_offset: float = 0.40
+@export var wide_v_offset: float = 0.20
+## Camera distance at full TPS_WIDE. Set it equal to TPS_DISTANCE to get the
+## original "offset only, same distance" behaviour back — the term it feeds
+## is written as a difference, so that value makes it exactly zero.
+@export var wide_distance: float = 1.30
 
 @export_group("Look")
 ## Multiplier on top of InputSystems.MOUSE_SENSITIVITY. User preference —
@@ -431,67 +272,17 @@ var _tps_lock_distance: float = TPS_DISTANCE
 ## InputSystems.MOUSE_SENSITIVITY = 0.003 rad/pixel is ~0.172 deg/pixel raw,
 ## high for a third-person camera; 0.65 brings that down to ~0.11 deg/pixel,
 ## closer to convention.
-## Perceived sensitivity changed sharply once TPS switched to
-## MOUSE_MODE_CAPTURED (commit 63c26fe) — before that the cursor hit the
-## screen edge and stopped moving the view. Don't go looking for the cause
-## of a "sensitivity feels different now" report in this file.
 @export var look_sensitivity_x: float = 0.65
 @export var look_sensitivity_y: float = 0.65
 @export var invert_look_x: bool = false
 @export var invert_look_y: bool = false
 ## Eye-by-feel tuning values, not implementation constants — hence @export
-## rather than const. -50/20 (the old constants) capped looking up at 20°
-## and gave only 50° of downward range; -70/60 gives real headroom to look
-## down off a ledge/deck (Blackrock's verticality is the whole point) and to
-## look up at towers, while staying well clear of the ±90° gimbal case
+## rather than const. -70/60 gives real headroom to look down off a
+## ledge/deck (Blackrock's verticality is the whole point) and to look up at
+## towers, while staying well clear of the +/-90 gimbal case
 ## global_rotation's direct Euler set would hit.
 @export var tps_pitch_min_deg: float = -70.0
 @export var tps_pitch_max_deg: float = 60.0
-
-
-@export_group("Follow")
-@export var follow_rotation_damping: float = 3.0
-@export var follow_rotation_delay: float = 0.2
-
-@export_group("Isometric Look")
-## Largest temporary look offset from the character's own direction, in
-## degrees, either side. The whole point of the bound is that ISOMETRIC look
-## stays a glance: past roughly this much the camera stops reading as
-## "leaning to see" and starts reading as a free orbit, which is the thing
-## directional framing exists to replace.
-##
-## The ONLY clamp in the system. IsometricCameraState deliberately has no
-## copy — see Frame.manual_look_yaw_deg over there.
-@export var iso_look_yaw_limit_deg: float = 35.0
-## Degrees per second while Q or E is held.
-##
-## A rate, not a sensitivity multiplier: the ISOMETRIC look is driven by
-## keys, and a key has no delta to scale the way look_sensitivity_x scales
-## mouse motion. At 60 deg/s the full 35 degrees takes a little under six
-## tenths of a second, so a tap leans and a hold reaches the stop.
-@export var iso_look_rate_deg: float = 60.0
-## How fast the offset springs back to zero once neither key is held.
-## Faster than iso_look_rate_deg on purpose — the look should cost effort to
-## hold and none to abandon.
-@export var iso_look_return_rate: float = 6.0
-
-## Furthest the character's head may turn off their own facing in
-## ISOMETRIC, either side. The backstop for every head-look branch, applied
-## after whichever one won — see _update_iso_head_look().
-##
-## Sized to match iso_look_yaw_limit_deg so a full glance turns the head the
-## whole way, and no further. It is NOT derived from that value: the two
-## answer different questions (how far may the camera lean, versus how far
-## may a neck turn) and a neck limit that silently followed a camera
-## setting is exactly how the head ended up able to rotate 360 degrees.
-## PlayerAnimationComponent's rig has limits of its own
-## (head_look_primary_limit_deg, 70) — this is the tighter, deliberate one,
-## and the rig's is the hard backstop underneath it.
-@export var iso_head_look_limit_deg: float = 35.0
-
-## Furthest the head will turn to follow the CURSOR. Tighter than the
-## glance limit on purpose: a glance is asked for, a cursor is not.
-@export var iso_head_look_cursor_limit_deg: float = 25.0
 
 @export_group("Aim")
 ## Multiplier on the shoulder h_offset while aiming. Grown, not shrunk: the
@@ -508,19 +299,6 @@ var lbl_current_mode: Label
 var lbl_orbital: Label
 var lbl_follow: Label
 
-var follow_player_rotation: bool = false
-
-# === ORBITAL SYSTEM ===
-enum OrbitalPosition { NORTH, EAST, SOUTH, WEST }
-const ORBITAL_POSITIONS = [OrbitalPosition.NORTH, OrbitalPosition.EAST, OrbitalPosition.SOUTH, OrbitalPosition.WEST]
-const POSITION_ANGLES = {
-	OrbitalPosition.NORTH: 0.0,
-	OrbitalPosition.EAST: PI / 2,
-	OrbitalPosition.SOUTH: PI,
-	OrbitalPosition.WEST: 3 * PI / 2
-}
-var current_position: OrbitalPosition = OrbitalPosition.NORTH
-
 ## Which of three sources _tps_lock_distance should ease toward this frame,
 ## picked by _select_tps_distance_source(). A single decision point instead
 ## of three independent conditions, so the priority between them can't
@@ -535,14 +313,6 @@ var current_position: OrbitalPosition = OrbitalPosition.NORTH
 ##   3. REST — TPS_DISTANCE, neither aiming nor locked.
 enum TpsDistanceSource { REST, LOCK_ON, AIM }
 
-var target_angle: float = 0.0
-var current_angle: float = 0.0
-var player_rotation_timer: float = 0.0
-var last_player_rotation: float = 0.0
-
-## The single source of truth for the current view is PlayerState.view_mode.
-## No parallel bool/enum is kept here anymore.
-
 var camera_target_pos: Vector3
 var camera_current_pos: Vector3
 var camera_target_pitch: float
@@ -550,179 +320,46 @@ var camera_current_pitch: float
 var camera_target_yaw: float
 var camera_current_yaw: float
 
-# === ZOOM SYSTEM ===
-# One continuous "slider" across the TPS <-> ISOMETRIC chain.
-# TOPDOWN was removed (see the note in the Miro concept board) — ON_FOOT
-# only has TPS and ISOMETRIC left.
-# Each mode has its own distance range; switching between modes via V only
-# happens once the zoom has hit the matching edge.
-var current_zoom_distance: float = 0.0
-var target_zoom_distance: float = 0.0
-var zoom_animating: bool = false
-var zoom_anim_time: float = 0.0
-var zoom_start_distance: float = 0.0
-
-const ISOMETRIC_ZOOM_MIN: float = 10.0   # near edge (zoomed all the way in) -> V -> TPS
-const ISOMETRIC_ZOOM_MAX: float = 17.5   # far edge — just a zoom limit, no transition
-const TPS_ZOOM_MIN: float = 3.0          # nowhere further to go, a dead end (still lets you keep zooming in)
-const TPS_ZOOM_MAX: float = 6.0          # far edge -> V -> back to ISOMETRIC
-const ZOOM_STEP: float = 2.5
-const ZOOM_EDGE_EPSILON: float = 0.05    # tolerance for "did it hit the edge" comparisons
-
-# === ORBITAL ROTATION (Q/E) ===
-var orbit_rotation_animating: bool = false
-var orbit_anim_time: float = 0.0
-var orbit_start_angle: float = 0.0
-var orbit_target_angle: float = 0.0
-
-# === VIEW MODE SWITCHING (V) ===
-var view_mode_animating: bool = false
-var view_anim_time: float = 0.0
-var view_start_distance: float = 0.0
-var view_target_distance: float = 0.0
-var view_start_pitch: float = 0.0
-var view_target_pitch: float = 0.0
-## Set when V is pressed in ISOMETRIC away from ISOMETRIC_ZOOM_MIN: drives
-## the existing zoom animation to the edge first, then switches to TPS once
-## it lands there. A second V press while that zoom is in flight clears this
-## instead of queuing another switch (see _handle_view_toggle()).
-var _pending_tps_switch: bool = false
-
-# === FOLLOW ROTATION (P) ===
-var follow_rotation_animating: bool = false
-var follow_anim_time: float = 0.0
-var follow_start_angle: float = 0.0
-var follow_target_angle: float = 0.0
-
-
 var _tps_combat := TpsCombatCameraState.new()
 var _shoulder := TpsShoulderCameraState.new()
 
-var _iso := IsometricCameraState.new()
-
-## Reused every frame so the isometric state does not allocate a
-## Frame per tick. Never handed out — the host is its only writer.
-var _iso_frame := IsometricCameraState.Frame.new()
-
-## Current temporary ISOMETRIC look offset in degrees, already clamped to
-## +/- iso_look_yaw_limit_deg. Owned here rather than in
-## IsometricCameraState because it is a product of input, and input policy
-## belongs on this side of that boundary. Handed over each frame through
-## Frame.manual_look_yaw_deg.
-var _iso_manual_look_yaw_deg: float = 0.0
-
-## Set once _target_facing_direction() has warned about a target with no
-## get_facing_direction(), so the warning doesn't spam every frame.
-var _warned_missing_facing_direction: bool = false
-
-## Optional, assigned by the host like the debug labels. Null in a
-## normal build; when present, draws the dead-zone rectangles.
-var iso_debug_overlay: IsometricCameraDebugOverlay
 
 ## Called once by the host before first use (camera/target are already assigned).
 func setup() -> void:
-	current_angle = POSITION_ANGLES[current_position]
-	target_angle = current_angle
-	camera_target_pitch = camera_angle
-	camera_current_pitch = camera_angle
-	camera_target_yaw = current_angle
-	camera_current_yaw = current_angle
+	camera_target_pitch = tps_angle
+	camera_current_pitch = tps_angle
 	camera_target_pos = camera.global_position
 	camera_current_pos = camera.global_position
-	current_zoom_distance = orbit_distance
-	target_zoom_distance = orbit_distance
-	
 	_tps_pitch_deg = tps_angle
+	_framing_blend = _framing_target()
 
 
 ## Called by the host on entering ON_FOOT (including returning from MENU).
 func enter() -> void:
 	camera_current_pos = camera.global_position
-
-	# Neither the follow point nor the yaw may ease in from wherever
-	# ISOMETRIC left them before the last mode switch.
-	#
-	# request_reset() rather than reset(), even when a target is available:
-	# reset() clears IsometricCameraState._needs_reset, and that flag is
-	# what update_orientation() reads to decide between snapping the yaw and
-	# smoothing it. Resetting the follow point here directly would therefore
-	# leave the yaw smoothing out of a stale value on the first ISOMETRIC
-	# frame — the follow point placed correctly, the camera swinging into
-	# place around it. Deferring both to the next frame costs nothing:
-	# nothing reads the follow point between here and update().
-	_iso.request_reset()
-	_iso_manual_look_yaw_deg = 0.0
-	_iso_pos_velocity = Vector3.ZERO
-	# Both back to "not yet known", so the first ISOMETRIC frame adopts the
-	# real distance rather than easing out to it from whatever the previous
-	# stretch happened to end on — the camera would otherwise start inside
-	# the character and swing out.
-	_iso_collision_distance = -1.0
-	_iso_effective_distance = 0.0
-	_iso_look_ahead = 0.0
+	# "Not yet known", so the first frame adopts the real distance rather
+	# than easing out to it from whatever the previous stretch ended on —
+	# the camera would otherwise start inside the character and swing out.
+	_collision_distance = -1.0
+	_framing_blend = _framing_target()
 
 
-## Releases the head on the way out, for the same reason enter() resets the
-## follow point and the look offset: nothing this component decided about
-## the character may outlive it being the component in charge. Without
-## this, leaving ON_FOOT mid-glance would leave the head pinned at a point
-## in the world that no longer means anything, with no one left running to
-## take it back.
 func exit() -> void:
-	_clear_iso_head_look()
+	pass
 
 
 func update(delta: float) -> void:
 	if not target:
 		return
 
-	var view := PlayerState.view_mode
-
-	_handle_zoom_input()
 	_handle_view_toggle()
-
-	if view == PlayerState.ViewMode.TPS:
-		# In TPS the camera is always behind the player — orbit (Q/E) and
-		# toggle_follow (P) don't apply here, it isn't their responsibility.
-		_handle_tps_follow(delta)
-		_handle_shoulder_toggle()
-	else:
-		# ISOMETRIC yaw is directional now — it comes from where the
-		# character is going, not from a camera the player aims by hand. So
-		# the two mechanisms that used to aim it are no longer called here:
-		# _handle_rotation_input() (Q/E stepping OrbitalPosition) and
-		# _handle_follow_toggle()/_handle_follow_rotation() (P). They stay
-		# in the file until the directional feel is confirmed, so reverting
-		# is one line rather than a resurrection; nothing reaches them.
-		#
-		# Q and E themselves are not idle: they now hold the bounded
-		# temporary look below.
-		_handle_isometric_look_input(delta)
-
-	_update_zoom_animation(delta)
-	_update_orbit_rotation_animation(delta)
-	_update_view_mode_animation(delta)
-	_update_follow_rotation_animation(delta)
-
-	if _pending_tps_switch and not zoom_animating:
-		_pending_tps_switch = false
-		# Re-check the edge: a wheel zoom could have retargeted the slider
-		# away from ISOMETRIC_ZOOM_MIN while this was in flight.
-		if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
-			_transition_to_view(PlayerState.ViewMode.TPS)
-
-	# In ISOMETRIC current_angle no longer drives anything — IsometricCamera-
-	# State owns the yaw, and _update_camera_position() copies it back into
-	# current_angle afterwards so labels and the next view transition still
-	# have a sensible value to read. Easing it toward target_angle here as
-	# well would be a second yaw source racing the first, which is exactly
-	# the arrangement this change removes.
-	if PlayerState.view_mode != PlayerState.ViewMode.ISOMETRIC:
-		if not orbit_rotation_animating and not follow_rotation_animating:
-			current_angle = lerp_angle(current_angle, target_angle, Smoothing.damp_factor(rotation_speed, delta))
-
+	_handle_tps_follow(delta)
+	_handle_shoulder_toggle()
+	_handle_lean(delta)
+	_framing_blend = lerpf(
+		_framing_blend, _framing_target(), Smoothing.damp_factor(FRAMING_BLEND_SPEED, delta)
+	)
 	_update_camera_position(delta)
-	
 	_update_labels()
 
 
@@ -730,9 +367,9 @@ func _handle_tps_follow(delta: float) -> void:
 	# --- Free mouse look (TLOU-style) ---
 	# `look` (InputSystems.get_look_delta()) is in radians — camera_target_yaw
 	# is also radians, so it can be added directly. _tps_pitch_deg is stored
-	# in DEGREES (clamped by tps_pitch_min_deg/tps_pitch_max_deg, fed to deg_to_rad() later), so
-	# it needs an explicit rad_to_deg() conversion — this mismatch was the bug
-	# that made vertical look nearly unresponsive.
+	# in DEGREES (clamped by tps_pitch_min_deg/tps_pitch_max_deg, fed to
+	# deg_to_rad() later), so it needs an explicit rad_to_deg() conversion —
+	# this mismatch was the bug that made vertical look nearly unresponsive.
 	var look := InputSystems.get_look_delta()
 	# Mouse right -> relative.x > 0. Positive rotation.y in Godot turns the
 	# view LEFT (forward sweeps toward -X), so adding here inverted the
@@ -756,110 +393,6 @@ func _handle_tps_follow(delta: float) -> void:
 	if _tps_combat.state == TpsCombatCameraState.TpsState.LOCKED:
 		camera_target_yaw = result.yaw
 	_tps_lock_distance_override = result.distance_override
-
-
-func _update_zoom_animation(delta: float):
-	if not zoom_animating:
-		return
-
-	zoom_anim_time += delta
-	var t: float = 0.0
-
-	if zoom_anim_time < 0.4:
-		var phase1_progress = zoom_anim_time / 0.4
-		t = phase1_progress * 0.75
-	elif zoom_anim_time < 0.6:
-		var phase2_progress = (zoom_anim_time - 0.4) / 0.2
-		t = 0.75 + phase2_progress * 0.25
-	else:
-		t = 1.0
-		zoom_animating = false
-
-	var te = t * t * (3.0 - 2.0 * t)
-	current_zoom_distance = lerp(zoom_start_distance, target_zoom_distance, te)
-
-	if not zoom_animating:
-		current_zoom_distance = target_zoom_distance
-
-
-func _update_orbit_rotation_animation(delta: float):
-	if not orbit_rotation_animating:
-		return
-
-	orbit_anim_time += delta
-	var t: float = 0.0
-
-	if orbit_anim_time < 0.4:
-		var phase1_progress = orbit_anim_time / 0.4
-		t = phase1_progress * 0.75
-	elif orbit_anim_time < 0.6:
-		var phase2_progress = (orbit_anim_time - 0.4) / 0.2
-		t = 0.75 + phase2_progress * 0.25
-	else:
-		t = 1.0
-		orbit_rotation_animating = false
-
-	var te = t * t * (3.0 - 2.0 * t)
-	current_angle = lerp_angle(orbit_start_angle, orbit_target_angle, te)
-
-	if not orbit_rotation_animating:
-		current_angle = orbit_target_angle
-
-
-func _update_view_mode_animation(delta: float):
-	if not view_mode_animating:
-		return
-
-	view_anim_time += delta
-	var t: float = 0.0
-
-	if view_anim_time < 0.2:
-		var phase1_progress = view_anim_time / 0.2
-		t = phase1_progress * 0.25
-	elif view_anim_time < 0.4:
-		var phase2_progress = (view_anim_time - 0.2) / 0.2
-		t = 0.25 + phase2_progress * 0.5
-	elif view_anim_time < 0.6:
-		var phase3_progress = (view_anim_time - 0.4) / 0.2
-		t = 0.75 + phase3_progress * 0.25
-	else:
-		t = 1.0
-		view_mode_animating = false
-
-	var te = t * t * (3.0 - 2.0 * t)
-	current_zoom_distance = lerp(view_start_distance, view_target_distance, te)
-	camera_current_pitch = lerp(view_start_pitch, view_target_pitch, te)
-
-	if not view_mode_animating:
-		current_zoom_distance = view_target_distance
-		camera_current_pitch = view_target_pitch
-
-
-func _update_follow_rotation_animation(delta: float):
-	if not follow_rotation_animating:
-		return
-
-	follow_anim_time += delta
-	var t: float = 0.0
-
-	if follow_anim_time < 0.4:
-		var phase1_progress = follow_anim_time / 0.4
-		t = phase1_progress * 0.25
-	elif follow_anim_time < 0.6:
-		var phase2_progress = (follow_anim_time - 0.4) / 0.2
-		t = 0.25 + phase2_progress * 0.5
-	elif follow_anim_time < 1.0:
-		var phase3_progress = (follow_anim_time - 0.6) / 0.4
-		t = 0.75 + phase3_progress * 0.25
-	else:
-		t = 1.0
-		follow_rotation_animating = false
-
-	var te = t * t * (3.0 - 2.0 * t)
-	current_angle = lerp_angle(follow_start_angle, follow_target_angle, te)
-
-	if not follow_rotation_animating:
-		current_angle = follow_target_angle
 
 
 ## Reads a character-metric getter off `target` via duck typing — target is
@@ -898,76 +431,6 @@ func _target_horizontal_direction() -> Vector3:
 	return Vector3.ZERO
 
 
-## Bounded temporary look for ISOMETRIC, on held Q/E.
-##
-## NOT mouse-X, despite TPS reading look that way. InputSystems captures the
-## cursor only in TPS (see _apply_mouse_mode()); ISOMETRIC leaves it visible
-## because click-to-move needs it. Mouse look here would therefore fire on
-## every ordinary movement of the cursor toward a click target, and stop
-## dead at the screen edge. RMB is already claimed by ClickToMoveSystem's
-## run-hold. Q and E are free precisely because this change retired the
-## orbit they used to step, which makes them the natural home for the look
-## that replaces it.
-##
-## Direction convention: increasing yaw turns get_cam_forward() from -Z
-## toward -X, and +X is screen-right, so a larger yaw pans the view LEFT —
-## hence lean_left adding. Derived from the maths, not observed in the
-## editor; if it reads inverted, flip the two signs here and nothing else.
-func _handle_isometric_look_input(delta: float) -> void:
-	var axis := 0.0
-	if InputSystems.is_lean_left_pressed():
-		axis += 1.0
-	if InputSystems.is_lean_right_pressed():
-		axis -= 1.0
-
-	if axis != 0.0:
-		_iso_manual_look_yaw_deg = clampf(
-			_iso_manual_look_yaw_deg + axis * iso_look_rate_deg * delta,
-			-iso_look_yaw_limit_deg,
-			iso_look_yaw_limit_deg
-		)
-		return
-
-	# Nothing held — spring back to the character's own direction.
-	_iso_manual_look_yaw_deg = lerpf(
-		_iso_manual_look_yaw_deg,
-		0.0,
-		Smoothing.damp_factor(iso_look_return_rate, delta)
-	)
-
-
-## Reads target.get_facing_direction() via duck typing, same pattern as
-## _target_speed_ratio() and _target_horizontal_direction().
-##
-## The fallback derives facing from rotation.y using +Z as forward, NOT
-## Godot's usual -Z: this project rotates characters with atan2(dir.x,
-## dir.z), and player.gd's own get_facing_direction() carries the warning
-## that deriving it from the basis gets the sign wrong. A -Z fallback here
-## would point the ISOMETRIC camera at the character's face instead of
-## following them, and would do it only on targets missing the getter —
-## the kind of bug that survives a playtest because the player character
-## has the getter.
-func _target_facing_direction() -> Vector3:
-	if target.has_method(&"get_facing_direction"):
-		return target.call(&"get_facing_direction") as Vector3
-	if not _warned_missing_facing_direction:
-		push_warning("OnFootCameraComponent: target '%s' has no get_facing_direction() — using rotation.y" % target.name)
-		_warned_missing_facing_direction = true
-	return Vector3(sin(target.rotation.y), 0.0, cos(target.rotation.y))
-
-
-## Camera yaw that faces the same way as the given ground direction. One
-## shared conversion so the view-transition seed and
-## IsometricCameraState._reset_yaw() cannot disagree about the sign — they
-## used to, as a hand-written "+ PI" on one side and a formula on the other.
-func _yaw_facing(forward: Vector3) -> float:
-	var fwd := forward
-	fwd.y = 0.0
-	if fwd.length_squared() < 0.0001:
-		fwd = Vector3.FORWARD
-	return atan2(-fwd.x, -fwd.z)
-
-
 func _select_tps_distance_source() -> TpsDistanceSource:
 	if PlayerState.is_aiming:
 		return TpsDistanceSource.AIM
@@ -980,375 +443,165 @@ func _select_tps_distance_source() -> TpsDistanceSource:
 	return TpsDistanceSource.REST
 
 
-## Every piece of TPS-only smoothed state (shoulder h_offset, sprint
-## pull-back, camera lead, ...) must decay to its rest value here so none of
-## it survives a trip through ISOMETRIC — by construction nothing else
-## guarantees that. Add a new TPS state's decay line here in the same
-## commit that introduces the state.
+## Q/E, held. The clips behind the pose are static held poses (measured —
+## see PlayerAnimationComponent.ANIM_LEAN_LEFT), so the amount below IS the
+## lean and nothing has to be seeked or frozen.
 ##
-## Aiming introduces no new line of its own: it only ever affects
-## _tps_lock_distance (already decayed below, toward TPS_DISTANCE, the
-## correct rest value regardless of source) and camera.h_offset's target
-## magnitude (already decayed below too) — both channels this function
-## already owned before aiming existed.
-func _decay_tps_state(delta: float) -> void:
-	camera.h_offset = lerp(camera.h_offset, 0.0, Smoothing.damp_factor(8.0, delta))
-	_tps_sprint_pullback = lerp(_tps_sprint_pullback, 0.0, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
-	_tps_lead_offset = _tps_lead_offset.lerp(Vector3.ZERO, Smoothing.damp_factor(TPS_LEAD_SMOOTHING, delta))
-	_tps_lock_distance = lerp(_tps_lock_distance, TPS_DISTANCE, Smoothing.damp_factor(TPS_LOCK_DISTANCE_SMOOTHING, delta))
+## THE CAMERA ALWAYS LEANS; THE BODY ONLY LEANS IN COMBAT. The two clips are
+## named aim-lean-l/r and they are exactly that — a full aiming posture,
+## hands up at the shoulder as if a long gun were in them. Rendered and
+## looked at on 2026-09-02 with empty hands in PEACE, they read as the
+## character miming a rifle, which is a worse picture than no pose at all.
+## Applying them where they belong keeps what Stan asked for (use the clips
+## if the clips exist) without shipping a pose that contradicts what is in
+## the hands. Out of COMBAT the lean is the camera sliding sideways, which
+## is what a peek is for anyway.
+func _handle_lean(delta: float) -> void:
+	var axis := 0.0
+	if InputSystems.is_lean_left_pressed():
+		axis -= 1.0
+	if InputSystems.is_lean_right_pressed():
+		axis += 1.0
 
-
-## Fills the reusable Frame for IsometricCameraState.
-##
-## Character data is read through optional getters, the same convention
-## _target_metric_height() already uses, so a target missing them
-## degrades instead of erroring.
-##
-## world_per_pixel is derived here rather than in the state because it
-## depends on the camera and the zoom slider, both of which belong to
-## the host. Deriving it from the CURRENT zoom is what makes the dead
-## zone keep its apparent size as the player zooms.
-func _build_iso_frame() -> IsometricCameraState.Frame:
-	var f := _iso_frame
-
-	f.target_position = target.global_position
-	f.speed_ratio = _target_speed_ratio()
-	f.on_floor = _target_on_floor()
-	f.move_target = _target_move_target()
-	f.combat = PlayerState.stance == PlayerState.Stance.COMBAT
-
-	# Which direction the camera should face. Movement direction while the
-	# character is actually moving, their facing once stopped — stated as an
-	# explicit branch rather than "velocity, or facing if velocity is zero",
-	# because the two answer different questions. While moving, the player
-	# cares where they are going; standing still, velocity says nothing at
-	# all and facing is the only intent there is.
-	#
-	# Same threshold IsometricCameraState uses to pick between its two yaw
-	# rates, referenced rather than repeated: yaw and the direction feeding
-	# it must agree on when a character has stopped.
-	var dir: Vector3
-	if f.speed_ratio > IsometricCameraState.MOVING_SPEED_THRESHOLD:
-		dir = _target_horizontal_direction()
-		# Click-to-move can report speed while the velocity vector is still
-		# settling; facing is the honest answer for that frame.
-		if dir.length_squared() < 0.0001:
-			dir = _target_facing_direction()
+	if axis != 0.0:
+		_lean = clampf(_lean + axis * LEAN_RATE * delta, -1.0, 1.0)
 	else:
-		dir = _target_facing_direction()
-	f.target_forward = dir
-	f.manual_look_yaw_deg = _iso_manual_look_yaw_deg
+		_lean = lerpf(_lean, 0.0, Smoothing.damp_factor(LEAN_RETURN_RATE, delta))
 
-	# Provisional basis only. The caller overwrites both from
-	# _iso.get_cam_forward()/get_cam_right() once update_orientation() has
-	# run — see _update_camera_position(). Filled here anyway so a Frame is
-	# never handed on with a stale basis from two frames ago if some future
-	# caller forgets the second step.
-	f.cam_forward = Vector3(-sin(current_angle), 0.0, -cos(current_angle))
-	f.cam_right = Vector3(cos(current_angle), 0.0, -sin(current_angle))
+	var pose_wanted := 1.0 if PlayerState.stance == PlayerState.Stance.COMBAT else 0.0
+	_lean_pose = lerpf(_lean_pose, pose_wanted, Smoothing.damp_factor(LEAN_RETURN_RATE, delta))
 
-	var viewport_size := camera.get_viewport().get_visible_rect().size
-	f.viewport_size = viewport_size
+	if target.has_method(&"set_lean"):
+		target.call(&"set_lean", _lean * _lean_pose)
 
-	# Visible world height at the character's distance, divided by viewport
-	# height. This is what lets the dead zone keep its apparent screen size
-	# as the player zooms.
-	#
-	# The two projections need different math: a perspective camera's
-	# visible height grows with distance, an orthogonal camera's is fixed
-	# at camera.size. Branching here rather than assuming perspective —
-	# camera_follow.tscn stores an orthogonal camera and camera_follow.gd
-	# overrides it to perspective at _ready(), so the assumption is one
-	# edit away from being wrong.
-	# Distance the camera is REALLY at, which is the zoom setting only when
-	# nothing is in the way — see _iso_effective_distance. Taken from the
-	# end of the previous frame, like everything else derived here, since
-	# this frame's has not been probed yet.
-	var framing_distance := (
-		_iso_effective_distance if _iso_effective_distance > 0.0 else current_zoom_distance
+
+func _framing_target() -> float:
+	return 1.0 if PlayerState.view_mode == PlayerState.ViewMode.TPS_WIDE else 0.0
+
+
+func _update_camera_position(delta: float) -> void:
+	var yaw_rad := camera_target_yaw
+	var pitch_rad := deg_to_rad(_tps_pitch_deg)
+	var horizontal_direction := Vector3(sin(yaw_rad), 0.0, cos(yaw_rad))
+
+	var speed_ratio := _target_speed_ratio()
+	_tps_sprint_pullback = lerp(
+		_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK,
+		Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta)
 	)
 
-	var visible_height: float
-	if camera and camera.projection == Camera3D.PROJECTION_ORTHOGONAL:
-		visible_height = camera.size
-	else:
-		var fov := camera.fov if camera else ISO_FOV_FALLBACK
-		visible_height = 2.0 * framing_distance * tan(deg_to_rad(fov) * 0.5)
-	f.world_per_pixel = visible_height / maxf(viewport_size.y, 1.0)
-
-	# How much screen a ground metre running away from the camera covers,
-	# relative to one running across it. sin of the pitch, floored so a
-	# camera tilted flat cannot hand the state a divisor of zero. See
-	# Frame.forward_screen_scale for what goes wrong without it.
-	f.forward_screen_scale = maxf(sin(deg_to_rad(absf(camera_angle))), 0.1)
-
-	var cursor_point: Variant = _cursor_ground_point()
-	f.cursor_valid = cursor_point != null
-	f.cursor_point = cursor_point if f.cursor_valid else Vector3.ZERO
-	f.cursor_edge_weight = _cursor_edge_weight() if f.cursor_valid else 0.0
-
-	return f
-
-
-## Where on the ground the player is pointing, or null when the cursor does
-## not name a usable point.
-##
-## A PLANE intersection, not a physics raycast, and the difference matters
-## for what this feeds. ClickToMoveSystem.raycast_ground_point() exists and
-## does the physics version, but this camera deliberately holds no
-## reference to that system (same reasoning as _target_move_target()) — and
-## a physics hit would be the wrong answer here anyway. A move order wants
-## the exact surface the player clicked, so a discontinuity at a rooftop
-## edge is correct for it. Framing wants a value that varies smoothly with
-## the cursor: a hit that jumps several metres the instant the cursor
-## crosses a parapet would kick the camera, and it would do it while the
-## player was merely moving the mouse. Intersecting a flat plane at the
-## follow point's height is continuous by construction.
-##
-## The plane's height comes from the follow point as it stood at the END of
-## the previous frame — this runs before _iso.update() has produced this
-## frame's. Same accepted one-frame lag as world_per_pixel above and the
-## debug overlay's projection, and for the same reason: far below every
-## damping constant involved.
-##
-## Reading the cursor through the viewport rather than through InputSystems
-## is not a breach of the "only InputSystems touches Input" rule — this is
-## a Viewport query, not Input.*, and ClickToMoveSystem._raycast_and_move()
-## already reads it exactly this way.
-func _cursor_ground_point() -> Variant:
-	if not camera:
-		return null
-
-	var screen_pos := camera.get_viewport().get_mouse_position()
-	var origin := camera.project_ray_origin(screen_pos)
-	var direction := camera.project_ray_normal(screen_pos)
-
-	# Direction the cursor points along the ground, independent of how
-	# steeply the ray dives. This is the part that always means something,
-	# and the fallback below is built from it.
-	var horizontal := Vector3(direction.x, 0.0, direction.z)
-	if horizontal.length_squared() < 0.000001:
-		# Straight down. Not reachable at this camera's pitch, but a
-		# normalize() on it would be a NaN waiting for whoever changes that.
-		return null
-	horizontal = horizontal.normalized()
-
-	# Near the horizon the ray is almost parallel to the ground and the
-	# plane intersection runs off toward infinity — and at the ISOMETRIC
-	# pitch that is an ordinary cursor position rather than an edge case:
-	# the top edge of the frustum sits about two degrees ABOVE horizontal,
-	# so the top few percent of the screen is sky.
-	#
-	# Answering those with "no point" was wrong, and wrong in the one place
-	# it costs most. The screen-edge bias grows toward the edges, so a
-	# cursor pushed to the very top would ramp the frame's lean up to nearly
-	# full and then have it vanish the moment the cursor crossed the
-	# horizon — a step in exactly the channel that exists to be smooth, at
-	# exactly the gesture it exists to serve.
-	#
-	# A far point along the ground direction answers it instead. Both
-	# consumers want a DIRECTION more than a position: the bias saturates
-	# its own reach long before this distance, and the head-look clamps to
-	# a cone. So this is not an approximation of a real ground point — it is
-	# the honest answer to "which way is the player pointing" for a ray that
-	# never meets the ground.
-	var too_shallow := direction.y > -CURSOR_RAY_MIN_DOWNWARD
-	if not too_shallow:
-		var plane := Plane(Vector3.UP, _iso.follow_point.y)
-		var hit: Variant = plane.intersects_ray(origin, direction)
-		if hit != null:
-			var point: Vector3 = hit
-			if point.distance_squared_to(origin) <= CURSOR_RAY_MAX_DISTANCE * CURSOR_RAY_MAX_DISTANCE:
-				return point
-
-	var far_point := _iso.follow_point + horizontal * CURSOR_RAY_MAX_DISTANCE
-	far_point.y = _iso.follow_point.y
-	return far_point
-
-
-## Turns the character's head toward whatever the player is attending to in
-## ISOMETRIC, or lets it go.
-##
-## The rig for this already existed and had no caller anywhere in the
-## project: PlayerAnimationComponent builds a LookAtModifier3D on the Head
-## bone with its own limits, smoothing and influence fade, and exposes it
-## through player.gd's set_head_look_point()/clear_head_look_point(). All
-## that was missing was something to decide the point. This is that.
-##
-## Driven from the camera rather than from player.gd because the two things
-## worth looking at — the manual look offset and the cursor ground point —
-## both belong to this component. player.gd could not answer either without
-## acquiring them, and get_camera_yaw() is not a route to the first: it is
-## fed only by TpsMovementSystem, so in ISOMETRIC it holds whatever TPS left
-## behind.
-##
-## Priority, and why the peek wins: a glance is something the player just
-## asked for by holding a key, and the cursor is merely where the mouse
-## happens to rest. Answering the deliberate one first is what keeps the
-## head from being pulled off a peek by an idle cursor.
-##
-## [param f] The frame already built for this tick, for its cursor point and
-##           speed ratio — rebuilding either here would risk disagreeing
-##           with what the follow point was computed against.
-func _update_iso_head_look(f: IsometricCameraState.Frame) -> void:
-	if not target or not target.has_method(&"set_head_look_point"):
-		if not _warned_missing_head_look:
-			push_warning("OnFootCameraComponent: target '%s' has no set_head_look_point() — ISOMETRIC head look disabled" % target.name)
-			_warned_missing_head_look = true
-		return
-
-	# Every branch below produces an ANGLE off the body's facing, never a
-	# world point, and the single construction at the bottom turns the
-	# winning angle into one. That shape is not tidiness — it is what makes
-	# the clamp unbypassable.
-	#
-	# Handing the cursor's own world point straight to the rig let the head
-	# turn a full 360 degrees, and by two separate routes. The obvious one:
-	# nothing bounded the angle, so a cursor behind the character asked for
-	# a look behind the character. The other is worse and is invisible from
-	# here — PlayerAnimationComponent lerps the marker's WORLD POSITION
-	# toward the target, so a target that jumps from front to back drags the
-	# marker along a straight line THROUGH the character, and as it passes
-	# the head the look direction sweeps through every angle on the way. A
-	# bounded cone fixes both at once: the target stays in front at a fixed
-	# radius, so the interpolation path never comes near the head.
-	var offset_deg: Variant = null
-
-	if absf(_iso_manual_look_yaw_deg) > ISO_HEAD_LOOK_PEEK_DEG:
-		# The head turns by exactly the angle the camera leaned, measured
-		# off the BODY's own facing — deliberately not along
-		# _iso.get_cam_forward(), even though the two coincide whenever the
-		# camera's base happens to be the character's heading.
-		#
-		# They no longer always coincide. The base is an octant now, so with
-		# no peek at all the camera can sit up to a little over half an
-		# octant off the direction the character is actually walking; a head
-		# pointed along the camera would be looking somewhere the character
-		# is not, and would drift as the octant turned. Measuring off the
-		# facing means the head answers only for the glance.
-		#
-		# Sign is derived, not guessed: facing is (sin r, 0, cos r) and a
-		# +offset rotation about UP takes it to (sin(r+o), 0, cos(r+o)),
-		# which is exactly what get_cam_forward() produces for the same
-		# offset. So the head and the camera lean the same way by
-		# construction, and if Q turns out to read inverted in game, the
-		# negation in _handle_isometric_look_input() flips both at once —
-		# there is nothing to keep in sync here.
-		offset_deg = _iso_manual_look_yaw_deg
-
-	elif f.cursor_valid and f.speed_ratio < IsometricCameraState.MOVING_SPEED_THRESHOLD:
-		# Only while stopped. On the move the animation clips drive the
-		# head, and overriding them mid-stride reads as a broken neck rather
-		# than as attention — the same gate PlayerAnimationComponent's own
-		# TPS branch applies for the same reason.
-		var facing := _target_facing_direction()
-		var to_cursor := f.cursor_point - target.global_position
-		to_cursor.y = 0.0
-		if to_cursor.length() > ISO_HEAD_LOOK_CURSOR_MIN_DISTANCE:
-			# Clamped TIGHTER than the glance, deliberately. A glance is
-			# something the player is actively holding a key to get; the
-			# cursor is merely where the mouse happens to rest, and the head
-			# should acknowledge it rather than commit to it. Past the limit
-			# the head stops at the edge of its cone and leans that way,
-			# which reads as noticing something off to the side — the
-			# character is under no obligation to be able to see whatever
-			# the mouse is over.
-			#
-			# Both angles are taken with atan2(x, z), this project's facing
-			# convention (+Z forward, see player.gd's get_facing_direction),
-			# and differenced with angle_difference so the wrap at +/-PI
-			# cannot produce a spurious near-360 offset for a cursor sitting
-			# just behind the character.
-			#
-			# One seam survives and is left alone on purpose: a cursor
-			# crossing the line DIRECTLY behind flips the clamped offset
-			# from +limit to -limit, because which shoulder to look over is
-			# genuinely undefined there. The head then sweeps across the
-			# front rather than through itself — the marker's interpolation
-			# path is a chord several metres out, nowhere near the head —
-			# so this costs a quick glance from one side to the other and
-			# nothing worse. Suppressing it would mean remembering a side,
-			# which is state, for a case where the character cannot see
-			# anything either way.
-			offset_deg = clampf(
-				rad_to_deg(angle_difference(
-					atan2(facing.x, facing.z), atan2(to_cursor.x, to_cursor.z)
-				)),
-				-iso_head_look_cursor_limit_deg,
-				iso_head_look_cursor_limit_deg
-			)
-
-	if offset_deg == null:
-		target.call(&"clear_head_look_point")
-		return
-
-	# The one clamp, applied to whichever branch won. The peek branch is
-	# already bounded by iso_look_yaw_limit_deg, but that is an @export a
-	# later tuning pass could raise without ever thinking about necks, and
-	# this is the line that has to hold regardless of what it is set to.
-	var clamped := clampf(
-		float(offset_deg), -iso_head_look_limit_deg, iso_head_look_limit_deg
-	)
-	var direction := _target_facing_direction().rotated(Vector3.UP, deg_to_rad(clamped))
-	target.call(
-		&"set_head_look_point",
-		target.global_position + direction * ISO_HEAD_LOOK_DISTANCE
+	# Dolly: base distance is TPS_DISTANCE, unless aim or lock-on wants a
+	# different one — see TpsDistanceSource's comment for the priority
+	# between them. Smoothed at whichever rate goes with the winning source,
+	# so a push-in never reads as a snap.
+	var base_distance := TPS_DISTANCE
+	var distance_smoothing := TPS_LOCK_DISTANCE_SMOOTHING
+	match _select_tps_distance_source():
+		TpsDistanceSource.AIM:
+			base_distance = TPS_AIM_DISTANCE
+			distance_smoothing = TPS_AIM_DISTANCE_SMOOTHING
+		TpsDistanceSource.LOCK_ON:
+			base_distance = _tps_lock_distance_override
+		TpsDistanceSource.REST:
+			pass
+	_tps_lock_distance = lerp(
+		_tps_lock_distance, base_distance, Smoothing.damp_factor(distance_smoothing, delta)
 	)
 
+	# The framing blend leans the distance toward wide_distance. Written as a
+	# DIFFERENCE on purpose: setting wide_distance = TPS_DISTANCE makes this
+	# term exactly zero and restores the original "offset only, same distance"
+	# behaviour, without a second code path to maintain for it. See the Wide
+	# framing export group for why the distance is a knob at all.
+	var effective_distance: float = _tps_lock_distance + _tps_sprint_pullback \
+			+ (wide_distance - TPS_DISTANCE) * _framing_blend
 
-## Releases the head, if the target has the rig at all. Separate from
-## _update_iso_head_look()'s own null branch because the callers that need
-## it — a view transition starting, the component being left — have no
-## Frame to hand it and should not have to build one just to say "stop".
-func _clear_iso_head_look() -> void:
-	if target and target.has_method(&"clear_head_look_point"):
-		target.call(&"clear_head_look_point")
+	var horizontal_distance := effective_distance * cos(pitch_rad)
+	var vertical_distance := -effective_distance * sin(pitch_rad)
+	var right := Vector3(cos(yaw_rad), 0.0, -sin(yaw_rad))
 
-
-## Advances the look-ahead strength, 0 to 1, and returns it.
-##
-## Two contributions that sum and clamp: how fast the character is moving,
-## and how close to the screen edge the cursor is. Either alone does
-## something, both together saturate. Reads the frame the ISOMETRIC branch
-## has already built rather than re-deriving either, so the strength cannot
-## disagree with the bias computed from the same numbers.
-func _update_iso_look_ahead(delta: float) -> float:
-	var want := clampf(
-		_iso_frame.speed_ratio * ISO_LOOK_AHEAD_SPEED_SHARE
-		+ _iso_frame.cursor_edge_weight * ISO_LOOK_AHEAD_CURSOR_SHARE,
-		0.0, 1.0
+	var shoulder_offset := _shoulder.update(delta)
+	# The lean rides the same right vector as the shoulder offset and is
+	# added to it: leaning while switched to the left shoulder should move
+	# further left, not fight it.
+	var shoulder := right * (
+		shoulder_offset * TPS_SHOULDER_TRANSLATION_RATIO + _lean * lean_camera_offset
 	)
-	_iso_look_ahead = lerp(
-		_iso_look_ahead, want, Smoothing.damp_factor(ISO_LOOK_AHEAD_RATE, delta)
+
+	# Lead: pivot drifts ahead of the character's movement direction, not the
+	# look direction — keeps this from fighting mouse look.
+	var move_direction := _target_horizontal_direction()
+	_tps_lead_offset = _tps_lead_offset.lerp(
+		move_direction * speed_ratio * TPS_LEAD_DISTANCE,
+		Smoothing.damp_factor(TPS_LEAD_SMOOTHING, delta)
 	)
-	return _iso_look_ahead
+
+	# Base pivot: target + pivot height (shoulder level, not ground)
+	var pivot_height := _target_metric_height(&"get_shoulder_height", TPS_PIVOT_HEIGHT_FALLBACK)
+	var pivot := target.global_position + Vector3(0.0, pivot_height, 0.0) + _tps_lead_offset
+	var offset := horizontal_direction * horizontal_distance \
+			+ Vector3(0.0, vertical_distance, 0.0) + shoulder
+
+	camera_target_pos = pivot + offset
+	camera_target_pitch = _tps_pitch_deg + _tps_pitch_offset_deg
+
+	# Lens shift: the shoulder's own frustum share plus the wide framing.
+	# ADDED, not replaced — the wide view keeps the shoulder swap working,
+	# it only moves where the whole picture sits.
+	var aim_offset_scale := aim_shoulder_offset_multiplier if PlayerState.is_aiming else 1.0
+	var target_h_offset := shoulder_offset * TPS_SHOULDER_FRUSTUM_RATIO \
+			* TPS_SHOULDER_H_OFFSET_SIGN * aim_offset_scale \
+			+ wide_h_offset * _framing_blend
+	var target_v_offset := wide_v_offset * _framing_blend
+	var lens_damp := Smoothing.damp_factor(LENS_OFFSET_SMOOTHING, delta)
+	camera.h_offset = lerp(camera.h_offset, target_h_offset, lens_damp)
+	camera.v_offset = lerp(camera.v_offset, target_v_offset, lens_damp)
+
+	# Pivot for the wall probe. Eye height rather than the follow point: a
+	# probe from the feet would begin flush with the floor and report a hit
+	# on the ground the character is standing on.
+	_probe_pivot = target.global_position + Vector3(
+		0.0,
+		_target_metric_height(&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK),
+		0.0
+	)
+
+	camera_current_pos = camera_current_pos.lerp(
+		camera_target_pos, Smoothing.damp_factor(TPS_FOLLOW_SPEED, delta)
+	)
+	# Wall safety is the LAST layer, after the follow filter rather than
+	# before it. Applied to the target instead, an "immediate" retract is
+	# immediate only for the target — the filter then takes its own time to
+	# carry the camera there. Clamping the settled position is what makes
+	# the retract actually immediate, and clamping camera_current_pos rather
+	# than only the camera keeps the filter from holding a position inside
+	# the wall to snap back out to when the obstruction clears.
+	camera_current_pos = _apply_wall_clamp(delta, camera_current_pos)
+
+	camera_current_pitch = lerp(
+		camera_current_pitch, camera_target_pitch,
+		Smoothing.damp_factor(TPS_LOOK_SMOOTHING, delta)
+	)
+	camera_current_yaw = lerp_angle(
+		camera_current_yaw, camera_target_yaw,
+		Smoothing.damp_factor(TPS_LOOK_SMOOTHING, delta)
+	)
+
+	camera.global_position = camera_current_pos
+	camera.global_rotation = Vector3(deg_to_rad(camera_current_pitch), camera_current_yaw, 0.0)
 
 
-## Pulls a settled camera position in until it is clear of geometry.
-##
-## The last thing that touches the position, by design: everything upstream
-## decides where the camera WANTS to be and this decides where it may
-## actually go. Nothing downstream of it may reconsider — in particular the
-## look target is built before this runs, so a wall changes where the camera
-## is and never where it is aimed.
-##
-## Probes toward wherever the camera actually settled rather than along the
-## nominal orbit direction, which the spring lags slightly during a turn.
-## The camera is what has to be clear of the wall, so the camera is what
-## gets asked about.
-func _apply_iso_wall_clamp(delta: float, position: Vector3) -> Vector3:
-	var to_camera := position - _iso_probe_pivot
+func _apply_wall_clamp(delta: float, position: Vector3) -> Vector3:
+	var to_camera := position - _probe_pivot
 	var desired := to_camera.length()
 	if desired < 0.001:
 		return position
 
 	var direction := to_camera / desired
-	var safe := _update_iso_collision_distance(delta, _iso_probe_pivot, direction, desired)
-	_iso_effective_distance = safe
-
+	var safe := _update_collision_distance(delta, _probe_pivot, direction, desired)
 	if safe >= desired:
 		return position
-	return _iso_probe_pivot + direction * safe
+	return _probe_pivot + direction * safe
 
 
 ## Largest distance the camera may sit from the pivot this frame without
@@ -1361,38 +614,32 @@ func _apply_iso_wall_clamp(delta: float, position: Vector3) -> Vector3:
 ## nothing at all. So the shrinking direction is taken outright and only the
 ## growing direction is eased.
 ##
-## Taking the retraction outright would be a snap if the probe's answer
-## were itself a step, and against a flat wall it is not: the sphere reports
-## the surface a radius early and the reported distance then falls
-## continuously as the player walks in. What IS a step is a silhouette edge
-## — rounding a pillar, a doorway going out of line — and there the sphere
-## radius plus ISO_COLLISION_SURFACE_MARGIN mean the step happens while the
-## camera still has clearance, so the downstream position spring absorbs it
-## as a bump rather than a jump. Easing the retract as well would only put
-## the camera in the wall for those same frames.
-##
-## [param pivot] Point the camera orbits, already raised off the ground.
-## [param direction] Unit vector from pivot toward the unobstructed camera.
-## [param desired] Distance the camera would sit at with nothing in the way.
-func _update_iso_collision_distance(
+## Taking the retraction outright would be a snap if the probe's answer were
+## itself a step, and against a flat wall it is not: the sphere reports the
+## surface a radius early and the reported distance then falls continuously
+## as the player walks in. What IS a step is a silhouette edge — rounding a
+## pillar, a doorway going out of line — and there the sphere radius plus
+## CAMERA_COLLISION_SURFACE_MARGIN mean the step happens while the camera
+## still has clearance.
+func _update_collision_distance(
 	delta: float, pivot: Vector3, direction: Vector3, desired: float
 ) -> float:
-	var safe := _probe_iso_camera_distance(pivot, direction, desired)
+	var safe := _probe_camera_distance(pivot, direction, desired)
 
-	if _iso_collision_distance < 0.0:
-		# First ISOMETRIC frame — adopt, do not ease in.
-		_iso_collision_distance = safe
+	if _collision_distance < 0.0:
+		# First frame — adopt, do not ease in.
+		_collision_distance = safe
 		return safe
 
-	if safe < _iso_collision_distance:
-		_iso_collision_distance = safe
+	if safe < _collision_distance:
+		_collision_distance = safe
 	else:
-		_iso_collision_distance = lerp(
-			_iso_collision_distance, safe,
-			Smoothing.damp_factor(ISO_COLLISION_RESTORE_RATE, delta)
+		_collision_distance = lerp(
+			_collision_distance, safe,
+			Smoothing.damp_factor(CAMERA_COLLISION_RESTORE_RATE, delta)
 		)
 
-	return _iso_collision_distance
+	return _collision_distance
 
 
 ## Sphere-casts from the pivot toward the camera and returns how far the
@@ -1400,31 +647,36 @@ func _update_iso_collision_distance(
 ##
 ## cast_motion() rather than intersect_ray(): it answers "how far can this
 ## VOLUME travel before it touches something", which is the question a
-## camera actually has. Its return is a pair of fractions — the last safe
-## one and the first unsafe one — and only the first is wanted here.
+## camera actually has. Its return is a pair of fractions — the last safe one
+## and the first unsafe one — and only the first is wanted here.
+##
+## CollisionLayers.CAMERA_OCCLUSION (floor + wall) is deliberately wider than
+## PerceptionComponent's CollisionLayers.SIGHT (wall only): the camera swings
+## low behind the character and would sink through the deck without floor in
+## the mask.
 ##
 ## A pivot already buried in geometry (spawned inside a wall, terrain
 ## streamed in on top of the character) makes cast_motion() report zero
 ## before it has moved at all. That is not a reason to put the camera on the
 ## character's face, so the minimum wins: the character may be occluded, the
 ## camera may not be inside them.
-func _probe_iso_camera_distance(pivot: Vector3, direction: Vector3, desired: float) -> float:
-	if not camera or desired <= ISO_COLLISION_MIN_DISTANCE:
+func _probe_camera_distance(pivot: Vector3, direction: Vector3, desired: float) -> float:
+	if not camera or desired <= CAMERA_COLLISION_MIN_DISTANCE:
 		return desired
 
 	var space_state := camera.get_world_3d().direct_space_state
 	if space_state == null:
 		return desired
 
-	_iso_collision_shape.radius = ISO_COLLISION_RADIUS
-	_iso_collision_query.shape = _iso_collision_shape
-	_iso_collision_query.transform = Transform3D(Basis.IDENTITY, pivot)
-	_iso_collision_query.motion = direction * desired
-	_iso_collision_query.collision_mask = CollisionLayers.CAMERA_OCCLUSION
-	_iso_collision_query.collide_with_areas = false
-	_iso_collision_query.exclude = [target.get_rid()] if target is CollisionObject3D else []
+	_collision_shape.radius = CAMERA_COLLISION_RADIUS
+	_collision_query.shape = _collision_shape
+	_collision_query.transform = Transform3D(Basis.IDENTITY, pivot)
+	_collision_query.motion = direction * desired
+	_collision_query.collision_mask = CollisionLayers.CAMERA_OCCLUSION
+	_collision_query.collide_with_areas = false
+	_collision_query.exclude = [target.get_rid()] if target is CollisionObject3D else []
 
-	var result := space_state.cast_motion(_iso_collision_query)
+	var result := space_state.cast_motion(_collision_query)
 	if result.is_empty():
 		return desired
 
@@ -1432,578 +684,43 @@ func _probe_iso_camera_distance(pivot: Vector3, direction: Vector3, desired: flo
 	if safe_fraction >= 1.0:
 		return desired
 
-	return maxf(desired * safe_fraction - ISO_COLLISION_SURFACE_MARGIN, ISO_COLLISION_MIN_DISTANCE)
-
-
-## How strongly the cursor's position on screen is asking for room, 0 to 1.
-##
-## THIS IS A WEIGHT ON A TRANSLATION, AND MUST NOT BECOME ONE ON A YAW. The
-## camera already spent a whole rework getting rid of a yaw that moved on
-## its own, and a mouse near a screen edge is exactly the kind of
-## ever-present signal that would put it back — dressed as cursor steering
-## rather than as an orbit, and no less disorienting for it. The frame
-## showing more of one side answers the same want and costs the player
-## nothing they were using to navigate.
-##
-## Shape: nothing at all until the cursor is CURSOR_EDGE_DEAD_ZONE of the
-## way out, then a smootherstep ramp to full at the very edge. The ramp is
-## the point — a threshold that switched on at 71% of the way out would be
-## a step in the frame's velocity, which is precisely the class of fault the
-## position spring was added to stop creating.
-##
-## The two axes are combined as a VECTOR and capped, so a corner cannot ask
-## for 1.41x what an edge asks for, and then softened further because a
-## corner is a vaguer request than a side.
-func _cursor_edge_weight() -> float:
-	if not camera:
-		return 0.0
-
-	var viewport_size := camera.get_viewport().get_visible_rect().size
-	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
-		return 0.0
-
-	var mouse := camera.get_viewport().get_mouse_position()
-	# -1 at one edge, 0 at the centre, +1 at the other.
-	var from_centre := Vector2(
-		(mouse.x / viewport_size.x - 0.5) * 2.0,
-		(mouse.y / viewport_size.y - 0.5) * 2.0
-	)
-
-	var ramp := Vector2(_edge_ramp(from_centre.x), _edge_ramp(from_centre.y))
-	if ramp == Vector2.ZERO:
-		return 0.0
-
-	var soften := 1.0 - CURSOR_EDGE_CORNER_SOFTEN * minf(ramp.x, ramp.y)
-	return minf(ramp.length(), 1.0) * soften
-
-
-## One axis of the edge ramp: zero inside the dead zone, smootherstep from
-## there to 1.0 at the edge. Takes a signed -1..1 position and returns an
-## unsigned 0..1 strength — the DIRECTION of the bias comes from the cursor's
-## own ground point, not from these signs, so that a tilted camera leans
-## toward the place the player is pointing at rather than along a screen
-## axis that only approximates it.
-func _edge_ramp(from_centre: float) -> float:
-	var magnitude := minf(absf(from_centre), 1.0)
-	if magnitude <= CURSOR_EDGE_DEAD_ZONE:
-		return 0.0
-	var t := (magnitude - CURSOR_EDGE_DEAD_ZONE) / (1.0 - CURSOR_EDGE_DEAD_ZONE)
-	return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
-
-
-## Whether the target is standing on something. Optional getter, like
-## the metric getters — a target without it is treated as grounded,
-## which keeps the vertical channel following instead of freezing.
-func _target_on_floor() -> bool:
-	if target and target.has_method(&"is_on_floor"):
-		return target.is_on_floor()
-	return true
-
-
-## Current click-to-move destination, or ZERO when there is none.
-##
-## Read from the target rather than from ClickToMoveSystem: the camera
-## has no reference to that system and should not acquire one just to
-## know where the character is headed.
-func _target_move_target() -> Vector3:
-	if target and target.has_method(&"get_move_target"):
-		return target.get_move_target()
-	return Vector3.ZERO
-
-
-## Feeds the debug overlay, if one is attached. Projection happens here
-## rather than in the state so the state stays free of Camera3D.
-##
-## Both points are projected with the camera as it stood at the END of
-## the previous frame — this runs before camera.global_position is
-## written. The one-frame lag is accepted: it is far below every damping
-## time constant in IsometricCameraState and cannot be seen.
-func _push_iso_debug(follow_point: Vector3) -> void:
-	if not iso_debug_overlay or not iso_debug_overlay.visible:
-		return
-
-	iso_debug_overlay.push(
-		camera.unproject_position(follow_point),
-		camera.unproject_position(target.global_position),
-		_iso
+	return maxf(
+		desired * safe_fraction - CAMERA_COLLISION_SURFACE_MARGIN,
+		CAMERA_COLLISION_MIN_DISTANCE
 	)
 
 
-func _update_camera_position(delta):
-	match PlayerState.view_mode:
-		PlayerState.ViewMode.TPS:
-			var yaw_rad = camera_target_yaw
-			var pitch_rad = deg_to_rad(_tps_pitch_deg)
-			var horizontal_direction = Vector3(sin(yaw_rad), 0, cos(yaw_rad))
-
-			var speed_ratio := _target_speed_ratio()
-			_tps_sprint_pullback = lerp(_tps_sprint_pullback, speed_ratio * TPS_SPRINT_PULLBACK, Smoothing.damp_factor(TPS_PULLBACK_SMOOTHING, delta))
-
-			# Dolly: base distance is TPS_DISTANCE, unless aim or lock-on
-			# wants a different one — see TpsDistanceSource's comment for
-			# the priority between them. Smoothed at whichever rate goes
-			# with the winning source, so a push-in never reads as a snap.
-			var base_distance := TPS_DISTANCE
-			var distance_smoothing := TPS_LOCK_DISTANCE_SMOOTHING
-			match _select_tps_distance_source():
-				TpsDistanceSource.AIM:
-					base_distance = TPS_AIM_DISTANCE
-					distance_smoothing = TPS_AIM_DISTANCE_SMOOTHING
-				TpsDistanceSource.LOCK_ON:
-					base_distance = _tps_lock_distance_override
-				TpsDistanceSource.REST:
-					pass
-			_tps_lock_distance = lerp(_tps_lock_distance, base_distance, Smoothing.damp_factor(distance_smoothing, delta))
-
-			var effective_distance := _tps_lock_distance + _tps_sprint_pullback
-
-			var horizontal_distance = effective_distance * cos(pitch_rad)
-			var vertical_distance = -effective_distance * sin(pitch_rad)
-			var right := Vector3(
-				cos(yaw_rad),
-				0.0,
-				-sin(yaw_rad)
-			)
-
-			var shoulder_offset := _shoulder.update(delta)
-			var shoulder := right * (shoulder_offset * TPS_SHOULDER_TRANSLATION_RATIO)
-
-			# Lead: pivot drifts ahead of the character's movement direction,
-			# not the look direction — keeps this from fighting mouse look.
-			var move_direction := _target_horizontal_direction()
-			_tps_lead_offset = _tps_lead_offset.lerp(move_direction * speed_ratio * TPS_LEAD_DISTANCE, Smoothing.damp_factor(TPS_LEAD_SMOOTHING, delta))
-
-			# Base pivot: target + pivot height (shoulder level, not ground)
-			var pivot_height := _target_metric_height(&"get_shoulder_height", TPS_PIVOT_HEIGHT_FALLBACK)
-			var pivot := target.global_position + Vector3(0, pivot_height, 0) + _tps_lead_offset
-			var offset = horizontal_direction * horizontal_distance + Vector3(0, vertical_distance, 0) + shoulder
-
-			camera_target_pos = pivot + offset
-			camera_target_pitch = _tps_pitch_deg + _tps_pitch_offset_deg
-
-			var aim_offset_scale := aim_shoulder_offset_multiplier if PlayerState.is_aiming else 1.0
-			var target_h_offset := shoulder_offset * TPS_SHOULDER_FRUSTUM_RATIO * TPS_SHOULDER_H_OFFSET_SIGN * aim_offset_scale
-			camera.h_offset = lerp(camera.h_offset, target_h_offset, Smoothing.damp_factor(8.0, delta))
-
-			# --- Wall & floor avoidance: pull camera in when geometry blocks ---
-			# CollisionLayers.CAMERA_OCCLUSION (floor + wall) — deliberately
-			# wider than PerceptionComponent's own CollisionLayers.SIGHT
-			# (wall only): the camera swings low behind the character and
-			# would sink through the deck without floor in the mask. The two
-			# used to share one undifferentiated mask; they now diverge on
-			# purpose, not by accident.
-			var space_state := camera.get_world_3d().direct_space_state
-			var occlusion_height := _target_metric_height(&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK)
-			var eye_pos := target.global_position + Vector3(0, occlusion_height, 0)
-			var query := PhysicsRayQueryParameters3D.create(eye_pos, camera_target_pos, CollisionLayers.CAMERA_OCCLUSION)
-			query.collide_with_areas = false
-			var hit := space_state.intersect_ray(query)
-			if hit:
-				camera_target_pos = hit.position + hit.normal * 0.25
-
-			# Mirror of _decay_tps_state: every ISOMETRIC-only value returns
-			# to rest while TPS is active, so neither view can hand a stale
-			# offset to the other across a switch.
-			_iso.decay(delta)
-
-		_:  # ISOMETRIC
-			# The camera orbits a follow point that lags, leads and holds
-			# height on its own — not the character's position directly.
-			# While the view-mode transition is animating the follow point
-			# is bypassed: the transition already animates position, and a
-			# dead zone fighting it reads as a stutter.
-			var follow_point := target.global_position
-			if view_mode_animating:
-				_iso.request_reset()
-				# The look is a lean on the character's direction, and the
-				# character's direction is exactly what a view switch
-				# reconsiders. Carrying an offset across would apply it to a
-				# base the player never chose it against.
-				_iso_manual_look_yaw_deg = 0.0
-				# Same argument for the head: whatever it was attending to
-				# belongs to a view the player is leaving.
-				_clear_iso_head_look()
-			else:
-				# Order is load-bearing, see IsometricCameraState's header:
-				# yaw first, then the basis it implies, then the follow
-				# point measured against that basis. Getting this backwards
-				# advances the dead zone against last frame's camera plane
-				# and shows up as the follow point sliding sideways whenever
-				# the camera turns.
-				var f := _build_iso_frame()
-				_iso.update_orientation(delta, f)
-				f.cam_forward = _iso.get_cam_forward()
-				f.cam_right = _iso.get_cam_right()
-				follow_point = _iso.update(delta, f)
-				_update_iso_head_look(f)
-
-				# Copy the authoritative yaw back for the debug labels and
-				# for whatever the next view transition reads. Neither is a
-				# source any more — this is the sink.
-				current_angle = _iso.get_current_yaw()
-				target_angle = current_angle
-
-			# Derived AFTER the yaw is settled, which is why this no longer
-			# sits at the top of the branch the way it did when
-			# current_angle was already final by this point.
-			var pitch_rad = deg_to_rad(camera_angle)
-			var horizontal_direction = Vector3(sin(current_angle), 0, cos(current_angle))
-			# Unit vector from pivot toward the camera. The orbit offset is
-			# this scaled by whatever distance survives the wall probe, so
-			# the two can no longer disagree about direction the way two
-			# separately-built offsets would.
-			var orbit_direction := (
-				horizontal_direction * cos(pitch_rad) + Vector3.UP * -sin(pitch_rad)
-			).normalized()
-
-			# The probe starts at eye height, not at the follow point. The
-			# follow point rides the tracked GROUND height, so a probe from
-			# there would begin flush with the floor and report a hit on the
-			# ground the character is standing on. Same getter and same
-			# fallback the TPS occlusion check already uses.
-			# Pivot for the wall probe, applied after the spring in the
-			# shared tail — see _apply_iso_wall_clamp(). Stashed rather than
-			# recomputed there so the probe and the framing agree on where
-			# the character is.
-			_iso_probe_pivot = follow_point + Vector3.UP * _target_metric_height(
-				&"get_eye_height", TPS_OCCLUSION_HEIGHT_FALLBACK
-			)
-
-			var look_ahead := _update_iso_look_ahead(delta)
-
-			# Camera sinks, aim rises and moves forward. Both offsets are
-			# built from the UNOBSTRUCTED geometry: a wall may move the
-			# camera, but it must never change where the camera wants to
-			# look, or the framing would swing every time the player brushed
-			# past a doorway.
-			camera_target_pos = (
-				follow_point
-				+ orbit_direction * current_zoom_distance
-				- Vector3.UP * (ISO_CAMERA_DROP * look_ahead)
-			)
-
-			var look_target := (
-				follow_point
-				+ _iso.get_cam_forward() * (ISO_LOOK_AHEAD_DISTANCE * look_ahead)
-				+ Vector3.UP * (ISO_LOOK_TARGET_RAISE * look_ahead)
-			)
-
-			# Pitch is DERIVED from the aim, yaw is not touched. The offset
-			# above runs along get_cam_forward(), which is horizontal, so
-			# camera, follow point and look target share one vertical plane
-			# and the horizontal bearing between them is unchanged by
-			# construction. That is what keeps this from becoming cursor
-			# steering.
-			var to_look := look_target - camera_target_pos
-			var to_look_horizontal := Vector2(to_look.x, to_look.z).length()
-			camera_target_pitch = (
-				rad_to_deg(atan2(to_look.y, to_look_horizontal))
-				if to_look_horizontal > 0.001
-				else camera_angle
-			)
-			camera_target_yaw = current_angle
-
-			_decay_tps_state(delta)
-			_push_iso_debug(follow_point)
-
-	# Steady-state follow rates are per-view and decoupled from
-	# view_transition_speed, so each view's feel and the ISOMETRIC <-> TPS
-	# transition animation can be tuned independently.
-	#
-	# TPS: position at TPS_FOLLOW_SPEED, rotation much faster at
-	# TPS_LOOK_SMOOTHING — if rotation lagged as much as position, the
-	# target would visibly leave frame on a quick mouse turn (camera body
-	# already moved, look direction hasn't caught up).
-	#
-	# ISOMETRIC: both near-transparent, because IsometricCameraState is the
-	# thing that decides how much the camera lags there and a second time
-	# constant behind it made its own zone maths untrue. See
-	# ISO_FOLLOW_SPEED for the full reasoning — this line is where the bug
-	# lived, as a missing branch rather than a wrong number.
-	#
-	# While the transition animation runs, both still ride
-	# view_transition_speed in either view, or the transition itself would
-	# jump.
-	var position_follow_speed := view_transition_speed
-	var rotation_follow_speed := view_transition_speed
-	if not view_mode_animating:
-		if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-			position_follow_speed = TPS_FOLLOW_SPEED
-			rotation_follow_speed = TPS_LOOK_SMOOTHING
-		else:
-			position_follow_speed = ISO_FOLLOW_SPEED
-			rotation_follow_speed = ISO_ROTATION_SPEED
-
-	# Position: a critically damped spring in steady-state ISOMETRIC, the
-	# exponential everywhere else. See ISO_POSITION_SMOOTH_TIME for why the
-	# two views want different filters and why this is not a second stage.
-	#
-	# ROTATION KEEPS THE EXPONENTIAL IN BOTH VIEWS, deliberately, and not
-	# for want of a smooth_damp_angle(). A spring earns its place by
-	# filtering a velocity step, and the ISOMETRIC yaw has none to filter:
-	# _current_yaw comes out of a smootherstep turn whose angular velocity
-	# is already zero at both ends by construction. Springing a signal that
-	# is C1 already would only blunt the arrival the octant model exists to
-	# produce — the turn would stop finishing, which is the whole complaint
-	# it was written to answer.
-	if PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC and not view_mode_animating:
-		var damped := Smoothing.smooth_damp_vector3(
-			camera_current_pos, camera_target_pos, _iso_pos_velocity,
-			ISO_POSITION_SMOOTH_TIME, delta
-		)
-		camera_current_pos = damped[0]
-		_iso_pos_velocity = damped[1]
-		# Wall safety is the LAST layer, after the spring rather than
-		# before it. Applied to the target instead, an "immediate" retract
-		# is immediate only for the target — the spring then takes its own
-		# 0.08 s to carry the camera there, and at run_speed 15.5 the
-		# sphere's 0.7 m of clearance is 45 ms of travel. Clamping the
-		# settled position is what makes the retract actually immediate,
-		# and clamping camera_current_pos rather than only the camera keeps
-		# the spring from holding a position inside the wall to snap back
-		# out to when the obstruction clears.
-		camera_current_pos = _apply_iso_wall_clamp(delta, camera_current_pos)
-	else:
-		## TPS, and BOTH directions of the view transition. Restored after
-		## being lost in the commit that moved the wall clamp after the
-		## spring (dae379e): with this branch gone, camera_current_pos was
-		## written nowhere except the ISOMETRIC block above, so pressing V
-		## set view_mode_animating, skipped that block, and froze the camera
-		## body exactly where isometric had left it — for the whole
-		## transition and then for all of TPS, because the mode no longer
-		## matched either. Rotation kept lerping on its own line below,
-		## which is why it read as "the camera behaves oddly" rather than
-		## "the camera is dead".
-		##
-		## The comment above this if/else already described this branch as
-		## "the exponential everywhere else" throughout, so the code and its
-		## own documentation disagreed rather than the design changing.
-		camera_current_pos = camera_current_pos.lerp(
-			camera_target_pos, Smoothing.damp_factor(position_follow_speed, delta)
-		)
-
-	if not view_mode_animating:
-		camera_current_pitch = lerp(camera_current_pitch, camera_target_pitch, Smoothing.damp_factor(rotation_follow_speed, delta))
-	camera_current_yaw = lerp_angle(camera_current_yaw, camera_target_yaw, Smoothing.damp_factor(rotation_follow_speed, delta))
-
-	camera.global_position = camera_current_pos
-	camera.global_rotation = Vector3(deg_to_rad(camera_current_pitch), camera_current_yaw, 0)
-
-
-func _handle_follow_toggle():
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		return  # follow isn't toggleable in TPS — it's inherently always on
-	if InputSystems.is_toggle_follow_just_pressed():
-		follow_player_rotation = !follow_player_rotation
-		if follow_player_rotation:
-			last_player_rotation = target.rotation.y
-			player_rotation_timer = 0.0
-
-
-func _handle_view_toggle():
+## V swaps the framing. There is no zoom edge to reach first any more — the
+## old toggle had to drive a slider to ISOMETRIC_ZOOM_MIN and queue a
+## pending switch, because the two views were two positions on one continuum.
+## Two lens shifts have no continuum between them.
+func _handle_view_toggle() -> void:
 	if not InputSystems.is_toggle_view_just_pressed():
 		return
-	if view_mode_animating:
-		return  # a view-mode transition is already running; ignore V until it settles
+	PlayerState.set_view_mode(
+		PlayerState.ViewMode.TPS
+		if PlayerState.view_mode == PlayerState.ViewMode.TPS_WIDE
+		else PlayerState.ViewMode.TPS_WIDE
+	)
 
-	match PlayerState.view_mode:
-		PlayerState.ViewMode.ISOMETRIC:
-			if zoom_animating:
-				# V pressed again while auto-zooming to the edge for a pending
-				# TPS switch — cancel the intent, don't queue a second one.
-				_pending_tps_switch = false
-				return
-			if is_equal_approx_eps(target_zoom_distance, ISOMETRIC_ZOOM_MIN):
-				_transition_to_view(PlayerState.ViewMode.TPS)
-			else:
-				# Not at the edge yet: drive the existing zoom slider there
-				# first (reusing _start_zoom, not a new animation), then
-				# switch once _pending_tps_switch is consumed in update().
-				# The player pressed V, not the wheel, but the zoom that
-				# results is still player-initiated — the HUD ruler must
-				# show this phase like any other zoom change.
-				zoom_input_received.emit()
-				_pending_tps_switch = true
-				_start_zoom(ISOMETRIC_ZOOM_MIN - target_zoom_distance)
-		PlayerState.ViewMode.TPS:
-			# No zoom requirement to exit TPS — V always switches back
-			# instantly, and always wins over any pending ISO->TPS intent.
-			_pending_tps_switch = false
-			_transition_to_view(PlayerState.ViewMode.ISOMETRIC)
-
-
-func is_equal_approx_eps(a: float, b: float) -> bool:
-	return abs(a - b) <= ZOOM_EDGE_EPSILON
-
-
-## The single point of transition between views. The switch always fires
-## right at the edge of the range (see _handle_view_toggle), so no
-## ratio-mapping is needed — we just enter the new view at its boundary
-## zoom value.
-func _transition_to_view(new_view: PlayerState.ViewMode) -> void:
-	view_start_distance = current_zoom_distance
-	view_start_pitch = camera_current_pitch
-
-	match new_view:
-		PlayerState.ViewMode.TPS:
-			view_target_distance = TPS_DISTANCE
-			view_target_pitch = _tps_pitch_deg
-
-		PlayerState.ViewMode.ISOMETRIC:
-			# Coming from TPS — enter at ISO's near edge, already facing the
-			# way the character does. Through the same conversion
-			# IsometricCameraState._reset_yaw() uses, so the seed and the
-			# first directional frame cannot land on different angles. This
-			# replaces a hand-written "target.rotation.y + PI": the same
-			# value, but derived from the facing vector rather than from a
-			# constant that silently encoded this project's +Z-forward
-			# convention.
-			view_target_distance = ISOMETRIC_ZOOM_MIN
-			target_angle = _yaw_facing(_target_facing_direction())
-			current_angle = target_angle
-			_iso_manual_look_yaw_deg = 0.0
-			# A retraction earned against a wall the camera was near while
-			# TPS was in charge means nothing to the orbit that is about to
-			# resume — the camera is arriving somewhere else entirely. Same
-			# rule as the look offset above.
-			_iso_collision_distance = -1.0
-			_iso_effective_distance = 0.0
-			_iso_look_ahead = 0.0
-			view_target_pitch = camera_angle
-
-	target_zoom_distance = view_target_distance
-	view_anim_time = 0.0
-	view_mode_animating = true
-	PlayerState.set_view_mode(new_view)
 
 func _handle_shoulder_toggle() -> void:
-
 	if InputSystems.is_switch_shoulder_just_pressed():
 		_shoulder.toggle()
-		
-func _handle_follow_rotation(delta):
-	var player_y_rotation = target.rotation.y
-	var desired_angle = player_y_rotation + PI
-
-	if abs(player_y_rotation - last_player_rotation) > 0.01:
-		player_rotation_timer += delta
-		if player_rotation_timer >= follow_rotation_delay:
-			if not follow_rotation_animating:
-				follow_start_angle = current_angle
-				follow_target_angle = desired_angle
-				follow_anim_time = 0.0
-				follow_rotation_animating = true
-				target_angle = desired_angle
-		last_player_rotation = player_y_rotation
-	else:
-		player_rotation_timer = 0.0
 
 
-func _handle_rotation_input():
-	if follow_player_rotation:
-		return
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
-		return  # orbit doesn't apply — the camera is locked behind the player
-	if InputSystems.is_lean_left_just_pressed():
-		_rotate_camera_left()
-	elif InputSystems.is_lean_right_just_pressed():
-		_rotate_camera_right()
-
-
-func _rotate_camera_left():
-	var idx = ORBITAL_POSITIONS.find(current_position)
-	idx = (idx - 1) % ORBITAL_POSITIONS.size()
-	if idx < 0: idx = ORBITAL_POSITIONS.size() - 1
-	current_position = ORBITAL_POSITIONS[idx]
-
-	orbit_start_angle = current_angle
-	orbit_target_angle = POSITION_ANGLES[current_position]
-	orbit_anim_time = 0.0
-	orbit_rotation_animating = true
-
-	target_angle = orbit_target_angle
-
-
-func _rotate_camera_right():
-	var idx = ORBITAL_POSITIONS.find(current_position)
-	idx = (idx + 1) % ORBITAL_POSITIONS.size()
-	if idx >= ORBITAL_POSITIONS.size(): idx = 0
-	current_position = ORBITAL_POSITIONS[idx]
-
-	orbit_start_angle = current_angle
-	orbit_target_angle = POSITION_ANGLES[current_position]
-	orbit_anim_time = 0.0
-	orbit_rotation_animating = true
-
-	target_angle = orbit_target_angle
-
-
-func _handle_zoom_input():
-	if InputSystems.is_zoom_in_just_released():
-		zoom_input_received.emit()
-		_start_zoom(-ZOOM_STEP)
-	elif InputSystems.is_zoom_out_just_released():
-		zoom_input_received.emit()
-		_start_zoom(ZOOM_STEP)
-		
-
-func _start_zoom(amount: float):
-	var min_zoom: float
-	var max_zoom: float
-
-	match PlayerState.view_mode:
-		PlayerState.ViewMode.TPS:
-			return  # zoom disabled in TPS — distance is fixed
-		_:
-			min_zoom = ISOMETRIC_ZOOM_MIN
-			max_zoom = ISOMETRIC_ZOOM_MAX
-
-	var new_distance = clamp(target_zoom_distance + amount, min_zoom, max_zoom)
-
-	if abs(new_distance - target_zoom_distance) > 0.01:
-		zoom_start_distance = current_zoom_distance
-		target_zoom_distance = new_distance
-		zoom_anim_time = 0.0
-		zoom_animating = true
-
-
-func _update_labels():
+func _update_labels() -> void:
 	if not lbl_current_mode:
 		return
-
-	lbl_current_mode.text = "Режим: %s (нажми V для изменения)" % get_current_mode()
-	# Q/E no longer step an orbit — they hold a bounded look. The old text
-	# is corrected here rather than left for the orbit cleanup: this change
-	# is what made it false, so it does not get to outlive this commit.
-	if PlayerState.view_mode == PlayerState.ViewMode.TPS:
+	lbl_current_mode.text = "Кадр: %s (V — переключить)" % get_current_mode()
+	if lbl_orbital:
 		lbl_orbital.visible = false
-	else:
-		lbl_orbital.visible = true
-		lbl_orbital.text = "Осмотреться: удерживай Q или E"
-	# P is unread since the ISOMETRIC camera became directional — the camera
-	# follows the character's direction unconditionally now. Same reason the
-	# orbital line above was corrected rather than left to the cleanup.
-	lbl_follow.text = "Слежение: направление движения (P не действует)"
+	if lbl_follow:
+		lbl_follow.visible = false
 
 
 func get_current_mode() -> String:
-	match PlayerState.view_mode:
-		PlayerState.ViewMode.TPS:
-			return "TPS"
-		_:
-			# Not get_current_direction_name(): that reads current_position,
-			# which nothing steps any more now that the yaw is directional.
-			# It would have kept reporting "North" forever.
-			return "Isometric (directional)"
-
-
-func get_current_direction_name() -> String:
-	match current_position:
-		OrbitalPosition.NORTH: return "North"
-		OrbitalPosition.EAST: return "East"
-		OrbitalPosition.SOUTH: return "South"
-		OrbitalPosition.WEST: return "West"
-		_: return "Unknown"
+	return "TPS wide" if PlayerState.view_mode == PlayerState.ViewMode.TPS_WIDE else "TPS"
 
 
 ## Public getter for the lock-on debug overlay
@@ -2011,13 +728,3 @@ func get_current_direction_name() -> String:
 ## camera_follow.gd's get_on_foot_component().
 func get_combat_state() -> TpsCombatCameraState:
 	return _tps_combat
-
-
-## Public getter for the HUD widget (zoom ruler) — which distance range
-## is current for the active view_mode.
-func get_current_zoom_range() -> Vector2:
-	match PlayerState.view_mode:
-		PlayerState.ViewMode.TPS:
-			return Vector2(TPS_ZOOM_MIN, TPS_ZOOM_MAX)
-		_:
-			return Vector2(ISOMETRIC_ZOOM_MIN, ISOMETRIC_ZOOM_MAX)
