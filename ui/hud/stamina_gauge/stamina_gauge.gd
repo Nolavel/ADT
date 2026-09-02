@@ -57,6 +57,16 @@ const STATIONARY_SPEED: float = 0.05
 		_update_minimum_size()
 
 @export_group("Arcs")
+## Floor under the arcs' opacity. The ported rule was alpha = the remaining
+## ratio, which meant the ring faded toward invisible exactly as it ran out —
+## the one moment the player most needs to read it. Seen on the six-state
+## render, 2026-09-02, and raised rather than silently changed because it was
+## the original's behaviour; Stan's call was to put a floor under it.
+##
+## It floors the OPACITY only. Arc length still goes to zero, the colour ramp
+## still runs to red, so "almost nothing left" still reads as almost nothing
+## left — it just stays legible while saying so.
+@export var arc_min_alpha: float = 0.35
 @export var arc_thickness: float = 6.0
 @export var arc_color: Color = Color(0.8, 0.9, 1.0, 1.0)
 @export var arc_rotation_speed: float = 2.0
@@ -135,7 +145,7 @@ func bind(player: Node) -> void:
 	_stamina.stamina_changed.connect(_on_stamina_changed)
 	_stamina.jump_performed.connect(_on_jump_performed)
 	_stamina_ratio = _stamina.get_stamina_ratio()
-	_arcs_alpha = _stamina_ratio * 0.5
+	_arcs_alpha = maxf(_stamina_ratio, arc_min_alpha) * 0.5
 	set_process(true)
 
 
@@ -183,7 +193,13 @@ func _update_movement_state(delta: float, player_stationary: bool) -> void:
 
 	## Full while moving, half at rest — present, but not asking for attention
 	## when nothing is being spent. Ported verbatim.
-	var target_alpha: float = _stamina_ratio if _is_moving else _stamina_ratio * 0.5
+	## Full while moving, half at rest, never below arc_min_alpha — see that
+	## export for why the floor exists. The rest multiplier applies to the
+	## floor too, so standing still with an empty bar is still the quieter of
+	## the two readings rather than jumping to full strength.
+	var target_alpha: float = maxf(_stamina_ratio, arc_min_alpha)
+	if not _is_moving:
+		target_alpha *= 0.5
 	_arcs_alpha = lerpf(_arcs_alpha, target_alpha, arc_alpha_speed * delta)
 
 	## Arcs spin faster the harder the character is running.

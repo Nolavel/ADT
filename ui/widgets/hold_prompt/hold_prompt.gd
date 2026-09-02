@@ -1,10 +1,30 @@
 # =============================================================================
 # hold_prompt.gd — HoldPrompt.
 #
-# The screen-space answer to "this can be taken, and here is the key". A
-# tapered plate with the letter F on it, hanging over whatever the prompt was
-# shown for; holding the key turns it yellow and morphs the letter into a
-# circle and then a filled dot.
+# The answer to "this can be taken, and here is the key". A tapered plate with
+# the letter F on it, standing over whatever the prompt was shown for; holding
+# the key turns it yellow and morphs the letter into a circle and then a
+# filled dot.
+#
+# IT LIVES IN THE WORLD NOW (2026-09-02), not on the screen. It used to be a
+# Control on the UI canvas that unprojected a world anchor every frame, which
+# drew it at a constant pixel size however far away the thing was — a label
+# pinned to the glass rather than a sign standing next to the object. This
+# script is still that Control and still draws the same picture, but it draws
+# into a SubViewport whose texture is carried by a billboarded Sprite3D at the
+# anchor. Perspective scale, real placement, and an entrance that can rise out
+# of the ground decal come with that for free.
+#
+# ALWAYS ON TOP, deliberately. The billboard is depth-test-free: the prompt is
+# a statement the GAME is making, not an object in the scene, and losing it
+# behind the player's own shoulder — which a depth-tested badge at chest
+# height does constantly — costs more than the honesty is worth. Stan's call,
+# 2026-09-02.
+#
+# THE DECAL AND THIS ARE ONE AFFORDANCE. HUDComponent puts the ground marker
+# under the same anchor and is asserted on the same schedule; this badge grows
+# out of that marker on the way in and sinks back into it on the way out. See
+# _update_billboard().
 #
 # REFLECTS, NEVER OWNS. This widget decides nothing. It does not know about
 # inventory, store_item(), InteractableObject, or how long a hold has to last
@@ -64,6 +84,21 @@ const F_FADE_END: float = 0.45
 const CIRCLE_FADE_END: float = 0.35
 const DOT_START: float = 0.5
 
+## PRESS JUICE (2026-09-02). The morph existed but nothing announced the
+## PRESS itself: a tap ran F → circle → dot in white, with no rotation,
+## because _holding was only ever set by the hold path. A press now reads as a
+## press — the plate punches in scale, the register flips to active, the glyph
+## spins, and the finished dot throws a ring that expands and fades.
+
+## How hard the plate punches inward on a press, as a fraction of its size.
+const PRESS_PUNCH: float = 0.14
+## How fast that punch relaxes. Fast — a punch that lingers is a wobble.
+const PRESS_PUNCH_RATE: float = 7.0
+## Radius the completion burst travels to, as a multiple of the dot's own.
+const BURST_RADIUS_SCALE: float = 4.2
+## Seconds the burst takes to expand and vanish.
+const BURST_TIME: float = 0.28
+
 ## Corner arcs are sampled, not analytic — a quadratic through the corner,
 ## the same curve the study's roundRect() draws.
 const CORNER_SAMPLES: int = 6
@@ -87,13 +122,32 @@ const CORNER_SAMPLES: int = 6
 @export var key_label: String = "F"
 @export var key_font_size: int = 36
 
-@export_group("Placement")
-## Lift above the followed node's origin, metres. Items lie on the ground, so
-## this is measured from the object, not from its top.
-@export var anchor_offset: Vector3 = Vector3(0.0, 0.6, 0.0)
+@export_group("World placement")
+## The SubViewport is this many pixels square, and the Control fills it. Big
+## enough for the entrance ghost (which smears +/-26 px) and the commit burst
+## (radius ~42) without clipping either at the edge of the render target.
+@export var canvas_size: int = 220
+## Texture pixels per metre on the billboard. 0.0045 puts the 76 px plate at
+## roughly a third of a metre, which reads as a sign rather than a poster.
+@export var billboard_pixel_size: float = 0.0045
+## Where the billboard is when it is fully in — metres above the anchor.
+@export var risen_offset: Vector3 = Vector3(0.0, 0.62, 0.0)
+## Where it starts, and where it returns to: on the ground marker itself. The
+## entrance is therefore a rise OUT of the decal rather than a fade in over
+## it, which is what makes the two read as one thing.
+@export var seated_offset: Vector3 = Vector3(0.0, 0.06, 0.0)
+## Scale at the seated end of that travel. Small, not zero — a badge that
+## starts at nothing pops, one that starts small unfolds.
+@export var seated_scale: float = 0.35
+## Path to the Sprite3D carrying this Control's viewport texture. An export
+## rather than a hard-coded "../../Billboard" so the scene can be rearranged
+## without editing this file.
+@export var billboard_path: NodePath = ^"../../Billboard"
 
-var _camera: Camera3D = null
+
 var _follow: Node3D = null
+var _face: SubViewport = null
+var _billboard: Sprite3D = null
 
 var _shown: bool = false
 var _appear: float = 0.0
@@ -113,6 +167,13 @@ var _progress_target: float = 0.0
 ## frame after the morph began — the payoff would never be drawn.
 var _commit_lock: float = 0.0
 var _hide_pending: bool = false
+## Scale punch on the press, 1 at the moment of the press, decaying to 0.
+var _punch: float = 0.0
+## Completion burst, counted UP from 0 to BURST_TIME then parked. Negative
+## means "no burst pending", which is not the same as a burst that has just
+## finished — a finished one must not restart when the panel is asked to draw
+## again.
+var _burst: float = -1.0
 
 var _font: Font = null
 
@@ -121,36 +182,42 @@ func _ready() -> void:
 	add_to_group(GROUP_HOLD_PROMPT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_TOP_LEFT)
-	size = box_size
+	## The Control fills the render target rather than hugging the plate: the
+	## entrance ghost and the commit burst both draw well outside box_size,
+	## and anything past the edge of a SubViewport is simply not there.
+	size = Vector2(canvas_size, canvas_size)
 	pivot_offset = size * 0.5
-	visible = false
+	position = Vector2.ZERO
+
+	_face = get_parent() as SubViewport
+	if _face != null:
+		_face.size = Vector2i(canvas_size, canvas_size)
+	_billboard = get_node_or_null(billboard_path) as Sprite3D
+	if _billboard == null:
+		push_warning("[HoldPrompt] no Sprite3D at billboard_path — the prompt will not be visible")
+	else:
+		if _face != null:
+			_billboard.texture = _face.get_texture()
+		_billboard.pixel_size = billboard_pixel_size
+		_billboard.visible = false
+
+	## The Control itself stays visible for its whole life — what appears and
+	## disappears is the billboard. A hidden Control renders nothing into the
+	## viewport, which would leave the sprite carrying a stale or blank frame
+	## at exactly the moment it is asked to fade out.
+	visible = true
+	_set_face_rendering(false)
 
 
-## world.gd hands this over for every WORLD_UI_SCENES entry. Kept only as the
-## fallback for the frame before a viewport camera exists — see
-## _active_camera(), which is what the panel actually unprojects with.
-func on_world_ready(context: WorldContext) -> void:
-	_camera = context.camera
-
-
-## The camera that is ACTUALLY rendering, asked every frame.
-##
-## This used to be `context.camera`, captured once at world-ready, and that is
-## why the panel showed at startup and then stopped: unprojecting through a
-## camera that is no longer current puts the panel at coordinates that have
-## nothing to do with what is on screen, and is_position_behind() then hides
-## it outright. Reported by Stan 2026-08-28 — "F appeared initially and then
-## somehow not at the hover door, and seemingly not over the rifle either".
-##
-## get_viewport().get_camera_3d() is how MouseCursorUI and FadeByDistance
-## already do it; this widget was the odd one out.
-func _active_camera() -> Camera3D:
-	var viewport := get_viewport()
-	if viewport != null:
-		var live := viewport.get_camera_3d()
-		if live != null:
-			return live
-	return _camera if is_instance_valid(_camera) else null
+## The render target only runs while something is on screen. A SubViewport
+## left on ALWAYS redraws a 220x220 target every frame for a prompt nobody is
+## looking at, and there is no reason to pay that between pickups.
+func _set_face_rendering(on: bool) -> void:
+	if _face == null:
+		return
+	_face.render_target_update_mode = (
+		SubViewport.UPDATE_ALWAYS if on else SubViewport.UPDATE_DISABLED
+	)
 
 
 ## Start showing, anchored to `follow`. Called repeatedly for the same target
@@ -196,6 +263,8 @@ func hide_prompt() -> void:
 ## is. Kept separate from set_progress() so a hold that has only just started
 ## already reads as a hold.
 func set_holding(on: bool) -> void:
+	if on and not _holding:
+		_punch = 1.0
 	_holding = on
 
 
@@ -212,6 +281,12 @@ func instant_complete() -> void:
 		return
 	_progress_target = 1.0
 	_commit_lock = (1.0 / RISE_RATE) + COMMIT_HOLD_TIME
+	## A tap is a press too. Without this the whole morph played in the idle
+	## white with the glyph not turning, which is why a pickup read as the
+	## panel quietly swapping shapes rather than as a button being hit. The
+	## register is cleared again when the commit lock runs out.
+	_holding = true
+	_punch = 1.0
 
 
 func is_showing() -> bool:
@@ -220,8 +295,7 @@ func is_showing() -> bool:
 
 func _process(delta: float) -> void:
 	if not _shown and _appear <= 0.01:
-		if visible:
-			visible = false
+		_billboard_visible(false)
 		return
 
 	## is_instance_valid() and NOT "!= null": a freed Object compares EQUAL to
@@ -234,22 +308,60 @@ func _process(delta: float) -> void:
 	_advance_commit_lock(delta)
 	_advance_springs(delta)
 	_advance_progress(delta)
+	_advance_juice(delta)
 
-	if not _update_position():
-		visible = false
+	if not _update_billboard():
+		_billboard_visible(false)
 		return
 
-	visible = true
+	_billboard_visible(true)
 	queue_redraw()
+
+
+## Visibility belongs to the billboard, never to this Control: a hidden
+## Control renders nothing into the SubViewport, so the sprite would be
+## carrying a blank frame at exactly the moment it is asked to fade out.
+func _billboard_visible(on: bool) -> void:
+	if _billboard == null:
+		return
+	if _billboard.visible == on:
+		return
+	_billboard.visible = on
+	_set_face_rendering(on)
 
 
 func _advance_commit_lock(delta: float) -> void:
 	if _commit_lock <= 0.0:
 		return
 	_commit_lock = maxf(_commit_lock - delta, 0.0)
-	if _commit_lock == 0.0 and _hide_pending:
+	if _commit_lock > 0.0:
+		return
+	## The tap is over: drop back out of the active register so a panel that
+	## survives (a button pressed twice) does not stay yellow forever.
+	_holding = false
+	if _hide_pending:
 		_hide_pending = false
 		hide_prompt()
+
+
+## Press punch and completion burst. Both are pure decay — nothing here can
+## start them, which keeps "when does the juice fire" in the two public
+## methods rather than spread across the frame.
+func _advance_juice(delta: float) -> void:
+	if _punch > 0.0:
+		_punch = maxf(_punch - PRESS_PUNCH_RATE * delta, 0.0)
+
+	## Armed the moment the morph actually reaches the dot, not when the
+	## target was set: the burst is the payoff of the animation finishing, and
+	## firing it at the request would put it a tenth of a second early.
+	if _burst < 0.0 and _progress >= 0.999 and _progress_target >= 0.999:
+		_burst = 0.0
+	elif _burst >= 0.0 and _burst < BURST_TIME:
+		_burst = minf(_burst + delta, BURST_TIME)
+	## Rearms only once the morph has genuinely rolled back, so a held-then-
+	## released prompt can burst again on the next commit.
+	if _progress < 0.5:
+		_burst = -1.0
 
 
 func _advance_springs(delta: float) -> void:
@@ -281,26 +393,36 @@ func _advance_progress(delta: float) -> void:
 	var rate: float = RISE_RATE if _progress_target > _progress else FALL_RATE
 	_progress = move_toward(_progress, _progress_target, rate * delta)
 
-	if _holding:
-		# clockwise, and faster the closer the hold is to done
+	## Turns while the morph is running, not only while a key is physically
+	## down: a tap has no hold to speak of and the spin is what makes the F
+	## read as being consumed rather than swapped out.
+	if _holding or _progress > 0.02:
+		# clockwise, and faster the closer the morph is to done
 		_rot += (2.5 + _progress * 4.5) * delta
 	else:
 		_rot += (0.0 - _rot) * minf(1.0, 6.0 * delta)
 
 
-## Places the panel over its anchor. False means there is nowhere to put it —
-## no camera yet, no anchor, or the anchor is behind the viewer, which is the
-## same rule ComicEffectLabel applies.
-func _update_position() -> bool:
-	var camera: Camera3D = _active_camera()
-	if camera == null:
+## Puts the billboard over its anchor and plays the entrance as TRAVEL rather
+## than as a fade: it rises out of the ground decal at seated_offset and
+## settles at risen_offset, growing from seated_scale on the way. Going away
+## runs the same path backwards, so the badge sinks back into the marker it
+## came out of instead of evaporating in mid-air. That is what makes the decal
+## and the letter read as one affordance rather than two notifications.
+##
+## Behind the camera, occlusion and perspective are all the Sprite3D's problem
+## now — none of the unproject bookkeeping the screen-space version needed
+## survives here. False means there is nowhere to put it.
+func _update_billboard() -> bool:
+	if _billboard == null or not is_instance_valid(_follow):
 		return false
-	if not is_instance_valid(_follow):
-		return false
-	var world: Vector3 = _follow.global_position + anchor_offset
-	if camera.is_position_behind(world):
-		return false
-	position = camera.unproject_position(world) - size * 0.5
+	## Ease-out on the way in, so the badge decelerates into place; the same
+	## curve run backwards on the way out is a plain fall, which is right —
+	## arriving is an announcement, leaving is not.
+	var t: float = 1.0 - (1.0 - _appear) * (1.0 - _appear)
+	_billboard.global_position = _follow.global_position + seated_offset.lerp(risen_offset, t)
+	var s: float = lerpf(seated_scale, 1.0, t)
+	_billboard.scale = Vector3(s, s, s)
 	return true
 
 
@@ -316,6 +438,12 @@ func _draw() -> void:
 	var pulse: float = 1.0
 	if not _holding and settled:
 		pulse = 1.0 + sin(_pulse_t * 2.4) * 0.04
+	## The press punch rides on the same scalar every drawn element already
+	## reads, so the plate, the glyph, the ring and the dot compress together
+	## instead of one of them jumping on its own. Eased so the recoil is
+	## sharp at the start and soft coming back out.
+	if _punch > 0.0:
+		pulse *= 1.0 - PRESS_PUNCH * (_punch * _punch)
 
 	# The entrance goes from a smeared ghost to a hard edge. sharp lags
 	# appear on purpose, so the plate is still resolving after it has
@@ -332,6 +460,25 @@ func _draw() -> void:
 
 	draw_polyline(outline, Color(col, alpha), line_width, true)
 	_draw_morph(center, col, alpha, pulse)
+	_draw_commit_burst(center, col, alpha)
+
+
+## The ring the finished dot throws off — expands outward and fades to
+## nothing. It is the only element that ANNOUNCES rather than describes: the
+## plate says "there is a key here", the morph says "the key is being used",
+## and this says "it landed". Without it the dot simply sat there and a
+## completed interaction had no punctuation.
+func _draw_commit_burst(center: Vector2, col: Color, alpha: float) -> void:
+	if _burst < 0.0 or _burst >= BURST_TIME:
+		return
+	var t: float = _burst / BURST_TIME
+	## Radius eases out, opacity falls faster than linear, so the ring reads
+	## as energy leaving rather than as a circle being drawn.
+	var radius: float = 10.0 * (1.0 + (BURST_RADIUS_SCALE - 1.0) * (1.0 - (1.0 - t) * (1.0 - t)))
+	var burst_alpha: float = alpha * (1.0 - t) * (1.0 - t)
+	if burst_alpha <= 0.01:
+		return
+	draw_arc(center, radius, 0.0, TAU, 40, Color(col, burst_alpha), 2.5 * (1.0 - t * 0.6), true)
 
 
 ## Jittered low-alpha copies of the plate and the letter — the "not yet in

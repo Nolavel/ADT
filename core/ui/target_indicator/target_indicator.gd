@@ -72,6 +72,9 @@ var _is_candidate_role := false
 var _candidate_in_reach := false
 
 # === МАТЕРИАЛЫ ===
+## The one appear/disappear tween in flight, so a second request can kill it
+## instead of racing it. See _disappear() for what went wrong without this.
+var _transition: Tween = null
 var ground_material: ShaderMaterial
 var ring_material: ShaderMaterial
 var arrow_material: ShaderMaterial
@@ -267,8 +270,10 @@ func hide_indicator():
 ## only draws it. Same split show_at_position() had with the click handler
 ## that used to drive it.
 ##
-## Safe to call every frame: repositioning an already-visible indicator does
-## not restart the appear tween.
+## Safe to call every frame, and that is a contract rather than a courtesy —
+## the affordance is re-asserted every physics frame by whoever owns it. Both
+## _appear() and _disappear() are idempotent against an in-flight transition;
+## see _disappear() for the bug that made that necessary.
 func show_candidate(pos: Vector3, in_reach: bool) -> void:
 	global_position = pos + Vector3.UP * hover_height
 	_is_candidate_role = true
@@ -289,6 +294,9 @@ func show_invalid_click(pos: Vector3):
 # АНИМАЦИИ
 # ============================================
 func _appear():
+	if is_visible_indicator:
+		return
+	_kill_transition()
 	visible = true
 	is_visible_indicator = true
 	time_alive = 0.0
@@ -296,8 +304,8 @@ func _appear():
 		ground_material.set_shader_parameter("global_alpha", 0.0)
 	if ring_material:
 		ring_material.set_shader_parameter("global_alpha", 0.0)
-	var tween = create_tween()
-	tween.tween_method(_set_alpha, 0.0, 1.0, appear_duration).set_ease(Tween.EASE_OUT)
+	_transition = create_tween()
+	_transition.tween_method(_set_alpha, 0.0, 1.0, appear_duration).set_ease(Tween.EASE_OUT)
 
 func _set_alpha(v: float):
 	if ground_material:
@@ -305,13 +313,40 @@ func _set_alpha(v: float):
 	if ring_material:
 		ring_material.set_shader_parameter("global_alpha", v)
 
+## THE INTENT FLIPS NOW, NOT WHEN THE FADE ENDS, and that is the whole point
+## of this rewrite. It used to `await tween.finished` before clearing
+## is_visible_indicator, so for the 0.15 s of the fade the node still reported
+## itself visible — and hide_indicator() only guards on that flag. One hide
+## per frame during the fade therefore built a new tween per frame, each one
+## awaiting. Harmless while the decal was driven by an EDGE and hidden once;
+## the moment the affordance became per-frame asserted (2026-09-02) it showed
+## up as "27 resources still in use at exit" on the headless boot, which is a
+## gated ERROR line in CI.
+##
+## Killing the in-flight tween rather than letting two run is the other half:
+## a show landing mid-fade must take over the alpha, not fight it.
 func _disappear():
-	var tween = create_tween()
-	tween.tween_method(_set_alpha, 1.0, 0.0, appear_duration * 0.5).set_ease(Tween.EASE_IN)
-	await tween.finished
-	visible = false
+	if not is_visible_indicator:
+		return
+	_kill_transition()
 	is_visible_indicator = false
 	time_alive = 0.0
+	_transition = create_tween()
+	_transition.tween_method(_set_alpha, 1.0, 0.0, appear_duration * 0.5).set_ease(Tween.EASE_IN)
+	_transition.tween_callback(_on_disappear_finished)
+
+
+func _on_disappear_finished() -> void:
+	## Only if nothing asked for it again in the meantime — a show during the
+	## fade sets is_visible_indicator back to true and owns the node now.
+	if not is_visible_indicator:
+		visible = false
+
+
+func _kill_transition() -> void:
+	if _transition != null and _transition.is_valid():
+		_transition.kill()
+	_transition = null
 
 # ============================================
 # ОБНОВЛЕНИЕ
