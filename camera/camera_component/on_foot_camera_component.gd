@@ -1939,10 +1939,10 @@ func _rotate_camera_right():
 
 
 func _handle_zoom_input():
-	if InputSystems.is_zoom_in_just_released():
+	if InputSystems.is_zoom_in_tick():
 		zoom_input_received.emit()
 		_start_zoom(-ZOOM_STEP)
-	elif InputSystems.is_zoom_out_just_released():
+	elif InputSystems.is_zoom_out_tick():
 		zoom_input_received.emit()
 		_start_zoom(ZOOM_STEP)
 		

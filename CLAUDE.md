@@ -165,6 +165,7 @@ this went wrong the first time.
 - Prefer **explicit reference passing** over group lookups or singleton access by class name.
 - `PlayerState` (existing autoload) is the single source of truth for `Mode` and `ViewMode`. Do not create parallel state enums.
 - **Only `InputSystems.gd` reads `Input` directly.** Exceptions: `map_source/` and `map_camera/` — these are intentional level-design tools using raw `KEY_*` input; do not refactor them.
+- **Inside `InputSystems`: edges come from events, levels come from polls.** A discrete press or release is matched on the `InputEvent` (keyboard in `_unhandled_input()`, mouse in `_input()` — see `docs/architecture/autoloads_and_bootstrap.md` for why they differ); held state and axes stay as `Input.is_action_pressed()` / `get_vector()` in `_physics_process()`. Do not add a new `Input.is_action_just_pressed()` anywhere: polling an edge from the physics frame drops presses as soon as the idle and physics rates diverge (measured 2026-09-02 — 120 taps arrive as 42 at 5 Hz physics, and as 120 through the event path at every rate tested). A query method that has to stay a poll is answered from the edge latch in that file, never from `Input` directly.
 - Streaming: `_packed_cache` is non-optional (`load_threaded_get()` consumes the task; shared-path cells would false-fail without it). Do not change streaming budgets/radii (`STREAM_RADIUS`, `MAX_CONCURRENT_LOADS`, `INSTANTIATION_BUDGET_PER_FRAME`, etc.) without explicit discussion first.
 
 ## Naming conventions

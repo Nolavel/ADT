@@ -29,10 +29,7 @@
 [ext_resource type="Texture2D" uid="uid://dqukpqsfkhndf" path="res://player/textures/Material__7_normal.png" id="16_foa28"]
 [ext_resource type="Texture2D" uid="uid://8m5qo3n0wvy1" path="res://player/textures/Material__7_roughness.jpeg" id="17_uqcsq"]
 [ext_resource type="Script" uid="uid://c6fdejgw4480v" path="res://player/player_components/stamina_component/stamina_component.gd" id="31_dssci"]
-[ext_resource type="Texture2D" uid="uid://ceh8jk4l2pydw" path="res://assets/textures/pins/pin_step_walk.png" id="32_fp3m1"]
 [ext_resource type="Script" uid="uid://7ft3gsmqmrmi" path="res://ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd" id="32_ftrmt"]
-[ext_resource type="Script" path="res://player/player_components/stamina_indicator/stamina_indicator_3d.gd" id="42_stamring"]
-[ext_resource type="Texture2D" uid="uid://cwk3afcvrxb21" path="res://assets/textures/pins/pin_step_sprint.png" id="33_wmpjg"]
 [ext_resource type="Script" uid="uid://dfrq4uw3iba6d" path="res://player/player_components/inventory_component/inventory_component.gd" id="35_q28gw"]
 [ext_resource type="PackedScene" uid="uid://5fn1xrmc4k84" path="res://player/player_components/nav_component/nav_component.tscn" id="36_ge24q"]
 [ext_resource type="Script" uid="uid://kw0ry1yly3cv" path="res://player/player_components/animation_component/player_animation_component.gd" id="36_pnw6m"]
@@ -1522,7 +1519,3 @@ debug_log = true
 [node name="WeaponComponent" type="Node" parent="." unique_id=1587176807]
 script = ExtResource("41_weapon")
 
-[node name="StaminaIndicator3D" type="Node3D" parent="." unique_id=1587176808]
-script = ExtResource("42_stamring")
-walk_icon = ExtResource("32_fp3m1")
-sprint_icon = ExtResource("33_wmpjg")

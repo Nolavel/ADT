@@ -12,6 +12,67 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-02 - Reload measured instead of guessed; stamina leaves the world for the HUD; input reads edges from events
+
+**The reload bug was mine, and it was arithmetic.** "R only loads on the third
+or fourth press" survived two previous attempts because both of them fixed
+something else. This time the clips were measured: `new3/rifle_shot` is
+**1.167 s** and `new3/rifle_reload_2` is **1.875 s**, plus the
+`weapon_oneshot`'s 0.1 s fadeout — while the reload request buffer added on
+2026-08-28 was a flat **0.6 s** countdown. A reload asked for right after a
+shot therefore expired about half a second before the hands were free, every
+single time. The buffer is now bounded by the BLOCK rather than by a clock:
+`player.gd` holds the request while something is genuinely in the way and
+retries on the first free frame, with `RELOAD_REQUEST_MAX_WAIT` (4 s) as a
+ceiling against a gesture that never reports finished, not as a tuning knob.
+Proven end to end by a probe that fires a shot, presses R 0.2 s in, and
+measures the wait: **0.990 s — dropped by the old window, kept by the new
+one**, magazine 6 → 8, reserve 80 → 77.
+
+**Input now reads edges from events.** `InputSystems` polled
+`Input.is_action_just_pressed()` 21 times inside `_physics_process()`. Measured
+honestly, that is **not** what broke reload — at the project's 60 Hz physics
+the poll path loses nothing — but it is lossy the moment the idle and physics
+rates diverge (120 synthetic taps arrive as **42** at 5 Hz physics, and as
+**120** through the event path at every rate tested). Keyboard actions moved to
+`_unhandled_input()` (GUI keeps first refusal, where `pause` already lived),
+mouse buttons to `_input()` (polling ignored GUI consumption, and moving them
+behind it would change which clicks reach gameplay), matched with separate
+`if`s because wheel up drives both `zoom_out` and `lodging_hours_up`. Query
+methods that must stay polls are answered from an edge latch expired at the
+top of the physics frame — autoloads run before scene nodes, so clearing at the
+bottom would erase it before `camera_follow.gd` looked.
+`is_zoom_*_just_released()` became `is_zoom_*_tick()`.
+
+**Stamina moved from the ground into the HUD.** The ring drew over the player,
+and that was a direct consequence of the `depth_test_disabled` added to keep it
+from sinking into the terrain — a trade, not a fix. `StaminaIndicator3D` is
+deleted; `ui/hud/stamina_gauge/` draws the same effect set as the first cell of
+`PlayerHUD`'s health row, restored from commit `e40eab4`: four quarter arcs
+that close into a ring at full stamina, the cool → yellow → orange → red ramp,
+both recovery sweeps with pulse and inner glow, the jump-charge arc, and the
+walk/sprint icon **inside** the ring. On a flat canvas there is nothing to draw
+over, so the defect is absent rather than tuned away. Six states were rendered
+and looked at under Xvfb before this was called done.
+
+Touched: `core/input/input_systems.gd`, `player/player.gd`,
+`player/player.tscn`, `camera/camera_component/on_foot_camera_component.gd`,
+`ui/hud/stamina_gauge/` (new), `ui/hud/player_hud/`,
+`core/ui/target_indicator/target_indicator.gd`, `ui/widgets/`, `CLAUDE.md`,
+`docs/architecture/autoloads_and_bootstrap.md`,
+`docs/architecture/player_and_camera.md`.
+
+> *Перезарядка: причина найдена измерением — клип выстрела 1.167 с, а окно
+> буфера было 0.6 с, поэтому запрос истекал раньше, чем освобождались руки;
+> теперь ожидание ограничено самой блокировкой, а не таймером. Ввод читает
+> дискретные нажатия из события, а не опросом (замер: 120 нажатий → 42 при
+> опросе на 5 Гц физики, 120 через события на любой частоте) — но честно: не
+> это ломало R. Стамина ушла с земли в HUD рядом с health, эффекты подняты из
+> коммита `e40eab4`, иконки — внутри кольца; рисование поверх игрока исчезло
+> вместе с плоскостью в мире.*
+
+---
+
 ## 2026-08-29 - The stamina ring, looked at properly; H6 measured against its own Definition of Done
 
 **Two real defects in the ring, both found by rendering it rather than by

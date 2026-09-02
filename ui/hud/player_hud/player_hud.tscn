@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://ui/hud/player_hud/key_hints_panel.tscn" id="3_hints"]
 [ext_resource type="PackedScene" path="res://ui/hud/stance_indicator/stance_indicator.tscn" id="4_stance"]
 [ext_resource type="PackedScene" path="res://ui/hud/ammo_indicator/ammo_indicator.tscn" id="5_ammo"]
+[ext_resource type="PackedScene" path="res://ui/hud/stamina_gauge/stamina_gauge.tscn" id="6_stamina"]
 
 [node name="PlayerHUD" type="Control"]
 layout_mode = 3
@@ -17,8 +18,13 @@ layout_mode = 1
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="StaminaGauge" parent="StatusStack/HealthRow" instance=ExtResource("6_stamina")]
+layout_mode = 2
+size_flags_vertical = 4
+
 [node name="HealthBar" parent="StatusStack/HealthRow" instance=ExtResource("2_bar")]
 layout_mode = 2
+size_flags_vertical = 4
 
 [node name="StanceIndicator" parent="StatusStack/HealthRow" instance=ExtResource("4_stance")]
 layout_mode = 2

@@ -1,0 +1,10 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ui/hud/stamina_gauge/stamina_gauge.gd" id="1_gauge"]
+[ext_resource type="Texture2D" uid="uid://ceh8jk4l2pydw" path="res://assets/textures/pins/pin_step_walk.png" id="2_walk"]
+[ext_resource type="Texture2D" uid="uid://cwk3afcvrxb21" path="res://assets/textures/pins/pin_step_sprint.png" id="3_sprint"]
+
+[node name="StaminaGauge" type="Control"]
+script = ExtResource("1_gauge")
+walk_icon = ExtResource("2_walk")
+sprint_icon = ExtResource("3_sprint")

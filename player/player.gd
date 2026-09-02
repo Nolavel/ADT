@@ -130,8 +130,20 @@ const ACTOR_ID: StringName = &"player"
 ## punch_hit_delay and shot_hit_delay already use, and for the same reason:
 ## there is no animation event system in this project.
 @export var reload_time: float = 1.2
-## How long a reload request survives while the hands are busy, seconds.
-const RELOAD_BUFFER_TIME: float = 0.6
+## Ceiling on how long a remembered reload request may wait for the hands,
+## seconds. NOT a tuning knob and not the window itself: the request is held
+## for as long as something is actually blocking it (see
+## _update_reload_request()), and this only exists so a gesture that never
+## reports finished cannot keep a keystroke alive forever.
+##
+## The window used to be a flat 0.6 s countdown, and that was the whole of the
+## "R has to be pressed three or four times" bug. Measured 2026-09-02:
+## new3/rifle_shot is 1.167 s and new3/rifle_reload_2 is 1.875 s, plus the
+## weapon_oneshot's 0.1 s fadeout — so a reload asked for right after a shot
+## expired roughly half a second before the hands were free, every single
+## time, and only a press that happened to land after the clip did anything.
+## A constant picked without measuring the clip it had to outlast.
+const RELOAD_REQUEST_MAX_WAIT: float = 4.0
 
 @export_subgroup("Interaction")
 ## Height above the player's own origin (its feet) at which a pickup stops
@@ -223,9 +235,11 @@ var _is_shooting: bool = false
 ## the thing is going back to. See _on_drawn_changed().
 var _last_drawn_from: StringName = &""
 var _is_reloading: bool = false
-## Seconds left on a reload asked for while the hands were busy. See
-## _on_weapon_reload_pressed().
-var _reload_buffer: float = 0.0
+## A reload was asked for while the hands were busy and is still waiting for
+## them. See _on_weapon_reload_pressed() / _update_reload_request().
+var _reload_requested: bool = false
+## Seconds that request has been waiting, against RELOAD_REQUEST_MAX_WAIT.
+var _reload_request_age: float = 0.0
 var _reload_timer: float = 0.0
 var _reload_applied: bool = false
 var _reload_item_id: StringName = &""
@@ -381,7 +395,7 @@ func _physics_process(delta: float) -> void:
 		_update_punch(delta)
 	if _is_shooting:
 		_update_shot(delta)
-	_update_reload_buffer(delta)
+	_update_reload_request(delta)
 	if _is_reloading:
 		_update_reload(delta)
 
@@ -1306,36 +1320,52 @@ func _on_weapon_reload_pressed() -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 
-	## BUFFERED, not dropped. The press used to be discarded outright while
+	## REMEMBERED, not dropped. The press used to be discarded outright while
 	## the hands were busy — mid-punch, mid-shot, mid-draw, or with movement
 	## locked by any of them — so a reload asked for a fraction of a second
-	## too early simply never happened and had to be asked for again. "Reload
-	## works, but sometimes R has to be pressed twice" (Stan, 2026-08-28) is
-	## exactly that: the first press landed inside a gesture.
-	##
-	## Held for RELOAD_BUFFER_TIME and retried in _physics_process(). A window
-	## rather than an unbounded queue: a reload wanted a second ago is intent,
-	## one wanted five seconds ago is a stale keystroke firing on its own.
+	## too early simply never happened and had to be asked for again.
 	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
-		_reload_buffer = RELOAD_BUFFER_TIME
+		_reload_requested = true
+		_reload_request_age = 0.0
 		return
-	_reload_buffer = 0.0
+	_clear_reload_request()
 	_begin_reload()
 
 
-## Retries a buffered reload the moment the hands are free. Called every
-## physics frame; does nothing at all when nothing is buffered.
-func _update_reload_buffer(delta: float) -> void:
-	if _reload_buffer <= 0.0:
-		return
-	_reload_buffer = maxf(_reload_buffer - delta, 0.0)
-	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+## Retries a remembered reload the moment the hands are free. Called every
+## physics frame; does nothing at all when nothing is waiting.
+##
+## The wait is bounded by the BLOCK, not by a clock. The first version of
+## this counted down a flat 0.6 s and dropped the request when it hit zero —
+## which meant the fix only worked for gestures shorter than 0.6 s, and the
+## two that block a reload most often are 1.167 s and 1.875 s long. Pressing
+## R right after a shot therefore did nothing, three or four times in a row,
+## which is precisely what Stan kept reporting. Holding the request for as
+## long as something is genuinely in the way cannot be too short by
+## construction; RELOAD_REQUEST_MAX_WAIT is only there so a gesture that
+## never reports finished can't hold a keystroke open indefinitely.
+func _update_reload_request(delta: float) -> void:
+	if not _reload_requested:
 		return
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
-		_reload_buffer = 0.0
+		_clear_reload_request()
 		return
-	_reload_buffer = 0.0
+
+	_reload_request_age += delta
+	if _reload_request_age > RELOAD_REQUEST_MAX_WAIT:
+		_clear_reload_request()
+		return
+
+	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+		return
+
+	_clear_reload_request()
 	_begin_reload()
+
+
+func _clear_reload_request() -> void:
+	_reload_requested = false
+	_reload_request_age = 0.0
 
 
 ## The reload itself, with the gate that decides whether it happens at all.

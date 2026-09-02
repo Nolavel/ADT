@@ -73,11 +73,13 @@ signal weapon_reload_pressed()
 signal key_hints_enabled_changed(enabled: bool)
 
 ## --- Lodging sleep-hour picker (H1 step 4, world/lodging/) ---
-## Mouse wheel, read as discrete ticks via is_action_just_released() — same
-## convention zoom_in/zoom_out already use for the same physical input, but
-## a separate action rather than reusing those: they mean "camera zoom"
+## Mouse wheel, one emit per tick, taken from the wheel EVENT rather than
+## polled. A separate action rather than reusing zoom_in/zoom_out even though
+## both sit on the same two physical buttons: those mean "camera zoom"
 ## everywhere else they're read, and overloading them for an unrelated
 ## "adjust a number" UI would make both meanings harder to reason about.
+## Because the actions share a button, the two are matched with separate
+## `if`s below — an elif chain would let zoom swallow the picker's tick.
 ## Only consumer today is LodgingRoom's sleep-hour picker, while it's open.
 signal lodging_hours_increase_pressed()
 signal lodging_hours_decrease_pressed()
@@ -141,39 +143,193 @@ func _ready() -> void:
 	PlayerState.view_mode_changed.connect(_on_player_view_mode_changed)
 	_apply_mouse_mode()
 
-func _input(event: InputEvent) -> void:
-	if PlayerState.mode == PlayerState.Mode.MENU:
-		return
-	if event is InputEventMouseMotion:
-		_mouse_look_delta += event.relative * MOUSE_SENSITIVITY
+## ============================================
+## WHERE EDGES COME FROM — and why this file stopped polling for them
+## ============================================
+## Every discrete action here used to be read as Input.is_action_just_pressed()
+## inside _physics_process(). That is Godot's best-known input trap:
+## "just pressed" is true for exactly one IDLE frame, and _physics_process does
+## not run once per idle frame. As soon as the render rate and the physics tick
+## drift apart, an edge falls entirely between two ticks and is never seen.
+## Reload (R) is where it got noticed — it took three or four presses to fire
+## once — but it was dropping presses for all twenty discrete actions equally,
+## and no amount of buffering downstream can recover a press this file never
+## observed.
+##
+## The rule now:
+##
+##   discrete edge   -> read from the InputEvent. Never polled.
+##   held state/axis -> still Input.is_action_pressed() in _physics_process.
+##                      A LEVEL read is frame-rate independent and correct.
+##   hold duration   -> still accumulated in _physics_process, but started and
+##                      stopped by events.
+##
+## Keyboard actions live in _unhandled_input() so the GUI keeps first refusal —
+## that is where "pause" has always been, and it has never lost a press.
+## Mouse buttons live in _input() instead: polling ignored GUI consumption
+## entirely, so routing clicks behind the GUI would quietly change which ones
+## reach gameplay. The single place that does consume a click is
+## DynamicCursorUI over a 3D button, which is exactly where swallowing it is
+## the intended behaviour.
+##
+## Actions matched with separate `if`s, never an elif chain: one physical input
+## can drive two actions (wheel up is both zoom_out and lodging_hours_up), and
+## polling used to fire both. An elif would silently drop the second.
+## ============================================
 
-## Escape ("pause") is caught separately from physics — works regardless of
-## the current pause state or mode. The decision of what to do with this
-## signal belongs to MenuSystem; InputSystems only notifies.
+## ── Edge latches ──────────────────────────────────────────────────────
+## The QUERY METHODS at the bottom of this file cannot become signals: their
+## callers poll inside their own update(delta) (the camera component) or their
+## own physics frame (player.gd's jump). They are served from here instead —
+## an event records the edge, a poll reads it back.
+##
+## action -> the physics frame the edge was recorded in. An entry survives
+## until a LATER physics frame begins, so it is visible to every consumer
+## polling during the one frame that follows the event, and to none after it.
+##
+## Expiry happens at the TOP of _physics_process, and that is load-bearing:
+## autoloads run their physics callback before scene nodes do, so clearing at
+## the bottom would erase the latch before camera_follow.gd ever polled it.
+var _edge_frames: Dictionary = {}
+
+## Discrete actions that are polled rather than relayed as a signal. Kept as
+## data so the latch loop has one place to grow — adding an action here is the
+## whole of wiring it up. Wheel actions are not in this list: they arrive as
+## mouse events and are latched in _handle_mouse_button_event().
+const POLLED_EDGE_ACTIONS: Array[StringName] = [
+	&"jump",
+	&"toggle_view",
+	&"toggle_follow",
+	&"lean_left",
+	&"lean_right",
+	&"lock_on",
+	&"switch_shoulder",
+	&"toggle_stance",
+]
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		if PlayerState.mode != PlayerState.Mode.MENU:
+			_mouse_look_delta += event.relative * MOUSE_SENSITIVITY
+		return
+	if event is InputEventMouseButton:
+		_handle_mouse_button_event(event)
+
+
+## Escape ("pause") works regardless of the current pause state or mode. The
+## decision of what to do with this signal belongs to MenuSystem; InputSystems
+## only notifies. Everything below it is the same relay this file has always
+## done, moved off the polling path.
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
 		pause_pressed.emit()
 		get_viewport().set_input_as_handled()
+		return
+
+	# --- Interact: two edges here, the duration between them in physics ---
+	if event.is_action_pressed("interact"):
+		_begin_interact()
+	if event.is_action_released("interact"):
+		_end_interact()
+
+	# --- UI hotkeys ---
+	if event.is_action_pressed("status"):
+		status_pressed.emit()
+	if event.is_action_pressed("inventory"):
+		inventory_pressed.emit()
+	if event.is_action_pressed("map"):
+		map_pressed.emit()
+	if event.is_action_pressed("toggle_stream_debug"):
+		stream_debug_toggled.emit()
+	if event.is_action_pressed("toggle_perception_debug"):
+		perception_debug_toggled.emit()
+
+	# --- Debug save/load — see debug_save_pressed's own comment ---
+	if event.is_action_pressed("debug_save"):
+		debug_save_pressed.emit()
+	if event.is_action_pressed("debug_load"):
+		debug_load_pressed.emit()
+
+	# --- Draw / holster and reload — see their signals' own comments ---
+	if event.is_action_pressed("draw_holster"):
+		draw_holster_pressed.emit()
+	if event.is_action_pressed("weapon_reload"):
+		weapon_reload_pressed.emit()
+
+	# --- Key hints HUD switch — see key_hints_enabled's own comment ---
+	if event.is_action_pressed("toggle_key_hints"):
+		key_hints_enabled = not key_hints_enabled
+
+	_latch_polled_edges(event)
+
+
+## Mouse buttons and the wheel. Reached from _input(), ahead of the GUI, for
+## the reason given in the header block above.
+func _handle_mouse_button_event(event: InputEvent) -> void:
+	if event.is_action_pressed("mouse_left_button"):
+		primary_click_pressed.emit(get_viewport().get_mouse_position())
+	if event.is_action_released("mouse_left_button"):
+		primary_click_released.emit(get_viewport().get_mouse_position())
+
+	if event.is_action_pressed("mouse_right_button"):
+		_begin_secondary_click()
+	if event.is_action_released("mouse_right_button"):
+		_end_secondary_click()
+
+	if event.is_action_pressed("lodging_hours_up"):
+		lodging_hours_increase_pressed.emit()
+	if event.is_action_pressed("lodging_hours_down"):
+		lodging_hours_decrease_pressed.emit()
+
+	if event.is_action_pressed("zoom_in"):
+		_latch_edge(&"zoom_in")
+	if event.is_action_pressed("zoom_out"):
+		_latch_edge(&"zoom_out")
 
 
 func _physics_process(delta: float) -> void:
+	_expire_edges()
+
 	if PlayerState.mode == PlayerState.Mode.MENU:
 		_frame_look_delta = Vector2.ZERO
 		_mouse_look_delta = Vector2.ZERO
 	else:
 		_frame_look_delta = _mouse_look_delta
 		_mouse_look_delta = Vector2.ZERO
-	
-	_handle_interact(delta)
-	_handle_primary_click()
-	_handle_secondary_click(delta)
-	_handle_ui_hotkeys()
+
+	# What is left in the physics frame is exactly what belongs there: two
+	# hold timers, and a toggle read back from its latch.
+	_tick_interact(delta)
+	_tick_secondary_click(delta)
 	_handle_stance_toggle()
-	_handle_debug_save_load()
-	_handle_draw_holster()
-	_handle_weapon_reload()
-	_handle_lodging_hours()
-	_handle_key_hints_toggle()
+
+
+## ============================================
+## EDGE LATCH — see _edge_frames' own comment for the frame arithmetic.
+## ============================================
+func _latch_edge(action: StringName) -> void:
+	_edge_frames[action] = Engine.get_physics_frames()
+
+
+func _latch_polled_edges(event: InputEvent) -> void:
+	for action in POLLED_EDGE_ACTIONS:
+		if event.is_action_pressed(action):
+			_latch_edge(action)
+
+
+func _expire_edges() -> void:
+	if _edge_frames.is_empty():
+		return
+	var current: int = Engine.get_physics_frames()
+	# keys() returns a copy, so erasing inside the loop is safe here.
+	for action in _edge_frames.keys():
+		if int(_edge_frames[action]) < current:
+			_edge_frames.erase(action)
+
+
+func _has_edge(action: StringName) -> bool:
+	return _edge_frames.has(action)
 
 
 ## ============================================
@@ -197,36 +353,48 @@ func _apply_mouse_mode() -> void:
 ## ============================================
 ## INTERACT
 ## ============================================
-## Same shape as _handle_secondary_click(): press / held-with-duration /
-## release-with-duration, and the duration is the only thing measured.
-func _handle_interact(delta: float) -> void:
-	var claimed: bool = is_instance_valid(_interact_claimant)
+## Same shape as the secondary click: press / held-with-duration /
+## release-with-duration, and the duration is the only thing measured. Both
+## edges come from _unhandled_input(); only the duration is accumulated here.
+func _begin_interact() -> void:
+	_interact_duration = 0.0
+	_interact_active = true
+	if is_instance_valid(_interact_claimant):
+		_interact_claimant.on_interact_claimed()
+	else:
+		interact_pressed.emit()
 
-	if Input.is_action_just_pressed("interact"):
-		_interact_duration = 0.0
-		_interact_active = true
-		if claimed:
-			_interact_claimant.on_interact_claimed()
-		else:
-			interact_pressed.emit()
 
-	if _interact_active and Input.is_action_pressed("interact"):
-		_interact_duration += delta
-		if claimed:
-			if _interact_claimant.has_method(&"on_interact_held"):
-				_interact_claimant.on_interact_held(_interact_duration)
-		else:
-			interact_held.emit(_interact_duration)
+func _end_interact() -> void:
+	if not _interact_active:
+		return
+	if is_instance_valid(_interact_claimant):
+		if _interact_claimant.has_method(&"on_interact_released"):
+			_interact_claimant.on_interact_released(_interact_duration)
+	else:
+		interact_released.emit(_interact_duration)
+	_interact_active = false
+	_interact_duration = 0.0
 
-	if Input.is_action_just_released("interact"):
-		if _interact_active:
-			if claimed:
-				if _interact_claimant.has_method(&"on_interact_released"):
-					_interact_claimant.on_interact_released(_interact_duration)
-			else:
-				interact_released.emit(_interact_duration)
-		_interact_active = false
-		_interact_duration = 0.0
+
+func _tick_interact(delta: float) -> void:
+	if not _interact_active:
+		return
+	# A LEVEL read, deliberately, and the one place polling is still right: if
+	# the release event never arrives — a Control ate it, the window lost focus
+	# mid-press, the claimant was freed — the key would otherwise read as held
+	# forever. The edge that STARTS a hold is an event; the one that ends it
+	# has this net under it.
+	if not Input.is_action_pressed("interact"):
+		_end_interact()
+		return
+
+	_interact_duration += delta
+	if is_instance_valid(_interact_claimant):
+		if _interact_claimant.has_method(&"on_interact_held"):
+			_interact_claimant.on_interact_held(_interact_duration)
+	else:
+		interact_held.emit(_interact_duration)
 
 
 func claim_interact(claimant: Node) -> void:
@@ -248,27 +416,33 @@ func is_interact_claimed() -> bool:
 ## ============================================
 ## MOUSE CLICKS
 ## ============================================
-func _handle_primary_click() -> void:
-	if Input.is_action_just_pressed("mouse_left_button"):
-		primary_click_pressed.emit(get_viewport().get_mouse_position())
-	if Input.is_action_just_released("mouse_left_button"):
-		primary_click_released.emit(get_viewport().get_mouse_position())
+## The primary click is a pure relay and lives entirely in
+## _handle_mouse_button_event(). The secondary one measures a hold, so it is
+## split the same way interact is: edges from the event, duration from physics.
+func _begin_secondary_click() -> void:
+	_secondary_click_duration = 0.0
+	_secondary_click_active = true
+	secondary_click_pressed.emit(get_viewport().get_mouse_position())
 
 
-func _handle_secondary_click(delta: float) -> void:
-	if Input.is_action_just_pressed("mouse_right_button"):
-		_secondary_click_duration = 0.0
-		_secondary_click_active = true
-		secondary_click_pressed.emit(get_viewport().get_mouse_position())
+func _end_secondary_click() -> void:
+	if not _secondary_click_active:
+		return
+	_secondary_click_active = false
+	_secondary_click_duration = 0.0
+	secondary_click_released.emit(get_viewport().get_mouse_position())
 
-	if Input.is_action_pressed("mouse_right_button") and _secondary_click_active:
-		_secondary_click_duration += delta
-		secondary_click_held.emit(get_viewport().get_mouse_position(), _secondary_click_duration)
 
-	if Input.is_action_just_released("mouse_right_button"):
-		_secondary_click_active = false
-		_secondary_click_duration = 0.0
-		secondary_click_released.emit(get_viewport().get_mouse_position())
+func _tick_secondary_click(delta: float) -> void:
+	if not _secondary_click_active:
+		return
+	# Same safety net, same reason, as _tick_interact().
+	if not Input.is_action_pressed("mouse_right_button"):
+		_end_secondary_click()
+		return
+
+	_secondary_click_duration += delta
+	secondary_click_held.emit(get_viewport().get_mouse_position(), _secondary_click_duration)
 
 
 ## ============================================
@@ -282,70 +456,14 @@ func _handle_secondary_click(delta: float) -> void:
 ## ============================================
 
 ## ============================================
-## OTHER UI HOTKEYS
+## UI HOTKEYS, DEBUG SAVE/LOAD, DRAW/HOLSTER, RELOAD, LODGING WHEEL and the
+## KEY HINTS SWITCH used to have a _handle_* function each, all of them one
+## `if Input.is_action_just_pressed(...)` deep and all of them polled. They are
+## plain relays with nothing to time, so they now sit inline in
+## _unhandled_input() / _handle_mouse_button_event() above — the wrapper only
+## ever existed to give the polling loop something to call. The reasoning for
+## each still lives on its signal's own declaration at the top of this file.
 ## ============================================
-func _handle_ui_hotkeys() -> void:
-	if Input.is_action_just_pressed("status"):
-		status_pressed.emit()
-	if Input.is_action_just_pressed("inventory"):
-		inventory_pressed.emit()
-	if Input.is_action_just_pressed("map"):
-		map_pressed.emit()
-	if Input.is_action_just_pressed("toggle_stream_debug"):
-		stream_debug_toggled.emit()
-	if Input.is_action_just_pressed("toggle_perception_debug"):
-		perception_debug_toggled.emit()
-
-
-## ============================================
-## DEBUG SAVE/LOAD — see debug_save_pressed's own comment. Relayed
-## unconditionally, same as every other action here; SaveSystem does not
-## gate on PlayerState.mode today.
-## ============================================
-func _handle_debug_save_load() -> void:
-	if Input.is_action_just_pressed("debug_save"):
-		debug_save_pressed.emit()
-	if Input.is_action_just_pressed("debug_load"):
-		debug_load_pressed.emit()
-
-
-## ============================================
-## DRAW / HOLSTER — see draw_holster_pressed's own comment.
-## ============================================
-func _handle_draw_holster() -> void:
-	if Input.is_action_just_pressed("draw_holster"):
-		draw_holster_pressed.emit()
-
-
-## ============================================
-## WEAPON RELOAD — see weapon_reload_pressed's own comment.
-## ============================================
-func _handle_weapon_reload() -> void:
-	if Input.is_action_just_pressed("weapon_reload"):
-		weapon_reload_pressed.emit()
-
-
-## ============================================
-## LODGING HOURS — mouse wheel, relayed unconditionally like every other
-## action here; LodgingRoom decides whether a picker is actually open.
-## just_released, not just_pressed: Godot delivers a wheel tick as a
-## synthetic press+release in the same frame, and is_action_just_released()
-## is the convention zoom_in/zoom_out already established for reading it.
-## ============================================
-func _handle_lodging_hours() -> void:
-	if Input.is_action_just_released("lodging_hours_up"):
-		lodging_hours_increase_pressed.emit()
-	if Input.is_action_just_released("lodging_hours_down"):
-		lodging_hours_decrease_pressed.emit()
-
-
-## ============================================
-## KEY HINTS HUD TOGGLE — see key_hints_enabled's own comment for why this
-## switch lives here instead of on KeyHintsPanel.
-## ============================================
-func _handle_key_hints_toggle() -> void:
-	if Input.is_action_just_pressed("toggle_key_hints"):
-		key_hints_enabled = not key_hints_enabled
 
 
 ## ============================================
@@ -377,20 +495,25 @@ func _handle_stance_toggle() -> void:
 ## per-frame held state, not a discrete event). These places used to call
 ## Input.* directly — now every Input.* call physically happens only here,
 ## in InputSystems, and consumers call these wrappers instead.
+##
+## The *_just_pressed ones are answered from the edge latch, NOT from
+## Input.is_action_just_pressed(): a poll of Godot's own edge is exactly what
+## was losing presses. The held/axis ones below are level reads and stay as
+## direct Input.* calls, which is what they should have been all along.
 ## ============================================
 
 ## --- Camera (on_foot_camera_component.gd) ---
 func is_toggle_follow_just_pressed() -> bool:
-	return Input.is_action_just_pressed("toggle_follow")
+	return _has_edge(&"toggle_follow")
 
 func is_toggle_view_just_pressed() -> bool:
-	return Input.is_action_just_pressed("toggle_view")
+	return _has_edge(&"toggle_view")
 
 func is_lean_left_just_pressed() -> bool:
-	return Input.is_action_just_pressed("lean_left")
+	return _has_edge(&"lean_left")
 
 func is_lean_right_just_pressed() -> bool:
-	return Input.is_action_just_pressed("lean_right")
+	return _has_edge(&"lean_right")
 
 ## Held forms of the same two actions. The ISOMETRIC camera reads these for
 ## its bounded temporary look, which is a continuous lean rather than a
@@ -404,16 +527,19 @@ func is_lean_left_pressed() -> bool:
 func is_lean_right_pressed() -> bool:
 	return Input.is_action_pressed("lean_right")
 
-func is_zoom_in_just_released() -> bool:
-	return Input.is_action_just_released("zoom_in")
+## Wheel ticks. Renamed from is_zoom_*_just_released(): a wheel event is a
+## press, and "just released" only ever named the frame polling happened to
+## notice it in. One tick, one true frame.
+func is_zoom_in_tick() -> bool:
+	return _has_edge(&"zoom_in")
 
-func is_zoom_out_just_released() -> bool:
-	return Input.is_action_just_released("zoom_out")
+func is_zoom_out_tick() -> bool:
+	return _has_edge(&"zoom_out")
 
 
 ## --- Jump (player.gd + dynamic_cursor_ui.gd) ---
 func is_jump_just_pressed() -> bool:
-	return Input.is_action_just_pressed("jump")
+	return _has_edge(&"jump")
 
 func is_jump_held() -> bool:
 	return Input.is_action_pressed("jump")
@@ -436,10 +562,10 @@ func is_sprint_held() -> bool:
 	return Input.is_action_pressed("sprint")
 
 func is_lock_on_just_pressed() -> bool:
-	return Input.is_action_just_pressed("lock_on")
+	return _has_edge(&"lock_on")
 
 func is_switch_shoulder_just_pressed() -> bool:
-	return Input.is_action_just_pressed("switch_shoulder")
+	return _has_edge(&"switch_shoulder")
 
 
 ## --- Aim (TPSMovementSystem) ---
@@ -455,7 +581,7 @@ func is_aim_pressed() -> bool:
 
 ## --- Stance ---
 func is_stance_toggle_just_pressed() -> bool:
-	return Input.is_action_just_pressed("toggle_stance")
+	return _has_edge(&"toggle_stance")
 
 
 ## Hover's vertical axis: +1 up (hover_up), -1 down (hover_down).

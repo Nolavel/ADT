@@ -3,12 +3,14 @@ class_name TargetIndicator
 
 ## Lookup group carried by the ONE instance that marks a move destination.
 ## HUDComponent puts its `target_indicator` in it and deliberately leaves
-## `candidate_indicator` out — a walk icon belongs next to where the character
-## is going, not next to a thing they might pick up.
+## `candidate_indicator` out.
 ##
-## Same discovery route ComicEffectSystem and HoldPrompt use, and for the same
-## reason: StaminaIndicator3D is a child of player.tscn and never receives a
-## WorldContext.
+## NOTHING READS IT TODAY. Its only consumer was the ground stamina ring,
+## which hung the walk/sprint icon over the destination marker; that ring is
+## gone and the icons live inside StaminaGauge in the HUD. The group is kept
+## rather than deleted on its own because the move-destination marker itself
+## goes away with click-to-move in the isometric removal — one deletion, not
+## two.
 const GROUP_MOVE_TARGET: StringName = &"move_target_indicator"
 
 # === ВИЗУАЛЬНЫЕ КОМПОНЕНТЫ ===

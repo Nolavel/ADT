@@ -10,8 +10,8 @@
 # inventory, store_item(), InteractableObject, or how long a hold has to last
 # — the caller owns all of that and pushes state in through the five methods
 # below. Delete the node and every interaction still works; only the picture
-# goes away. Same contract EquipmentVisualsComponent and StaminaIndicator3D
-# state for themselves.
+# goes away. Same contract EquipmentVisualsComponent and StaminaGauge state
+# for themselves.
 #
 # PROGRESS IS A TARGET, NOT A VALUE. set_progress() says where the caller
 # thinks the hold is; this node eases its own displayed value toward that.
