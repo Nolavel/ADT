@@ -14,7 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://dfgnksifqyewk" path="res://world/aogashima/aogashima_island.tscn" id="9_dqqhb"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/clerk.tres" id="10_clerk"]
 [ext_resource type="Resource" path="res://data/npc_archetypes/patrolman.tres" id="11_patrolman"]
-[ext_resource type="PackedScene" path="res://world/interactables/carbine/carbine.tscn" id="12_carbine"]
+[ext_resource type="PackedScene" uid="uid://dom5frew5r74c" path="res://world/interactables/carbine/carbine.tscn" id="12_carbine"]
 
 [node name="World" type="Node3D" unique_id=2119433318 groups=["world_root"]]
 script = ExtResource("1_tcf2h")

@@ -1,9 +1,9 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://dom5frew5r74c"]
 
-[ext_resource type="Script" uid="uid://crb77033gqmom" path="res://world/interactables/Interactables.gd" id="1_interactable"]
+[ext_resource type="Script" uid="uid://crb77033gqmom" path="res://world/interactables/interactables.gd" id="1_interactable"]
 [ext_resource type="Script" uid="uid://bmjsijadfn8ws" path="res://world/interactables/interactive_visual_indicator.gd" id="2_indicator"]
-[ext_resource type="ArrayMesh" path="res://data/items/meshes/carbine_placeholder.res" id="3_mesh"]
-[ext_resource type="Resource" path="res://data/items/carbine.tres" id="4_item"]
+[ext_resource type="ArrayMesh" uid="uid://bqrjbf5nneai8" path="res://data/items/meshes/carbine_placeholder.res" id="3_mesh"]
+[ext_resource type="Resource" uid="uid://bpf2kfgn0ag5n" path="res://data/items/carbine.tres" id="4_item"]
 [ext_resource type="Texture2D" uid="uid://qm0y255cq634" path="res://assets/icons/icon_interactive.png" id="5_tick"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_body"]
@@ -12,31 +12,30 @@ size = Vector3(0.08, 0.19, 0.74)
 [sub_resource type="BoxShape3D" id="BoxShape3D_area"]
 size = Vector3(1, 2.4, 1)
 
-[node name="Carbine" type="RigidBody3D"]
+[node name="Carbine" type="RigidBody3D" unique_id=1235315559]
 collision_layer = 512
 collision_mask = 3
 script = ExtResource("1_interactable")
 name_interactable_object = "Carbine"
 interaction_type = 2
-can_throw = false
 can_use_in_hands = true
 item = ExtResource("4_item")
-enable_visual_indicator = true
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=803580665]
+transform = Transform3D(0.99181277, -0.12770069, 0, 0.12770069, 0.99181277, 0, 0, 0, 1, 0, 0, 0)
 mesh = ExtResource("3_mesh")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1957399957]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.053, 0.008)
 shape = SubResource("BoxShape3D_body")
 
-[node name="Area" type="Area3D" parent="."]
+[node name="Area" type="Area3D" parent="." unique_id=1663520490]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Area"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area" unique_id=17066295]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.008)
 shape = SubResource("BoxShape3D_area")
 
-[node name="InteractiveVisualIndicator" type="Node3D" parent="."]
+[node name="InteractiveVisualIndicator" type="Node3D" parent="." unique_id=2027072403]
 script = ExtResource("2_indicator")
 indicator_sprite_texture = ExtResource("5_tick")
 base_height_offset = 0.45

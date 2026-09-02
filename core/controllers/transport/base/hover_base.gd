@@ -36,11 +36,11 @@ class_name HoverBase
 
 @export_group("Horizontal")
 ## Максимальная горизонтальная скорость, м/с.
-@export var max_speed: float = 100.0
+@export var max_speed: float = 65.0
 ## Отзывчивость разгона (1/с): выше — быстрее выходит на скорость. Это
 ## коэффициент экспоненты в lerp, а не м/с² — ощущение массы задаётся тем,
 ## насколько он НИЖЕ braking (медленный разгон, резкий стоп).
-@export var acceleration: float = 6.0
+@export var acceleration: float = 3.0
 ## Отзывчивость торможения при отсутствии ввода (1/с). Выше разгона =
 ## отпустил газ, ховер тормозит резче, чем разгонялся.
 @export var braking: float = 8.0
@@ -51,7 +51,7 @@ class_name HoverBase
 
 @export_group("Vertical")
 ## Скорость набора/сброса высоты, м/с.
-@export var vertical_speed: float = 12.0
+@export var vertical_speed: float = 22.0
 ## Жёсткость удержания высоты (1/с): выше — резче возврат к удерживаемой.
 @export var altitude_hold_stiffness: float = 4.0
 
