@@ -58,6 +58,9 @@ extends Control
 @export var refusal_color: Color = Color(0.90, 0.32, 0.18, 1.0)
 ## How long that flash takes to fade, seconds.
 @export var refusal_flash_time: float = 0.45
+## Colour of a pip that is being filled but is not loaded yet. Between spent
+## and loaded on purpose: it says "on its way", which is neither.
+@export var loading_color: Color = Color(0.55, 0.50, 0.28, 0.85)
 
 var _rounds: int = 0
 var _capacity: int = 0
@@ -65,6 +68,9 @@ var _reserve: int = 0
 ## 1 at the moment of a refused reload, easing to 0. Tints every pip.
 var _refusal_flash: float = 0.0
 var _refusal_tween: Tween = null
+## 0..1 while a reload is running, negative when none is. See begin_reload().
+var _loading: float = -1.0
+var _loading_tween: Tween = null
 
 
 func _ready() -> void:
@@ -77,6 +83,8 @@ func _ready() -> void:
 ## show" rather than an error: it is the same answer for a torch, for empty
 ## hands, and for a firearm that does not feed from a magazine.
 func set_ammo(rounds: int, capacity: int, reserve: int) -> void:
+	## The real number has arrived; the promise is spent.
+	_clear_loading()
 	if capacity <= 0:
 		clear()
 		return
@@ -97,6 +105,42 @@ func set_ammo(rounds: int, capacity: int, reserve: int) -> void:
 ## The refusal is drawn where the answer already is, rather than as a new
 ## widget: the row that shows the rounds flashes, so the eye lands on the
 ## number that explains the refusal.
+## A reload has started and will finish in `fill_time` seconds: light the
+## empty pips left to right over exactly that long, so the last one arrives as
+## the rounds do.
+##
+## WHY THIS EXISTS. The refill lands 1.2 s into a 1.875 s gesture and nothing
+## on screen moved before it — measured 2026-09-02, after "it only works if
+## you press again during the animation". The press did work, every time; it
+## just had no answer for a second, so the player pressed again and gave the
+## second press the credit. This is that answer, and it is honest rather than
+## flattering: the pips fill in a THIRD colour, not the loaded one, so a
+## magazine that is filling never looks like a magazine that is full.
+func begin_reload(fill_time: float) -> void:
+	if _loading_tween != null and _loading_tween.is_valid():
+		_loading_tween.kill()
+	_loading = 0.0
+	_loading_tween = create_tween()
+	_loading_tween.tween_method(_set_loading, 0.0, 1.0, maxf(fill_time, 0.01))
+	## Parks itself if the rounds never arrive — an interrupted reload leaves
+	## the row honest instead of half-lit forever.
+	_loading_tween.tween_callback(_clear_loading)
+	queue_redraw()
+
+
+func _set_loading(value: float) -> void:
+	_loading = value
+	queue_redraw()
+
+
+func _clear_loading() -> void:
+	if _loading_tween != null and _loading_tween.is_valid():
+		_loading_tween.kill()
+	_loading_tween = null
+	_loading = -1.0
+	queue_redraw()
+
+
 func flash_refusal() -> void:
 	_refusal_flash = 1.0
 	if _refusal_tween != null and _refusal_tween.is_valid():
@@ -111,6 +155,7 @@ func _set_refusal_flash(value: float) -> void:
 
 
 func clear() -> void:
+	_clear_loading()
 	_rounds = 0
 	_capacity = 0
 	_reserve = 0
@@ -157,9 +202,19 @@ func _draw() -> void:
 	var is_empty := _rounds <= 0
 	var top := (badge_height - pip_height) * 0.5
 	var x := 0.0
+	## How far the fill animation has reached, counted from the first EMPTY
+	## pip so the sweep starts where the magazine actually stops rather than
+	## at the left edge.
+	var to_fill: int = _capacity - _rounds
+	var filling_upto: int = _rounds
+	if _loading >= 0.0 and to_fill > 0:
+		filling_upto = _rounds + int(ceil(_loading * to_fill))
+
 	for i in _capacity:
 		var filled := i < _rounds
 		var fill := loaded_color if filled else spent_color
+		if not filled and i < filling_upto:
+			fill = loading_color
 		if is_empty:
 			## Every pip red, not just an absence of yellow ones: an empty
 			## magazine is a state to notice, and "nothing lit" reads the

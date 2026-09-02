@@ -182,13 +182,30 @@ func _ready() -> void:
 ## own physics frame (player.gd's jump). They are served from here instead —
 ## an event records the edge, a poll reads it back.
 ##
-## action -> the physics frame the edge was recorded in. An entry survives
-## until a LATER physics frame begins, so it is visible to every consumer
-## polling during the one frame that follows the event, and to none after it.
+## action -> "has a physics frame already offered this edge to pollers".
 ##
-## Expiry happens at the TOP of _physics_process, and that is load-bearing:
+## THIS USED TO STORE A FRAME NUMBER AND IT DID NOT WORK. The first version
+## recorded Engine.get_physics_frames() and expired an entry once the counter
+## had moved past it. That rests on knowing exactly when Godot ticks that
+## counter relative to input flushing, which I reasoned about instead of
+## measuring — and got backwards. Measured 2026-09-02: six synthetic
+## `toggle_view` taps produced SIX latches and ZERO reads. Every polled edge in
+## the project was dead, V and jump included.
+##
+## The replacement carries no arithmetic at all, so there is nothing left to be
+## wrong about. An event files the action with `false`. At the TOP of each
+## physics frame, `false` becomes `true` — meaning "this frame is the one that
+## gets to see it" — and anything already `true` is dropped, having had its
+## frame. Every poll during that frame reads it; nothing after does.
+##
+## Expiry stays at the TOP of _physics_process, and that part IS load-bearing:
 ## autoloads run their physics callback before scene nodes do, so clearing at
 ## the bottom would erase the latch before camera_follow.gd ever polled it.
+##
+## Cost: an edge is visible on the physics frame AFTER the one it arrived in,
+## rather than possibly the same one. That is one frame of latency and it is
+## the price of not depending on flush order — losing the press entirely,
+## which is what the clever version did, is not a trade worth having.
 var _edge_frames: Dictionary = {}
 
 ## Discrete actions that are polled rather than relayed as a signal. Kept as
@@ -300,7 +317,7 @@ func _physics_process(delta: float) -> void:
 ## EDGE LATCH — see _edge_frames' own comment for the frame arithmetic.
 ## ============================================
 func _latch_edge(action: StringName) -> void:
-	_edge_frames[action] = Engine.get_physics_frames()
+	_edge_frames[action] = false
 
 
 func _latch_polled_edges(event: InputEvent) -> void:
@@ -309,18 +326,22 @@ func _latch_polled_edges(event: InputEvent) -> void:
 			_latch_edge(action)
 
 
+## Promotes this frame's edges and drops last frame's. keys() returns a copy,
+## so erasing inside the loop is safe here.
 func _expire_edges() -> void:
 	if _edge_frames.is_empty():
 		return
-	var current: int = Engine.get_physics_frames()
-	# keys() returns a copy, so erasing inside the loop is safe here.
 	for action in _edge_frames.keys():
-		if int(_edge_frames[action]) < current:
+		if bool(_edge_frames[action]):
 			_edge_frames.erase(action)
+		else:
+			_edge_frames[action] = true
 
 
+## True only while the edge is the CURRENT frame's — an entry that has not
+## been promoted yet arrived mid-frame and belongs to the next one.
 func _has_edge(action: StringName) -> bool:
-	return _edge_frames.has(action)
+	return bool(_edge_frames.get(action, false))
 
 
 ## ============================================
