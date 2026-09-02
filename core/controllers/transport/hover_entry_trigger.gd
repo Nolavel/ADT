@@ -68,6 +68,7 @@ var _hold_committed: bool = false
 ## Экранный prompt, ищется по группе и кэшируется. null — нормальное
 ## состояние: виджет только рисует, посадка работает и без него.
 var _prompt: HoldPrompt = null
+var _hud: HUDComponent = null
 
 func _ready() -> void:
 	_set_entry_light_enabled(false)
@@ -95,6 +96,12 @@ func _on_body_entered(body: Node3D) -> void:
 	_player = body
 	_set_entry_light_enabled(true)
 	InputSystems.claim_interact(self)
+	## The affordance goes up on ARRIVAL, not on the first press. It used to
+	## be raised inside on_interact_claimed(), which meant the door said
+	## nothing at all until the player had already pressed F — measured
+	## 2026-09-02 at the door: key claimed, no panel, no decal. Nothing else
+	## in the build asks the player to guess that a key does something.
+	_show_affordance()
 	print("[HoverEntryTrigger] Игрок у двери '%s' — interact для посадки"
 			% _hover.name)
 
@@ -106,6 +113,7 @@ func _on_body_exited(body: Node3D) -> void:
 	_set_entry_light_enabled(false)
 	InputSystems.release_interact(self)
 	_end_hold()
+	_hide_affordance()
 	print("[HoverEntryTrigger] Игрок отошёл от '%s'" % _hover.name)
 
 
@@ -116,9 +124,12 @@ func on_interact_claimed() -> void:
 	if not _can_start_hold():
 		return
 	_hold_committed = false
+	## The panel is already up (see _on_body_entered); the press only says the
+	## hold has started. show_prompt() for the same anchor is a no-op, so the
+	## entrance does not replay under the player's finger.
+	_show_affordance()
 	var prompt := _resolve_prompt()
-	if prompt != null and _door_anchor != null:
-		prompt.show_prompt(_door_anchor)
+	if prompt != null:
 		prompt.set_holding(true)
 		prompt.set_progress(0.0)
 
@@ -143,6 +154,9 @@ func on_interact_held(duration: float) -> void:
 		State.SEATED:
 			_begin_exiting()
 	_end_hold()
+	## The offer is spent — the transition is running. This is the one place
+	## the panel goes away without the player leaving the zone.
+	_hide_affordance()
 
 
 ## Отпустили. Раньше порога — откат; после — уже ничего не значит.
@@ -161,13 +175,49 @@ func _can_start_hold() -> bool:
 	return _state == State.SEATED
 
 
+## Ends the HOLD, not the offer. The panel stays up while the player is still
+## standing at the door — releasing the key early should roll the ring back,
+## not take the door's label away.
 func _end_hold() -> void:
 	var prompt := _resolve_prompt()
 	if prompt == null:
 		return
 	prompt.set_holding(false)
 	prompt.set_progress(0.0)
-	prompt.hide_prompt()
+
+
+## Both halves of "you can act here" — the decal on the ground and the key
+## panel above it — raised and lowered together, so they can never disagree
+## about whether the door is offering anything.
+func _show_affordance() -> void:
+	if _door_anchor == null or not _can_start_hold():
+		return
+	var prompt := _resolve_prompt()
+	if prompt != null:
+		prompt.show_prompt(_door_anchor)
+	var hud := _resolve_hud()
+	if hud != null:
+		## in_reach: standing in the door zone IS the reach test here. There
+		## is no walk-up phase to distinguish, the trigger volume is it.
+		hud.show_candidate_at(_door_anchor, true)
+
+
+func _hide_affordance() -> void:
+	var prompt := _resolve_prompt()
+	if prompt != null:
+		prompt.hide_prompt()
+	var hud := _resolve_hud()
+	if hud != null:
+		hud.hide_candidate()
+
+
+func _resolve_hud() -> HUDComponent:
+	if is_instance_valid(_hud):
+		return _hud
+	_hud = get_tree().get_first_node_in_group(
+		HUDComponent.GROUP_HUD_COMPONENT
+	) as HUDComponent
+	return _hud
 
 
 func _resolve_prompt() -> HoldPrompt:

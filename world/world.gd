@@ -69,6 +69,11 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 ## 2) Самостоятельные 3D-сцены — instantiate(), родитель = stream_container.
 var WORLD_3D_ENTITY_SCENES: Array[PackedScene] = [
 	preload("res://vfx/hud_component/hud_component.tscn"),
+	## Moved out of WORLD_UI_SCENES on 2026-09-02: the F prompt is a sign
+	## standing next to the object now, not a label pinned to the glass — a
+	## Control drawing into a SubViewport carried by a billboard. See
+	## ui/widgets/hold_prompt/hold_prompt.gd.
+	preload("res://ui/widgets/hold_prompt/hold_prompt.tscn"),
 ]
 
 ## 3) Screen-space UI сцены — instantiate(), родитель = общий CanvasLayer.
@@ -77,7 +82,6 @@ var WORLD_UI_SCENES: Array[PackedScene] = [
 	preload("res://ui/debug/perception_debug_panel.tscn"),
 	preload("res://ui/hud/aim_reticle/aim_reticle.tscn"),
 	preload("res://ui/hud/player_hud/player_hud.tscn"),
-	preload("res://ui/widgets/hold_prompt/hold_prompt.tscn"),
 ]
 
 const UI_CANVAS_LAYER_INDEX: int = 40

@@ -142,7 +142,7 @@ func _on_interact_pressed() -> void:
 func _physics_process(delta: float) -> void:
 	detect_interactable()
 	_update_approach(delta)
-	_update_hold_prompt()
+	_update_affordance()
 	update_debug_label()
 	
 func detect_interactable() -> void:
@@ -218,39 +218,63 @@ func detect_interactable() -> void:
 ## Announces what is targeted and whether it is already within arm's reach.
 ## Called every frame but emits only on an edge — the object changing, or the
 ## player crossing pickup_distance without changing target.
+##
+## SILENT WHILE THE KEY IS CLAIMED, and that is what makes the affordance have
+## one owner rather than two. At a hover door the claimant puts up its own
+## prompt and its own decal; this component is blind to the key at that moment
+## (InputSystems does not deliver it here), so it must be blind to the DISPLAY
+## too or two markers argue about one button. _update_affordance() carries
+## the same rule for what is drawn.
 func _emit_target_if_changed() -> void:
+	var claimed: bool = InputSystems.is_interact_claimed()
 	## A freed target answers false here and 0 below, so a picked-up object
 	## reports as "nothing targeted" rather than being dereferenced.
-	var in_reach := current_interactable != null \
+	var in_reach := not claimed and current_interactable != null \
 			and _flat_distance_to(current_interactable) <= pickup_distance
-	var target_id: int = current_interactable.get_instance_id() if current_interactable else 0
+	var target_id: int = 0 if claimed else (
+		current_interactable.get_instance_id() if current_interactable else 0
+	)
 	if target_id == _last_target_id and in_reach == _last_in_reach:
 		return
 	previous_interactable = current_interactable
 	_last_target_id = target_id
 	_last_in_reach = in_reach
-	interact_target_changed.emit(current_interactable, in_reach)
+	interact_target_changed.emit(null if claimed else current_interactable, in_reach)
 
 
-## Puts the key prompt over the candidate, or takes it away.
+## Whether the current candidate is already within arm's reach, i.e. whether F
+## acts now or walks over first. Public because the DISPLAY needs the same
+## answer and must not re-derive it — a second copy of the distance rule is
+## how the decal and the behaviour drift apart. Written by
+## _emit_target_if_changed(), which is where the rule lives.
+func is_target_in_reach() -> bool:
+	return _last_in_reach
+
+
+## Puts the key panel over the candidate, or takes it away. The decal under it
+## is the other half of the same affordance and is raised by HUDComponent,
+## which READS this component every physics frame — the dependency points that
+## way on purpose: what finds things does not know who draws them.
 ##
-## Called every physics frame rather than off interact_target_changed,
-## because the other half of the condition — whether someone else owns the
-## interact key — changes without the target changing at all: walking into a
-## hover door's zone claims the key while the candidate stays exactly where
-## it was. HoldPrompt itself ignores a repeat show for the same node, so the
-## entrance still plays once per candidate.
-##
-## Silent while the key is claimed: at a hover door the claim holder is
-## already showing a prompt of its own, and two panels for one key is worse
-## than none.
-func _update_hold_prompt() -> void:
+## SILENT — not "hides" — WHILE THE KEY IS CLAIMED, and that distinction was a
+## real bug rather than a nicety. This used to call hide_prompt() on every
+## claimed frame, stomping the panel the claim holder had raised one frame
+## earlier, so a hover door showed nothing at all however long the player
+## stood in it (measured 2026-09-02: key claimed, no panel, no decal). A claim
+## means someone else owns the display too; this component neither shows nor
+## hides.
+func _update_affordance() -> void:
+	if InputSystems.is_interact_claimed():
+		return
+
 	var prompt: HoldPrompt = _resolve_hold_prompt()
 	if prompt == null:
 		return
-	if current_interactable == null or InputSystems.is_interact_claimed():
+	if current_interactable == null:
 		prompt.hide_prompt()
 		return
+	## HoldPrompt ignores a repeat show for the same node, so the entrance
+	## still plays exactly once per candidate.
 	prompt.show_prompt(current_interactable)
 
 

@@ -26,7 +26,7 @@ State and cross-scene concerns live in a small set of autoloads, each with one c
 
 `World._init_world()` is the composition root and is intentionally organized as three fixed, non-growing loops rather than one flexible abstraction, because each category has a different construction method and parent node:
 1. **`WORLD_SYSTEM_SCRIPTS`** — plain `Node` classes (`GameClockSystem`, `EnvironmentLightingSystem`, `TPSMovementSystem`, `MenuSystem`, `WorldBorderDebugSystem`, `WorldBorderGuardSystem`, `IncidentRegistry`, `LodgingSystem`, `PlayerPersistenceSystem`, `SaveSystem`, `ComicEffectSystem` — `ClickToMoveSystem` and `ZoomRulerSystem` were removed with the isometric camera on 2026-09-02) instantiated with `.new()`, parented to `World` itself.
-2. **`WORLD_3D_ENTITY_SCENES`** — standalone 3D `.tscn` scenes instantiated and parented to `stream_container`.
+2. **`WORLD_3D_ENTITY_SCENES`** — standalone 3D `.tscn` scenes instantiated and parented to `stream_container` (`HUDComponent`'s interaction decal, and since 2026-09-02 `HoldPrompt` — the F badge moved here from the UI list when it stopped being screen-space).
 3. **`WORLD_UI_SCENES`** — screen-space `Control` UI scenes, parented to a dedicated `CanvasLayer`.
 
 Any node/scene in these lists can implement `on_world_ready(context: WorldContext)`, called once after player/camera/systems exist (`core/world/world_context.gd` exposes `context.get_system(SomeClass)`). Adding a new system/entity/UI scene = one line in the relevant array, not new bootstrap code. This mechanism is strictly about game-system/UI lifecycle — actual world content (tiles/blocks) is `StreamingSystems`' job, entirely separate.

@@ -12,6 +12,96 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-02 - Interact affordance: the hover door speaks, both halves are asserted the same way, the press has a payoff
+
+**The hover door said nothing, and it was measured before it was fixed.** A
+probe standing the player in each interaction zone reported: hover door — key
+claimed, no F panel, no decal; lodging bed and carbine — both fine. So the
+lodging room was never broken, and the hover was broken in two independent
+ways at once:
+
+1. `HoverEntryTrigger` only raised the panel inside `on_interact_claimed()`,
+   i.e. after the player had already pressed F. It now goes up on ARRIVAL and
+   comes down on leaving; releasing the key early rolls the ring back without
+   taking the door's label away.
+2. `InteractComponent` called `hide_prompt()` on every frame the key was
+   claimed, stomping whatever the claimant had just raised. "Silent while
+   claimed" now means silent — neither shows nor hides.
+
+**The two halves of one affordance were driven differently, and that was a
+bug.** The decal came from an EDGE (`interact_target_changed`), the panel from
+a per-frame call. Anything that hid the decal therefore won permanently, with
+no edge left to raise it again — reproduced as the F panel over the lodging
+bed with no decal under it after walking past a hover door. Both halves are
+now re-asserted every physics frame. `HUDComponent` READS `InteractComponent`
+rather than being pushed by it, so the dependency still points the way it
+always did: what finds things does not know who draws them. A key claimant
+overrides through `show_candidate_at()` while it owns the key.
+
+**A latent teardown cycle surfaced on the way and is worth recording.**
+Removing `HUDComponent`'s reference to `InteractComponent` — dead once the
+signal path went — turned the headless boot from silent into `27 resources
+still in use at exit` plus 61 leaked `GDScript`/`GDScriptNativeClass`
+instances, reproducibly, with no callers involved. Restoring the reference
+(now genuinely used, for the read) makes it silent again. The cycle was not
+created by this change, only exposed by it; it is not chased down here.
+
+**`TargetIndicator` transitions are idempotent now**, which the class already
+claimed in its own comment. `_disappear()` used to `await tween.finished`
+before clearing `is_visible_indicator`, so during the 0.15 s fade every call
+started another tween. Harmless while the decal was hidden once per edge;
+per-frame assertion turned it into a tween per frame. The intent flips
+immediately and an in-flight transition is killed rather than raced.
+
+**The press has a payoff.** The morph existed but nothing announced the press
+itself: a tap ran F → circle → dot in idle white with the glyph not turning,
+because `_holding` was only ever set by the hold path. A press now punches the
+plate inward, flips the register to active, spins the glyph while the morph
+runs, and the finished dot throws a ring that expands and fades. Rendered and
+looked at as four frames — nothing / candidate / press / burst.
+
+**The F prompt moved into the world.** It was a `Control` on the UI canvas
+unprojecting its anchor every frame, which drew it at a constant pixel size
+however far away the object was — a label pinned to the glass rather than a
+sign standing next to the thing. The same Control and the same `_draw()` now
+render into a `SubViewport` carried by a billboarded `Sprite3D` at the anchor,
+so nothing about the picture was rewritten and perspective scale, real
+placement and depth ordering come for free. Rendered at 1.3 m and 2.3 m to
+confirm it actually scales. **Always on top** (`no_depth_test`) — Stan's call:
+the prompt is a statement the game is making, not an object in the scene, and
+a depth-tested badge at chest height is lost behind the player's own shoulder
+constantly.
+
+**The entrance is travel, not a fade**, and that is the "галка плавно меняется
+на F" part: the badge rises out of the ground decal and sinks back into it,
+growing from `seated_scale` on the way, so the marker and the letter read as
+one affordance with two stages rather than two notifications. `HoldPrompt`
+moved from `WORLD_UI_SCENES` to `WORLD_3D_ENTITY_SCENES` with it.
+
+**Stamina keeps a floor under its opacity** (`arc_min_alpha`, 0.35). The
+ported rule was alpha = the remaining ratio, so the ring faded toward
+invisible exactly as it ran out. Raised on the six-state render rather than
+changed silently, because it was the original's behaviour; Stan's call was the
+floor. Arc length still reaches zero and the ramp still runs to red, so
+"almost nothing left" reads the same — it just stays legible while saying it.
+
+Touched: `core/controllers/transport/hover_entry_trigger.gd`,
+`core/ui/target_indicator/target_indicator.gd`,
+`player/player_components/interact_component/interact_component.gd`,
+`ui/hud/stamina_gauge/stamina_gauge.gd`, `ui/widgets/hold_prompt/hold_prompt.gd`,
+`vfx/hud_component/hud_component.gd`.
+
+> *У двери ховера не было ни F, ни декали — замерено пробой, а не на глаз:
+> подсказка поднималась только ПОСЛЕ нажатия, а InteractComponent каждый кадр
+> её гасил, пока клавиша захвачена. Комната, вопреки жалобе, работала. Обе
+> половины подсказки теперь утверждаются одинаково — каждый физический кадр, и
+> HUD читает InteractComponent, а не наоборот. По дороге вылез скрытый цикл в
+> графе скриптов (27 ресурсов на выходе) — записан, но не выкорчёван. Нажатие
+> получило отдачу: просадка таблички, жёлтый регистр, поворот и всплеск кольца.
+> У стамины появился порог прозрачности 0.35.*
+
+---
+
 ## 2026-09-02 - The isometric camera is gone; one TPS with two framings, Q/E lean
 
 **The migration the 2026-08-30 audit was written for, carried out.** Removed:

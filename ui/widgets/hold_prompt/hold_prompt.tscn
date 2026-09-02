@@ -1,10 +1,33 @@
-[gd_scene format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://ui/widgets/hold_prompt/hold_prompt.gd" id="1_prompt"]
 
-[node name="HoldPrompt" type="Control"]
+[node name="HoldPromptWorld" type="Node3D"]
+
+[node name="Face" type="SubViewport" parent="."]
+disable_3d = true
+transparent_bg = true
+handle_input_locally = false
+gui_disable_input = true
+size = Vector2i(220, 220)
+render_target_update_mode = 0
+
+[node name="HoldPrompt" type="Control" parent="Face"]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 76.0
-offset_bottom = 76.0
+offset_right = 220.0
+offset_bottom = 220.0
+mouse_filter = 2
 script = ExtResource("1_prompt")
+
+[node name="Billboard" type="Sprite3D" parent="."]
+visible = false
+cast_shadow = 0
+transparent = true
+shaded = false
+double_sided = false
+no_depth_test = true
+billboard = 1
+texture_filter = 1
+render_priority = 8
+pixel_size = 0.0045
