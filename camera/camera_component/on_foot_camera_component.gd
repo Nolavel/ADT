@@ -230,20 +230,41 @@ var _probe_pivot: Vector3 = Vector3.ZERO
 @export var lean_camera_offset: float = 0.45
 
 @export_group("Wide framing")
+#
+# WHY THERE ARE THREE NUMBERS HERE AND NOT TWO, AND WHY THE ORIGINAL
+# CONSTRAINT MOVED.
+#
+# The rule was "только смещение, дистанция та же", and it was built that way
+# first. Then Stan produced the reference frame this view is meant to match,
+# and it was MEASURED against a render rather than eyeballed:
+#
+#   reference    character starts 6.8% in from the left edge, ~29% of the
+#                frame's width, crown at 40% of its height, legs cropped
+#   lens only    20% in from the left, ~14% wide
+#
+# A lens shift moves the subject across the frame; it cannot make them
+# bigger. The reference is a CLOSER camera as well as an offset one, so the
+# two requirements could not both hold and the distance became a knob.
+#
+# Non-obvious consequence, found the same way: moving IN means the SAME
+# h_offset throws the character off the left edge — at 1.2 m with h 0.90
+# only a shoulder was left in shot. Closer camera, SMALLER offset.
+#
+# The three values are Stan's pick of rendered candidates (2026-09-02): the
+# composition of the reference, deliberately held back from its exact scale.
+# At 1.1-1.2 m the figure fills a quarter of the frame permanently and the
+# near plane starts clipping the shoulder on turns — the reference is key
+# art and has no obligation to be playable for eight hours.
+
 ## Lens shift applied at full TPS_WIDE, in the same units Camera3D's own
-## h_offset/v_offset use. Positive h pushes the rendered subject toward one
-## side and positive v toward the bottom — which side and which way is a
-## sign that has to be confirmed on screen, not derived, so both are
-## exported and the render probe is how they were set.
-##
-## The character ends up low and to one side, the framing most third-person
-## games use for their "wide" or "exploration" camera, and the reason there
-## is a second view mode at all after the orbit was removed.
-@export var wide_h_offset: float = 0.55
-## Set by looking at a render, not by taste in the abstract: at 0.35 the
-## character's feet were cropped by the bottom of the frame. 0.22 keeps the
-## whole figure in shot while still reading as a low corner placement.
-@export var wide_v_offset: float = 0.22
+## h_offset/v_offset use. Signs were confirmed on screen, not derived:
+## positive h pushes the rendered subject LEFT, positive v pushes it DOWN.
+@export var wide_h_offset: float = 0.40
+@export var wide_v_offset: float = 0.20
+## Camera distance at full TPS_WIDE. Set it equal to TPS_DISTANCE to get the
+## original "offset only, same distance" behaviour back — the term it feeds
+## is written as a difference, so that value makes it exactly zero.
+@export var wide_distance: float = 1.30
 
 @export_group("Look")
 ## Multiplier on top of InputSystems.MOUSE_SENSITIVITY. User preference —
@@ -487,10 +508,13 @@ func _update_camera_position(delta: float) -> void:
 		_tps_lock_distance, base_distance, Smoothing.damp_factor(distance_smoothing, delta)
 	)
 
-	# TPS_WIDE is the SAME distance, deliberately — Stan, 2026-09-02: "только
-	# смещение, дистанция та же". Pulling back as well would make the two
-	# views two cameras again, which is what this migration removes.
-	var effective_distance: float = _tps_lock_distance + _tps_sprint_pullback
+	# The framing blend leans the distance toward wide_distance. Written as a
+	# DIFFERENCE on purpose: setting wide_distance = TPS_DISTANCE makes this
+	# term exactly zero and restores the original "offset only, same distance"
+	# behaviour, without a second code path to maintain for it. See the Wide
+	# framing export group for why the distance is a knob at all.
+	var effective_distance: float = _tps_lock_distance + _tps_sprint_pullback \
+			+ (wide_distance - TPS_DISTANCE) * _framing_blend
 
 	var horizontal_distance := effective_distance * cos(pitch_rad)
 	var vertical_distance := -effective_distance * sin(pitch_rad)

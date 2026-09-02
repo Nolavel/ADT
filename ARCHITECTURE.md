@@ -360,9 +360,14 @@ made that safe is `docs/tps_camera_single_mode_audit.md`.
 
 `PlayerState.ViewMode` survives as a choice of FRAMING, not of camera. `TPS`
 centres the character behind the shoulder; `TPS_WIDE` shifts the lens
-(`Camera3D.h_offset`/`v_offset`) so they sit low and to one side. Distance,
-pitch, yaw, occlusion and every follow rate are identical between them, and
-the whole difference is one eased scalar. That is why the old view-transition
+(`Camera3D.h_offset`/`v_offset`) so they sit low and to one side and shortens
+the boom to `wide_distance`. Pitch, yaw, occlusion and every follow rate are
+identical between them, and the whole difference is one eased scalar. The
+distance was fixed at first — *"только смещение, дистанция та же"* — and
+became a knob once the reference frame was measured: a lens shift moves the
+subject across the frame but cannot make it bigger, and the reference is a
+closer shot as well as an offset one. `wide_distance = TPS_DISTANCE` restores
+the original behaviour exactly. That is why the old view-transition
 machinery — a zoom animation, a pitch retarget and a `view_mode_animating`
 gate the entire position pass had to be aware of — could be deleted rather
 than ported.

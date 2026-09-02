@@ -211,9 +211,13 @@ minimum would have disabled occlusion outright on a 2.2 m boom — so radius
 and minimum distance were re-derived and are the part most in need of eyes.
 
 **The second view mode survives as a FRAMING.** `PlayerState.ViewMode` is
-`TPS` / `TPS_WIDE`: the same camera at the same distance, with a lens shift
-putting the character low and to one side. Stan's constraint, verbatim:
-*"только смещение, дистанция та же"*.
+`TPS` / `TPS_WIDE`: one camera, with a lens shift putting the character low
+and to one side and a shorter boom (1.30 m against 2.2). The constraint began
+as *"только смещение, дистанция та же"* and was built that way; it moved when
+the reference frame was measured against a render — the character sits 6.8%
+in from the left at ~29% of frame width there, against 20% and ~14% from a
+lens shift alone, and a lens shift cannot make a subject bigger. `wide_distance`
+set back to `TPS_DISTANCE` restores the original behaviour exactly.
 
 ### Carried over from the camera migration
 
@@ -225,9 +229,12 @@ putting the character low and to one side. Stan's constraint, verbatim:
   they drive) is now unreached — the decal_only candidate role is the only
   one instanced. Left intact rather than stripped: whether a destination
   marker comes back is a design question, not a cleanup.
-- **The wide framing's offsets** (`wide_h_offset` / `wide_v_offset`) were set
-  by looking at a software-OpenGL render, not by playing. They are exports;
-  expect to move them.
+- **The wide framing's three numbers** (`wide_h_offset` 0.40 / `wide_v_offset`
+  0.20 / `wide_distance` 1.30) were chosen from rendered candidates against
+  the reference frame, on Compatibility, not by playing. Deliberately held
+  back from the reference's exact scale: at 1.1–1.2 m the figure fills a
+  quarter of the frame permanently and the near plane starts clipping the
+  shoulder on turns. They are exports; expect to move them.
 
 ### Comic panels (the word gets a frame)
 

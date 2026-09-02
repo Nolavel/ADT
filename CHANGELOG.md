@@ -52,6 +52,22 @@ in need of eyes on a real corridor.
 are *aiming* leans, and with empty hands the character reads as miming a
 rifle, so the body leans only in `COMBAT` while the camera leans always.
 
+**The wide framing's distance stopped being fixed, and that was measured too.**
+It shipped as "offset only, same distance" per the decision, then Stan sent the
+reference frame it is meant to match. Measured against a render at the
+reference's own 2:1: the character sits **6.8%** in from the left edge at
+**~29%** of frame width there, against **20%** and **~14%** from a lens shift
+alone. A lens shift moves a subject across the frame; it cannot make them
+bigger, so the two requirements could not both hold and the distance became an
+export. Counter-intuitive finding from the same pass: moving in needs a
+*smaller* `h_offset`, since the same shift throws a bigger subject further off
+frame — at 1.2 m with `h` 0.90 only a shoulder was left in shot. Defaults are
+Stan's pick of three rendered candidates: **1.30 m / h 0.40 / v 0.20**,
+deliberately short of the reference's exact scale, because at 1.1–1.2 m the
+figure fills a quarter of the frame permanently and the near plane starts
+clipping the shoulder. `wide_distance = TPS_DISTANCE` restores the original
+behaviour exactly — the term is written as a difference for that reason.
+
 Touched: `camera/` (three files deleted, `on_foot_camera_component.gd`
 rewritten), `core/movement/`, `core/ui/`, `core/input/input_systems.gd`,
 `core/player_state/player_state.gd`, `player/player.gd` and its animation
@@ -77,7 +93,11 @@ on both sides.
 > изометрический минимум 3 м на плече 2.2 м просто отключил бы проверку. Q/E —
 > наклон: клипы замерены (это статические позы), тело наклоняется только в
 > COMBAT, потому что клипы прицельные и с пустыми руками выглядят как имитация
-> винтовки.*
+> винтовки. Дистанция wide перестала быть фиксированной: замер по референсу
+> показал, что сдвиг линзы двигает героя по кадру, но не делает его крупнее —
+> 6.8% от края и 29% ширины в референсе против 20% и 14% при одном сдвиге.
+> Дефолт 1.30 м / h 0.40 / v 0.20, сознательно не доведён до масштаба
+> референса.*
 
 ---
 
