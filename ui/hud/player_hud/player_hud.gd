@@ -103,6 +103,11 @@ func _bind_ammo(context: WorldContext) -> void:
 	## decides to ask and therefore what knows the answer was no.
 	if context.player.has_signal(&"reload_refused"):
 		context.player.reload_refused.connect(_on_reload_refused)
+	## The other half of the same answer: a refusal says "nothing to do", this
+	## says "under way". Without it the row is silent for the second the
+	## gesture takes before the rounds land — see AmmoIndicator.begin_reload().
+	if context.player.has_signal(&"reload_started"):
+		context.player.reload_started.connect(_on_reload_started)
 	_equipment.drawn_changed.connect(_on_drawn_changed)
 
 	# Same initial-paint reasoning as health above — and it is not always a
@@ -139,6 +144,16 @@ func _on_drawn_changed(item_id: StringName) -> void:
 func _on_reload_refused(_item_id: StringName) -> void:
 	if _ammo != null and _ammo.visible:
 		_ammo.flash_refusal()
+
+
+## A reload started, and will fill in fill_time seconds.
+func _on_reload_started(item_id: StringName, fill_time: float) -> void:
+	if _ammo == null or not _ammo.visible:
+		return
+	## Only the weapon actually in the hands, same rule as _on_ammo_changed().
+	if _equipment == null or _equipment.get_drawn() != item_id:
+		return
+	_ammo.begin_reload(fill_time)
 
 
 func _on_ammo_changed(item_id: StringName, rounds: int, capacity: int, reserve: int) -> void:

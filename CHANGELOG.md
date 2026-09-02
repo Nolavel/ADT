@@ -12,6 +12,77 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-02 - Three playtest regressions, and the one I had reasoned about instead of measuring
+
+Stan reported three things after playing. Two were mine and both came from
+assumptions I never checked; the third turned out not to be the bug he
+described, and the real one underneath it was worse.
+
+**V did nothing, and so did jump, stance, lock-on and shoulder swap.** The
+edge latch introduced with the event-driven input rewrite stored
+`Engine.get_physics_frames()` and expired an entry once the counter moved past
+it. That depends on knowing exactly when Godot ticks that counter relative to
+input flushing — which I reasoned about rather than measured, and got
+backwards. Measured: **six synthetic `toggle_view` taps produced six latches
+and zero reads.** Every polled edge in the project was dead. Replaced with a
+latch that carries no arithmetic at all: an event files the action as `false`,
+the top of the next physics frame promotes it to `true`, the frame after drops
+it. Costs one frame of latency and has nothing left to be wrong about. Now
+5 taps → 5 latches → 5 `view_mode_changed`.
+
+**The camera stopped turning at the screen edge**, because `MouseCursorUI` was
+a SECOND writer of `Input.mouse_mode` — `MOUSE_MODE_HIDDEN` on foot, left over
+from the isometric era. HIDDEN keeps the pointer inside the window, so
+relative motion stops with it. Measured on the running build as `mouse_mode`
+0 where `InputSystems` had asked for 2. The widget now decides only its own
+`visible`; `CLAUDE.md`'s "only InputSystems touches Input" rule gained the word
+WRITES. **I had this evidence a day earlier** — a probe printed `mouse_mode=1`
+and I wrote it off as an Xvfb artifact instead of following it.
+
+**Reload: the reported symptom was real, the cause was not what it looked
+like.** Through the real key path, standing / after a shot / while walking, a
+single press reloaded correctly every time — so the bug was not in the input
+or the request buffer. Under the render probe's single-digit frame rate it
+failed exactly as described, and that is the actual fault: `AnimationTree`
+updates on the IDLE frame while the punch/shot/reload machines run in
+`_physics_process`, so "the one-shot is not active" and "it has not started
+yet" read identically. The one-frame grace guarding that was enough at a
+comfortable frame rate and is a coin toss at 55 FPS against 60 Hz physics.
+Measured: one physics frame after a reload started, `_is_reloading` was true
+and `is_weapon_gesture_active()` false — so the next frame ended the reload
+before its refill landed. All three machines now latch a `*_gesture_seen` flag
+before they are allowed to test for the end, with `GESTURE_START_GRACE` as the
+backstop. Backward control in the same low-frame-rate environment: `3/8,
+reserve 80` before (never applied), `8/8, reserve 75` after.
+
+**Two smaller reload fixes on top.** A second press while a reload is already
+running is no longer buffered — it used to queue a second full reload, running
+the gesture twice and spending the reserve twice for one intent, which is why
+the second press appeared to be the one that worked. Proven by the reserve
+delta: pressing twice now costs **−2**, not −4. And the row shows the magazine
+filling while it fills (`AmmoIndicator.begin_reload()`, a third colour that
+never lets a filling magazine look like a full one) — the refill lands 1.2 s
+into a 1.875 s gesture and nothing on screen moved before it, which is what
+made a working reload feel broken.
+
+Touched: `core/input/input_systems.gd`, `player/player.gd`,
+`ui/hud/ammo_indicator/ammo_indicator.gd`, `ui/hud/player_hud/player_hud.gd`,
+`ui/widgets/dynamic_cursor/dynamic_cursor_ui.gd`, `CLAUDE.md`,
+`docs/architecture/autoloads_and_bootstrap.md`.
+
+> *Три регрессии с плейтеста. V не работала — и вместе с ней прыжок, стойка,
+> захват цели и смена плеча: защёлка ребра считала кадры физики, а я эту
+> арифметику придумал, а не замерил. Замер: шесть нажатий — шесть защёлок, ноль
+> чтений. Камера упиралась в край экрана, потому что курсор оказался вторым
+> писателем `mouse_mode` и ставил HIDDEN — улику я видел днём раньше и списал
+> на Xvfb. Перезарядка с одного нажатия работала везде, где я мерил, и ломалась
+> на низком FPS: AnimationTree считается в idle, а машина состояний в физике,
+> поэтому «не активен» и «ещё не начался» — одно и то же чтение. Теперь все три
+> жеста ждут подтверждения старта. Плюс второе нажатие больше не заказывает
+> вторую перезарядку, и обойма видимо заполняется, пока заполняется.*
+
+---
+
 ## 2026-09-02 - Interact affordance: the hover door speaks, both halves are asserted the same way, the press has a payoff
 
 **The hover door said nothing, and it was measured before it was fixed.** A

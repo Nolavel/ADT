@@ -28,6 +28,16 @@ signal movement_started
 ## an empty reserve behind it. The HUD flashes the ammo row; nothing else
 ## subscribes, and nothing here decides what the refusal should look like.
 signal reload_refused(item_id: StringName)
+## A reload actually started, and how long until the magazine fills.
+##
+## Exists because the reload had NO feedback for its first 1.2 seconds — the
+## refill sits inside the clip (see reload_time) and nothing on screen moved
+## until it landed, inside a 1.875 s gesture. Measured 2026-09-02 after Stan
+## reported "it only works if you press again during the animation": the first
+## press did the whole job every time, in all three situations tested, and the
+## payoff simply arrived a second late, so the second press got the credit.
+## The HUD uses this to show the magazine filling while it fills.
+signal reload_started(item_id: StringName, fill_time: float)
 signal movement_stopped
 signal state_changed(new_state: MovementState)
 ## Emitted once per punch that actually connects with an NPC, after
@@ -145,6 +155,30 @@ const ACTOR_ID: StringName = &"player"
 ## A constant picked without measuring the clip it had to outlast.
 const RELOAD_REQUEST_MAX_WAIT: float = 4.0
 
+## How long a gesture's state machine waits for the AnimationTree to actually
+## report the one-shot running before it stops waiting, seconds.
+##
+## THE ONE-FRAME GRACE THAT USED TO GUARD THIS WAS NOT ENOUGH, and that is a
+## measured bug, not a theoretical one. The AnimationTree processes on the
+## IDLE frame while these state machines run in _physics_process, so "the
+## one-shot is not active" and "the one-shot has not started yet" are the same
+## reading for however many physics frames pass before the next idle frame. At
+## a comfortable frame rate that is under one frame and the old is_first_frame
+## skip covered it. At ~55 FPS against 60 Hz physics it is a coin toss, and
+## under the software renderer in the render probe it never covers it.
+##
+## Measured 2026-09-02: one physics frame after a reload started,
+## _is_reloading was true and is_weapon_gesture_active() was false — so the
+## NEXT frame ended the reload before its refill landed, the rounds never
+## arrived, and pressing again during the animation was the only way to get
+## one that stuck. That is exactly Stan's report, and the same race is in the
+## punch and the shot.
+##
+## Generous on purpose: it is a backstop for a gesture that never starts at
+## all (a missing clip, a tree that refused the request), not a timing value.
+## Every clip in the project is longer than this.
+const GESTURE_START_GRACE: float = 0.5
+
 @export_subgroup("Interaction")
 ## Height above the player's own origin (its feet) at which a pickup stops
 ## being "off the ground" and becomes "at body height", metres. Below it the
@@ -215,6 +249,8 @@ var wants_to_run: bool = false  # the player wants to run (even if they can't)
 var _is_punching: bool = false
 var _punch_timer: float = 0.0
 var _punch_hit_resolved: bool = false
+## Same role as _reload_gesture_seen, for the punch one-shot.
+var _punch_gesture_seen: bool = false
 ## Instance id of the NPC this punch was thrown at, 0 when the swing was
 ## aimed at nobody. An id, not a Node reference: the target can be freed
 ## mid-wind-up by its own block streaming out, and an id makes that a
@@ -241,9 +277,14 @@ var _reload_requested: bool = false
 var _reload_request_age: float = 0.0
 var _reload_timer: float = 0.0
 var _reload_applied: bool = false
+## Set once the reload one-shot has actually been SEEN running. Until then
+## "not active" means "not started yet" — see GESTURE_START_GRACE.
+var _reload_gesture_seen: bool = false
 var _reload_item_id: StringName = &""
 var _shot_timer: float = 0.0
 var _shot_resolved: bool = false
+## Same role as _reload_gesture_seen, for the shot one-shot.
+var _shot_gesture_seen: bool = false
 
 ## --- Direct movement (TPS, WASD) — cached input data, written by
 ## TPSMovementSystem every physics frame via set_direct_move_input().
@@ -1122,6 +1163,7 @@ func _start_punch() -> void:
 	_is_punching = true
 	_punch_timer = 0.0
 	_punch_hit_resolved = false
+	_punch_gesture_seen = false
 	_acquire_punch_intent()
 	set_movement_enabled(false)
 	_animation_component.play_punch()
@@ -1173,9 +1215,6 @@ func _face_punch_intent(delta: float) -> void:
 ## Called from _physics_process() even while movement is locked — see that
 ## function's own comment on why.
 func _update_punch(delta: float) -> void:
-	## True only on the very first call after _start_punch() — used below to
-	## skip the completion check for one frame, see that branch's comment.
-	var is_first_frame := _punch_timer <= 0.0
 	_punch_timer += delta
 
 	if not _punch_hit_resolved:
@@ -1188,12 +1227,18 @@ func _update_punch(delta: float) -> void:
 		_punch_hit_resolved = true
 		_resolve_punch_hit()
 
-	if is_first_frame:
-		## AnimationTree processes the fire request on its own cadence, not
-		## synchronously with play_punch() — checking is_punch_active() the
-		## same frame it was requested can still read the pre-fire "not
-		## active" state and end the punch before it visibly started.
-		return
+	## Same "started before ended" rule as the reload and the shot — see
+	## GESTURE_START_GRACE.
+	if not _punch_gesture_seen:
+		if _animation_component.is_punch_active():
+			_punch_gesture_seen = true
+		elif _punch_timer < maxf(GESTURE_START_GRACE, punch_hit_delay):
+			return
+		else:
+			_is_punching = false
+			_punch_intent_id = 0
+			set_movement_enabled(true)
+			return
 
 	if not _animation_component.is_punch_active():
 		_is_punching = false
@@ -1261,6 +1306,7 @@ func _start_shot() -> void:
 	_is_shooting = true
 	_shot_timer = 0.0
 	_shot_resolved = false
+	_shot_gesture_seen = false
 	set_movement_enabled(false)
 	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_SHOOT_RIFLE)
 
@@ -1279,11 +1325,22 @@ func _on_weapon_reload_pressed() -> void:
 	if PlayerState.mode != PlayerState.Mode.ON_FOOT:
 		return
 
+	## ALREADY RELOADING — this press is not a request for a SECOND reload.
+	## It used to be buffered like any other, which ran the gesture twice and
+	## spent the reserve twice for one intent; and because the first reload's
+	## payoff lands a second in, the second gesture is what the player saw
+	## change the number. That is the whole of "it only works if you press
+	## again during the animation" (Stan, 2026-09-02). Answered instead of
+	## queued: the row acknowledges that the reload is already under way.
+	if _is_reloading:
+		reload_started.emit(_reload_item_id, maxf(reload_time - _reload_timer, 0.0))
+		return
+
 	## REMEMBERED, not dropped. The press used to be discarded outright while
 	## the hands were busy — mid-punch, mid-shot, mid-draw, or with movement
 	## locked by any of them — so a reload asked for a fraction of a second
 	## too early simply never happened and had to be asked for again.
-	if _is_punching or _is_shooting or _is_reloading or not movement_enabled:
+	if _is_punching or _is_shooting or not movement_enabled:
 		_reload_requested = true
 		_reload_request_age = 0.0
 		return
@@ -1351,7 +1408,11 @@ func _begin_reload() -> void:
 	_is_reloading = true
 	_reload_timer = 0.0
 	_reload_applied = false
+	_reload_gesture_seen = false
 	_reload_item_id = item.id
+	## Announced BEFORE the gesture, so the HUD starts filling on the same
+	## frame the key was pressed rather than when the rounds land.
+	reload_started.emit(item.id, reload_time)
 	set_movement_enabled(false)
 	_animation_component.play_weapon_gesture(PlayerAnimationComponent.ANIM_RELOAD_RIFLE)
 
@@ -1359,7 +1420,6 @@ func _begin_reload() -> void:
 ## Called from _physics_process() even while movement is locked — same
 ## reason _update_punch() and _update_shot() are.
 func _update_reload(delta: float) -> void:
-	var is_first_frame := _reload_timer <= 0.0
 	_reload_timer += delta
 
 	if not _reload_applied and _reload_timer >= reload_time:
@@ -1374,11 +1434,19 @@ func _update_reload(delta: float) -> void:
 		if _reload_item_id != &"" and _weapon != null:
 			_weapon.reload(_reload_item_id)
 
-	if is_first_frame:
-		## Same AnimationTree cadence trap the punch and the shot document:
-		## asking is_weapon_gesture_active() on the frame the request was
-		## made can still read the pre-fire state.
-		return
+	## "Has it ended" may only be asked once "has it started" is yes. See
+	## GESTURE_START_GRACE for the race this closes and how it was measured.
+	if not _reload_gesture_seen:
+		if _animation_component.is_weapon_gesture_active():
+			_reload_gesture_seen = true
+		elif _reload_timer < maxf(GESTURE_START_GRACE, reload_time):
+			return
+		else:
+			## It never started. Do not hang the character: the refill above
+			## has already had its moment, so hand movement back and finish.
+			_is_reloading = false
+			set_movement_enabled(true)
+			return
 
 	if not _animation_component.is_weapon_gesture_active():
 		_is_reloading = false
@@ -1388,18 +1456,23 @@ func _update_reload(delta: float) -> void:
 ## Called from _physics_process() even while movement is locked — same
 ## reason _update_punch() is, see that function's own comment.
 func _update_shot(delta: float) -> void:
-	var is_first_frame := _shot_timer <= 0.0
 	_shot_timer += delta
 
 	if not _shot_resolved and _shot_timer >= shot_hit_delay:
 		_shot_resolved = true
 		_resolve_shot()
 
-	if is_first_frame:
-		## Same AnimationTree cadence trap play_punch() documents: asking
-		## is_weapon_gesture_active() on the frame the request was made can
-		## still read the pre-fire state and end the shot before it started.
-		return
+	## Same "started before ended" rule as the reload — see
+	## GESTURE_START_GRACE.
+	if not _shot_gesture_seen:
+		if _animation_component.is_weapon_gesture_active():
+			_shot_gesture_seen = true
+		elif _shot_timer < maxf(GESTURE_START_GRACE, shot_hit_delay):
+			return
+		else:
+			_is_shooting = false
+			set_movement_enabled(true)
+			return
 
 	if not _animation_component.is_weapon_gesture_active():
 		_is_shooting = false

@@ -461,12 +461,20 @@ func _on_3d_button_clicked(button_name: String) -> void:
 
 
 ## Кастомный курсор (нарисованный вручную) актуален только в ON_FOOT.
-## В остальных режимах (MENU, VEHICLE_HOVER, TUBE_TRANSIT) прячем его
-## и возвращаем системный курсор — иначе в меню не видно, куда кликать.
+## В остальных режимах (MENU, VEHICLE_HOVER, TUBE_TRANSIT) прячем его —
+## иначе в меню он рисуется поверх настоящего.
+##
+## IT NO LONGER TOUCHES Input.mouse_mode, AND THAT WAS A REAL BUG rather than
+## tidying. This used to set MOUSE_MODE_HIDDEN on foot and MOUSE_MODE_VISIBLE
+## everywhere else — a SECOND writer of a value InputSystems also writes, and
+## the last one to run won. HIDDEN keeps the pointer inside the window: it
+## stops at the edge, so relative motion stops with it and the camera cannot
+## turn past a certain angle. Reported by Stan 2026-09-02 as "I turn the
+## cursor left, we stop; right, it stops somewhere too", and measured on the
+## running build as mouse_mode 0 (VISIBLE) where InputSystems had asked for 2
+## (CAPTURED).
+##
+## The rule this restores is already in CLAUDE.md: only InputSystems touches
+## Input. This widget decides its own visibility and nothing else.
 func _apply_cursor_for_mode(mode) -> void:
-	if mode == PlayerState.Mode.ON_FOOT:
-		Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
-		visible = true
-	else:
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-		visible = false
+	visible = mode == PlayerState.Mode.ON_FOOT
