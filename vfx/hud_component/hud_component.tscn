@@ -48,12 +48,6 @@ vertical_alignment = 1
 visible = false
 mesh = SubResource("SphereMesh_wxh3k")
 
-[node name="TargetIndicator" type="Node3D" parent="." unique_id=681512925]
-script = ExtResource("2_rlc05")
-
-[node name="GroundDecal" type="MeshInstance3D" parent="TargetIndicator" unique_id=2105001289]
-mesh = SubResource("PlaneMesh_ow0l6")
-
 [node name="CandidateIndicator" type="Node3D" parent="." unique_id=681512926]
 script = ExtResource("2_rlc05")
 decal_only = true

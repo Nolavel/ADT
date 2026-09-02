@@ -44,16 +44,16 @@ deliberately.
 
 **`input_map.md` is the single source of truth for bindings.** Summary:
 
-**On foot** (`ISOMETRIC` ⇄ `TPS` — `V`)
+**On foot** (framing `TPS` ⇄ `TPS_WIDE` — `V`)
 
 | Key | Action |
 |---|---|
-| RMB | move to point; hold — run |
+| `W A S D` | movement |
+| `Space` / `Shift` | jump / sprint |
 | `F` | interact: items, buttons, boarding a hover |
-| `Q` / `E` | orbital camera step |
-| `P` | toggle camera follow |
-| Wheel | zoom |
-| `W A S D` | direct movement (TPS only) |
+| `Q` / `E` | hold — lean out |
+| LMB / RMB | punch (in COMBAT) / aim down sights |
+| `T` / `Tab` / `R` | stance / draw-holster / reload |
 
 **Hover**
 

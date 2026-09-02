@@ -65,6 +65,18 @@ const ANIM_COMBAT_RETREAT: StringName = &"new3/legs_locomotion_run_backward_2"
 ## eye against the actual swing the next time this runs.
 const ANIM_COMBAT_PUNCH: StringName = &"new4/punch1"
 
+## Q/E lean poses. Measured 2026-09-02 before being wired: both clips are
+## 2.083 s long and every rotation track is CONSTANT across that time — they
+## are held poses, not lean-in/lean-out animations. That is what makes a
+## plain AnimationNodeBlend2 the whole implementation: the blend amount is
+## the lean, with no need to freeze or seek the clip.
+##
+## They are aiming leans and they are modest — the hips roll -11.3 deg left
+## and +6.5 deg right, and asymmetrically, which is the pose as authored and
+## not something to "correct" here.
+const ANIM_LEAN_LEFT: StringName = &"new4/aim-lean-l"
+const ANIM_LEAN_RIGHT: StringName = &"new4/aim-lean-r"
+
 ## Weapon-gesture clips, all fired through the one weapon_oneshot node — see
 ## play_weapon_gesture() and _setup_animation_tree()'s own comment on why
 ## draw, holster and fire share a single node rather than getting one each.
@@ -291,28 +303,30 @@ func update_head_look(delta: float) -> void:
 	var want: bool = false
 	var target_pos: Vector3 = Vector3.ZERO
 
+	## One branch, because there is one camera. The `match PlayerState.view_mode`
+	## that used to be here had a second arm for the isometric view, where the
+	## head followed a look point the camera published (set_head_look_point()).
+	## That camera and that publisher were removed on 2026-09-02; the look
+	## point itself stays as a public API for anything else that wants to aim
+	## the head, it simply has no caller today.
 	if PlayerState.mode == PlayerState.Mode.ON_FOOT:
-		match PlayerState.view_mode:
-			PlayerState.ViewMode.TPS:
-				if _player.speed < IDLE_ENTER_SPEED:
-					## +PI is required. The camera looks down −Z, while this
-					## project's visual "forward" is +Z (see
-					## get_facing_direction's comment in player.gd). Without
-					## +PI the head looks INTO the lens instead of where the
-					## player is looking.
-					var cam_angle: float = _player.get_camera_yaw() + PI
-					var cam_dir := Vector3(sin(cam_angle), 0.0, cos(cam_angle))
-					target_pos = (
-						_player.global_position + cam_dir * HEAD_LOOK_DISTANCE
-						+ Vector3.UP * _player.get_eye_height()
-					)
-					want = true
-			_:
-				if _look_point_valid:
-					## The point comes in at floor level — raise it to chest
-					## height, or the character stares at its own feet.
-					target_pos = _look_point + Vector3.UP * _player.get_chest_height()
-					want = true
+		if _player.speed < IDLE_ENTER_SPEED:
+			## +PI is required. The camera looks down −Z, while this
+			## project's visual "forward" is +Z (see get_facing_direction's
+			## comment in player.gd). Without +PI the head looks INTO the
+			## lens instead of where the player is looking.
+			var cam_angle: float = _player.get_camera_yaw() + PI
+			var cam_dir := Vector3(sin(cam_angle), 0.0, cos(cam_angle))
+			target_pos = (
+				_player.global_position + cam_dir * HEAD_LOOK_DISTANCE
+				+ Vector3.UP * _player.get_eye_height()
+			)
+			want = true
+		elif _look_point_valid:
+			## The point comes in at floor level — raise it to chest height,
+			## or the character stares at its own feet.
+			target_pos = _look_point + Vector3.UP * _player.get_chest_height()
+			want = true
 
 	if not want:
 		target_pos = (
@@ -411,6 +425,18 @@ func is_dead() -> bool:
 
 func get_sprint_blend() -> float:
 	return sprint_blend
+
+
+## How far the body is leaning, -1 fully left to +1 fully right. Pushed in
+## by OnFootCameraComponent every frame — the camera owns the input, the
+## rate and the spring back, this only applies the pose. Same "dumb
+## component, driven by its owner" split update_head_look() already has.
+func set_lean(amount: float) -> void:
+	if _anim_tree == null:
+		return
+	var lean := clampf(amount, -1.0, 1.0)
+	_anim_tree.set("parameters/lean_left_blend/blend_amount", maxf(-lean, 0.0))
+	_anim_tree.set("parameters/lean_right_blend/blend_amount", maxf(lean, 0.0))
 
 
 func set_head_look_point(world_pos: Vector3) -> void:
@@ -659,6 +685,32 @@ func _setup_animation_tree() -> void:
 	tree_root.connect_node("weapon_oneshot", 0, "punch_oneshot")
 	tree_root.connect_node("weapon_oneshot", 1, "weapon_clip")
 
+	## Lean (Q/E), as TWO chained Blend2 rather than one BlendSpace1D with a
+	## neutral point in the middle. A blend space needs a clip at its centre,
+	## and the centre here is "whatever locomotion is doing" — which is an
+	## input, not a clip. Chained Blend2s keep that: at amount 0 each passes
+	## input 0 through untouched, so with neither key held the lean layer is
+	## not merely neutral, it is absent.
+	##
+	## Full-body, like the punch, and for the same reason: there is no
+	## upper-body mask in this project yet. The poses are shallow enough that
+	## blending them over a run reads as leaning rather than as two
+	## animations fighting.
+	var lean_left_clip := AnimationNodeAnimation.new()
+	lean_left_clip.animation = ANIM_LEAN_LEFT
+	var lean_right_clip := AnimationNodeAnimation.new()
+	lean_right_clip.animation = ANIM_LEAN_RIGHT
+	var lean_left_blend := AnimationNodeBlend2.new()
+	var lean_right_blend := AnimationNodeBlend2.new()
+	tree_root.add_node("lean_left_clip", lean_left_clip)
+	tree_root.add_node("lean_right_clip", lean_right_clip)
+	tree_root.add_node("lean_left_blend", lean_left_blend)
+	tree_root.add_node("lean_right_blend", lean_right_blend)
+	tree_root.connect_node("lean_left_blend", 0, "weapon_oneshot")
+	tree_root.connect_node("lean_left_blend", 1, "lean_left_clip")
+	tree_root.connect_node("lean_right_blend", 0, "lean_left_blend")
+	tree_root.connect_node("lean_right_blend", 1, "lean_right_clip")
+
 	## Death branch, an AnimationNodeTransition at the tree's root rather than
 	## another AnimationNodeOneShot: a OneShot's non-looping clip snaps back
 	## to whatever is underneath the instant it finishes playing — exactly
@@ -684,7 +736,7 @@ func _setup_animation_tree() -> void:
 	death_transition.set_input_name(1, "death")
 	tree_root.add_node("death_clip", death_clip)
 	tree_root.add_node("death_transition", death_transition)
-	tree_root.connect_node("death_transition", 0, "weapon_oneshot")
+	tree_root.connect_node("death_transition", 0, "lean_right_blend")
 	tree_root.connect_node("death_transition", 1, "death_clip")
 	tree_root.connect_node("output", 0, "death_transition")
 

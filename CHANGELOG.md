@@ -12,6 +12,75 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-02 - The isometric camera is gone; one TPS with two framings, Q/E lean
+
+**The migration the 2026-08-30 audit was written for, carried out.** Removed:
+`IsometricCameraState` (1278 lines), `isometric_camera_debug_overlay.gd` and
+the `IsoCameraDebug` node, every ISO branch inside `OnFootCameraComponent`
+(2023 lines → 637, taking the orbit and follow-rotation code the audit had
+already found unreachable), `ClickToMoveSystem`, `ZoomRulerSystem` and
+`vfx/hud_component/zoom_ruler/`, the `zoom_in` / `zoom_out` / `toggle_follow`
+actions, and the move-destination indicator.
+
+**Deliberately NOT removed**, exactly as the audit warned: `NavigationComponent`
+and `player.move_to_position()`. `InteractComponent`'s auto-approach walks on
+them; only the click handler died. The candidate decal stays too — it is about
+interaction, not about clicks.
+
+**`ViewMode` survives as a FRAMING, not as a camera.** `TPS` / `TPS_WIDE`:
+one camera, same distance, same pitch, same occlusion, differing by a lens
+shift (`h_offset`/`v_offset`) that puts the character low and to one side.
+Stan's constraint verbatim — *"только смещение, дистанция та же"*. One eased
+scalar replaced the whole view-transition machinery (zoom animation, pitch
+retarget, the `view_mode_animating` gate the position pass had to know about).
+**Only the camera reads `view_mode` now**: movement, mouse capture, head-look,
+the cursor and the HUD decals all lost their branch in the same commit rather
+than keeping a distinction that no longer exists.
+
+**Occlusion inherited the sphere cast, its two lengths could not come with
+it.** `cast_motion()` replaced a ray once already, for a recorded reason, so
+carrying the ray into the last camera would have been an unrecorded rollback.
+But `ISO_COLLISION_MIN_DISTANCE` 3.0 was sized for a 10–17.5 m orbit, and on a
+2.2 m boom it would have disabled occlusion outright through the probe's own
+early-out. Re-derived to 0.70 with a 0.30 radius, and flagged as the part most
+in need of eyes on a real corridor.
+
+**Q/E are a lean, measured before it was written.** `new4/aim-lean-l` /
+`new4/aim-lean-r` exist and every rotation track in them is CONSTANT across
+2.083 s — held poses, not lean-in/lean-out, which is what makes two chained
+`AnimationNodeBlend2` the whole implementation. Rendered and looked at: they
+are *aiming* leans, and with empty hands the character reads as miming a
+rifle, so the body leans only in `COMBAT` while the camera leans always.
+
+Touched: `camera/` (three files deleted, `on_foot_camera_component.gd`
+rewritten), `core/movement/`, `core/ui/`, `core/input/input_systems.gd`,
+`core/player_state/player_state.gd`, `player/player.gd` and its animation
+component, `vfx/hud_component/`, `world/world.gd`, `project.godot`,
+`data/key_hints.tres`, `input_map.md`, `readme.md`, `ARCHITECTURE.md`,
+`CLAUDE.md`, `docs/architecture/*`, `docs/scope_horizon.md`,
+`docs/planned_scope.md`, `docs/core_loop.md`, `docs/NPC_REACTIONS.md`.
+
+Verified: import ×2 clean, `world.tscn` boot clean (one long-standing warning
+left, one fewer than before — the anchors warning came from the deleted
+overlay); framing, both leans and the wide view rendered under Xvfb and looked
+at; mouse capture confirmed on a real display (not visible on foot, visible in
+menu). The auto-approach probe walks 0 m headless — **and so does the same
+probe on pre-migration `main`**, because navigation is disabled without a
+`NavigationRegion3D`, so that is the environment and not a regression; what it
+does prove is that `move_to_position()` still sets an active path, identically
+on both sides.
+
+> *Изо-камера удалена целиком вместе с click-to-move, зумом и линейкой;
+> `OnFootCameraComponent` ужался с 2023 строк до 637. Второй режим остался, но
+> это тот же TPS со сдвигом линзы — герой уходит в нижний левый угол, дистанция
+> та же. Окклюзия унаследовала сферу из изо, но её длины пришлось пересчитать:
+> изометрический минимум 3 м на плече 2.2 м просто отключил бы проверку. Q/E —
+> наклон: клипы замерены (это статические позы), тело наклоняется только в
+> COMBAT, потому что клипы прицельные и с пустыми руками выглядят как имитация
+> винтовки.*
+
+---
+
 ## 2026-09-02 - Reload measured instead of guessed; stamina leaves the world for the HUD; input reads edges from events
 
 **The reload bug was mine, and it was arithmetic.** "R only loads on the third

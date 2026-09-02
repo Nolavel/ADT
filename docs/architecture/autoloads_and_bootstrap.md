@@ -25,7 +25,7 @@ State and cross-scene concerns live in a small set of autoloads, each with one c
 ### Scene bootstrap (`world/world.gd`)
 
 `World._init_world()` is the composition root and is intentionally organized as three fixed, non-growing loops rather than one flexible abstraction, because each category has a different construction method and parent node:
-1. **`WORLD_SYSTEM_SCRIPTS`** — plain `Node` classes (`GameClockSystem`, `EnvironmentLightingSystem`, `ClickToMoveSystem`, `TPSMovementSystem`, `MenuSystem`, `ZoomRulerSystem`, `IncidentRegistry`, `LodgingSystem`, `SaveSystem`) instantiated with `.new()`, parented to `World` itself.
+1. **`WORLD_SYSTEM_SCRIPTS`** — plain `Node` classes (`GameClockSystem`, `EnvironmentLightingSystem`, `TPSMovementSystem`, `MenuSystem`, `WorldBorderDebugSystem`, `WorldBorderGuardSystem`, `IncidentRegistry`, `LodgingSystem`, `PlayerPersistenceSystem`, `SaveSystem`, `ComicEffectSystem` — `ClickToMoveSystem` and `ZoomRulerSystem` were removed with the isometric camera on 2026-09-02) instantiated with `.new()`, parented to `World` itself.
 2. **`WORLD_3D_ENTITY_SCENES`** — standalone 3D `.tscn` scenes instantiated and parented to `stream_container`.
 3. **`WORLD_UI_SCENES`** — screen-space `Control` UI scenes, parented to a dedicated `CanvasLayer`.
 

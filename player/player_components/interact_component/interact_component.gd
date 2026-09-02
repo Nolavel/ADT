@@ -455,7 +455,7 @@ func _perform_interaction(object: InteractableObject) -> void:
 ##
 ## Reuses the click-to-move contract exactly (set_movement_speed +
 ## move_to_position) rather than driving the body from here — that path is
-## already the one ClickToMoveSystem uses, and player.gd already turns the
+## already the one navigation uses, and player.gd already turns the
 ## body toward the point it is walking to, so the character arrives facing
 ## the target with nothing extra to do.
 func _begin_approach(object: InteractableObject) -> void:

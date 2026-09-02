@@ -74,12 +74,11 @@ signal key_hints_enabled_changed(enabled: bool)
 
 ## --- Lodging sleep-hour picker (H1 step 4, world/lodging/) ---
 ## Mouse wheel, one emit per tick, taken from the wheel EVENT rather than
-## polled. A separate action rather than reusing zoom_in/zoom_out even though
-## both sit on the same two physical buttons: those mean "camera zoom"
-## everywhere else they're read, and overloading them for an unrelated
-## "adjust a number" UI would make both meanings harder to reason about.
-## Because the actions share a button, the two are matched with separate
-## `if`s below — an elif chain would let zoom swallow the picker's tick.
+## polled. It used to share both physical buttons with zoom_in/zoom_out,
+## which is why every action here is matched with a separate `if` rather than
+## an elif chain — the wheel is now the picker's alone (camera zoom went with
+## the isometric camera on 2026-09-02) but the rule stands: one input can
+## drive two actions and an elif would silently drop the second.
 ## Only consumer today is LodgingRoom's sleep-hour picker, while it's open.
 signal lodging_hours_increase_pressed()
 signal lodging_hours_decrease_pressed()
@@ -140,7 +139,6 @@ func _ready() -> void:
 	# this autoload stops receiving _unhandled_input and Escape stops working.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	PlayerState.mode_changed.connect(_on_player_mode_changed)
-	PlayerState.view_mode_changed.connect(_on_player_view_mode_changed)
 	_apply_mouse_mode()
 
 ## ============================================
@@ -173,8 +171,9 @@ func _ready() -> void:
 ## the intended behaviour.
 ##
 ## Actions matched with separate `if`s, never an elif chain: one physical input
-## can drive two actions (wheel up is both zoom_out and lodging_hours_up), and
-## polling used to fire both. An elif would silently drop the second.
+## can drive two actions — wheel up drove both zoom_out and lodging_hours_up
+## until zoom was removed — and polling used to fire both. An elif would
+## silently drop the second.
 ## ============================================
 
 ## ── Edge latches ──────────────────────────────────────────────────────
@@ -199,9 +198,6 @@ var _edge_frames: Dictionary = {}
 const POLLED_EDGE_ACTIONS: Array[StringName] = [
 	&"jump",
 	&"toggle_view",
-	&"toggle_follow",
-	&"lean_left",
-	&"lean_right",
 	&"lock_on",
 	&"switch_shoulder",
 	&"toggle_stance",
@@ -282,11 +278,6 @@ func _handle_mouse_button_event(event: InputEvent) -> void:
 	if event.is_action_pressed("lodging_hours_down"):
 		lodging_hours_decrease_pressed.emit()
 
-	if event.is_action_pressed("zoom_in"):
-		_latch_edge(&"zoom_in")
-	if event.is_action_pressed("zoom_out"):
-		_latch_edge(&"zoom_out")
-
 
 func _physics_process(delta: float) -> void:
 	_expire_edges()
@@ -334,20 +325,19 @@ func _has_edge(action: StringName) -> bool:
 
 ## ============================================
 ## MOUSE MODE — cursor visibility/capture is a physical Input.* effect, so it
-## is applied here, driven by PlayerState.mode/view_mode rather than read from them.
+## is applied here, driven by PlayerState.mode rather than read from it.
 ## ============================================
 func _on_player_mode_changed(_old_mode: PlayerState.Mode, _new_mode: PlayerState.Mode) -> void:
-	_apply_mouse_mode()
-
-func _on_player_view_mode_changed(_old_view: PlayerState.ViewMode, _new_view: PlayerState.ViewMode) -> void:
 	_apply_mouse_mode()
 
 func _apply_mouse_mode() -> void:
 	if PlayerState.mode == PlayerState.Mode.MENU:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		return
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if PlayerState.view_mode == PlayerState.ViewMode.TPS \
-			else Input.MOUSE_MODE_VISIBLE
+	## Captured in every non-menu mode. The visible-cursor branch existed for
+	## the isometric camera's click-to-move and went with it on 2026-09-02 —
+	## with one camera there is no view in which the pointer is the input.
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 ## ============================================
@@ -503,38 +493,18 @@ func _handle_stance_toggle() -> void:
 ## ============================================
 
 ## --- Camera (on_foot_camera_component.gd) ---
-func is_toggle_follow_just_pressed() -> bool:
-	return _has_edge(&"toggle_follow")
-
 func is_toggle_view_just_pressed() -> bool:
 	return _has_edge(&"toggle_view")
 
-func is_lean_left_just_pressed() -> bool:
-	return _has_edge(&"lean_left")
-
-func is_lean_right_just_pressed() -> bool:
-	return _has_edge(&"lean_right")
-
-## Held forms of the same two actions. The ISOMETRIC camera reads these for
-## its bounded temporary look, which is a continuous lean rather than a
-## discrete step — see OnFootCameraComponent._handle_isometric_look_input().
-## The *_just_pressed pair above is kept: the orbit that used it still
-## exists in the camera component, unreached, until the directional feel is
-## confirmed.
+## Q/E are a HELD lean, so these are level reads and there is deliberately no
+## *_just_pressed pair beside them: the discrete forms existed for the
+## four-position orbit those keys used to step, and both the orbit and the
+## isometric camera it belonged to were removed on 2026-09-02.
 func is_lean_left_pressed() -> bool:
 	return Input.is_action_pressed("lean_left")
 
 func is_lean_right_pressed() -> bool:
 	return Input.is_action_pressed("lean_right")
-
-## Wheel ticks. Renamed from is_zoom_*_just_released(): a wheel event is a
-## press, and "just released" only ever named the frame polling happened to
-## notice it in. One tick, one true frame.
-func is_zoom_in_tick() -> bool:
-	return _has_edge(&"zoom_in")
-
-func is_zoom_out_tick() -> bool:
-	return _has_edge(&"zoom_out")
 
 
 ## --- Jump (player.gd + dynamic_cursor_ui.gd) ---
@@ -569,9 +539,9 @@ func is_switch_shoulder_just_pressed() -> bool:
 
 
 ## --- Aim (TPSMovementSystem) ---
-## mouse_right_button is otherwise unclaimed in TPS: ClickToMoveSystem reads
-## the same action for click-to-move, but self-gates to ON_FOOT + ISOMETRIC,
-## so it never reacts to it here. A raw held query, not a signal, since
+## mouse_right_button is unclaimed by anything else on foot — the click
+## handler that used to share it went with the isometric camera on
+## 2026-09-02. A raw held query, not a signal, since
 ## aiming is a hold like sprint — PlayerState.set_aiming() decides what the
 ## press means (and clamps it to Stance.COMBAT + Mode.ON_FOOT) exactly the
 ## way is_sprint_held()'s caller decides what sprint means.

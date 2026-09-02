@@ -173,54 +173,61 @@ this blocks H6. Revisit after it.
 
 ## Out of plan
 
-### TPS-only camera migration (resolves the ISOMETRIC entry above)
+### TPS-only camera migration — DONE 2026-09-02
 
-Triggered by a full-repository audit on 2026-08-30 (HEAD `0d6f6160`,
-commit `tps_camera_first`), recorded at
-`docs/tps_camera_single_mode_audit.md`. Not part of
-H6 and not scheduled ahead of it — this section exists to record that
-the audit happened and what it found, not to promote the work to Now.
+Audited 2026-08-30 (`docs/tps_camera_single_mode_audit.md`), decided and
+carried out on 2026-09-02. The audit's finding held: there was no technical
+blocker, and the risk was entirely in the periphery.
 
-**What the audit established.** No technical blocker to removing
-`IsometricCameraState`, `isometric_camera_debug_overlay.gd`, and the
-ISO branches inside `OnFootCameraComponent` — they are already
-logically isolated (ownership of the final `Camera3D` transform, yaw,
-pitch, player facing and movement basis are each held by exactly one
-writer, TPS and vehicle code included). The risk is not the deletion
-itself; it is the periphery: `PlayerAnimationComponent.update_head_look()`,
-`zoom_ruler_hud.gd`/`ZoomRulerSystem`, and `KeyHintsPanel` all key off
-`PlayerState.view_mode` and are easy to leave stranded by a shallow
-"delete the camera/iso* files" pass.
+**What was removed.** `IsometricCameraState`, `isometric_camera_debug_overlay.gd`
+and the `IsoCameraDebug` node, every ISO branch inside `OnFootCameraComponent`
+(which went from 2023 lines to ~640) along with the orbit and follow-rotation
+code the audit had already found unreachable, `ClickToMoveSystem`,
+`ZoomRulerSystem` and `vfx/hud_component/zoom_ruler/`, the `zoom_in`,
+`zoom_out` and `toggle_follow` actions, and the move-destination indicator.
 
-**Three product decisions are open before an Ordered Migration Plan can
-be written** (audit §30, items 6/8/13):
+**What was deliberately NOT removed.** `NavigationComponent` and
+`player.move_to_position()` — `InteractComponent`'s auto-approach uses them,
+exactly as the audit warned. Only the click handler died. The candidate decal
+(`CandidateIndicator`) also stays: it is about interaction, not about clicks.
 
-1. Fate of TPS zoom — `zoom_in`/`zoom_out` currently have no TPS
-   consumer (`_start_zoom` returns early in TPS); removing ISO removes
-   their only functional consumer. Either TPS gains zoom, or the
-   actions and `ZoomRulerSystem`/`zoom_ruler_hud.gd` are removed with it.
-2. Fate of the `lean_left`/`lean_right` bounded-glance behavior —
-   currently ISO-only; decide whether it moves to TPS or is dropped.
-3. Whether CONFLICT-1 (the `TpsCombatCameraState` TRANSITION-state
-   blended yaw that is computed but never applied to
-   `camera_target_yaw`) is fixed as part of this migration or carried
-   over unchanged as a separately tracked, known bug. The audit's
-   explicit instruction: migration must not silently "fix" or "lose"
-   this behavior as a side effect of simplifying `OnFootCameraComponent`.
+**The three open product decisions, answered by Stan:**
 
-**Inherited, not renegotiated by this migration:** the sphere-cast
-occlusion contract from ISO (`intersect_shape`/`cast_motion`) is the
-target for the single TPS camera, not the current TPS raycast —
-`CHANGELOG.md` already documents that the project moved from raycast to
-sphere-cast once, deliberately, because a ray answers "has the camera's
-mathematical centre crossed the wall" too late. Re-adopting raycast in
-the final architecture would be an unrecorded reversal of that decision.
+1. **Zoom is gone**, with `ZoomRulerSystem` and `zoom_ruler_hud` — no TPS
+   consumer existed and none was invented.
+2. **Q/E become a TPS lean**, using the animation clips if they existed. They
+   did: `new4/aim-lean-l` / `new4/aim-lean-r`, measured to be static held
+   poses, wired as two chained `AnimationNodeBlend2`. The camera leans always,
+   the body only in `COMBAT` — the clips are aiming poses and read as miming
+   a rifle with empty hands.
+3. **CONFLICT-1 is not touched**, carried over unchanged as a separately
+   tracked bug, per the audit's explicit instruction that the migration must
+   neither silently fix nor silently lose it. See "Carried over" below.
 
-**Not started:** the Ordered Migration Plan and Act phase are explicitly
-out of scope for the audit and for this entry. This section records the
-Observe/Orient/Decide output; the plan itself is a separate,
-to-be-scheduled piece of work once the three product decisions above
-are made.
+**Inherited as the audit required:** the sphere-cast occlusion contract
+(`cast_motion`) is now the single camera's, not the old TPS raycast. Its two
+LENGTHS could not come with it — sized for a 10–17.5 m orbit, the 3.0 m
+minimum would have disabled occlusion outright on a 2.2 m boom — so radius
+and minimum distance were re-derived and are the part most in need of eyes.
+
+**The second view mode survives as a FRAMING.** `PlayerState.ViewMode` is
+`TPS` / `TPS_WIDE`: the same camera at the same distance, with a lens shift
+putting the character low and to one side. Stan's constraint, verbatim:
+*"только смещение, дистанция та же"*.
+
+### Carried over from the camera migration
+
+- **CONFLICT-1** — `TpsCombatCameraState` computes a blended yaw during
+  `TRANSITION` but the caller applies it only while `LOCKED`, so the blend is
+  discarded. Untouched by the migration on purpose. Not scheduled.
+- **`TargetIndicator`'s move-destination API** (`show_at_position()`,
+  `show_invalid_click()`, `set_player_reference()`, and the ring and arrow
+  they drive) is now unreached — the decal_only candidate role is the only
+  one instanced. Left intact rather than stripped: whether a destination
+  marker comes back is a design question, not a cleanup.
+- **The wide framing's offsets** (`wide_h_offset` / `wide_v_offset`) were set
+  by looking at a software-OpenGL render, not by playing. They are exports;
+  expect to move them.
 
 ### Comic panels (the word gets a frame)
 

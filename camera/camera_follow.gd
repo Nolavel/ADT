@@ -29,21 +29,9 @@ extends Camera3D
 
 @export var player_animation_player: AnimationPlayer
 
-@export_group("Debug")
-## Draws the isometric dead-zone rectangles, the follow point and the
-## character. Has effect only in ON_FOOT + ISOMETRIC — the zones do not
-## exist in any other mode, and drawing them there would show numbers
-## that describe nothing. Safe to toggle on a running build.
-@export var iso_debug_enabled: bool = false
-
 @onready var lbl_current_mode: Label = $CameraSettings/VBoxContainer/CurrentMode
 @onready var lbl_orbital: Label = $CameraSettings/VBoxContainer/Orbital
 @onready var lbl_follow: Label = $CameraSettings/VBoxContainer/Follow
-
-## Optional isometric dead-zone overlay. Null when the node has been
-## removed from the scene, which disables the overlay without any code
-## change.
-@onready var iso_camera_debug: IsometricCameraDebugOverlay = get_node_or_null(^"IsoCameraDebug")
 
 # === Компоненты по PlayerState.Mode ===
 var _on_foot: OnFootCameraComponent
@@ -53,8 +41,9 @@ var _active_component: Node
 
 var _shake: CameraShakeComponent
 
-## Публичный геттер — нужен HUD-виджету линейки зума, чтобы читать
-## current_zoom_distance/target_zoom_distance и диапазон текущего view_mode.
+## Публичный геттер. Единственный потребитель сегодня —
+## ui/debug/stream_debug_panel.gd (состояние lock-on). Линейка зума, которая
+## его завела, удалена вместе с изо-камерой.
 func get_on_foot_component() -> OnFootCameraComponent:
 	return _on_foot
 
@@ -78,7 +67,6 @@ func _ready():
 	_on_foot.lbl_current_mode = lbl_current_mode
 	_on_foot.lbl_orbital = lbl_orbital
 	_on_foot.lbl_follow = lbl_follow
-	_on_foot.iso_debug_overlay = iso_camera_debug
 	add_child(_on_foot)
 
 	_hover = HoverCameraComponent.new()
@@ -127,8 +115,6 @@ func _process(delta):
 
 
 func _physics_process(delta):
-	_update_iso_debug_visibility()
-
 	if not target:
 		return
 	if state_animating or current_state == CameraState.MENU_PAUSE:
@@ -150,25 +136,6 @@ func _apply_shake_on_top(delta: float) -> void:
 		return
 	global_position += _shake.get_offset()
 	global_rotation += _shake.get_rotation_offset()
-
-
-## Keeps the debug overlay's visibility tied to the export and to the
-## only mode where it means anything.
-##
-## Evaluated every frame rather than on a signal so the export can be
-## toggled on a running build. Gating here rather than inside the
-## overlay is what makes it structurally impossible for the isometric
-## zones to be drawn over a TPS frame: the overlay is not asked to
-## behave, it is simply not visible.
-func _update_iso_debug_visibility() -> void:
-	if not iso_camera_debug:
-		return
-
-	iso_camera_debug.visible = (
-		iso_debug_enabled
-		and PlayerState.mode == PlayerState.Mode.ON_FOOT
-		and PlayerState.view_mode == PlayerState.ViewMode.ISOMETRIC
-	)
 
 
 # ============================================

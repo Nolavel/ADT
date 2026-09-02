@@ -96,7 +96,7 @@
 #
 # IncidentRegistry is a WORLD_SYSTEM_SCRIPTS entry (world.gd), not an
 # autoload, and this drone is a static test instance placed directly in
-# world.tscn — it never receives a WorldContext the way ClickToMoveSystem
+# world.tscn — it never receives a WorldContext the way TPSMovementSystem
 # does (on_world_ready()). Resolved instead via get_tree().get_first_node_
 # in_group(), the exact pattern PerceptionComponent already uses to find the
 # player from anywhere in the tree, not a new lookup convention.
