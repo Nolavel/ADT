@@ -12,6 +12,33 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Typing warnings on, and what they do NOT do (work plan Task 3b)
+
+`project.godot` had no `[debug]` section at all; `untyped_declaration` and
+`unsafe_method_access` are now warnings (not errors — that flip is Stan's call).
+Measured, not assumed: a deliberately untyped function in an AUTOLOAD produced
+**zero** lines on both `--headless --editor` and `--headless`, so these are the
+editor's Script panel only and CI cannot see them. Untyped returns: 35 in game
+code, 33 in `tools/`, 47 in `addons/` — fixing the 35 is the next commit.
+
+> *Предупреждения о типизации включены, но видны только в редакторе — в CI их
+> нет. 35 мест в игровом коде.*
+
+---
+
+## 2026-09-03 - The tick and the F badge are a sequence now, not a pile
+
+The F badge came up on "a target exists" with no distance test, so from
+`intent_radius` 2.5 m it and the floating tick were up together and overlapped —
+measured on a render frame at 2.00 m, the tick sits inside the plate. Gated on
+`is_target_in_reach()`, plus the event that was missing:
+`InteractableObject.on_reach_changed()` — detected/lost only fire on a change of
+TARGET. Fixed the tick's shared-tween race, which this makes frequent.
+
+> *Галка и F больше не висят вместе: далеко — галка, вплотную — F вместо неё.*
+
+---
+
 ## 2026-09-03 - The orphan grain effect, wired up and renamed (work plan Task 3a)
 
 `ui/hud/fade_by_distance/` → `vfx/grain_effect/`, and it draws now: a scene, a

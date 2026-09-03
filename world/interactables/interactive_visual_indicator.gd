@@ -56,6 +56,18 @@ var sprite_shake_offset: float = 0.0   ## Смещение для тряски
 var shake_timer: Timer = null
 var throw_cooldown_timer: Timer = null
 var is_shaking: bool = false
+## Which shake the deferred _stop_shake() below belongs to.
+##
+## _start_shake() awaits a timer for shake_duration and then calls
+## _stop_shake(), which kills tween_sprite — and tween_sprite is shared with
+## the show and hide animations. If the lift-and-fade started inside that
+## window, the late _stop_shake() killed IT instead, leaving the sprite parked
+## half-transparent with is_sprite_visible still true, i.e. a tick that never
+## comes back. Rare while the only way out was losing focus entirely; once
+## entering reach also lifts the tick (InteractableObject.on_reach_changed)
+## it is every crossing of pickup_distance. A late stop now compares this and
+## returns if another shake, or a show/hide, has taken the tween since.
+var shake_generation: int = 0
 
 ## Raycasts для определения направления пола
 var raycasts: Array[RayCast3D] = []
@@ -267,6 +279,7 @@ func _show_indicator_sprite() -> void:
 	indicator_sprite.visible = true
 	sprite_3d.visible = true
 	sprite_shake_offset = 0.0
+	shake_generation += 1   ## this tween is ours now — see shake_generation
 	
 	if tween_sprite:
 		tween_sprite.kill()
@@ -296,6 +309,7 @@ func _hide_indicator_sprite_with_lift() -> void:
 	if not sprite_3d or not indicator_sprite:
 		return
 	
+	shake_generation += 1   ## this tween is ours now — see shake_generation
 	if tween_sprite:
 		tween_sprite.kill()
 	tween_sprite = create_tween()
@@ -327,6 +341,7 @@ func _hide_indicator_sprite_instant() -> void:
 	if not sprite_3d or not indicator_sprite:
 		return
 	
+	shake_generation += 1   ## this tween is ours now — see shake_generation
 	if tween_sprite:
 		tween_sprite.kill()
 	
@@ -362,6 +377,8 @@ func _start_shake() -> void:
 		return
 	
 	is_shaking = true
+	shake_generation += 1
+	var generation: int = shake_generation
 	
 	if tween_sprite:
 		tween_sprite.kill()
@@ -375,6 +392,9 @@ func _start_shake() -> void:
 	
 	## Останавливаем через shake_duration секунд
 	await get_tree().create_timer(shake_duration).timeout
+	## Somebody else owns tween_sprite now — see shake_generation.
+	if generation != shake_generation:
+		return
 	_stop_shake()
 	
 	## Перезапускаем цикл если объект всё ещё обнаружен
