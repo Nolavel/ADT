@@ -12,6 +12,20 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - The orphan grain effect, wired up and renamed (work plan Task 3a)
+
+`ui/hud/fade_by_distance/` → `vfx/grain_effect/`, and it draws now: a scene, a
+`ShaderMaterial` on the same-named shader that was already sitting unused in
+`vfx/shaders/`, and one line at the TOP of `WORLD_UI_SCENES` so its
+`SCREEN_TEXTURE` is the 3D world and the HUD stays crisp above it. Player comes
+through `on_world_ready()`; the pause hookup that waited on a `fog_effect_toggled`
+nobody emits is now `PlayerState.mode_changed`. Author's numbers untouched.
+
+> *Сирота `fade_by_distance` переименована в `grain_effect`, переехала в `vfx/`
+> и наконец подключена к миру. Числа автора не тронуты.*
+
+---
+
 ## 2026-09-03 - Physics interpolation, and which half of it was actually visible (work plan Task 2)
 
 `reset_physics_interpolation()` now runs on both streaming paths and in the
