@@ -270,7 +270,7 @@ toggle_key_hints={
 
 [physics]
 
-common/max_physics_steps_per_frame=9
+common/max_physics_steps_per_frame=8
 common/physics_interpolation=true
 
 [rendering]

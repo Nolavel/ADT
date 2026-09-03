@@ -67,11 +67,6 @@ Stan's (H6 needs eyes).
 
 ## Open question for Stan
 
-- `common/max_physics_steps_per_frame=9` (engine default is 8). On the Intel HD
-  620 target a higher ceiling makes a hitch longer, not shorter — why 9?
-  **Not changed, not to be changed until answered.** Explained in chat
-  2026-09-03: it caps how many physics ticks the engine will simulate inside one
-  rendered frame before it gives up catching up and lets game time dilate.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?

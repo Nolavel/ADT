@@ -12,6 +12,18 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - max_physics_steps_per_frame back to the engine default, 8
+
+Stan's answer to the open question. The ceiling caps how many physics ticks the
+engine simulates inside one rendered frame before it stops catching up and lets
+game time dilate — so a raised ceiling makes a hitch on the Intel HD 620 target
+longer, not shorter. 9 was not deliberate. Back to 8, and the question leaves
+`docs/NOW.md`.
+
+> *Потолок физических тиков возвращён к движковому дефолту.*
+
+---
+
 ## 2026-09-03 - Two controller headers cut to a map, not a chronicle (Task 4)
 
 `patrol_drone_controller.gd` 186 → 31 header lines, `idle_npc_controller.gd`
