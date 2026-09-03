@@ -12,6 +12,18 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - docs/NOW.md, the chat/code handoff (work plan Task 0)
+
+`CHANGELOG.md` stopped being the sync point at 396 KB across 106 entries — two
+external reviewers both called `PlayerPersistenceSystem` missing while it sits
+in `world.gd:64`. `docs/NOW.md` replaces it for that job: four sections, 80-line
+ceiling, read first and written last. `CLAUDE.md` gains two lines pointing at it
+and capping entries here at 3–6 lines.
+
+> *Файл передачи между чатом и кодом; записи в этом журнале — не длиннее 6 строк.*
+
+---
+
 ## 2026-09-02 - Three playtest regressions, and the one I had reasoned about instead of measuring
 
 Stan reported three things after playing. Two were mine and both came from

@@ -179,6 +179,8 @@ this went wrong the first time.
 - **Existing Russian comments/strings: leave as-is** — they will be migrated during planned refactoring passes, not opportunistically. When editing a file that is already in Russian, do not translate untouched parts; new additions within it are still written in English.
 
 ## Workflow rules
+- **`docs/NOW.md` is read first in every session and updated last.** It is the handoff between chat and code sessions, capped at 80 lines.
+- **`CHANGELOG.md` entries are 3–6 lines.** Anything longer — measurements, what turned out false, why it was hard — belongs in `docs/postmortems/`.
 - Propose architectural concerns and design **before** writing code for significant systems.
 - Ask clarifying questions when the picture is incomplete; do not brute-force solutions or guess.
 - `addons/godot_ai/` and its `project.godot` entries are committed intentionally (local AI tooling, MIT) — do not suggest removing them.
