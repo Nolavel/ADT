@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - ActorMemoryRegistry: personal memory gets a durable home
+
+A `WORLD_SYSTEM_SCRIPTS` entry beside `IncidentRegistry`, resolved by group,
+with the usual save pair. Every row ages at its OWN rate — the lifetime comes
+from `observation_level`, 6 game hours for a silhouette to 168 for an iris —
+so `_prune()` filters rather than popping the front, because append order is
+not expiry order here. A better look strengthens an existing memory; a worse
+one never downgrades it. Nothing reads it yet.
+
+> *Личная память получила дом и сейв. Каждая запись стареет по-своему.*
+
 ## 2026-09-03 - What one actor remembers, proposed (work plan Task 6b)
 
 Not new behaviour — `_remembers_player` already works and already sends a
