@@ -3,7 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Chronology of changes lives in `CHANGELOG.md` — read it when you need to know *when*
-something changed, or what work is currently in flight in a parallel session. For
+something changed, or what work is currently in flight in a parallel session.
+Entries before 2026-08-15 are in `CHANGELOG_2026-07..08.md`. For
 *how the project works right now*, this file is authoritative; do not reconstruct
 current state by replaying the log.
 
