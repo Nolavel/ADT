@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - An ink-blot shader for the key-hints panel (out of plan)
+
+Eight blobs whose union is the panel background, brought in on one `progress`
+uniform — one draw call and one tween target instead of eight nodes. The falloff
+is transcribed from the HTML study's own radial-gradient stops, not chosen: a
+`smoothstep` is half that alpha at the same distance, so the blobs never fused
+and the blot rendered at half size. Extents measured against the study: UV
+0.30–1.00 x, 0.15–1.00 y against its 0.26 and 0.14.
+
+> *Шейдер чернильной кляксы под панель хоткеев; спад перенесён из прототипа.*
+
+---
+
 ## 2026-09-03 - Grain becomes a vignette, and closes toward the menu on pause
 
 It was anchored on the character's unprojected position, so the clear hole drove
