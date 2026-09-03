@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - The key-hints panel stops saying "Physical" on every row
+
+`_format_key_label()` cut `as_text()` at the first `" ("`, the parenthetical form
+the docs suggest. Measured with a print over `InputMap` on 4.7.2: what actually
+comes back is `"W - Physical"`, a dash — so the cut never fired and every row
+carried the suffix, four times the width of the key itself. Both forms handled
+now, bounded to the known suffix so a future wording change shows on screen
+rather than being swallowed.
+
+> *Панель хоткеев больше не пишет «Physical» в каждой строке.*
+
+---
+
 ## 2026-09-03 - max_physics_steps_per_frame back to the engine default, 8
 
 Stan's answer to the open question. The ceiling caps how many physics ticks the
