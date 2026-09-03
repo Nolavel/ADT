@@ -1,164 +1,43 @@
 # =============================================================================
 # idle_npc_controller.gd — IdleNPCController: wanders near its spawn point,
-# freezes and follows the player with its gaze the moment it notices one,
-# turns its body if the player lingers, and reacts to a nearby incident
-# (NPC_REACTIONS.md §4: Flee, Freeze and stare, or — Patrolman only — walk
-# toward it).
+# freezes and follows the player with its gaze on noticing one, turns its body
+# if the player lingers, and reacts to a nearby incident (NPC_REACTIONS.md §4:
+# Flee, Freeze, Call, or — Patrolman only — Respond).
 #
-# Wandering is deliberately dumb: a random point inside wander_radius of
-# where this NPC started, walk to it, pause, pick another — a forward
-# RayCast3D substitutes for navigation (there is none yet): on an obstacle,
-# retarget immediately and keep going, the same immediate pick-a-new-point
-# response PatrolDroneController's patrol uses on arrival. A pause
-# (wander_pause_time) only happens on reaching an actual destination, not
-# on bouncing off a wall. _obstacle_ray is built in code in _ready() (see
-# that method's own comment on why it isn't an npc.tscn node) and parented
-# to _npc via _npc.call_deferred("add_child", _obstacle_ray), not a plain
-# add_child() call. IdleNPCController is itself a child of NPCBase in
-# npc.tscn, so this controller's _ready() runs while the NPC subtree is
-# still entering the tree — NPCBase (the ancestor _obstacle_ray is being
-# parented to) is still "busy setting up children" at that point, and a
-# direct add_child() onto it fails outright (Godot: "Parent node is busy
-# setting up children, add_child() failed"). This is the same ordering
-# problem world.gd's WORLD_UI_SCENES loop, menu_system.gd and
-# zoom_ruler_system.gd already work around with call_deferred("add_child",
-# ...) — see CHANGELOG.md's PlayerHUD crash entry for the same failure mode
-# hitting a different node. Deferring means it lands after the whole
-# frame's ready propagation has settled, which holds regardless of whether
-# this NPC is a static instance in world.tscn or instanced at runtime into
-# a streamed block — both go through the same tree-entry batch. A prior
-# pass had this call written but commented out (see git history) — that
-# left is_colliding() always false, so wander's own obstacle avoidance (and
-# Flee/Respond's, which reuse the same check) was inert; confirm the fix by
-# running the game (an NPC should now visibly retarget off a wall instead
-# of walking into it).
+# WANDER IS DELIBERATELY DUMB: a random point in wander_radius, walk, pause,
+# repeat, with a forward RayCast3D standing in for navigation. That ray is
+# parented with call_deferred("add_child", ...) — a direct call fails here.
 #
-# Every frame it also asks its sibling PerceptionComponent for a plain
-# observation and decides what it means: the moment the player is seen,
-# movement freezes outright (wandering is not worth continuing mid-glance),
-# the head always tracks a visible player, and the body only commits to
-# turning once the player has stayed in view past body_turn_delay and is
-# far enough off-angle (body_turn_angle_deg) that a head turn alone would
-# no longer read as attention. That distinction — a glance versus a
-# deliberate turn — is exactly the kind of interpretation that belongs
-# here, in the controller, never in perception itself (see
-# player_observation.gd).
+# GLANCE VERSUS TURN: the head always tracks a visible player; the body commits
+# only past body_turn_delay AND body_turn_angle_deg. That interpretation
+# belongs here, never in perception itself (see player_observation.gd).
 #
-# INCIDENT REACTION (NPC_REACTIONS.md §4) lives in this same controller
-# rather than a separate component, on purpose: only one decision-maker can
-# own set_move_intent()/set_look_target() on a given frame without the two
-# fighting each other, and PatrolDroneController already bundles three
-# fairly different behaviours (PATROL/OBSERVE/ALERT) into one controller
-# for the same reason — this follows that precedent rather than starting a
-# new one. Subscribes to IncidentRegistry.incident_reported using the exact
-# lazy-resolve scheme PatrolDroneController uses (see
-# _try_resolve_incident_registry()) — an ambient NPC is just as likely to be
-# sitting statically in world.tscn ahead of World's own _ready() pass as a
-# drone is, so the same bootstrap-ordering problem applies. Deliberately
-# does NOT replay catch-up for incidents that predate this NPC noticing
-# them (PatrolDroneController's _check_existing_incidents() has no
-# equivalent here): a durable ALERT genuinely means "the city still
-# suspects something," but a crowd flinch is a momentary startle response —
-# an NPC freezing or fleeing NOW over a punch thrown minutes ago, possibly
-# somewhere it has since wandered away from, would read as a bug, not
-# memory.
+# ALL REACTIONS LIVE IN THIS ONE CONTROLLER because only one decision-maker can
+# own set_move_intent()/set_look_target() per frame. ReactionState pre-empts
+# everything else in _decide(). Reactions are PROBABILISTIC, biased by
+# NPCArchetypeData.flee_probability, never a per-archetype rule. The registry
+# resolves lazily by group; there is deliberately NO catch-up replay of
+# incidents predating this NPC noticing them.
 #
-# ReactionState pre-empts everything else in _decide() while active
-# (checked right after the knocked-down guard, before wander/observe-player)
-# — an NPC mid-flee or mid-freeze does not also pause to notice the player
-# strolling by; the incident is the stronger stimulus. Reactions are
-# deliberately probabilistic, not per-archetype rules: NPC_REACTIONS.md §4
-# says the crowd reacts BY CHANCE, and a fixed "this archetype always
-# flees" would turn the crowd into a lookup table — exactly what §2's
-# "street literacy, learned by observation" is arguing against. The bias
-# lives on the archetype (NPCArchetypeData.flee_probability), not as a
-# constant here, so retuning it never means touching this file.
+# WITNESS CALL needs BOTH is_witness_caller (Clerk only today) and having
+# actually seen the incident; the report is held PENDING for
+# call_report_duration and can still be stopped by a knockdown or by the player
+# closing in — which hands off into the SAME flee machine. The sibling
+# VotiveProjector is driven from here and owns no timing of its own.
 #
-# WITNESS CALL (docs/attribution.md §7) no longer reports the instant a
-# calling archetype notices the incident. Whether an NPC ever calls at all
-# is a deterministic archetype trait (NPCArchetypeData.is_witness_caller,
-# true only for Clerk today) — not a population-wide roll. Becoming a
-# caller also requires actually having seen the incident —
-# _evaluate_incident_vision() (range + cone against PerceptionComponent's
-# own vision_range/vision_angle_deg, no line-of-sight raycast) gates entry
-# into ReactionState.CALLING; an NPC whose back was turned falls through to
-# the ordinary Flee/Freeze roll instead, same as any archetype that doesn't
-# call at all. Only past that gate does _build_witness_report() resolve a
-# distance ceiling (docs/attribution.md §2) into a WitnessReport, held
-# PENDING for call_report_duration seconds before _commit_witness_report()
-# actually calls IncidentRegistry — see that method, _step_calling() and
-# _cancel_active_witness_report(). Attention (§2's REDUCED modifier) is not
-# applied this iteration — its two real triggers, talking and looking into
-# one's own Votive, have no mechanic yet; "facing away" used to stand in for
-# it and was wrong in kind, not tuning, since facing away means not seeing
-# it at all. Attribution itself (docs/attribution.md §5) is not built:
-# _call_it_in() still reports fully attributed once a report commits, same
-# as every producer today.
+# TWO-PHASE FLEE: BACKING_AWAY is a fixed duration; RUNNING fixes its direction
+# once and is gated by flee_far_distance, not by a clock.
 #
-# The sibling VotiveProjector (core/components/votive_projector/) is driven
-# from here, not from itself — _start_calling() tells it to start_transmit-
-# ting(call_report_duration), _commit_witness_report() tells it go_idle(),
-# and the knocked-down guard in _decide() tells it go_dark()/go_idle() as
-# this NPC goes down and gets back up. VotiveProjector owns no timing or
-# decision logic of its own; see that file's header.
+# A MISSED SWING is the one stimulus that does NOT come through
+# IncidentRegistry (player.gd's punch_missed): a visible act, not a fact about
+# the city, so no Incident and no memory — one "?" or a reduced-probability
+# roll into the same flee machine.
 #
-# CALL INTERRUPTION BY PROXIMITY (NPC_REACTIONS.md §4 extension) is a second
-# way to keep a report from ever reaching IncidentRegistry, alongside the
-# existing knockdown path: _step_calling() checks _is_player_approaching()
-# every frame it's PENDING, and if the player is closing in on a still-
-# transmitting witness, _abort_call_for_flee() cancels the report
-# (_cancel_active_witness_report(), same CANCELLED status, different reason
-# string) and hands off straight into the ordinary FLEEING state machine —
-# deliberately the SAME two-phase backpedal-then-run below, not a second
-# implementation of it.
+# WITNESS MEMORY: _remembers_player is set on ANY sighting during an incident,
+# never cleared, and dies with the NPC — it is what one passer-by remembers,
+# not what the city has on record.
 #
-# THE TWO-PHASE FLEE ITSELF is now direction/duration-corrected from an
-# earlier pass: BACKING_AWAY is a FIXED duration (backpedal_duration), not
-# gated by distance to the player or by the player still approaching — only
-# losing track of the player node or backing into geometry ends it early.
-# RUNNING's own direction (_flee_direction) is fixed exactly once, at the
-# moment _enter_flee_phase() turns into RUNNING, away from
-# _flee_threat_position (the incident, or wherever the player was when a
-# memory-triggered flee started — see below) — never recomputed per frame,
-# and never toward the player's own position the way BACKING_AWAY's tracking
-# is. RUNNING itself is now distance-gated (flee_far_distance, "tens of
-# metres") rather than duration-gated; flee_duration is a per-phase safety
-# cap on RUNNING alone now, not the whole reaction's timer, in case geometry
-# traps an NPC short of that distance. See _set_flee_direction_from_threat().
-#
-# A MISSED SWING is the one stimulus here that does not come through
-# IncidentRegistry at all: _try_connect_player_swing() subscribes to
-# player.gd's punch_missed (lazily, by group, same as the registry), and
-# _on_player_punch_missed() is the single entry point. A punch that hit
-# nothing is a visible act, not a fact about the city — no Incident, no
-# WitnessReport, no witness memory — so it is gated on nothing but this
-# NPC's ordinary perception of the player and yields either one "?" word or
-# a reduced-probability roll into the SAME Flee state machine below
-# (swing_flee_probability_scale), never a new branch of its own.
-#
-# WITNESS MEMORY (NPC_REACTIONS.md §4 extension) is unrelated to any of the
-# above being a WitnessReport producer: _remembers_player is set the moment
-# ANY archetype's vision.is_seen comes back true in _on_incident_reported()
-# — "увидел — запомнил" — regardless of what that NPC does about the
-# incident next (Call/Flee/Freeze/Respond), and is never cleared. From then
-# on, _decide()'s ordinary observe-player branch skips straight to
-# _start_flee(observation.position, false) the instant the player is seen
-# again, incident or not — allow_backpedal=false, since recognising a
-# remembered threat isn't a fresh startle worth watching first. The flag
-# lives on this controller, a child of the NPC, so it disappears with the
-# NPC on block unload — deliberately not durable in IncidentRegistry, which
-# is what the CITY has on record, not what one passer-by personally
-# remembers.
-#
-# INCIDENT TELEMETRY is an event trace, not a second debug panel: one block
-# is emitted synchronously for each live incident and is silent between
-# incidents. The range/cone result feeding the trace is the exact same typed
-# result _on_incident_reported() consumes; do not duplicate that calculation
-# into a log-only branch that can drift from the actual Call decision. Every
-# candidate that reaches the shared Flee/Freeze roll gets an explicit
-# outcome line (_log_incident_outcome()) — the REJECT/SEES line
-# _log_incident_candidate() prints happens before that roll and cannot say
-# what happened next.
+# History: docs/postmortems/idle_npc_controller_history.md
 # =============================================================================
 extends NPCControllerBase
 class_name IdleNPCController

@@ -4,9 +4,11 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-Sequencing the interact affordance (tick → F), then Task 3b. Both merged into
-`main` behind them: Task 0, Task 2, Task 3a. Task 1 stays Stan's (H6 needs
-eyes).
+Task 4 — documentation split by genre. Five commits: `docs/postmortems/` and
+the camera audit into it, the `CHANGELOG` split, the `CLAUDE.md` diet, the two
+controller headers, plus a correction to a count I got wrong. Behind it in
+`main`: Tasks 0, 2, 3a, the tick→F sequencing, 3b's first half. Task 1 stays
+Stan's (H6 needs eyes).
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -15,16 +17,11 @@ eyes).
   recorded in the plan: OBSERVE closes only half this month.
 - 6b (memory surviving an encounter) is therefore the month's main substantive
   work, not a second half of 6.
-- Three documentation genres — invariant / chronicle / post-mortem — with
-  `docs/postmortems/` as the third destination. Only Task 4 acts on it; until
-  then `CLAUDE.md` still carries archaeology that belongs elsewhere.
+- Three documentation genres — invariant / chronicle / post-mortem. Done: the
+  rule is in `CLAUDE.md`'s own header and in `docs/postmortems/README.md`.
 
 ## Found, not fixed
 
-- The plan's original MENU-pause item was based on a false premise from the
-  chat side (`get_tree().paused` "set nowhere"); corrected before the file
-  landed. Recorded because this is the first working example of feedback
-  travelling code → chat, which is what this file exists for.
 - `StreamingSystems` is an autoload with a default `process_mode`, so its
   polling halts under menu pause. Correct today; wrong once an inventory has to
   run over a live world. Design question, not a bug — see the plan, Out of plan.
@@ -48,11 +45,11 @@ eyes).
   as written.
 - GDScript analyzer warnings never reach the CLI — editor Script panel only,
   proven with a deliberately untyped function in an autoload. So Task 3b buys a
-  standard for whoever has the project open, not a CI gate. 35 untyped returns
-  in game code (33 more in `tools/`, 47 in `addons/`); the plan's "38 outside
-  tools/" did not separate `addons/`.
-- 38 functions outside `tools/` have no return type, 15 of them in
-  `core/ui/target_indicator/target_indicator.gd`. Task 3b.
+  standard for whoever has the project open, not a CI gate. **20** untyped
+  returns in game code — `target_indicator.gd` 15, `camera_follow.gd` 4,
+  `navigation_component.gd` 1. An earlier count of 35 here was wrong: the grep
+  read only the first line of each signature and missed `-> Type:` on the
+  closing line of a multi-line one.
 - `core/ui/target_indicator/target_indicator.gd` still carries the whole
   move-destination API (`show_at_position()`, `show_invalid_click()`,
   `set_player_reference()`, the ring and the arrow) with no caller since
@@ -60,6 +57,13 @@ eyes).
   marker returns is a design question.
 - `observation_level` is written and read only by the perception debug panel
   and one log line. Task 6a gives it its first gameplay consumer.
+- Task 4 hits neither of its two numeric targets, and both need a decision
+  rather than more cutting. `CLAUDE.md` is **17 059 B** against a target of
+  8–10 KB: what is left after the archaeology went is rules, so closing the gap
+  means RELOCATING invariants into `docs/architecture/`. The two controllers are
+  at **55%** and **44%** comment against a target of <30%: their inline comments
+  are mostly present-tense rationale, not history, and hitting 30% means
+  deleting ~557 and ~425 comment lines of it.
 
 ## Open question for Stan
 

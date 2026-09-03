@@ -175,7 +175,7 @@ this blocks H6. Revisit after it.
 
 ### TPS-only camera migration — DONE 2026-09-02
 
-Audited 2026-08-30 (`docs/tps_camera_single_mode_audit.md`), decided and
+Audited 2026-08-30 (`docs/postmortems/tps_camera_single_mode_audit.md`), decided and
 carried out on 2026-09-02. The audit's finding held: there was no technical
 blocker, and the risk was entirely in the periphery.
 
