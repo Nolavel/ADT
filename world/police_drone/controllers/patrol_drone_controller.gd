@@ -1,188 +1,33 @@
 # =============================================================================
 # patrol_drone_controller.gd — PatrolDroneController: flies a random local
-# patrol pattern and watches for a reason to stop.
+# patrol pattern and watches for a reason to stop. Extends NPCControllerBase,
+# uses the same PerceptionComponent every NPC does.
 #
-# Extends NPCControllerBase (npc/controllers/npc_controller_base.gd) rather
-# than a second drone-specific controller base — it already resolves its
-# ActorBase parent and calls _decide(delta) every physics frame, which is
-# all a drone controller needs too; see that file's own header for why it
-# is no longer NPC-only. Perception is the exact same PerceptionComponent
-# every NPC uses (npc/npc_components/perception_component/) — only its
-# exported vision_range/vision_angle_deg differ per-instance in the scene,
-# not a second component.
+# THREE STATES, AND THE RUNG MATTERS. OBSERVE is "look closer": the player is
+# seen with a raised stance — a declared intent, not an event — so the drone
+# holds distance and follows with its gaze, lights off. ALERT needs a FACT ON
+# RECORD (IncidentRegistry.incident_reported) and always wins over OBSERVE,
+# whatever the live stance read says that frame.
 #
-# States are PATROL, OBSERVE and ALERT, not PATROL/CHASE. The old
-# police_drone.gd's local-square patrol pattern (a random point inside a
-# square centred on the drone's start position, rotated to its start yaw) is
-# unchanged, ported onto DroneBase/PerceptionComponent.
+# ALERT ARRIVES BY TWO CHANNELS, and they are not the same provocation.
+# DIRECT is gated on alert_incident_radius — something happened near this
+# drone. WITNESS_REPORT is not distance-gated at all: a Votive transmission
+# means the CITY was told, so every drone is dispatched (_decide_dispatch(),
+# ahead of alert_memory_time's tolerance). That split is what makes a witness
+# worth having.
 #
-# Two rungs of reaction, not one switch: a raised stance
-# (PlayerObservation.stance == COMBAT, player actually seen) is a reason to
-# look closer — OBSERVE holds distance and follows with its gaze, lights
-# off, the same declared-intent read idle_npc_controller.gd's own glance/
-# turn gate uses. A fist in the air on an empty street is not, on its own,
-# a reason to summon a patrol — that used to be ALERT's own trigger, and it
-# read as the city watching a pose rather than an event. ALERT is reserved
-# for a fixed fact on record: it triggers on IncidentRegistry.
-# incident_reported (core/world/incident_registry/) — the same registry
-# player.gd's punch reports to — and always wins over OBSERVE regardless of
-# what the live stance/visibility read says that frame.
+# THREE HOOKS feed _check_existing_incidents() and none is redundant — see its
+# own comment. The registry is resolved by group and RETRIED from _decide();
+# a one-shot _ready() call cannot work here.
 #
-# HOW that fact arrives splits into TWO CHANNELS, and they are not the same
-# provocation (Incident.Source):
+# TWO TIMERS, TWO MEANINGS. alert_memory_time tolerates a single dropped
+# perception frame; search_duration is how long the search itself runs once
+# that is spent. ALERT with no visible player is a SEARCH, never a freeze.
+# Spotlight = addressed signal (who); light bar = ambient (that it is looking).
 #
-#   DIRECT          — the act itself entered the record. Gated on
-#                     alert_incident_radius: this drone noticed something
-#                     happen near it. Local, and unchanged.
-#   WITNESS_REPORT  — a Votive transmission committed, i.e. the CITY was
-#                     told. Not gated on distance at all: every drone is
-#                     dispatched and flies to the named place from wherever
-#                     it is (dispatch_on_witness_report, _decide_dispatch()).
-#
-# That split is what makes a witness worth having. A punch nobody calls in
-# stays a local matter that one nearby drone might notice; a punch a witness
-# transmits brings the city. Before it existed, a committed report had no
-# observable consequence anywhere in the build.
-#
-# A dispatched drone actually TRAVELS — _decide_dispatch() runs ahead of
-# alert_memory_time's tolerance in _decide_alert(), because that tolerance
-# is about not twitching over a dropped perception frame and has nothing to
-# say about a drone that was told to be somewhere and has not arrived. On
-# arrival the dispatch clears and the ordinary tolerance/search behaviour
-# takes over, anchored on the incident.
-#
-# incident_reported alone only covers facts reported WHILE this drone is
-# already listening — it says nothing about facts already on record from
-# before this drone existed in the world, or from before its own most
-# recent state replacement. That gap is real, not theoretical, and it is
-# TWO gaps, not one, closed by two different hooks — see
-# _check_existing_incidents()'s own comment for exactly which case each
-# covers, and do not read the two as redundant:
-#
-#   - a streamed-out-and-back-in block, closed by a one-shot query the
-#     moment this drone resolves the registry
-#     (_try_resolve_incident_registry() -> _check_existing_incidents());
-#
-#   - a save/load boundary, closed by IncidentRegistry's own
-#     incidents_restored signal (_on_incidents_restored() ->
-#     _check_existing_incidents()) — NOT by the resolve-time query above,
-#     which already ran once, early, typically while the registry was
-#     still empty, and will never run again on its own (see
-#     _try_resolve_incident_registry()'s early return). An earlier version
-#     of this file assumed the resolve-time query alone covered both cases;
-#     it did not — see CHANGELOG.md, 2026-08-1X, for the diagnosis.
-#
-# IncidentRegistry surviving both a reload and a streaming cycle is the
-# whole point of H1 (docs/scope_horizon.md) — a fact durable enough to
-# outlive either is wasted if the one consumer that should act on it can
-# only ever hear about it live. Neither hook polls — a one-time sync per
-# event, same distinction has_recent_incident_by() vs. a hypothetical
-# polling API would draw.
-#
-# Both rungs share alert_memory_time as a tolerance against a single dropped
-# frame, not an instant un-trigger: ALERT doesn't un-trigger the instant the
-# incident ages past the registry's own window, and OBSERVE doesn't
-# un-trigger the instant the player lowers their stance or looks away — a
-# drone that forgets mid-blink reads as glitching, not calming down. Past
-# that shared tolerance the two diverge: OBSERVE un-triggers directly
-# (falls back to PATROL, nothing left to search for — a raised stance was
-# never a fact on record); ALERT instead enters its own search phase, timed
-# separately by search_duration, and only THAT expiring — not
-# alert_memory_time — falls back to OBSERVE-if-seen-and-COMBAT-else-PATROL,
-# the same live read OBSERVE's own entry uses, not a separate "was I
-# provoked recently" flag. See search_duration's own comment for why one
-# shared shape stopped being enough once ALERT's un-triggering also had to
-# cover a whole search, not a single moment.
-#
-# IncidentRegistry is a WORLD_SYSTEM_SCRIPTS entry (world.gd), not an
-# autoload, and this drone is a static test instance placed directly in
-# world.tscn — it never receives a WorldContext the way TPSMovementSystem
-# does (on_world_ready()). Resolved instead via get_tree().get_first_node_
-# in_group(), the exact pattern PerceptionComponent already uses to find the
-# player from anywhere in the tree, not a new lookup convention.
-#
-# That lookup CANNOT be a one-shot call in _ready(), and originally was one
-# — a real bug, not a hypothetical: Godot calls _ready() bottom-up as a
-# scene enters the tree, so every static PoliceDrone under StreamContainer
-# (four of them in world.tscn today) gets _ready() — and this lookup —
-# called before World's own _ready() even runs, let alone before
-# _init_world() creates IncidentRegistry (World._ready() additionally
-# awaits a process frame first). The group is provably empty at that point.
-# _try_resolve_incident_registry() is called again every _decide() until it
-# succeeds — cheap once resolved (an early-out), and self-healing regardless
-# of bootstrap order. A single push_warning fires if incident_registry_
-# search_timeout passes with nothing found, once per instance, not every
-# frame — silence here would mean a drone that never reacts to anything,
-# with nothing in the log to explain why.
-#
-# The more thorough fix would be architectural — world.gd creating systems
-# before the static scene tree's own _ready() pass, or a "world ready"
-# signal static instances could await — but every static instance in
-# world.tscn today (npc.tscn's own too) is explicitly documented as
-# temporary test scaffolding ("remove once real spawning exists"), so
-# building permanent bootstrap-ordering infrastructure for it isn't worth it
-# yet. Worth revisiting once these become real spawned content.
-#
-# Planned: a drawn weapon in COMBAT is itself a statement of intent — a
-# blade or a firearm in hand should draw the drone's attention on its own,
-# without an incident having happened yet. Not built: the player has no
-# weapon to hold. When equipment lands, this belongs next to the stance
-# check as a second way into OBSERVE, not a second way into ALERT — a drawn
-# weapon is still not a fact on record, only a stronger reason to look
-# closer.
-#
-# ALERT is now also readable, not just tracked in state: a SpotLight3D
-# (Spotlight, child of DroneMesh) opens onto the player while ALERT and they
-# are actually seen, addressed at them specifically — see
-# _update_spotlight()'s own comment on why this replaces StatusLight's
-# OmniLight3D color swap (unaddressed, barely legible in the greybox) as the
-# thing a player actually notices, and why it opens/closes rather than
-# switching instantly.
-#
-# StatusLight is gone — replaced by two small OmniLight3Ds (LightBarBlue/
-# LightBarRed) blinking in antiphase while ALERT, the ambient "there is a
-# drone in ALERT nearby" signal StatusLight used to carry with an instant
-# colour lerp. The spotlight is the addressed signal (who it's looking at);
-# the light bar is the ambient one (that it's looking at all).
-#
-# ALERT without a visible player is a SEARCH (_decide_search()), not a
-# frozen hover — a motionless drone waiting for the player to walk up to it
-# read as broken, not as a city responding to a fact on record. Search
-# wanders search_radius of _tracked_player_position: the real last-known
-# sighting if this drone has ever actually seen the player, otherwise the
-# triggering incident's own position (seeded once, in _trigger_alert()).
-# search_speed is deliberately closer to patrol_speed than to alert_speed —
-# this is looking around an area, not a pursuit.
-#
-# Losing sight of the player in ALERT is now TWO phases, not one, on two
-# DIFFERENT timers — collapsing them into one (alert_memory_time alone,
-# 2026-08-13's first pass at this) meant a "search" that gave up after three
-# seconds, barely long enough to reach a single wander point:
-#
-#   - alert_memory_time (unchanged in value, narrowed in meaning) is a
-#     TOLERANCE: a brief loss of sight — a frame of occlusion, a corner
-#     briefly blocking the line — holds position rather than immediately
-#     lurching into search, the same way OBSERVE's own entry doesn't un-
-#     trigger on a single dropped frame. Three seconds is right for "don't
-#     twitch on a blink," wrong for "how long to actually look."
-#
-#   - search_duration is how long the search phase itself runs once the
-#     tolerance is spent — see that export's own comment for the value and
-#     why. Resets to 0 the moment the player is seen again (mid-search or
-#     mid-tolerance both fall back to ordinary hold-and-watch on a
-#     sighting); expiring without a sighting exits ALERT via the existing
-#     OBSERVE-or-PATROL rule, same formula this file already used before
-#     search existed.
-#
-# alert_incident_radius went to 600m and back to 60m during this work
-# (2026-08-13) — a diagnostic detour, not a design change. The actual
-# defect it was covering for: this drone only ever checked IncidentRegistry
-# at fixed MOMENTS (resolving the registry, a load) and never as it moved,
-# so a drone patrolling directly over a fresh incident noticed nothing
-# unless the radius was inflated far past its intended scale to compensate.
-# _update_patrol_scan() (patrol_scan_interval, PATROL only) closes that —
-# see _check_existing_incidents()'s own header for all three hooks into
-# that query and which covers what.
+# TODO(equipment): a drawn weapon belongs next to the stance check as a second
+# way into OBSERVE — still not a fact on record.
+# History: docs/postmortems/patrol_drone_bootstrap_and_search.md
 # =============================================================================
 extends NPCControllerBase
 class_name PatrolDroneController

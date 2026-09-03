@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Two controller headers cut to a map, not a chronicle (Task 4)
+
+`patrol_drone_controller.gd` 186 → 31 header lines, `idle_npc_controller.gd`
+162 → 41; two more post-mortems take the `_ready()` add_child failure, the 600 m
+radius detour, the "facing away as attention" mistake and the flee rewrite.
+Comment-only: `git diff` shows 53 insertions and 329 deletions, none of them a
+line of code. Ratios land at **55%** and **44%**, not the plan's <30% — that
+number needs present-tense rationale deleted, which is a separate decision.
+
+> *Шапки контроллеров сведены к карте; археология — в `docs/postmortems/`.*
+
+---
+
 ## 2026-09-03 - CLAUDE.md carries invariants only; nine post-mortems (Task 4)
 
 Every "this line previously claimed", every drift count, every dated measurement
