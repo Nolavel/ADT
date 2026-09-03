@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Three actor-identity models, none chosen yet (work plan Task 5)
+
+Paper only, zero GDScript, as the task requires. Identity in the pool / in the
+block / hybrid, each with its consequences, written into
+`docs/architecture/npc_and_incidents.md` for Stan to choose from. Sharper framing
+than the plan's: the perpetrator is always the player and stable by construction,
+so pooling breaks the WITNESS, not the perpetrator. Recommendation is the hybrid,
+with its unbounded-growth risk stated rather than buried.
+
+> *Три модели идентичности, выбор за Стэном. Пул ломает свидетеля, а не виновника.*
+
 ## 2026-09-03 - ShotEffectSystem's tunables were half of them dead
 
 Found reading the file back, not on screen. `BILLBOARD_ENABLED` REPLACES a

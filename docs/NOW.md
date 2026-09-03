@@ -4,12 +4,13 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Out of the September plan:** a visible shot — muzzle flash and tracer.
-`ItemResource.muzzle_offset`, `ShotEffectSystem` (`vfx/shot_effect/`), and the
-call site in `_resolve_shot()`. Three commits. Behind it on this branch: the
-key-hints ink-blot panel (four commits, PR #59). Behind that in `main`: Tasks
-0, 2, 3a, 3b's first half, the tick→F sequencing and the playtest batch.
-Task 1 stays Stan's (H6 needs eyes).
+**Task 5 — actor identity contract. Paper only, zero GDScript.** Three models
+written into `docs/architecture/npc_and_incidents.md`; Stan chooses, then the
+chosen one goes to `CLAUDE.md` as one invariant and the two rejected to
+`docs/postmortems/actor_identity.md`. It gates 6b, 7 and 8. Behind it, awaiting
+Stan's eyes: the shot visual (PR #60, out of plan). In `main`: Tasks 0, 2, 4,
+3b's first half, and **only the third checkbox of 3a** — the detector script and
+its CI step were never built. Task 1 stays Stan's (H6 needs eyes).
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -38,9 +39,6 @@ Task 1 stays Stan's (H6 needs eyes).
   and the knock cycle waits 5 s before shaking. In practice the knock will
   almost never be seen. `intent_radius` is the knob; raising it also lengthens
   F's auto-approach, so it is a gameplay call, not mine.
-- The work plan's "Done when" under Task 3b describes CI failing on an orphaned
-  file. That is Task **3a**'s criterion; 3b is about warnings. Plan file left
-  as written.
 - GDScript analyzer warnings never reach the CLI — editor Script panel only,
   proven with a deliberately untyped function in an autoload. So Task 3b buys a
   standard for whoever has the project open, not a CI gate. **20** untyped
@@ -69,12 +67,14 @@ Task 1 stays Stan's (H6 needs eyes).
 
 ## Open question for Stan
 
-- The muzzle Stan said he had set up is not in this repository — a grep for
-  `Muzzle`/`muzzle` over `.gd`/`.tscn`/`.tres` finds nothing. The committed
-  offset is MEASURED here, not his; if he has numbers, they replace it.
+- The carbine's `muzzle_offset` is measured here, not Stan's — his is not in the
+  repository. If he has numbers, they replace it.
 - `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
   the muzzle is a real cost at the FPS target, and Compatibility cannot show
   what it would look like. Needs Stan's eye on Forward+ before it moves.
+- **Task 6a contradicts `docs/incident_knowledge_model.md` §8.** The plan says
+  "make `observation_level` change at least one reaction"; that document says it
+  "must stay unread until Attribution exists". One of the two is wrong — which?
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?

@@ -239,7 +239,7 @@ Three candidate models, to be argued and chosen **in chat with Stan**:
 Model 3 is exactly the Ephemeral / Persistent / Simulated / Global classification
 H7 exists for — which is why H7 is not derivable today and comes after this.
 
-- [ ] Write the three models, their consequences and the recommendation into
+- [x] Write the three models, their consequences and the recommendation into
       `docs/architecture/npc_and_incidents.md` as a new section
 - [ ] Stan chooses one; the chosen one is stated in `CLAUDE.md` as **one
       invariant paragraph**, present tense, no argument text
