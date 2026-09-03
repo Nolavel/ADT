@@ -85,6 +85,49 @@ even though `echo $PATH` in a *freshly opened* window shows the folder is
 there. If capture isn't working, check that the current process was actually
 started after the PATH change, not just that the PATH change was made.
 
+## What Entire is, and the three rules around it
+
+Moved out of `CLAUDE.md` on 2026-09-03 (work plan Task 4): this is the named
+home for it, and the invariant file keeps only the rules plus a link here.
+
+[Entire](https://entire.io) (`entireio/cli`, preview software) is enabled for
+Claude Code and, since 2026-08-17, Codex. Its config is `.claude/settings.json`,
+`.codex/hooks.json` and `.entire/settings.json`; `entire agent list` shows which
+agents are wired, `entire agent add <name>` / `remove <name>` install and
+uninstall one.
+
+On a commit made during a captured session, Entire's Git hooks add an
+`Entire-Checkpoint` trailer to the commit message and store that session's
+transcript, prompts, tool calls and token usage on a separate
+`entire/checkpoints/v1` branch — *why* a change was made, next to Git's own
+record of *what* changed. Review locally with `entire checkpoint list` /
+`entire checkpoint explain`, or at entire.io once pushed.
+
+**A checkpoint is raw session evidence, not a decision.** It does not replace a
+`CHANGELOG.md` entry, which stays a curated record of *why a change was
+accepted*. A checkpoint existing is not a reason to skip or shorten the entry.
+
+**`entire/checkpoints/v1` is Entire's own branch, not a feature branch.** Do not
+check it out to work on it, do not merge it into `main`, do not
+delete/prune/force-push it, and do not run history-rewriting cleanup against it.
+CI is deliberately not triggered on it either.
+
+**Auto-push is off, and stays off.** `origin` (`github.com/Nolavel/ADT`) is
+public, and captured sessions can contain non-public material — narrative canon,
+unresolved design questions, discussion content — that the author considers
+confidential. `.entire/settings.json` sets
+`strategy_options.push_sessions: false` (`entire configure --project
+--skip-push-sessions`), which disables only the pre-push hook's automatic push
+of that branch; capture itself is a separate `enabled` setting, left `true`.
+This is a **project** setting, not a local one, specifically so a fresh clone
+(there are two contributors) cannot silently re-enable the leak. Do not
+re-enable `push_sessions` and do not push that branch by hand without
+confirming with the author first.
+
+Note: `entire status`'s "Checkpoints sync to: origin" line does **not** reflect
+this setting — it names where a push *would* go if one happened, not whether one
+will. See the section below for how to actually check.
+
 ## How to check capture is alive
 
 ```sh

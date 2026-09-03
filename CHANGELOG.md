@@ -12,6 +12,20 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - CLAUDE.md carries invariants only; nine post-mortems (Task 4)
+
+Every "this line previously claimed", every drift count, every dated measurement
+left `CLAUDE.md` for a named file in `docs/postmortems/`, with one link back from
+the rule it belongs to. 27 019 → 17 059 bytes. **All 53 invariants verified
+present after the cut**, one at a time; two pre-existing broken links fixed on
+the way (`INPUT_MAP.md` vs the real `input_map.md`). The plan's 8–10 KB target is
+NOT met — what is left is rules, and going further means relocating them, not
+deleting history.
+
+> *`CLAUDE.md` теперь только инварианты; вся археология — в `docs/postmortems/`.*
+
+---
+
 ## 2026-09-03 - CHANGELOG split: everything before 2026-08-15 into an archive (Task 4)
 
 405 KB across 111 entries is a document nobody reads. Entries dated before
