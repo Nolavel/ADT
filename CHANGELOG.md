@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Key hints move to the bottom-right corner, one column, on ink
+
+Root goes from `PanelContainer` to a plain `Control`: the container drew the flat
+plate being replaced and would have sized the ink layer to the text, when the
+whole point is that the ink is BIGGER and hangs off the corner. The three
+categories stack instead of sitting side by side — a corner column, not a wide
+strip. `Category` is untouched in the data, so three columns is a change of
+parent container and nothing else.
+
+> *Панель хоткеев переехала в правый нижний угол, одной колонкой, на кляксе.*
+
+---
+
 ## 2026-09-03 - An ink-blot shader for the key-hints panel (out of plan)
 
 Eight blobs whose union is the panel background, brought in on one `progress`

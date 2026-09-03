@@ -46,7 +46,7 @@
 # Dependencies: PlayerState, InputSystems (both autoloads).
 # =============================================================================
 class_name KeyHintsPanel
-extends PanelContainer
+extends Control
 
 ## Qualifier suffixes InputEventKey.as_text() appends, longest first so a
 ## match cannot leave a dangling separator. See _format_key_label().
@@ -87,7 +87,6 @@ class _Column:
 @export var catalog: KeyHintsCatalog
 
 @export_group("Style")
-@export var background_color: Color = Color(0.05, 0.05, 0.05, 0.72)
 @export var key_color: Color = Color(0.95, 0.82, 0.35, 1.0)
 @export var description_color: Color = Color(0.88, 0.88, 0.88, 1.0)
 ## Deliberately dimmer/smaller than the descriptions: a column header is a
@@ -103,15 +102,34 @@ class _Column:
 @export var key_description_gap: float = 6.0
 ## Vertical gap between rows within one column.
 @export var row_gap: float = 8.0
-## Horizontal gap between columns — deliberately a separate export from
-## row_gap, which now governs spacing WITHIN a column instead.
-@export var column_gap: float = 28.0
-## Panel padding around the column list.
-@export var panel_padding: Vector2 = Vector2(16.0, 8.0)
-## Distance from the bottom of the screen to the panel.
-@export var bottom_margin: float = 16.0
+## Vertical gap between one category block and the next. The three categories
+## are stacked, not side by side — see _build_columns().
+@export var category_gap: float = 14.0
+## Space between the text and the edge of the panel's own rect.
+@export var content_padding: Vector2 = Vector2(18.0, 14.0)
 
-@onready var _columns_box: HBoxContainer = $Rows
+@export_group("Placement")
+## Distance from the right edge of the screen to the panel.
+@export var right_margin: float = 24.0
+## Distance from the bottom of the screen to the panel.
+@export var bottom_margin: float = 20.0
+
+@export_group("Blot")
+## How much bigger the ink layer is than the text it backs, per axis. The blob
+## mass is bottom-right heavy by construction (it is transcribed from a study
+## anchored to that corner and covers UV 0.30..1.0 x, 0.15..1.0 y), so the
+## layer has to extend UP and LEFT for the text to land inside the ink rather
+## than on its thin edge. 1.9 x 1.55 puts the text's top-left corner at roughly
+## UV (0.47, 0.35), comfortably inside.
+@export var blot_scale: Vector2 = Vector2(1.9, 1.55)
+## How far the ink runs PAST the panel toward the screen corner. The study lets
+## its blots hang off the edge; without this they stop dead at the margin.
+@export var blot_bleed: float = 28.0
+
+@onready var _blot_layer: ColorRect = $BlotLayer
+@onready var _content: VBoxContainer = $Content
+@onready var _title_label: Label = $Content/TitleLabel
+@onready var _columns_box: VBoxContainer = $Content/Rows
 
 ## One shared monospace font for every key label — see _build_mono_font().
 var _mono_font: Font = null
@@ -123,10 +141,12 @@ var _columns: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blot_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_columns_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_columns_box.add_theme_constant_override("separation", int(column_gap))
+	_columns_box.add_theme_constant_override("separation", int(category_gap))
 	_mono_font = _build_mono_font()
-	_apply_background_style()
+	_style_title()
 	_build_columns()
 
 	resized.connect(_reposition)
@@ -139,13 +159,43 @@ func _ready() -> void:
 	InputSystems.key_hints_enabled_changed.connect(_on_enabled_changed)
 
 	visible = InputSystems.key_hints_enabled
+	_set_blot_progress(1.0 if visible else 0.0)
 	_rebuild()
 	_reposition()
 
 
-## One column per KeyHintEntry.Category, in Category.values() order — the
-## enum's declaration order is the only thing that decides column order,
-## not anything written here.
+## The title is a landmark, not content: small, spaced out, and the same dim
+## gold as the category headers.
+func _style_title() -> void:
+	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title_label.add_theme_font_size_override("font_size", header_font_size)
+	_title_label.add_theme_color_override("font_color", header_color)
+	## Letter-spacing without a RichTextLabel: one theme constant on a plain
+	## Label does it, and a BBCode parser for a single word would be worse.
+	_title_label.add_theme_constant_override("spacing", 3)
+
+
+func _blot_progress() -> float:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat == null:
+		return 0.0
+	return float(mat.get_shader_parameter("progress"))
+
+
+func _set_blot_progress(value: float) -> void:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("progress", clampf(value, 0.0, 1.0))
+
+
+## One block per KeyHintEntry.Category, in Category.values() order — the enum's
+## declaration order is the only thing that decides their order, not anything
+## written here.
+##
+## They STACK now rather than sitting side by side: the panel is a narrow corner
+## column, and three columns in a corner would be a wide strip that the ink
+## cannot back. Category itself is untouched in the data, so going back to three
+## columns is a change of parent container and nothing else.
 func _build_columns() -> void:
 	for category in KeyHintEntry.Category.values():
 		var column := _Column.new()
@@ -189,6 +239,7 @@ func _on_aiming_changed(_is_aiming: bool) -> void:
 
 func _on_enabled_changed(enabled: bool) -> void:
 	visible = enabled
+	_set_blot_progress(1.0 if enabled else 0.0)
 
 
 ## Splits the newly-active KeyHintEntry set by category, then diffs each
@@ -362,26 +413,30 @@ func _format_mouse_button_label(event: InputEventMouseButton) -> String:
 	return "MB%d" % event.button_index
 
 
+## Bottom-RIGHT, and the panel sizes itself to its text rather than being sized
+## by a container: the root is a plain Control precisely so the ink layer can be
+## bigger than the content and hang off the corner, which no container would
+## allow.
 func _reposition() -> void:
+	var content_min := _content.get_combined_minimum_size()
+	_content.position = content_padding
+	_content.size = content_min
+	size = content_min + content_padding * 2.0
+
 	var viewport_size := get_viewport_rect().size
 	global_position = Vector2(
-			(viewport_size.x - size.x) / 2.0,
+			viewport_size.x - size.x - right_margin,
 			viewport_size.y - size.y - bottom_margin
 	)
 
-
-func _apply_background_style() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.content_margin_left = panel_padding.x
-	style.content_margin_right = panel_padding.x
-	style.content_margin_top = panel_padding.y
-	style.content_margin_bottom = panel_padding.y
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	add_theme_stylebox_override("panel", style)
+	## The ink is anchored to the panel's bottom-right and grows up and left,
+	## matching where the blob mass actually sits — see blot_scale.
+	var blot_size := Vector2(size.x * blot_scale.x, size.y * blot_scale.y)
+	_blot_layer.size = blot_size
+	_blot_layer.position = size - blot_size + Vector2.ONE * blot_bleed
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("rect_size", blot_size)
 
 
 ## SystemFont, not a bundled asset: this panel is a working tool for showing

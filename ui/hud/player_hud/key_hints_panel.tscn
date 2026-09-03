@@ -1,12 +1,40 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/hud/player_hud/key_hints_panel.gd" id="1_khp"]
 [ext_resource type="Resource" path="res://data/key_hints.tres" id="2_cat"]
+[ext_resource type="Shader" path="res://vfx/shaders/key_hints_blot.gdshader" id="3_blot"]
 
-[node name="KeyHintsPanel" type="PanelContainer"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blot"]
+shader = ExtResource("3_blot")
+shader_parameter/progress = 0.0
+shader_parameter/stagger = 0.08
+shader_parameter/blob_color = Color(0.02, 0.015, 0.01, 0.94)
+shader_parameter/radius_scale = 1.0
+shader_parameter/edge_ragged = 0.05
+shader_parameter/warp_scale = 4.5
+shader_parameter/rect_size = Vector2(340, 280)
+shader_parameter/idle_drift = 0.0
+
+[node name="KeyHintsPanel" type="Control"]
 layout_mode = 3
+mouse_filter = 2
 script = ExtResource("1_khp")
 catalog = ExtResource("2_cat")
 
-[node name="Rows" type="HBoxContainer" parent="."]
+[node name="BlotLayer" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_blot")
+layout_mode = 0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Content"]
+layout_mode = 2
+text = "CONTROLS"
+
+[node name="Rows" type="VBoxContainer" parent="Content"]
 layout_mode = 2
