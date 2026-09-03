@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - What one actor remembers, proposed (work plan Task 6b)
+
+Not new behaviour — `_remembers_player` already works and already sends a
+recognising NPC straight to RUNNING; its own header says it "dies with the
+NPC". The proposal gives it a clock (`GameClockSystem` game hours), a durable
+home (`ActorMemoryRegistry`, resolved by group like `IncidentRegistry`) and a
+save. Lifetime scales with `observation_level`, which is one mechanism serving
+both Task 5's bound obligation and §8's narrowed permission.
+
+> *Память не пишется с нуля: существующей дают часы, дом и место в сейве.*
+
 ## 2026-09-03 - incident_knowledge_model.md §8 narrowed to its own reason
 
 It banned reading `observation_level` outright until Attribution exists, which

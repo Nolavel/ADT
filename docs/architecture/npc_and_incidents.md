@@ -128,3 +128,93 @@ This contract says nothing about Attribution. `WitnessReport.witness_id` is the
 witness's own identity, not the suspect's, so it does not touch
 `docs/incident_knowledge_model.md` §2's invariant 2 ("REPORT never contains a
 resolved actor identity") — do not "fix" it in the name of that rule.
+
+
+---
+
+## Personal memory — what one actor remembers, and for how long
+
+**Proposed 2026-09-03 for work plan Task 6b.** The registry described here is
+not built yet; the behaviour it will feed already is.
+
+### It is not new behaviour. It is behaviour with nowhere to live.
+
+`IdleNPCController._remembers_player` already exists. It is set when the NPC
+sees an incident, and again when the NPC is knocked down, is never cleared, and
+already changes what the NPC does: seeing the player again sends it straight to
+`_start_flee(position, false)` — recognition, so no backpedal, straight to
+RUNNING. That file's own header states what it lacks: it "**dies with the
+NPC**".
+
+Task 6b gives that flag a clock, a durable home and a place in the save. The
+decision path in `_decide()` does not change; only where its answer comes from.
+
+### The record
+
+One row: **holder `holder_id` saw subject `subject_id` at this time, having got
+this good a look.**
+
+- `holder_id` — the remembering actor's own `actor_id`.
+- `subject_id` — who was seen. The player today.
+- `observation_level` — from the existing `_resolve_observation_level()`.
+- `timestamp` — `GameClockSystem.total_game_hours`. **Game hours, never engine
+  uptime**, for the reason `IncidentRegistry` already carries: only that clock
+  survives a save, and `Time.get_ticks_msec()` resets on launch.
+
+Nothing else. Not where, not what happened — `IncidentRegistry` holds that, and
+duplicating the city's record inside a passer-by's head buys nothing.
+
+### How long — and this is also the bound Task 5 demands
+
+A memory's lifetime is a function of how well the holder saw. This is one
+mechanism satisfying two separate requirements: the identity contract's rule
+that **anything naming an allocated identity carries its own age or count
+bound**, and `incident_knowledge_model.md` §8's narrowed permission for a
+witness to read its own observation quality.
+
+| Seen as | Remembered for, game hours |
+|---|---|
+| `SILHOUETTE` | 6 |
+| `EQUIPMENT` | 24 |
+| `FACE` | 72 |
+| `IRIS` | 168 |
+
+First approximations, to be tuned by playing. A hard count cap sits behind them,
+mirroring `IncidentRegistry.max_incidents`.
+
+**Being hit is its own case.** A knockdown files a memory at `FACE` strength
+whatever the cone said. The reasoning is already in the controller: the victim
+is on the ground in the same frame its own assault reaches the registry, so the
+ordinary sighting path never reaches it — and being punched is first-hand
+knowledge that needs no line of sight.
+
+### Where it lives
+
+`ActorMemoryRegistry` (`npc/memory/`), an entry in `WORLD_SYSTEM_SCRIPTS`
+alongside `IncidentRegistry`, resolved by group — the same lazy lookup
+`IdleNPCController._try_resolve_incident_registry()` already uses, and for the
+same reason: a static scene instance never receives a `WorldContext`. It carries
+`get_save_key()`/`get_save_data()` like every other system, so `SaveSystem`
+picks it up without knowing it exists.
+
+Named "Registry" and not "System" after `IncidentRegistry`: it is a store of
+records, not an orchestrator.
+
+### The line between this and IncidentRegistry
+
+`IncidentRegistry` is **what the city has on record**. This is **what one actor
+personally remembers**. They are different records with different lifetimes and
+different consumers, and neither is derived from the other. `_remembers_player`'s
+own comment already draws that line; this keeps it drawn.
+
+### What this deliberately does not do
+
+- **No propagation between actors.** A query is always about the caller's own
+  `holder_id`. One actor remembering is the whole slice — an actor learning what
+  another remembers is a later, separate decision.
+- **No promotion machinery.** All 18 hand-placed NPCs carry authored ids, so
+  this works on the existing diorama with no pooling. Promotion arrives with
+  Task 7, and the identity contract permits the gap because authored and
+  allocated identities are indistinguishable to a consumer.
+- **No Attribution.** `subject_id` is resolved at the call site from the player
+  node, the way `_call_it_in()` already does. Nothing is inferred from reports.

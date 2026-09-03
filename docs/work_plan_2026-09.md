@@ -304,7 +304,7 @@ Today ALERT dies on a timer and nothing outlives the encounter. With 6a halved,
 **this is the main substantive work of September** — it is what produces the one
 measurable result: punch someone, walk away, come back, the world is different.
 
-- [ ] Proposal: what a single NPC remembers, for how long, and in what unit
+- [x] Proposal: what a single NPC remembers, for how long, and in what unit
       (game-hours, per `GameClockSystem` — not engine uptime, per the
       `IncidentRegistry` precedent). Keyed on the identity model chosen in Task 5.
 - [ ] One consequence that survives a block unload and a save/load round trip
