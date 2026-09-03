@@ -20,6 +20,7 @@ Startup scene: `res://world/world.tscn`.
 |---|---|
 | `docs/ARCHITECTURE.md` | **Architecture and the reasoning behind the contracts, with diagrams.** Human-facing counterpart to this file — read it before any structural change. |
 | `docs/architecture/*.md` | **The per-system contracts**, split out of this file on 2026-08-25. Six files: autoloads/bootstrap, world streaming, player/camera, NPCs/incidents, items/equipment, persistence. See the Architecture section below for which covers what. |
+| `docs/postmortems/*.md` | **Why something was hard, what was measured, what turned out false.** Archives, not descriptions of the current system — where the invariant here wins on any contradiction. Read `docs/postmortems/README.md` before adding one. |
 | `docs/CONTRIBUTING.md` | What a collaborator may pick up, what is off-limits, contribution terms |
 | `docs/GDSCRIPT_STYLE.md` | Code conventions; stricter than the official Godot guide in places |
 | `docs/planned_scope.md` | Scope that is **not started**. Not a task list. |

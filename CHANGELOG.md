@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - docs/postmortems/ exists, and the camera audit moves into it (Task 4)
+
+The third documentation genre finally has a place. `tps_camera_single_mode_audit.md`
+— 74 KB about a migration finished on 2026-09-02 — is a record of a decision, not
+a description of a live system, so it moves with no content edits. The three
+documents that linked to it are updated in the same commit, and
+`docs/postmortems/README.md` states the three-genre split the rest of Task 4
+acts on.
+
+> *Заведён `docs/postmortems/`; аудит камеры переехал туда без правок текста.*
+
+---
+
 ## 2026-09-03 - Correction: 20 untyped returns in game code, not 35
 
 The count in the Task 3b entry below was wrong, and wrong in my own favour: the

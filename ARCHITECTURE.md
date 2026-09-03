@@ -356,7 +356,7 @@ The isometric orbit was removed on 2026-09-02 — `IsometricCameraState`, its
 debug overlay, the zoom slider that chained the two views into one continuum,
 `ClickToMoveSystem`, `ZoomRulerSystem`, and the four-position Q/E orbit and P
 follow-toggle that had already been unreachable for weeks. The survey that
-made that safe is `docs/tps_camera_single_mode_audit.md`.
+made that safe is `docs/postmortems/tps_camera_single_mode_audit.md`.
 
 `PlayerState.ViewMode` survives as a choice of FRAMING, not of camera. `TPS`
 centres the character behind the shoulder; `TPS_WIDE` shifts the lens
