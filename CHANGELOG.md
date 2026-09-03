@@ -12,6 +12,20 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Physics interpolation, and which half of it was actually visible (work plan Task 2)
+
+`reset_physics_interpolation()` now runs on both streaming paths and in the
+player's new `teleport_to()` — the single funnel for the two discontinuous
+position writes (spawn, hover exit). Interpolation is OFF on the camera, which
+already smooths itself. Render probe before/after: the camera override is the
+whole visible change (15% of frame 1), the resets moved 0.02% — insurance, not
+a measured fix. `HoverTest`'s override was `= 1` (ON, not OFF): a no-op, removed.
+
+> *Сброс интерполяции в стриминге и в телепортах игрока; на камере выключена.
+> Замер показал: видимую разницу дала только камера.*
+
+---
+
 ## 2026-09-03 - docs/NOW.md, the chat/code handoff (work plan Task 0)
 
 `CHANGELOG.md` stopped being the sync point at 396 KB across 106 entries — two

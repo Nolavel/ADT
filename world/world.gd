@@ -122,8 +122,8 @@ func _init_world() -> void:
 	if player_scene != null:
 		player = player_scene.instantiate() as Node3D
 		add_child(player)
-		player.global_position = WorldSystems.spawn_point \
-				+ Vector3(0.0, SPAWN_CLEARANCE, 0.0)
+		player.teleport_to(WorldSystems.spawn_point
+				+ Vector3(0.0, SPAWN_CLEARANCE, 0.0))
 
 	# --- Камера ---
 	var camera_follow_scene := load("res://camera/camera_follow.tscn") as PackedScene

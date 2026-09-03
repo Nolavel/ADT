@@ -268,7 +268,7 @@ func _begin_exiting() -> void:
 	print("[HoverEntryTrigger] EXITING из '%s'" % _hover.name)
 	if _controller: _controller.set_active(false)
 
-	_player.global_position = _door_anchor.global_position
+	_player.teleport_to(_door_anchor.global_position)
 	_player.process_mode = Node.PROCESS_MODE_INHERIT
 	_player.visible = true
 
