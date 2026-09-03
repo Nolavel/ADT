@@ -37,7 +37,7 @@ archive and stopped being sync. Symptom: two external reviewers both reported
 `PlayerPersistenceSystem` as missing when it has been wired in `world.gd:64` for
 weeks.
 
-- [ ] Create `docs/NOW.md` with exactly these four sections and a **hard ceiling
+- [x] Create `docs/NOW.md` with exactly these four sections and a **hard ceiling
       of 80 lines**. Over 80 lines means something in it is stale and gets
       deleted, never appended around.
 
@@ -61,7 +61,7 @@ survives three weeks it goes to docs/planned_scope.md or gets deleted.
 At most three. Delete once answered.
 ```
 
-- [ ] Add to `CLAUDE.md`, Workflow rules, **two lines and no more**:
+- [x] Add to `CLAUDE.md`, Workflow rules, **two lines and no more**:
       `docs/NOW.md` is read first in every session and updated last;
       `CHANGELOG.md` entries are 3–6 lines, longer belongs in `docs/postmortems/`.
 
