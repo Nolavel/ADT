@@ -101,3 +101,28 @@ class_name ItemResource
 ## on WeaponComponent — a resource is shared, so a live count on it would be
 ## one count for every carbine in the game.
 @export var reserve_capacity: int = 0
+
+## Where the barrel ends, in the held mesh's own local space, metres.
+##
+## DATA on the item, not a node in a scene, for the same reason held_fit is:
+## EquipmentVisualsComponent builds the held item as a bare MeshInstance3D
+## from held_mesh, so nothing authored in a .tscn — a Marker3D included —
+## ever reaches the hand. HeldFit already answered the identical question the
+## identical way, and its own header records the rejected alternative.
+##
+## A POSITION and not a transform. The direction a shot travels is muzzle to
+## target, resolved at the moment of firing, so a stored forward axis would
+## be a second source of truth about where a shot goes and free to disagree
+## with the first. Where the barrel POINTS is still recoverable when
+## something needs it: the held instance's basis carries it, and on the
+## carbine it is local +X (measured — see the architecture document).
+##
+## Zero means "the muzzle is at the mesh origin", the same "unset is a no-op"
+## shape held_fit and garment use. It is wrong-looking rather than broken:
+## the flash appears at the mesh's own pivot until someone measures the real
+## number.
+##
+## Scaling is not applied here. The offset is read in the held instance's
+## local space, and that instance already carries HeldFit.scale, so the
+## muzzle shrinks with the weapon without this field knowing about it.
+@export var muzzle_offset: Vector3 = Vector3.ZERO

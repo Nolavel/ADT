@@ -12,6 +12,52 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - ShotEffectSystem's tunables were half of them dead
+
+Found reading the file back, not on screen. `BILLBOARD_ENABLED` REPLACES a
+node's scale unless `billboard_keep_scale` is set, so the flash's shrink did
+nothing and any size set on the node would have drawn one metre wide. And
+`flash_size`/`tracer_radius` were baked into the shared meshes at `_ready()`,
+so changing either later was silently ignored — both now live on the node
+scale and are read at spawn. The `@export`s are gone too: a `.new()` system has
+no inspector, so they promised a field nobody can reach.
+
+> *Половина ручек ничего не крутила. Биллборд ел масштаб, размеры пеклись в меш.*
+
+## 2026-09-03 - _resolve_shot() draws what it did
+
+The call site: one `_spawn_shot_visual()` before every branch, so the streak is
+owed on a hit, on a miss and on a shot the wall ate alike — a round was spent
+at the trigger whatever happens next. `_shot_visual_endpoint()` casts one ray
+from the MUZZLE so the line stops at a wall; `_has_clear_shot()` still runs
+shoulder to shoulder and stays the truth about whether the shot connected. The
+two can disagree at a grazing angle, and that is written down where it happens.
+
+> *Выстрел рисует то, что сделал. Луч визуала — не боевой луч.*
+
+## 2026-09-03 - A shot is visible: flash at the barrel, streak to the impact
+
+`ShotEffectSystem` (`vfx/shot_effect/`), one line in `WORLD_SYSTEM_SCRIPTS`,
+found by group like `ComicEffectSystem`. Two effects with two lifetimes: the
+flash FOLLOWS the muzzle for ~0.05 s without being a child of the weapon (the
+held mesh is freed on holster and would take a child with it), the tracer is a
+snapshot taken once. One `_process()` and no tweens — a tween per effect is
+what once left 27 leaked resources in CI. No asset, no shader: a radial
+`GradientTexture2D` and a four-sided cylinder, both built in code.
+
+> *Вспышка следует за стволом, трассер — снимок. Ни ассета, ни шейдера.*
+
+## 2026-09-03 - The carbine knows where its barrel ends
+
+`ItemResource.muzzle_offset` — a position on the item, not a `Marker3D` in a
+scene, because `EquipmentVisualsComponent` builds the held weapon as a bare
+`MeshInstance3D` and nothing authored in `carbine.tscn` ever reaches the hand.
+`has_muzzle()` / `get_muzzle_position()` read it. Measured, not guessed: the
+mesh is 1 m along local **+X** with its origin at its centre, which is neither
+what the architecture document said nor where it said the barrel pointed.
+
+> *Дуло карабина — число на предмете. Замерено; в доках было неверно.*
+
 ## 2026-09-03 - Key hints: blots first then text, text first then blots
 
 The order Stan asked for, and the order the draft did not have — it faded both

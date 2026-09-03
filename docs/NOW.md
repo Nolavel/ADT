@@ -4,11 +4,12 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Out of the September plan:** the key-hints panel restyled from Stan's own
-Frostpunk 2 reference and HTML study — ink-blot shader, bottom-right corner, one
-column, boxed key glyphs, and the appear/hide order (blots→text, text→blots).
-Four commits. Behind it in `main`: Tasks 0, 2, 3a, 3b's first half, the tick→F
-sequencing and the playtest batch. Task 1 stays Stan's (H6 needs eyes).
+**Out of the September plan:** a visible shot — muzzle flash and tracer.
+`ItemResource.muzzle_offset`, `ShotEffectSystem` (`vfx/shot_effect/`), and the
+call site in `_resolve_shot()`. Three commits. Behind it on this branch: the
+key-hints ink-blot panel (four commits, PR #59). Behind that in `main`: Tasks
+0, 2, 3a, 3b's first half, the tick→F sequencing and the playtest batch.
+Task 1 stays Stan's (H6 needs eyes).
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -61,7 +62,6 @@ sequencing and the playtest batch. Task 1 stays Stan's (H6 needs eyes).
   at **55%** and **44%** comment against a target of <30%: their inline comments
   are mostly present-tense rationale, not history, and hitting 30% means
   deleting ~557 and ~425 comment lines of it.
-
 - The key-hints panel's own header called it "a working tool for showing the
   build to a reviewer, not final UI", and justified `SystemFont` on that basis.
   After this work the first is no longer true and the second is arguable — a
@@ -69,6 +69,12 @@ sequencing and the playtest batch. Task 1 stays Stan's (H6 needs eyes).
 
 ## Open question for Stan
 
+- The muzzle Stan said he had set up is not in this repository — a grep for
+  `Muzzle`/`muzzle` over `.gd`/`.tscn`/`.tres` finds nothing. The committed
+  offset is MEASURED here, not his; if he has numbers, they replace it.
+- `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
+  the muzzle is a real cost at the FPS target, and Compatibility cannot show
+  what it would look like. Needs Stan's eye on Forward+ before it moves.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?
