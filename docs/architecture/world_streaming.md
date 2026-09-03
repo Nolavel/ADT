@@ -18,6 +18,8 @@ the contracts it describes.
 
 ---
 
+**A node added and then positioned calls `reset_physics_interpolation()` in the same breath.** Both places that do it — `_spawn_ring0()` for the silhouette and `_add_content()` for the content — set `global_position` immediately after `add_child()`, which with project-wide physics interpolation leaves the previous transform sitting at the origin for the renderer to blend from. Honest note on what this is worth: it is correct by construction, but the render probe could **not** make the artifact it prevents visible in this build (0.02% of pixels, all of it the stats panel's own line count), so it is insurance, not a measured fix.
+
 ### World content data (`world/resources/`, `data/world_data.tres`)
 
 `WorldData`/`BlockData` (`world/resources/*.gd`) are `Resource` subclasses defining the declarative content list `StreamingSystems` consumes at runtime (block positions, content scene paths, silhouette scene paths). `GroundTileData` and `CityZoneData` were the city's floor and are gone. Editing world layout means editing `data/world_data.tres` (or the resource via the Godot inspector), not code.

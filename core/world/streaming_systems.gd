@@ -268,6 +268,10 @@ func _spawn_ring0() -> void:
 		sil.name = cell.id + "_silhouette"
 		_stream_container.add_child(sil)
 		sil.global_position  = cell.position
+		# Just added, then moved: without this the silhouette spends its first
+		# frame interpolating in from the origin (physics interpolation is on
+		# project-wide). Same reason on the content path in _add_content().
+		sil.reset_physics_interpolation()
 		cell.silhouette_node = sil
 
 
@@ -401,6 +405,7 @@ func _add_content(cell: StreamCell, packed: PackedScene) -> void:
 	instance.name = cell.id
 	_stream_container.add_child(instance)
 	instance.global_position = cell.position
+	instance.reset_physics_interpolation()   # see _spawn_ring0() for why
 	cell.content_node = instance
 
 	# Силуэт гасится для плит И кварталов одинаково. До переезда на остров

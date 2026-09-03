@@ -491,6 +491,24 @@ func on_world_ready(context: WorldContext) -> void:
 	_on_health_band_changed(_health.get_band())
 
 
+## Discontinuous placement: the character APPEARS at the point instead of
+## travelling to it — the spawn, and stepping back out of a hover. The single
+## funnel for that; anything that MOVES the character (a tween, navigation,
+## direct input) must not come through here, because continuous motion is
+## exactly what interpolation is for.
+##
+## Physics interpolation is on project-wide (project.godot,
+## common/physics_interpolation), so a bare global_position write leaves the
+## body visibly sliding in from wherever it was for one frame — from the origin
+## on the first frame after add_child(). reset_physics_interpolation() tells the
+## renderer there is no previous transform to blend from. Velocity is cleared in
+## the same breath: whatever the body was doing belonged to the old place.
+func teleport_to(world_position: Vector3) -> void:
+	global_position = world_position
+	velocity = Vector3.ZERO
+	reset_physics_interpolation()
+
+
 func move_to_position(pos: Vector3) -> void:
 	if not movement_enabled:
 		return

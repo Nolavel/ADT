@@ -78,6 +78,10 @@ var WORLD_3D_ENTITY_SCENES: Array[PackedScene] = [
 
 ## 3) Screen-space UI сцены — instantiate(), родитель = общий CanvasLayer.
 var WORLD_UI_SCENES: Array[PackedScene] = [
+	## FIRST on purpose. Canvas children are added in array order, so this draws
+	## before every widget below it — its SCREEN_TEXTURE holds the 3D world and
+	## nothing else, and the HUD stays crisp on top of the grain.
+	preload("res://vfx/grain_effect/grain_effect.tscn"),
 	#preload("res://ui/debug/stream_debug_panel.tscn"),
 	preload("res://ui/debug/perception_debug_panel.tscn"),
 	preload("res://ui/hud/aim_reticle/aim_reticle.tscn"),
@@ -122,8 +126,8 @@ func _init_world() -> void:
 	if player_scene != null:
 		player = player_scene.instantiate() as Node3D
 		add_child(player)
-		player.global_position = WorldSystems.spawn_point \
-				+ Vector3(0.0, SPAWN_CLEARANCE, 0.0)
+		player.teleport_to(WorldSystems.spawn_point
+				+ Vector3(0.0, SPAWN_CLEARANCE, 0.0))
 
 	# --- Камера ---
 	var camera_follow_scene := load("res://camera/camera_follow.tscn") as PackedScene

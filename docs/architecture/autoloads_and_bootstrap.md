@@ -29,6 +29,8 @@ State and cross-scene concerns live in a small set of autoloads, each with one c
 2. **`WORLD_3D_ENTITY_SCENES`** — standalone 3D `.tscn` scenes instantiated and parented to `stream_container` (`HUDComponent`'s interaction decal, and since 2026-09-02 `HoldPrompt` — the F badge moved here from the UI list when it stopped being screen-space).
 3. **`WORLD_UI_SCENES`** — screen-space `Control` UI scenes, parented to a dedicated `CanvasLayer`.
 
+**`WORLD_UI_SCENES` order is draw order, and one entry depends on it.** The scenes are added to the shared `CanvasLayer` in array order, so an earlier entry draws under a later one. `vfx/grain_effect/grain_effect.tscn` is deliberately first: it reads `SCREEN_TEXTURE`, so being first is what makes that texture the 3D world alone and leaves the HUD widgets crisp on top of the grain. Re-sorting this array is not cosmetic.
+
 Any node/scene in these lists can implement `on_world_ready(context: WorldContext)`, called once after player/camera/systems exist (`core/world/world_context.gd` exposes `context.get_system(SomeClass)`). Adding a new system/entity/UI scene = one line in the relevant array, not new bootstrap code. This mechanism is strictly about game-system/UI lifecycle — actual world content (tiles/blocks) is `StreamingSystems`' job, entirely separate.
 
 

@@ -1,11 +1,31 @@
+# =============================================================================
+# grain_effect.gd — full-screen film grain, thinnest at the character.
+#
+# A ColorRect over the whole viewport driving vfx/shaders/grain_effect.gdshader.
+# The shader reads SCREEN_TEXTURE and mixes noise into it by DISTANCE from the
+# character's projected screen position: clear inside fade_radius, grain rising
+# across fade_distance beyond it. So this file's whole runtime job is to keep
+# telling the shader where the character is on screen, in UV.
+#
+# Lives in vfx/ rather than ui/hud/ because it states nothing. Everything in
+# ui/hud/ reports a fact — rounds, stamina, stance, what F is pointing at — and
+# is read. This is a look applied to the picture, and its shader already lives
+# next door in vfx/shaders/.
+#
+# It was ui/hud/fade_by_distance/fade_by_distance.gd until 2026-09-03, and was
+# referenced by nothing: no scene, no material, and a pause hookup waiting on a
+# signal (fog_effect_toggled) that no node in this project has ever emitted. The
+# name went too — the header of the file already called it "эффект зерна", and
+# the shader beside it was already called grain_effect.
+# =============================================================================
 extends ColorRect
 
-##============================================
-## ✔️ Эффект зерна
-## ============================================
+## The character the clear area follows. Set through on_world_ready(), not in
+## the inspector: the player is instantiated at runtime by world.gd, so there is
+## nothing for a scene to point at.
+var player: Node3D
 
 # Основные параметры эффекта
-@export var player: Node3D
 @export var fade_radius: float = 400.0
 @export var fade_distance: float = 400.0
 @export var grain_intensity: float = 0.33
@@ -22,37 +42,43 @@ extends ColorRect
 @export_group("Pause Animation")
 @export var pause_transition_duration: float = 0.8
 
-# Референс на InputManager (NodePath)
-@export_group("References")
-@export var input_manager: NodePath
-
 @onready var _material := material as ShaderMaterial    # Материал шейдера
 var _prev_player_uv := Vector2(-1, -1)                 # Пред. позиция игрока (UV)
 var _prev_enabled := true                              # Пред. состояние эффекта
 var _camera: Camera3D                                  # Кэш камеры
 var _is_paused := false                                # Флаг паузы
 var _active_tween: Tween                               # Активный tween-аниматор
-var _input_manager_node: Node3D                        # Кэш-узел InputManager
 
 func _ready() -> void:
+	# The pause transition is an animation ABOUT the pause, so it has to keep
+	# running while the tree is paused — otherwise the tween below is frozen on
+	# its first value and the effect simply snaps.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 	if _material:
 		_update_static_params()        # Записываем параметры в шейдер
 		_material.set_shader_parameter("fade_radius", 0.0)
 		_material.set_shader_parameter("fade_distance", 1.0)
-
-	# 🔷️ Подключение сигнала из InputManager
-	if input_manager:
-		_input_manager_node = get_node(input_manager)
-		if _input_manager_node and _input_manager_node.has_signal("fog_effect_toggled"):
-			_input_manager_node.fog_effect_toggled.connect(_on_fog_effect_toggled)
-		else:
-			push_warning("⚠️ InputManager не найден или не имеет сигнала fog_effect_toggled")
 	else:
-		push_warning("⚠️ input_manager NodePath не задан!")
+		push_warning("[GrainEffect] No ShaderMaterial on this ColorRect — nothing to drive")
+
+	# PlayerState is the project's only source of truth about the pause (it sets
+	# get_tree().paused itself, in open_menu()/close_menu()). The signal this
+	# file used to wait for, fog_effect_toggled on some InputManager NodePath,
+	# has never existed anywhere in the project.
+	PlayerState.mode_changed.connect(_on_player_mode_changed)
 
 	# 🔷️ Запуск анимации появления (fade-in) после задержки
 	await get_tree().create_timer(fade_in_delay).timeout
 	_animate_fade_in()
+
+
+## Called once by world.gd after the player and camera exist — see
+## WORLD_UI_SCENES in world/world.gd.
+func on_world_ready(context: WorldContext) -> void:
+	player = context.player
+
 
 ## ============================================
 ## 🔵 PROCESS
@@ -88,14 +114,19 @@ func _process(_delta: float) -> void:
 ## 🔵 CALLBACK: ПАУЗА/ПЕРЕЗАПУСК ЭФФЕКТА ПО СИГНАЛУ
 ## ============================================
 
-func _on_fog_effect_toggled(is_paused: bool) -> void:
+func _on_player_mode_changed(old_mode: PlayerState.Mode, new_mode: PlayerState.Mode) -> void:
+	var paused := new_mode == PlayerState.Mode.MENU
+	if paused == _is_paused:
+		return
+	if old_mode != PlayerState.Mode.MENU and not paused:
+		return
 
-	if is_paused:
+	if paused:
 		_animate_to_paused()
 	else:
 		_animate_to_unpaused()
 
-	_is_paused = is_paused
+	_is_paused = paused
 
 ## ============================================
 ## 🟦 АНИМАЦИИ: FADE-IN, PAUSE, UNPAUSE

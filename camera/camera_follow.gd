@@ -13,6 +13,12 @@
 # STATUS/INVENTORY/CRAFTING/MAP-состояния камеры убраны полностью
 # (см. историю проекта) — будем пересматривать подход к ним отдельно позже.
 # X-Ray-система убрана полностью.
+#
+# The scene sets physics_interpolation_mode = OFF on this node, and it has to
+# stay off: this camera already smooths itself exponentially in _physics_process
+# and then writes its own global_transform in _process (plus the additive shake),
+# so the engine's interpolation on top would be a second smoother fighting the
+# first — the transform it would blend from is one this file has already blended.
 # =============================================================================
 extends Camera3D
 
