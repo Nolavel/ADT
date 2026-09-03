@@ -239,6 +239,17 @@ one is how this file drifted four times.
   latches a `*_gesture_seen` flag first and only then tests for the end, with
   `GESTURE_START_GRACE` as the backstop. A fourth gesture needs a fourth flag.
   → `docs/postmortems/gesture_start_race.md`
+- **An actor's identity is authored or allocated, and is never recycled.**
+  `ActorBase.actor_id` is authored per instance for anything placed in a scene —
+  the player, the drones, the hand-placed crowd. A pooled ambient actor carries
+  no id and no record; it is promoted **once**, when a record is about to name it
+  (it commits a witness report, takes a hit, or is interacted with), and the id
+  it gets comes from a monotonic counter that never reuses one. Promotion is
+  one-way: the node returns to the pool, the identity does not. An allocated
+  identity lives as long as some record still names it and is released by sweep
+  when none does — so **anything that names one carries its own age or count
+  bound**, or it pins its identities forever.
+  → `docs/architecture/npc_and_incidents.md`
 - **Streaming:** `_packed_cache` is non-optional (`load_threaded_get()` consumes
   the task; shared-path cells would false-fail without it). Do not change
   streaming budgets or radii (`STREAM_RADIUS`, `MAX_CONCURRENT_LOADS`,

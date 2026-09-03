@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Actor identity: the hybrid, chosen, with its growth rule (Task 5)
+
+Stan picked the hybrid. Ambient crowd is ephemeral and carries no id; an actor
+is promoted once, when a record is about to name it, from a monotonic counter
+that never reuses one. The growth bound is not a number of its own: an
+allocated identity lives as long as some record names it, which puts the
+obligation on every record type to carry its own bound. Rejected models in
+`docs/postmortems/actor_identity.md`. Still zero GDScript.
+
+> *Гибрид выбран. Рост ограничен не счётчиком, а сроком жизни самих записей.*
+
 ## 2026-09-03 - Three actor-identity models, none chosen yet (work plan Task 5)
 
 Paper only, zero GDScript, as the task requires. Identity in the pool / in the

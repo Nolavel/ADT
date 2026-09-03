@@ -241,9 +241,9 @@ H7 exists for — which is why H7 is not derivable today and comes after this.
 
 - [x] Write the three models, their consequences and the recommendation into
       `docs/architecture/npc_and_incidents.md` as a new section
-- [ ] Stan chooses one; the chosen one is stated in `CLAUDE.md` as **one
+- [x] Stan chooses one; the chosen one is stated in `CLAUDE.md` as **one
       invariant paragraph**, present tense, no argument text
-- [ ] The two rejected models go to `docs/postmortems/actor_identity.md`
+- [x] The two rejected models go to `docs/postmortems/actor_identity.md`
 
 **Done when:** the contract is written and chosen. **Zero lines of GDScript in
 this task.**
