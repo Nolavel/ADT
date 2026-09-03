@@ -2,10 +2,15 @@
 # grain_effect.gd — full-screen film grain, thinnest at the character.
 #
 # A ColorRect over the whole viewport driving vfx/shaders/grain_effect.gdshader.
-# The shader reads SCREEN_TEXTURE and mixes noise into it by DISTANCE from the
-# character's projected screen position: clear inside fade_radius, grain rising
-# across fade_distance beyond it. So this file's whole runtime job is to keep
-# telling the shader where the character is on screen, in UV.
+# The shader reads SCREEN_TEXTURE and mixes noise into it by DISTANCE FROM THE
+# CENTRE OF THE FRAME: clear inside fade_radius, grain rising across
+# fade_distance beyond it, both measured in fractions of the half-diagonal so
+# 1.0 is the corner at any resolution. A vignette — grain in the corners and a
+# little along the edges.
+#
+# It tracked the CHARACTER until 2026-09-03, unprojecting them every frame so
+# the clear hole drove around the frame. That is why this file no longer needs a
+# camera, a player reference or any per-frame unprojection.
 #
 # Lives in vfx/ rather than ui/hud/ because it states nothing. Everything in
 # ui/hud/ reports a fact — rounds, stamina, stance, what F is pointing at — and
@@ -20,14 +25,15 @@
 # =============================================================================
 extends ColorRect
 
-## The character the clear area follows. Set through on_world_ready(), not in
-## the inspector: the player is instantiated at runtime by world.gd, so there is
-## nothing for a scene to point at.
-var player: Node3D
-
 # Основные параметры эффекта
-@export var fade_radius: float = 400.0
-@export var fade_distance: float = 400.0
+## Clear out to here, as a FRACTION OF THE HALF-DIAGONAL — 1.0 is the corner.
+## Not pixels: see the shader's own comment for why pixels could not describe a
+## vignette at all.
+@export var fade_radius: float = 0.42
+## ...then grain ramps to full over this much more. 0.42 + 0.48 lands just past
+## the corner, so the corners sit near full grain and the edge midpoints are
+## partway up the ramp.
+@export var fade_distance: float = 0.48
 @export var grain_intensity: float = 0.33
 @export var grain_scale: float = 1.0
 @export var time_speed: float = 0.05
@@ -41,11 +47,16 @@ var player: Node3D
 # Параметры анимации паузы
 @export_group("Pause Animation")
 @export var pause_transition_duration: float = 0.8
+## Where the vignette closes to while the menu is up. The grain walks inward
+## toward the centre and frames the menu window rather than covering it —
+## Stan's call, 2026-09-03. Zero would put full grain over the menu itself.
+@export var pause_fade_radius: float = 0.18
+## The ramp while paused. Tighter than the resting one, so the closed-in
+## vignette has a defined edge instead of a long smear.
+@export var pause_fade_distance: float = 0.30
 
 @onready var _material := material as ShaderMaterial    # Материал шейдера
-var _prev_player_uv := Vector2(-1, -1)                 # Пред. позиция игрока (UV)
 var _prev_enabled := true                              # Пред. состояние эффекта
-var _camera: Camera3D                                  # Кэш камеры
 var _is_paused := false                                # Флаг паузы
 var _active_tween: Tween                               # Активный tween-аниматор
 
@@ -58,8 +69,14 @@ func _ready() -> void:
 
 	if _material:
 		_update_static_params()        # Записываем параметры в шейдер
+		## Closed: the screen starts fully grained and the fade-in opens the
+		## vignette out to its resting size. Matches _animate_fade_in()'s own
+		## start values, so there is no jump on the first frame of the tween.
 		_material.set_shader_parameter("fade_radius", 0.0)
-		_material.set_shader_parameter("fade_distance", 1.0)
+		_material.set_shader_parameter("fade_distance", pause_fade_distance)
+		## The vignette is measured against the half-diagonal, so a resize
+		## changes what its radii mean. One line here beats a per-frame write.
+		get_viewport().size_changed.connect(_update_static_params)
 	else:
 		push_warning("[GrainEffect] No ShaderMaterial on this ColorRect — nothing to drive")
 
@@ -74,38 +91,15 @@ func _ready() -> void:
 	_animate_fade_in()
 
 
-## Called once by world.gd after the player and camera exist — see
-## WORLD_UI_SCENES in world/world.gd.
-func on_world_ready(context: WorldContext) -> void:
-	player = context.player
-
-
 ## ============================================
 ## 🔵 PROCESS
 ## ============================================
 
 func _process(_delta: float) -> void:
-	# Проверяем player и материал
-	if not player or not _material:
+	## Nothing tracks the character any more — the vignette is anchored on the
+	## frame — so the only per-frame question left is the inspector toggle.
+	if not _material:
 		return
-
-	# Ленивая инициализация камеры 3D
-	if not _camera:
-		_camera = get_viewport().get_camera_3d()
-	if not _camera:
-		return
-
-	# Трансляция позиции игрока из 3D в UV ColorRect (экран)
-	var screen_pos_px := _camera.unproject_position(player.global_position)
-	var local_px := screen_pos_px - global_position
-	var player_uv := Vector2(local_px.x / size.x, local_px.y / size.y)
-
-	# Обновление позиции игрока (только при изменении)
-	if player_uv.distance_squared_to(_prev_player_uv) > 0.000004:
-		_material.set_shader_parameter("player_screen_pos_uv", player_uv)
-		_prev_player_uv = player_uv
-
-	# Обновление включения/выключения эффекта
 	if effect_enabled != _prev_enabled:
 		_material.set_shader_parameter("effect_enabled", effect_enabled)
 		_prev_enabled = effect_enabled
@@ -141,6 +135,9 @@ func _animate_fade_in() -> void:
 	_active_tween.set_trans(Tween.TRANS_CUBIC)
 	_active_tween.set_parallel(true)
 
+	## Opens the vignette out from nothing to its resting size — so the screen
+	## starts fully grained and clears to the middle. That reading of "fade in"
+	## is the author's; see docs/NOW.md, it is on the open list.
 	_active_tween.tween_method(
 		func(value: float): _material.set_shader_parameter("fade_radius", value),
 		0.0,
@@ -150,7 +147,7 @@ func _animate_fade_in() -> void:
 
 	_active_tween.tween_method(
 		func(value: float): _material.set_shader_parameter("fade_distance", value),
-		1.0,
+		pause_fade_distance,
 		fade_distance,
 		fade_in_duration
 	)
@@ -164,18 +161,20 @@ func _animate_to_paused() -> void:
 	_active_tween.set_trans(Tween.TRANS_CUBIC)
 	_active_tween.set_parallel(true)
 
-	# Убираем прозрачный круг (fade_radius → 0)
+	## The vignette walks INWARD toward the centre and frames the menu window.
+	## NOT to zero: zero would put full grain over the menu itself, and the
+	## point of the move is to close around the menu, not to bury it.
 	_active_tween.tween_method(
 		func(value: float): _material.set_shader_parameter("fade_radius", value),
 		_material.get_shader_parameter("fade_radius"),
-		0.0,
+		pause_fade_radius,
 		pause_transition_duration
 	)
 
 	_active_tween.tween_method(
 		func(value: float): _material.set_shader_parameter("fade_distance", value),
 		_material.get_shader_parameter("fade_distance"),
-		1.0,
+		pause_fade_distance,
 		pause_transition_duration
 	)
 

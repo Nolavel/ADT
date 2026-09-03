@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Grain becomes a vignette, and closes toward the menu on pause
+
+It was anchored on the character's unprojected position, so the clear hole drove
+around the frame. Now it is anchored on the centre: clear in the middle, grain
+in the corners and along the edges. Both radii became FRACTIONS OF THE
+HALF-DIAGONAL — as pixels they could not describe a vignette at all (400/400 put
+full grain 66 px past the corner). On pause the vignette walks inward and frames
+the menu instead of burying it; `pause_fade_radius` is the knob.
+
+> *Зерно стало виньеткой; на паузе сходится к центру, оставляя меню читаемым.*
+
+---
+
 ## 2026-09-03 - The bed and the hover door get a tick too
 
 The bed's indicator was configured with no `indicator_sprite_texture`, so
