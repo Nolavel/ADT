@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - The tick gives way to F at 2 m, not at arm's length
+
+The first pass at the sequence reused `pickup_distance` (0.9 m) as the display
+threshold, so the badge only appeared once the character was already touching
+the object. Stan's number is 2 m. New `prompt_distance` export, separate from
+`pickup_distance`, which keeps its own job — act on the spot or walk over. Two
+edges tracked now, not one. Verified on frames at 2.4 m (tick alone) and 1.5 m
+(F alone).
+
+> *Галка меняется на F на двух метрах, а не на вытянутой руке.*
+
+---
+
 ## 2026-09-03 - The key-hints panel stops saying "Physical" on every row
 
 `_format_key_label()` cut `as_text()` at the first `" ("`, the parenthetical form
