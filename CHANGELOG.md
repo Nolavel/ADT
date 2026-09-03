@@ -12,6 +12,57 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Key hints: blots first then text, text first then blots
+
+The order Stan asked for, and the order the draft did not have — it faded both
+in parallel with the text merely 20% shorter, which does not read as a sequence.
+Hiding is a chain now. Also fixed: the draft queued a change during a transition
+into a variable it never read, and cached the REQUESTED rows, so the re-read
+afterwards saw "nothing changed" and dropped it. One tween handle, killed before
+each transition — a fresh tween per rebuild is what cost CI a gated ERROR once.
+
+> *Порядок: сначала кляксы, потом текст; исчезает — сначала текст, потом кляксы.*
+
+---
+
+## 2026-09-03 - Each key hint glyph gets its own box
+
+`[W / S / A / D]` becomes four bordered boxes joined by separators, from the
+study's `.key` rule. A grouped entry gets one box PER key rather than one wide
+frame around all four: a key is a thing you press, and four of them in one frame
+reads as a single strange key. `PanelContainer` + `StyleBoxFlat` sizes itself to
+the glyph, so `Space` and `W` both come out right with no width arithmetic.
+
+> *Каждая клавиша в своей рамке, как в прототипе.*
+
+---
+
+## 2026-09-03 - Key hints move to the bottom-right corner, one column, on ink
+
+Root goes from `PanelContainer` to a plain `Control`: the container drew the flat
+plate being replaced and would have sized the ink layer to the text, when the
+whole point is that the ink is BIGGER and hangs off the corner. The three
+categories stack instead of sitting side by side — a corner column, not a wide
+strip. `Category` is untouched in the data, so three columns is a change of
+parent container and nothing else.
+
+> *Панель хоткеев переехала в правый нижний угол, одной колонкой, на кляксе.*
+
+---
+
+## 2026-09-03 - An ink-blot shader for the key-hints panel (out of plan)
+
+Eight blobs whose union is the panel background, brought in on one `progress`
+uniform — one draw call and one tween target instead of eight nodes. The falloff
+is transcribed from the HTML study's own radial-gradient stops, not chosen: a
+`smoothstep` is half that alpha at the same distance, so the blobs never fused
+and the blot rendered at half size. Extents measured against the study: UV
+0.30–1.00 x, 0.15–1.00 y against its 0.26 and 0.14.
+
+> *Шейдер чернильной кляксы под панель хоткеев; спад перенесён из прототипа.*
+
+---
+
 ## 2026-09-03 - Grain becomes a vignette, and closes toward the menu on pause
 
 It was anchored on the character's unprojected position, so the clear hole drove

@@ -1,10 +1,16 @@
 # =============================================================================
 # key_hints_panel.gd — KeyHintsPanel.
 #
-# Bottom-center strip of key hints, visible whenever InputSystems.
-# key_hints_enabled is true (docs/scope_horizon.md H2). A collaborator
-# cannot evaluate a build whose controls are undiscoverable — this is what
-# makes them discoverable.
+# Bottom-RIGHT corner column of key hints on an ink blot, visible whenever
+# InputSystems.key_hints_enabled is true (docs/scope_horizon.md H2). A
+# collaborator cannot evaluate a build whose controls are undiscoverable — this
+# is what makes them discoverable.
+#
+# THE ORDER OF THE TRANSITION IS THE CONTRACT, not decoration: ink in, then
+# text; text out, then ink. Hiding is a CHAIN rather than two parallel tweens
+# with the text merely running shorter — an overlap does not read as a sequence.
+# The ink itself is one ColorRect over vfx/shaders/key_hints_blot.gdshader,
+# driven by a single `progress` uniform.
 #
 # Instanced inside player_hud.tscn rather than added as a separate
 # WORLD_UI_SCENES entry — PlayerHUD already owns a world-UI lifecycle, a
@@ -46,7 +52,7 @@
 # Dependencies: PlayerState, InputSystems (both autoloads).
 # =============================================================================
 class_name KeyHintsPanel
-extends PanelContainer
+extends Control
 
 ## Qualifier suffixes InputEventKey.as_text() appends, longest first so a
 ## match cannot leave a dangling separator. See _format_key_label().
@@ -87,13 +93,19 @@ class _Column:
 @export var catalog: KeyHintsCatalog
 
 @export_group("Style")
-@export var background_color: Color = Color(0.05, 0.05, 0.05, 0.72)
-@export var key_color: Color = Color(0.95, 0.82, 0.35, 1.0)
+@export var key_color: Color = Color(0.973, 0.910, 0.753, 1.0)
+## Fill behind a key glyph. From the study's `.key` rule.
+@export var key_box_color: Color = Color(0.118, 0.094, 0.063, 0.85)
+## Border of that box, same source.
+@export var key_border_color: Color = Color(0.706, 0.549, 0.275, 0.6)
 @export var description_color: Color = Color(0.88, 0.88, 0.88, 1.0)
 ## Deliberately dimmer/smaller than the descriptions: a column header is a
 ## landmark for the eye, not content to read.
 @export var header_color: Color = Color(0.55, 0.55, 0.55, 0.85)
 @export var font_size: int = 14
+## The glyph inside a key box. Smaller than the description on purpose — the box
+## already carries the emphasis, and a full-size glyph makes every row taller.
+@export var key_font_size: int = 12
 @export var header_font_size: int = 11
 ## Joins the individual key labels of a grouped entry (KeyHintEntry.
 ## action_names) into one cell, e.g. "W / A / S / D". The single place this
@@ -103,15 +115,47 @@ class _Column:
 @export var key_description_gap: float = 6.0
 ## Vertical gap between rows within one column.
 @export var row_gap: float = 8.0
-## Horizontal gap between columns — deliberately a separate export from
-## row_gap, which now governs spacing WITHIN a column instead.
-@export var column_gap: float = 28.0
-## Panel padding around the column list.
-@export var panel_padding: Vector2 = Vector2(16.0, 8.0)
-## Distance from the bottom of the screen to the panel.
-@export var bottom_margin: float = 16.0
+## Vertical gap between one category block and the next. The three categories
+## are stacked, not side by side — see _build_columns().
+@export var category_gap: float = 14.0
+## Space between the text and the edge of the panel's own rect.
+@export var content_padding: Vector2 = Vector2(18.0, 14.0)
 
-@onready var _columns_box: HBoxContainer = $Rows
+@export_group("Placement")
+## Distance from the right edge of the screen to the panel.
+@export var right_margin: float = 24.0
+## Distance from the bottom of the screen to the panel.
+@export var bottom_margin: float = 20.0
+
+@export_group("Blot")
+## How much bigger the ink layer is than the text it backs, per axis. The blob
+## mass is bottom-right heavy by construction (it is transcribed from a study
+## anchored to that corner and covers UV 0.30..1.0 x, 0.15..1.0 y), so the
+## layer has to extend UP and LEFT for the text to land inside the ink rather
+## than on its thin edge. 1.9 x 1.55 puts the text's top-left corner at roughly
+## UV (0.47, 0.35), comfortably inside.
+@export var blot_scale: Vector2 = Vector2(1.9, 1.55)
+## How far the ink runs PAST the panel toward the screen corner. The study lets
+## its blots hang off the edge; without this they stop dead at the margin.
+@export var blot_bleed: float = 28.0
+
+@export_group("Animation")
+## Ink in. The blobs' own stagger rides inside this, in the shader.
+@export var appear_duration: float = 0.8
+## How long after the ink starts before the text begins to arrive. The ORDER is
+## the point of this whole section — blots first, then text.
+@export var content_fade_in_delay: float = 0.3
+@export var content_fade_in_duration: float = 0.4
+## Text out. Runs to completion BEFORE the ink starts to go, which is the same
+## order reversed and is why this is a chain rather than two parallel tweens.
+@export var text_fade_out_duration: float = 0.22
+## Ink out, after the text has gone.
+@export var dissolve_duration: float = 0.35
+
+@onready var _blot_layer: ColorRect = $BlotLayer
+@onready var _content: VBoxContainer = $Content
+@onready var _title_label: Label = $Content/TitleLabel
+@onready var _columns_box: VBoxContainer = $Content/Rows
 
 ## One shared monospace font for every key label — see _build_mono_font().
 var _mono_font: Font = null
@@ -120,13 +164,28 @@ var _mono_font: Font = null
 ## _build_columns() and never recreated — only their contents change.
 var _columns: Dictionary = {}
 
+## The ONE tween this panel ever owns. Every transition kills it first.
+##
+## Not a courtesy: TargetIndicator built a fresh tween per frame on a per-frame
+## assertion and produced "27 resources still in use at exit", which is a gated
+## ERROR line in CI. A rebuild arriving mid-transition here is the same shape.
+## → docs/postmortems/verification_ladder.md
+var _transition: Tween = null
+## Row keys currently ON SCREEN, not the ones last requested. The difference
+## matters: caching the request means a change arriving mid-transition updates
+## the cache, and the re-read after the transition then sees "nothing changed"
+## and drops it.
+var _shown_row_keys: Array[StringName] = []
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blot_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_columns_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_columns_box.add_theme_constant_override("separation", int(column_gap))
+	_columns_box.add_theme_constant_override("separation", int(category_gap))
 	_mono_font = _build_mono_font()
-	_apply_background_style()
+	_style_title()
 	_build_columns()
 
 	resized.connect(_reposition)
@@ -139,13 +198,46 @@ func _ready() -> void:
 	InputSystems.key_hints_enabled_changed.connect(_on_enabled_changed)
 
 	visible = InputSystems.key_hints_enabled
+	_set_blot_progress(0.0)
+	_content.modulate.a = 0.0
 	_rebuild()
 	_reposition()
+	if visible:
+		_begin_appear()
 
 
-## One column per KeyHintEntry.Category, in Category.values() order — the
-## enum's declaration order is the only thing that decides column order,
-## not anything written here.
+## The title is a landmark, not content: small, spaced out, and the same dim
+## gold as the category headers.
+func _style_title() -> void:
+	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_title_label.add_theme_font_size_override("font_size", header_font_size)
+	_title_label.add_theme_color_override("font_color", header_color)
+	## Letter-spacing without a RichTextLabel: one theme constant on a plain
+	## Label does it, and a BBCode parser for a single word would be worse.
+	_title_label.add_theme_constant_override("spacing", 3)
+
+
+func _blot_progress() -> float:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat == null:
+		return 0.0
+	return float(mat.get_shader_parameter("progress"))
+
+
+func _set_blot_progress(value: float) -> void:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("progress", clampf(value, 0.0, 1.0))
+
+
+## One block per KeyHintEntry.Category, in Category.values() order — the enum's
+## declaration order is the only thing that decides their order, not anything
+## written here.
+##
+## They STACK now rather than sitting side by side: the panel is a narrow corner
+## column, and three columns in a corner would be a wide strip that the ink
+## cannot back. Category itself is untouched in the data, so going back to three
+## columns is a change of parent container and nothing else.
 func _build_columns() -> void:
 	for category in KeyHintEntry.Category.values():
 		var column := _Column.new()
@@ -188,12 +280,20 @@ func _on_aiming_changed(_is_aiming: bool) -> void:
 
 
 func _on_enabled_changed(enabled: bool) -> void:
-	visible = enabled
+	if enabled:
+		visible = true
+		_rebuild()
+		_begin_appear()
+	else:
+		_begin_hide()
 
 
-## Splits the newly-active KeyHintEntry set by category, then diffs each
-## column's share against its own rows already shown — adds/removes/
-## reorders only what changed, per column, never clears any list wholesale.
+## Decides WHETHER the rows on screen have to change, and if so runs the
+## transition around the change. The diffing itself is _apply_rebuild() below
+## and is unchanged.
+##
+## The comparison is against what is SHOWN, never against the last request —
+## see _shown_row_keys.
 func _rebuild() -> void:
 	if catalog == null:
 		push_warning("[KeyHintsPanel] no catalog assigned — panel stays empty")
@@ -201,7 +301,69 @@ func _rebuild() -> void:
 
 	var active := catalog.get_active_entries(
 			PlayerState.mode, PlayerState.view_mode, PlayerState.stance, PlayerState.is_aiming)
+	var wanted := _collect_row_keys(active)
+	if wanted == _shown_row_keys:
+		return
 
+	if not visible or _blot_progress() <= 0.01:
+		_apply_rebuild(active)
+		_shown_row_keys = wanted
+		return
+
+	## On screen already: text out, then ink out, then swap, then ink in, then
+	## text in. The swap happens while nothing is drawn.
+	_kill_transition()
+	_transition = create_tween()
+	_transition.tween_property(_content, "modulate:a", 0.0, text_fade_out_duration)
+	_transition.tween_method(_set_blot_progress, _blot_progress(), 0.0, dissolve_duration)
+	_transition.tween_callback(func() -> void:
+		_apply_rebuild(active)
+		_shown_row_keys = wanted
+		_begin_appear()
+	)
+
+
+func _collect_row_keys(active: Array[KeyHintEntry]) -> Array[StringName]:
+	var keys: Array[StringName] = []
+	for entry in active:
+		keys.append(entry.get_row_key())
+	return keys
+
+
+## Ink first, then text — the order Stan asked for, and the reason the text tween
+## carries a delay instead of starting with the blots.
+func _begin_appear() -> void:
+	_kill_transition()
+	_content.modulate.a = 0.0
+	_transition = create_tween()
+	_transition.set_parallel()
+	_transition.tween_method(_set_blot_progress, _blot_progress(), 1.0, appear_duration)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_transition.tween_property(_content, "modulate:a", 1.0, content_fade_in_duration)\
+			.set_delay(content_fade_in_delay)
+
+
+## Text out to completion, THEN the ink. A chain, not two parallel tweens with
+## the text merely running shorter — "text first, then blots" is the request,
+## and an overlap does not read as a sequence.
+func _begin_hide() -> void:
+	_kill_transition()
+	_transition = create_tween()
+	_transition.tween_property(_content, "modulate:a", 0.0, text_fade_out_duration)
+	_transition.tween_method(_set_blot_progress, _blot_progress(), 0.0, dissolve_duration)
+	_transition.tween_callback(func() -> void: visible = false)
+
+
+func _kill_transition() -> void:
+	if _transition != null and _transition.is_valid():
+		_transition.kill()
+	_transition = null
+
+
+## Splits the newly-active KeyHintEntry set by category, then diffs each
+## column's share against its own rows already shown — adds/removes/
+## reorders only what changed, per column, never clears any list wholesale.
+func _apply_rebuild(active: Array[KeyHintEntry]) -> void:
 	# get_active_entries() already returns entries sorted by sort_order, and
 	# filtering by category below preserves that relative order — no
 	# separate per-column sort needed.
@@ -250,19 +412,28 @@ func _rebuild_column(column: _Column, active_entries: Array) -> void:
 	column.container.visible = not active_entries.is_empty()
 
 
+## A row is [key][key]… description, where each key is its OWN boxed glyph.
+##
+## A grouped entry (W/S/A/D) gets FOUR boxes joined by group_key_separator, not
+## one wide box holding all four: the study draws a key as a physical thing you
+## press, and four of them in one frame reads as a single strange key. It is also
+## the difference between legible and not once the row sits on dark ink.
 func _make_row(entry: KeyHintEntry) -> Control:
 	var row := HBoxContainer.new()
 	row.name = "Row_%s" % entry.get_row_key()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", int(key_description_gap))
 
-	var key_label := Label.new()
-	key_label.text = "[%s]" % _resolve_entry_key_label(entry)
-	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	key_label.add_theme_font_override("font", _mono_font)
-	key_label.add_theme_font_size_override("font_size", font_size)
-	key_label.add_theme_color_override("font_color", key_color)
-	row.add_child(key_label)
+	var labels := _resolve_entry_key_labels(entry)
+	for i in labels.size():
+		if i > 0:
+			var joiner := Label.new()
+			joiner.text = group_key_separator.strip_edges()
+			joiner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			joiner.add_theme_font_size_override("font_size", font_size)
+			joiner.add_theme_color_override("font_color", description_color)
+			row.add_child(joiner)
+		row.add_child(_make_key_box(labels[i]))
 
 	var desc_label := Label.new()
 	desc_label.text = entry.description
@@ -274,33 +445,47 @@ func _make_row(entry: KeyHintEntry) -> Control:
 	return row
 
 
-## The key cell for one entry: one resolved label for a single-action entry,
-## or every action's label joined by group_key_separator for a grouped one
-## (KeyHintEntry.action_names), e.g. "W / A / S / D".
-func _resolve_entry_key_label(entry: KeyHintEntry) -> String:
+## One key glyph in its box. A PanelContainer with a StyleBoxFlat rather than a
+## drawn rectangle: it sizes itself to the glyph, so "Space" and "W" both come
+## out right without any width arithmetic here.
+func _make_key_box(label_text: String) -> Control:
+	var box := PanelContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = key_box_color
+	style.border_color = key_border_color
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 6.0
+	style.content_margin_right = 6.0
+	style.content_margin_top = 1.0
+	style.content_margin_bottom = 1.0
+	box.add_theme_stylebox_override("panel", style)
+
+	var key_label := Label.new()
+	key_label.text = label_text
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	key_label.add_theme_font_override("font", _mono_font)
+	key_label.add_theme_font_size_override("font_size", key_font_size)
+	key_label.add_theme_color_override("font_color", key_color)
+	box.add_child(key_label)
+
+	return box
+
+
+## Every key label this entry needs, one per action — the caller boxes them
+## individually. Returns a list rather than a joined string because a grouped
+## entry is several keys, and the join used to hide that.
+func _resolve_entry_key_labels(entry: KeyHintEntry) -> Array[String]:
 	var labels: Array[String] = []
 	for action_name in entry.get_action_names():
 		labels.append(_resolve_key_label(action_name))
-	return _join_labels(labels, group_key_separator)
+	return labels
 
 
-func _join_labels(labels: Array[String], separator: String) -> String:
-	var joined := ""
-	for i in labels.size():
-		if i > 0:
-			joined += separator
-		joined += labels[i]
-	return joined
-
-
-## Resolves the on-screen label for one action straight from InputMap, so a
-## rebind is reflected without touching this panel or its catalog.
-##
-## An action can carry several bound events (keyboard, mouse, wheel, and in
-## principle a gamepad). Keyboard wins when there's a choice — it is always
-## the most universally-recognizable label — with the first event of any
-## other kind as fallback; no action in today's catalog is actually bound
-## to more than one device, so this only matters going forward.
 func _resolve_key_label(action_name: StringName) -> String:
 	if action_name == &"" or not InputMap.has_action(action_name):
 		return "?"
@@ -362,26 +547,30 @@ func _format_mouse_button_label(event: InputEventMouseButton) -> String:
 	return "MB%d" % event.button_index
 
 
+## Bottom-RIGHT, and the panel sizes itself to its text rather than being sized
+## by a container: the root is a plain Control precisely so the ink layer can be
+## bigger than the content and hang off the corner, which no container would
+## allow.
 func _reposition() -> void:
+	var content_min := _content.get_combined_minimum_size()
+	_content.position = content_padding
+	_content.size = content_min
+	size = content_min + content_padding * 2.0
+
 	var viewport_size := get_viewport_rect().size
 	global_position = Vector2(
-			(viewport_size.x - size.x) / 2.0,
+			viewport_size.x - size.x - right_margin,
 			viewport_size.y - size.y - bottom_margin
 	)
 
-
-func _apply_background_style() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.content_margin_left = panel_padding.x
-	style.content_margin_right = panel_padding.x
-	style.content_margin_top = panel_padding.y
-	style.content_margin_bottom = panel_padding.y
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	add_theme_stylebox_override("panel", style)
+	## The ink is anchored to the panel's bottom-right and grows up and left,
+	## matching where the blob mass actually sits — see blot_scale.
+	var blot_size := Vector2(size.x * blot_scale.x, size.y * blot_scale.y)
+	_blot_layer.size = blot_size
+	_blot_layer.position = size - blot_size + Vector2.ONE * blot_bleed
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("rect_size", blot_size)
 
 
 ## SystemFont, not a bundled asset: this panel is a working tool for showing
