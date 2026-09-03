@@ -4,11 +4,14 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Task 5 done — the hybrid identity model, chosen and written. Zero GDScript.**
-It gates 6b, 7 and 8, so those are now unblocked; 6b is next unless Stan says
-otherwise. Awaiting his eyes: the shot visual (PR #60, out of plan). In `main`:
-Tasks 0, 2, 4, 3b's first half, and **only the third checkbox of 3a** — the
-detector script and its CI step were never built. Task 1 stays Stan's.
+**Task 6b — memory that survives an encounter**, on branch
+`claude/npc-memory-survives-6b`. Not built from scratch:
+`IdleNPCController._remembers_player` already works and already changes
+behaviour; 6b gives it a clock, a durable home and a save, keyed on Task 5's
+identity model. Task 5 itself is PR #61, unmerged. In `main`: the shot visual
+(PR #60), Tasks 0, 2, 4, 3b's first half, and **only the third checkbox of
+3a** — the detector script and its CI step were never built. Task 1 stays
+Stan's.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -68,12 +71,6 @@ detector script and its CI step were never built. Task 1 stays Stan's.
 - `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
   the muzzle is a real cost at the FPS target, and Compatibility cannot show
   what it would look like. Needs Stan's eye on Forward+ before it moves.
-- **Task 6a vs `incident_knowledge_model.md` §8.** Not "one is wrong", as first
-  written here: §8's ban is broader than the reason §3.3 gives it. The reason
-  bites only if a reaction reads `observation_level` as *how identified the
-  player is* — that is Attribution done informally in a controller. It does not
-  bite if a witness reads its own look quality to change its own behaviour.
-  Narrow §8, or drop 6a's checkbox?
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?

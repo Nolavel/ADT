@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - incident_knowledge_model.md §8 narrowed to its own reason
+
+It banned reading `observation_level` outright until Attribution exists, which
+is broader than §3.3's reasoning supports and was already untrue of the build —
+`_remembers_player` is recognition from a prior encounter and has changed
+behaviour since it was written. Now: the CITY may not read it, a witness may
+read its own to change its own behaviour and its own private memory. Unblocks
+Task 6a's channel and Task 6b's memory duration. Stan's call.
+
+> *§8 сужен до собственной причины: город не читает, свидетель — свой взгляд.*
+
 ## 2026-09-03 - Actor identity: the hybrid, chosen, with its growth rule (Task 5)
 
 Stan picked the hybrid. Ambient crowd is ephemeral and carries no id; an actor

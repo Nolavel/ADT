@@ -282,6 +282,15 @@ reaction is differentiated by it.
       is picked up.
 - [ ] Make `observation_level` change at least one reaction. One is enough — the
       point is the channel existing, not its breadth.
+
+> **[unblocked 2026-09-03]** This collided with `incident_knowledge_model.md`
+> §8 ("must stay unread until Attribution exists"). Not a contradiction to
+> pick a winner from: §8 banned more than its own reason in §3.3 supports.
+> The reason bites when a reaction reads `observation_level` as a proxy for
+> how identified the PLAYER is — Attribution done informally in a controller —
+> and not when a witness reads its own look quality to change its own
+> behaviour. §8 is narrowed to that; Stan, 2026-09-03. Task 6b's memory
+> duration is the first consumer.
 - [ ] Retest the five `attribution.md` §7 cases; case C is a known gap, say
       whether it moved.
 
