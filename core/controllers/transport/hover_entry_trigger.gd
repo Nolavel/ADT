@@ -69,6 +69,15 @@ var _hold_committed: bool = false
 ## состояние: виджет только рисует, посадка работает и без него.
 var _prompt: HoldPrompt = null
 var _hud: HUDComponent = null
+## The tick sprite over the door, if the hover scene carries one. Driven from
+## here exactly the way HoldPrompt and the decal are — this trigger is the
+## interact CLAIMANT, so it owns the whole picture while the player is in the
+## zone (see _show_affordance()).
+var _tick: Node = null
+## Whether the player is currently inside the tick→F swap distance. Tracked so
+## the swap runs on an EDGE: the tick's entrance and its lift are animations,
+## and re-triggering them every frame would read as flicker.
+var _in_prompt_range: bool = false
 
 func _ready() -> void:
 	_set_entry_light_enabled(false)
@@ -79,6 +88,8 @@ func _ready() -> void:
 				% _hover.name)
 				
 	_controller = _hover.get_node_or_null("InputHoverController")
+	if _door_anchor != null:
+		_tick = _door_anchor.get_node_or_null("InteractiveVisualIndicator")
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -186,19 +197,69 @@ func _end_hold() -> void:
 	prompt.set_progress(0.0)
 
 
-## Both halves of "you can act here" — the decal on the ground and the key
-## panel above it — raised and lowered together, so they can never disagree
-## about whether the door is offering anything.
+## The tick⇄F swap, on the same 2 m rule the rest of the world uses. The Area
+## decides whether the door offers anything AT ALL; this decides which half of
+## the offer is speaking. Runs per frame because distance changes without any
+## event to hang an edge on — but only acts on a crossing, since both the
+## tick's lift and the badge's entrance are animations.
+func _physics_process(_delta: float) -> void:
+	if _state != State.IDLE or _player == null or _door_anchor == null:
+		return
+	var to_door: Vector3 = _player.global_position - _door_anchor.global_position
+	to_door.y = 0.0
+	var inside: bool = to_door.length() <= _prompt_distance()
+	if inside == _in_prompt_range:
+		return
+	_in_prompt_range = inside
+	_apply_affordance_phase()
+
+
+## The swap distance, read from the player's own InteractComponent rather than
+## duplicated here: two copies of one number is how the door and the world drift
+## into disagreeing about when F appears. 2.0 is the fallback for a player
+## without the component, which should not happen.
+func _prompt_distance() -> float:
+	if _player == null:
+		return 2.0
+	var interact := _player.get_node_or_null("InteractComponent")
+	if interact != null and "prompt_distance" in interact:
+		return interact.prompt_distance
+	return 2.0
+
+
+## Far: the tick floats over the door and knocks. Near: it lifts away and the
+## key panel rises out of the ground decal in its place. The decal stays up
+## across both — it is the "there is something here" layer, not the key.
+func _apply_affordance_phase() -> void:
+	var prompt := _resolve_prompt()
+	if _in_prompt_range:
+		if _tick != null:
+			_tick.on_object_lost()
+		if prompt != null:
+			prompt.show_prompt(_door_anchor)
+	else:
+		if prompt != null:
+			prompt.hide_prompt()
+		if _tick != null:
+			_tick.on_object_detected()
+
+
+## Both halves of "you can act here" — the decal on the ground and whichever of
+## the tick/panel the distance calls for — raised and lowered together, so they
+## can never disagree about whether the door is offering anything.
 func _show_affordance() -> void:
 	if _door_anchor == null or not _can_start_hold():
 		return
-	var prompt := _resolve_prompt()
-	if prompt != null:
-		prompt.show_prompt(_door_anchor)
+	var to_door: Vector3 = Vector3.ZERO
+	if _player != null:
+		to_door = _player.global_position - _door_anchor.global_position
+		to_door.y = 0.0
+	_in_prompt_range = _player != null and to_door.length() <= _prompt_distance()
+	_apply_affordance_phase()
 	var hud := _resolve_hud()
 	if hud != null:
-		## in_reach: standing in the door zone IS the reach test here. There
-		## is no walk-up phase to distinguish, the trigger volume is it.
+		## in_reach: standing in the door zone IS the reach test for the DECAL.
+		## Which of the tick/panel speaks is the distance's business, above.
 		hud.show_candidate_at(_door_anchor, true)
 
 
@@ -206,6 +267,9 @@ func _hide_affordance() -> void:
 	var prompt := _resolve_prompt()
 	if prompt != null:
 		prompt.hide_prompt()
+	if _tick != null:
+		_tick.on_object_lost()
+	_in_prompt_range = false
 	var hud := _resolve_hud()
 	if hud != null:
 		hud.hide_candidate()

@@ -12,6 +12,20 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - The bed and the hover door get a tick too
+
+The bed's indicator was configured with no `indicator_sprite_texture`, so
+`_ready()` returned before building anything — and my earlier note blaming the
+parent type was wrong: `BedPoint` IS an `InteractableObject`. The hover had no
+indicator at all, and could not have one: the script demanded an
+`InteractableObject` parent while `DoorAnchor` is a `Marker3D`. The indicator now
+hangs over any `Node3D`, and `HoverEntryTrigger` drives it on the same 2 m rule,
+reading the distance from the player's own component rather than copying it.
+
+> *Галка появилась у кровати и у двери ховера.*
+
+---
+
 ## 2026-09-03 - The tick gives way to F at 2 m, not at arm's length
 
 The first pass at the sequence reused `pickup_distance` (0.9 m) as the display
