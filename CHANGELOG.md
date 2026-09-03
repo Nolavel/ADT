@@ -12,14 +12,27 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Correction: 20 untyped returns in game code, not 35
+
+The count in the Task 3b entry below was wrong, and wrong in my own favour: the
+grep behind it read only the FIRST line of each signature, and 15 functions
+carry their `-> Type:` on the closing line of a multi-line declaration. Real
+figure is 20, in three files — `target_indicator.gd` 15, `camera_follow.gd` 4,
+`navigation_component.gd` 1. The work plan's "15 in target_indicator.gd" was
+exact all along; its "38 outside tools/" is the one that does not reproduce.
+
+> *Число было завышено почти вдвое: grep смотрел только первую строку сигнатуры.*
+
+---
+
 ## 2026-09-03 - Typing warnings on, and what they do NOT do (work plan Task 3b)
 
 `project.godot` had no `[debug]` section at all; `untyped_declaration` and
 `unsafe_method_access` are now warnings (not errors — that flip is Stan's call).
 Measured, not assumed: a deliberately untyped function in an AUTOLOAD produced
 **zero** lines on both `--headless --editor` and `--headless`, so these are the
-editor's Script panel only and CI cannot see them. Untyped returns: 35 in game
-code, 33 in `tools/`, 47 in `addons/` — fixing the 35 is the next commit.
+editor's Script panel only and CI cannot see them. Untyped returns: **20** in
+game code (15 of them in `target_indicator.gd`) — see the correction below.
 
 > *Предупреждения о типизации включены, но видны только в редакторе — в CI их
 > нет. 35 мест в игровом коде.*

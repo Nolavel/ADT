@@ -48,9 +48,11 @@ eyes).
   as written.
 - GDScript analyzer warnings never reach the CLI — editor Script panel only,
   proven with a deliberately untyped function in an autoload. So Task 3b buys a
-  standard for whoever has the project open, not a CI gate. 35 untyped returns
-  in game code (33 more in `tools/`, 47 in `addons/`); the plan's "38 outside
-  tools/" did not separate `addons/`.
+  standard for whoever has the project open, not a CI gate. **20** untyped
+  returns in game code — `target_indicator.gd` 15, `camera_follow.gd` 4,
+  `navigation_component.gd` 1. An earlier count of 35 here was wrong: the grep
+  read only the first line of each signature and missed `-> Type:` on the
+  closing line of a multi-line one.
 - 38 functions outside `tools/` have no return type, 15 of them in
   `core/ui/target_indicator/target_indicator.gd`. Task 3b.
 - `core/ui/target_indicator/target_indicator.gd` still carries the whole
