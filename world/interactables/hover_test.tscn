@@ -3,6 +3,8 @@
 [ext_resource type="Script" uid="uid://bug2rx5notwjq" path="res://core/controllers/transport/base/hover_base.gd" id="1_2s5sk"]
 [ext_resource type="Script" uid="uid://4mhp5bskroil" path="res://core/controllers/transport/hover_entry_trigger.gd" id="1_iqrxv"]
 [ext_resource type="Script" uid="uid://bv5nk3jsp65cg" path="res://core/controllers/transport/base/input_hover_controller.gd" id="3_bqrf5"]
+[ext_resource type="Script" uid="uid://bmjsijadfn8ws" path="res://world/interactables/interactive_visual_indicator.gd" id="4_tick_s"]
+[ext_resource type="Texture2D" uid="uid://qm0y255cq634" path="res://assets/icons/icon_interactive.png" id="5_tick_t"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_5h11f"]
 size = Vector3(2, 1.5, 4)
@@ -142,6 +144,13 @@ shape = SubResource("BoxShape3D_5h11f")
 
 [node name="DoorAnchor" type="Marker3D" parent="." unique_id=1166992580]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, -0.75, -0.92710876)
+
+
+[node name="InteractiveVisualIndicator" type="Node3D" parent="DoorAnchor" unique_id=910000001]
+script = ExtResource("4_tick_s")
+indicator_sprite_texture = ExtResource("5_tick_t")
+base_height_offset = 0.9
+sprite_pixel_size = 0.004
 
 [node name="HoverEntryTrigger" type="Area3D" parent="." unique_id=1222824727]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.25515747, -0.92710876)

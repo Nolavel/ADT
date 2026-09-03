@@ -12,6 +12,71 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Grain becomes a vignette, and closes toward the menu on pause
+
+It was anchored on the character's unprojected position, so the clear hole drove
+around the frame. Now it is anchored on the centre: clear in the middle, grain
+in the corners and along the edges. Both radii became FRACTIONS OF THE
+HALF-DIAGONAL — as pixels they could not describe a vignette at all (400/400 put
+full grain 66 px past the corner). On pause the vignette walks inward and frames
+the menu instead of burying it; `pause_fade_radius` is the knob.
+
+> *Зерно стало виньеткой; на паузе сходится к центру, оставляя меню читаемым.*
+
+---
+
+## 2026-09-03 - The bed and the hover door get a tick too
+
+The bed's indicator was configured with no `indicator_sprite_texture`, so
+`_ready()` returned before building anything — and my earlier note blaming the
+parent type was wrong: `BedPoint` IS an `InteractableObject`. The hover had no
+indicator at all, and could not have one: the script demanded an
+`InteractableObject` parent while `DoorAnchor` is a `Marker3D`. The indicator now
+hangs over any `Node3D`, and `HoverEntryTrigger` drives it on the same 2 m rule,
+reading the distance from the player's own component rather than copying it.
+
+> *Галка появилась у кровати и у двери ховера.*
+
+---
+
+## 2026-09-03 - The tick gives way to F at 2 m, not at arm's length
+
+The first pass at the sequence reused `pickup_distance` (0.9 m) as the display
+threshold, so the badge only appeared once the character was already touching
+the object. Stan's number is 2 m. New `prompt_distance` export, separate from
+`pickup_distance`, which keeps its own job — act on the spot or walk over. Two
+edges tracked now, not one. Verified on frames at 2.4 m (tick alone) and 1.5 m
+(F alone).
+
+> *Галка меняется на F на двух метрах, а не на вытянутой руке.*
+
+---
+
+## 2026-09-03 - The key-hints panel stops saying "Physical" on every row
+
+`_format_key_label()` cut `as_text()` at the first `" ("`, the parenthetical form
+the docs suggest. Measured with a print over `InputMap` on 4.7.2: what actually
+comes back is `"W - Physical"`, a dash — so the cut never fired and every row
+carried the suffix, four times the width of the key itself. Both forms handled
+now, bounded to the known suffix so a future wording change shows on screen
+rather than being swallowed.
+
+> *Панель хоткеев больше не пишет «Physical» в каждой строке.*
+
+---
+
+## 2026-09-03 - max_physics_steps_per_frame back to the engine default, 8
+
+Stan's answer to the open question. The ceiling caps how many physics ticks the
+engine simulates inside one rendered frame before it stops catching up and lets
+game time dilate — so a raised ceiling makes a hitch on the Intel HD 620 target
+longer, not shorter. 9 was not deliberate. Back to 8, and the question leaves
+`docs/NOW.md`.
+
+> *Потолок физических тиков возвращён к движковому дефолту.*
+
+---
+
 ## 2026-09-03 - Two controller headers cut to a map, not a chronicle (Task 4)
 
 `patrol_drone_controller.gd` 186 → 31 header lines, `idle_npc_controller.gd`

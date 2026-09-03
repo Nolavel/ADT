@@ -62,6 +62,17 @@ signal interact_target_changed(object: InteractableObject, in_reach: bool)
 ## How close the character walks before acting. Also the threshold that
 ## decides whether F acts immediately or walks first.
 @export var pickup_distance: float = 0.9
+## Distance at which the tick floating over an object gives way to the F badge,
+## metres. DELIBERATELY NOT pickup_distance, and the two answer different
+## questions: pickup_distance decides whether F acts on the spot or walks the
+## character over, and it is 0.9 m — arm's length. This one decides what the
+## player is being TOLD, and a badge you can only read once you are already
+## touching the thing tells you nothing.
+##
+## 2.0 m, Stan's number after playing it. The first pass at the sequence reused
+## pickup_distance for both, which put the swap at 0.9 m and made the badge
+## appear far too late.
+@export var prompt_distance: float = 2.0
 ## Seconds before an approach gives up. Not optional: this project has no
 ## NavigationRegion3D (NavigationComponent logs it at every boot and falls
 ## back to a straight line), so a walk into geometry would otherwise never
@@ -84,6 +95,10 @@ var detected_count: int = 0
 ## Last value emitted through interact_target_changed, so the signal stays an
 ## edge rather than a per-frame report.
 var _last_in_reach: bool = false
+## Same, for the DISPLAY threshold (prompt_distance). Tracked separately from
+## _last_in_reach because the two boundaries are 2.0 m and 0.9 m apart and the
+## edge filter has to fire on either.
+var _last_in_prompt: bool = false
 ## Instance id of the target at that same emit, 0 for none.
 ##
 ## An id and NOT the reference, because in Godot a freed Object compares
@@ -229,12 +244,18 @@ func _emit_target_if_changed() -> void:
 	var claimed: bool = InputSystems.is_interact_claimed()
 	## A freed target answers false here and 0 below, so a picked-up object
 	## reports as "nothing targeted" rather than being dereferenced.
-	var in_reach := not claimed and current_interactable != null \
-			and _flat_distance_to(current_interactable) <= pickup_distance
+	var distance: float = (
+		_flat_distance_to(current_interactable)
+		if not claimed and current_interactable != null else INF
+	)
+	var in_reach := distance <= pickup_distance
+	## The DISPLAY question, and a different one — see prompt_distance.
+	var in_prompt_range := distance <= prompt_distance
 	var target_id: int = 0 if claimed else (
 		current_interactable.get_instance_id() if current_interactable else 0
 	)
-	if target_id == _last_target_id and in_reach == _last_in_reach:
+	if target_id == _last_target_id and in_reach == _last_in_reach \
+			and in_prompt_range == _last_in_prompt:
 		return
 	## The reach edge, told to the OBJECT as well as to the signal. The tick
 	## sprite over it is driven by on_detected/on_lost, and both of those fire
@@ -244,11 +265,16 @@ func _emit_target_if_changed() -> void:
 	## own on_detected_by_player(), and calling this there too would replay the
 	## entrance a second time in one frame.
 	var same_target: bool = target_id == _last_target_id and target_id != 0
+	var prompt_changed: bool = in_prompt_range != _last_in_prompt
 	previous_interactable = current_interactable
 	_last_target_id = target_id
 	_last_in_reach = in_reach
-	if same_target and is_instance_valid(current_interactable):
-		current_interactable.on_reach_changed(in_reach)
+	_last_in_prompt = in_prompt_range
+	## Only on a change of PROMPT range, not of reach: crossing pickup_distance
+	## at 0.9 m would otherwise replay the tick's exit a second time, half a
+	## metre after it already left.
+	if same_target and prompt_changed and is_instance_valid(current_interactable):
+		current_interactable.on_reach_changed(in_prompt_range)
 	interact_target_changed.emit(null if claimed else current_interactable, in_reach)
 
 
@@ -259,6 +285,12 @@ func _emit_target_if_changed() -> void:
 ## _emit_target_if_changed(), which is where the rule lives.
 func is_target_in_reach() -> bool:
 	return _last_in_reach
+
+
+## Whether the candidate is close enough for the F badge to replace the tick —
+## prompt_distance, not pickup_distance. The DISPLAY threshold; see that export.
+func is_target_in_prompt_range() -> bool:
+	return _last_in_prompt
 
 
 ## Puts the key panel over the candidate, or takes it away. The decal under it
@@ -293,7 +325,7 @@ func _update_affordance() -> void:
 	## The cost, stated because it is a real one: F is hidden from 2 m even
 	## though pressing it there WORKS — try_interact() walks the character over
 	## first. The tick carries that half of the message now.
-	if current_interactable == null or not is_target_in_reach():
+	if current_interactable == null or not is_target_in_prompt_range():
 		prompt.hide_prompt()
 		return
 	## HoldPrompt ignores a repeat show for the same node, so the entrance

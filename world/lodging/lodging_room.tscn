@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://bl2h7ssedrprr" path="res://world/lodging/lodging_room.gd" id="1"]
 [ext_resource type="Script" uid="uid://crb77033gqmom" path="res://world/interactables/interactables.gd" id="2"]
 [ext_resource type="Script" uid="uid://bmjsijadfn8ws" path="res://world/interactables/interactive_visual_indicator.gd" id="3"]
+[ext_resource type="Texture2D" uid="uid://qm0y255cq634" path="res://assets/icons/icon_interactive.png" id="4_tick"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_floor_ceiling"]
 size = Vector3(8, 0.2, 8)
@@ -144,6 +145,9 @@ shape = SubResource("BoxShape3D_bed_area")
 
 [node name="InteractiveVisualIndicator" type="Node3D" parent="BedPoint" unique_id=528008542]
 script = ExtResource("3")
+indicator_sprite_texture = ExtResource("4_tick")
+base_height_offset = 0.75
+sprite_pixel_size = 0.004
 
 [node name="HourLabel" type="Label3D" parent="." unique_id=1296287229]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 2, -2.5)

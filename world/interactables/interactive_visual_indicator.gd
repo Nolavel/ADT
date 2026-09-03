@@ -40,6 +40,15 @@ extends Node3D
 @export var raycast_collision_mask: int = CollisionLayers.GROUND
 
 ## === ВНУТРЕННИЕ ПЕРЕМЕННЫЕ ===
+## The node the tick hangs over. ANY Node3D, not necessarily an
+## InteractableObject: the hover's DoorAnchor is a plain Marker3D under a
+## CharacterBody3D, and HoverEntryTrigger drives this indicator itself the same
+## way it already drives HoldPrompt and the ground decal.
+var anchor: Node3D = null
+## The anchor narrowed to InteractableObject, or null when the driver is
+## somebody else. Only the SHAKE gate reads it — an object that knows whether
+## it is detected or carried can suppress the knock by itself; a driven
+## indicator's owner is responsible for that instead.
 var parent_object: InteractableObject = null
 var indicator_sprite: Node3D = null ## Контейнер для спрайта
 var sprite_3d: Sprite3D = null      ## Сам спрайт
@@ -75,10 +84,11 @@ var is_scanning: bool = false
 
 func _ready() -> void:
 	## Получаем ссылку на родительский объект
-	parent_object = get_parent() as InteractableObject
+	anchor = get_parent() as Node3D
+	parent_object = anchor as InteractableObject
 	
-	if not parent_object:
-		push_error("InteractableVisualIndicator: должен быть дочерним для InteractableObject!")
+	if not anchor:
+		push_error("InteractiveVisualIndicator: parent must be a Node3D to hang over")
 		return
 	
 	if indicator_sprite_texture:
@@ -147,11 +157,11 @@ func _setup_raycasts() -> void:
 		raycasts.append(raycast)
 
 func _process(_delta: float) -> void:
-	if not is_sprite_visible or not indicator_sprite or not parent_object:
+	if not is_sprite_visible or not indicator_sprite or not anchor:
 		return
 	
 	## Вычисляем позицию спрайта относительно направления пола
-	var sprite_pos = parent_object.global_position - ground_direction * (base_height_offset + sprite_current_height + sprite_shake_offset)
+	var sprite_pos = anchor.global_position - ground_direction * (base_height_offset + sprite_current_height + sprite_shake_offset)
 	indicator_sprite.global_position = sprite_pos
 
 func _exit_tree() -> void:
@@ -212,7 +222,7 @@ func _on_throw_cooldown_finished() -> void:
 	_show_indicator_sprite()
 	
 	## Запускаем тряску только если обнаружен игроком в shape cast
-	if parent_object and parent_object.is_detected:
+	if _shake_allowed():
 		_start_shake_cycle()
 
 ## ============================================================================
@@ -256,12 +266,12 @@ func _detect_ground_direction() -> void:
 	for raycast in raycasts:
 		if raycast.is_colliding():
 			var collision_point = raycast.get_collision_point()
-			var distance = parent_object.global_position.distance_to(collision_point)
+			var distance = anchor.global_position.distance_to(collision_point)
 			
 			if distance < closest_distance:
 				closest_distance = distance
 				## Направление К полу
-				closest_direction = (collision_point - parent_object.global_position).normalized()
+				closest_direction = (collision_point - anchor.global_position).normalized()
 	
 	## Обновляем направление к полу
 	ground_direction = closest_direction
@@ -356,11 +366,20 @@ func _hide_indicator_sprite_instant() -> void:
 ## СИСТЕМА ТРЯСКИ
 ## ============================================================================
 
+## The knock. An InteractableObject suppresses it while it is not detected or
+## while it is carried; a DRIVEN indicator (the hover door) has no such flags,
+## and its driver decides by simply not calling on_object_detected().
+func _shake_allowed() -> bool:
+	if parent_object == null:
+		return true
+	return parent_object.is_detected and not parent_object.is_being_carried
+
+
 func _start_shake_cycle() -> void:
-	if not enable_shake or not shake_timer or not parent_object:
+	if not enable_shake or not shake_timer or not anchor:
 		return
 	
-	if parent_object.is_detected and not parent_object.is_being_carried:
+	if _shake_allowed():
 		shake_timer.start()
 
 func _stop_shake_cycle() -> void:
@@ -369,11 +388,11 @@ func _stop_shake_cycle() -> void:
 	_stop_shake()
 
 func _start_shake() -> void:
-	if not parent_object or not sprite_3d or not is_sprite_visible:
+	if not anchor or not sprite_3d or not is_sprite_visible:
 		return
 	
 	## Проверяем что объект всё ещё обнаружен
-	if not parent_object.is_detected or parent_object.is_being_carried:
+	if not _shake_allowed():
 		return
 	
 	is_shaking = true
@@ -398,7 +417,7 @@ func _start_shake() -> void:
 	_stop_shake()
 	
 	## Перезапускаем цикл если объект всё ещё обнаружен
-	if parent_object and parent_object.is_detected and not parent_object.is_being_carried:
+	if anchor and _shake_allowed():
 		_start_shake_cycle()
 
 func _stop_shake() -> void:

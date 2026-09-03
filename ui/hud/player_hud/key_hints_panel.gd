@@ -48,6 +48,10 @@
 class_name KeyHintsPanel
 extends PanelContainer
 
+## Qualifier suffixes InputEventKey.as_text() appends, longest first so a
+## match cannot leave a dangling separator. See _format_key_label().
+const _KEY_LABEL_SUFFIXES: Array[String] = [" - Physical", " (Physical)"]
+
 ## Button index → short label, for the physical buttons every mouse has.
 ## Anything else (a fifth+ side button) falls back to "MB<index>" in
 ## _format_mouse_button_label(). Wheel directions are spelled out in ASCII
@@ -321,11 +325,31 @@ func _format_event_label(event: InputEvent) -> String:
 	return event.as_text().strip_edges()
 
 
-## Strips as_text()'s occasional "(Physical)"-style parenthetical — a
-## reviewer doesn't need to know a binding came from a physical keycode,
-## only which key to press.
+## Strips as_text()'s qualifier suffix. A player needs to know which key to
+## press, not that the binding was stored as a physical keycode, and the panel
+## is a fixed-width column — "W - Physical" is four times the width of "W" and
+## pushes the whole Movement column out.
+##
+## BOTH SEPARATORS, because this file already got it wrong once: it cut at the
+## first " (" only, which is the form the Godot docs suggest. Measured on 4.7.2
+## with a temporary print over InputMap, 2026-09-03 — what actually comes back
+## is a DASH:
+##
+##   move_forward  -> "W - Physical"
+##   jump          -> "Space - Physical"
+##   interact      -> "F - Physical"
+##
+## so the parenthetical cut never fired and every row carried the suffix. Both
+## forms are handled now, and the dash cut is bounded to the known suffix
+## rather than "everything after the first dash": a future Godot wording change
+## should show up on screen as a wrong label, not be silently swallowed here.
 func _format_key_label(event: InputEventKey) -> String:
 	var text := event.as_text()
+	for suffix in _KEY_LABEL_SUFFIXES:
+		var index := text.rfind(suffix)
+		if index != -1:
+			text = text.substr(0, index)
+			break
 	var paren_index := text.find(" (")
 	if paren_index != -1:
 		text = text.substr(0, paren_index)

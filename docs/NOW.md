@@ -32,14 +32,11 @@ Stan's (H6 needs eyes).
 - `grain_effect.gdshader`'s look is unreviewed: cyan `grain_color` at 0.3 mix,
   and the render probe is Compatibility, where colour is not trustworthy. Needs
   Stan's eye on Forward+ before any number moves.
-- `world/lodging/lodging_room.tscn:145` — `InteractiveVisualIndicator` sits
-  under `BedPoint`, which is not an `InteractableObject` and has no
-  `indicator_sprite_texture`. Its `_ready()` therefore `push_error`s and exits:
-  the bed can never show a tick. Scene configuration, not sequencing; left for
-  a decision of its own.
-- Gating F on reach means F is hidden from 2 m even though pressing it there
-  works — `try_interact()` walks the character over. The tick carries that half
-  of the message now. Deliberate, and a real loss of information.
+- The tick is only visible between `intent_radius` (2.5 m, where detection
+  starts) and `prompt_distance` (2.0 m, where F replaces it) — a 0.5 m band,
+  and the knock cycle waits 5 s before shaking. In practice the knock will
+  almost never be seen. `intent_radius` is the knob; raising it also lengthens
+  F's auto-approach, so it is a gameplay call, not mine.
 - The work plan's "Done when" under Task 3b describes CI failing on an orphaned
   file. That is Task **3a**'s criterion; 3b is about warnings. Plan file left
   as written.
@@ -67,11 +64,6 @@ Stan's (H6 needs eyes).
 
 ## Open question for Stan
 
-- `common/max_physics_steps_per_frame=9` (engine default is 8). On the Intel HD
-  620 target a higher ceiling makes a hitch longer, not shorter — why 9?
-  **Not changed, not to be changed until answered.** Explained in chat
-  2026-09-03: it caps how many physics ticks the engine will simulate inside one
-  rendered frame before it gives up catching up and lets game time dilate.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?
