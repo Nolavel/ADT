@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - The carbine knows where its barrel ends
+
+`ItemResource.muzzle_offset` — a position on the item, not a `Marker3D` in a
+scene, because `EquipmentVisualsComponent` builds the held weapon as a bare
+`MeshInstance3D` and nothing authored in `carbine.tscn` ever reaches the hand.
+`has_muzzle()` / `get_muzzle_position()` read it. Measured, not guessed: the
+mesh is 1 m along local **+X** with its origin at its centre, which is neither
+what the architecture document said nor where it said the barrel pointed.
+
+> *Дуло карабина — число на предмете. Замерено; в доках было неверно.*
+
 ## 2026-09-03 - Key hints: blots first then text, text first then blots
 
 The order Stan asked for, and the order the draft did not have — it faded both

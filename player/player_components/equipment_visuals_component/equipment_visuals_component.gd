@@ -77,6 +77,11 @@ var _left_grip: Node3D = null
 ## holster. Built rather than pre-made and hidden: an item's mesh is per-item
 ## data, so there is nothing to pre-make.
 var _held_instance: MeshInstance3D = null
+## The drawn item's ItemResource.muzzle_offset, cached when the instance is
+## built. Cached rather than resolved on each call because get_muzzle_position()
+## is asked EVERY FRAME while a muzzle flash is alive, and the answer cannot
+## change without _on_drawn_changed() running again and overwriting this.
+var _held_muzzle_offset: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -155,10 +160,34 @@ func _on_drawn_changed(item_id: StringName) -> void:
 
 	_held_instance = MeshInstance3D.new()
 	_held_instance.mesh = item.held_mesh
+	_held_muzzle_offset = item.muzzle_offset
 	_grip_for(item.held_fit).add_child(_held_instance)
 	_apply_fit(_held_instance, item.held_fit)
 	if debug_log:
 		print("[EquipmentVisuals] holding %s" % item_id)
+
+
+## Whether there is a barrel end to ask about at all. Asked BEFORE
+## get_muzzle_position(), and not the same question as "is a firearm drawn":
+## draw_attach_delay holds the mesh back for roughly a fifth of a second after
+## the equipment says the weapon is out, so during that window the state is
+## correct and there is still nothing in the hand to hang an effect on.
+func has_muzzle() -> bool:
+	return is_instance_valid(_held_instance)
+
+
+## Where the barrel ends, in world space.
+##
+## Computed rather than read off a Marker3D in the hand. held_fit.gd already
+## made this call once and recorded it: a node per item buys nothing the item's
+## own numbers do not, and this is the same arithmetic that node would do.
+##
+## Vector3.ZERO when nothing is held — which is a real position, so callers
+## check has_muzzle() first rather than testing the return for a sentinel.
+func get_muzzle_position() -> Vector3:
+	if not is_instance_valid(_held_instance):
+		return Vector3.ZERO
+	return _held_instance.global_transform * _held_muzzle_offset
 
 
 ## Which hand an item goes in. Falls back to the right for an item with no
