@@ -46,6 +46,11 @@ eyes).
 - The work plan's "Done when" under Task 3b describes CI failing on an orphaned
   file. That is Task **3a**'s criterion; 3b is about warnings. Plan file left
   as written.
+- GDScript analyzer warnings never reach the CLI — editor Script panel only,
+  proven with a deliberately untyped function in an autoload. So Task 3b buys a
+  standard for whoever has the project open, not a CI gate. 35 untyped returns
+  in game code (33 more in `tools/`, 47 in `addons/`); the plan's "38 outside
+  tools/" did not separate `addons/`.
 - 38 functions outside `tools/` have no return type, 15 of them in
   `core/ui/target_indicator/target_indicator.gd`. Task 3b.
 - `core/ui/target_indicator/target_indicator.gd` still carries the whole

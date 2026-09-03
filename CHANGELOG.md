@@ -12,6 +12,20 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Typing warnings on, and what they do NOT do (work plan Task 3b)
+
+`project.godot` had no `[debug]` section at all; `untyped_declaration` and
+`unsafe_method_access` are now warnings (not errors — that flip is Stan's call).
+Measured, not assumed: a deliberately untyped function in an AUTOLOAD produced
+**zero** lines on both `--headless --editor` and `--headless`, so these are the
+editor's Script panel only and CI cannot see them. Untyped returns: 35 in game
+code, 33 in `tools/`, 47 in `addons/` — fixing the 35 is the next commit.
+
+> *Предупреждения о типизации включены, но видны только в редакторе — в CI их
+> нет. 35 мест в игровом коде.*
+
+---
+
 ## 2026-09-03 - The tick and the F badge are a sequence now, not a pile
 
 The F badge came up on "a target exists" with no distance test, so from
