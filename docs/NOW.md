@@ -4,10 +4,9 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-Task 2 (physics interpolation) and the `fade_by_distance` half of Task 3a, in
-two commits, in one session — Stan asked for them together, overriding his own
-"one task per session" rule. Both are done and pushed. Task 1 is Stan's (H6
-needs eyes); the rest of Task 3 is not started.
+Sequencing the interact affordance (tick → F), then Task 3b. Both merged into
+`main` behind them: Task 0, Task 2, Task 3a. Task 1 stays Stan's (H6 needs
+eyes).
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -36,6 +35,17 @@ needs eyes); the rest of Task 3 is not started.
 - `grain_effect.gdshader`'s look is unreviewed: cyan `grain_color` at 0.3 mix,
   and the render probe is Compatibility, where colour is not trustworthy. Needs
   Stan's eye on Forward+ before any number moves.
+- `world/lodging/lodging_room.tscn:145` — `InteractiveVisualIndicator` sits
+  under `BedPoint`, which is not an `InteractableObject` and has no
+  `indicator_sprite_texture`. Its `_ready()` therefore `push_error`s and exits:
+  the bed can never show a tick. Scene configuration, not sequencing; left for
+  a decision of its own.
+- Gating F on reach means F is hidden from 2 m even though pressing it there
+  works — `try_interact()` walks the character over. The tick carries that half
+  of the message now. Deliberate, and a real loss of information.
+- The work plan's "Done when" under Task 3b describes CI failing on an orphaned
+  file. That is Task **3a**'s criterion; 3b is about warnings. Plan file left
+  as written.
 - 38 functions outside `tools/` have no return type, 15 of them in
   `core/ui/target_indicator/target_indicator.gd`. Task 3b.
 - `core/ui/target_indicator/target_indicator.gd` still carries the whole

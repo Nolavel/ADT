@@ -236,9 +236,19 @@ func _emit_target_if_changed() -> void:
 	)
 	if target_id == _last_target_id and in_reach == _last_in_reach:
 		return
+	## The reach edge, told to the OBJECT as well as to the signal. The tick
+	## sprite over it is driven by on_detected/on_lost, and both of those fire
+	## on a change of TARGET — so walking up to something already targeted was
+	## silent, and the tick stayed up under the F badge. Only on a genuine
+	## change of reach for the SAME target: a new target already carries its
+	## own on_detected_by_player(), and calling this there too would replay the
+	## entrance a second time in one frame.
+	var same_target: bool = target_id == _last_target_id and target_id != 0
 	previous_interactable = current_interactable
 	_last_target_id = target_id
 	_last_in_reach = in_reach
+	if same_target and is_instance_valid(current_interactable):
+		current_interactable.on_reach_changed(in_reach)
 	interact_target_changed.emit(null if claimed else current_interactable, in_reach)
 
 
@@ -270,7 +280,20 @@ func _update_affordance() -> void:
 	var prompt: HoldPrompt = _resolve_hold_prompt()
 	if prompt == null:
 		return
-	if current_interactable == null:
+	## THE REACH TEST SEQUENCES THE AFFORDANCE, and that is the whole of this
+	## gate. Far: the tick sprite floats over the object and knocks — "there is
+	## something here" — and this badge stays down. In reach: the tick lifts
+	## away (InteractableObject.on_reach_changed) and the badge rises out of
+	## the ground decal in its place — "and F acts on it now".
+	##
+	## Before this gate both came up together the moment anything entered
+	## intent_radius, 2.5 m, and physically overlapped: measured on a render
+	## frame 2026-09-03 at 2.00 m, the tick sits inside the F plate.
+	##
+	## The cost, stated because it is a real one: F is hidden from 2 m even
+	## though pressing it there WORKS — try_interact() walks the character over
+	## first. The tick carries that half of the message now.
+	if current_interactable == null or not is_target_in_reach():
 		prompt.hide_prompt()
 		return
 	## HoldPrompt ignores a repeat show for the same node, so the entrance
