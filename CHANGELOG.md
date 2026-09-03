@@ -12,6 +12,18 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - ShotEffectSystem's tunables were half of them dead
+
+Found reading the file back, not on screen. `BILLBOARD_ENABLED` REPLACES a
+node's scale unless `billboard_keep_scale` is set, so the flash's shrink did
+nothing and any size set on the node would have drawn one metre wide. And
+`flash_size`/`tracer_radius` were baked into the shared meshes at `_ready()`,
+so changing either later was silently ignored — both now live on the node
+scale and are read at spawn. The `@export`s are gone too: a `.new()` system has
+no inspector, so they promised a field nobody can reach.
+
+> *Половина ручек ничего не крутила. Биллборд ел масштаб, размеры пеклись в меш.*
+
 ## 2026-09-03 - _resolve_shot() draws what it did
 
 The call site: one `_spawn_shot_visual()` before every branch, so the streak is

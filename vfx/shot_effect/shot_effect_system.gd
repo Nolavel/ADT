@@ -49,35 +49,47 @@ const POOL_SIZE: int = 4
 ## resolved against a target standing on the muzzle is not a shot to draw.
 const MIN_TRACER_LENGTH: float = 0.05
 
-@export_group("Flash")
+## --- Tunables. NOT @export, and that is not an oversight. ---
+##
+## This system is created with .new() from world.gd's WORLD_SYSTEM_SCRIPTS, so
+## it has no node in any scene and no inspector — an @export here would draw a
+## field nobody can reach. ComicEffectSystem is in the same position and
+## answers it with const for the same reason. These stay `var` rather than
+## const only because a throwaway probe raises the two durations: at
+## render_probe.sh's 20 fps a 0.05 s effect can fall between two captures and
+## be photographed as nothing at all.
+##
+## EVERY ONE OF THEM IS READ AT SPAWN. Nothing here is baked into a mesh at
+## _ready(): a number that only takes effect on the next run is a number that
+## silently ignores whoever changed it, and this file had exactly that bug in
+## flash_size and tracer_radius before the sizes moved onto the node scale.
+
 ## Seconds the muzzle flash is on screen. Short on purpose — a flash that
 ## outlasts the frame it belongs to reads as a fire, not a shot.
-@export var flash_duration: float = 0.05
+var flash_duration: float = 0.05
 ## Width of the flash quad at birth, metres. It shrinks to flash_end_scale of
 ## this over its life.
-@export var flash_size: float = 0.28
-@export var flash_end_scale: float = 0.45
+var flash_size: float = 0.28
+var flash_end_scale: float = 0.45
 ## Warm and saturated against a muted world — 3D_ART_BIBLE.md §10's "muted
 ## industrial palette + selective saturated accents". The shot IS the accent.
-@export var flash_color: Color = Color(1.0, 0.86, 0.55)
+var flash_color: Color = Color(1.0, 0.86, 0.55)
 
-@export_group("Tracer")
 ## Seconds the tracer streak is on screen. Slightly longer than the flash so
 ## the eye reads the line after the bang rather than with it.
-@export var tracer_duration: float = 0.07
+var tracer_duration: float = 0.07
 ## Radius of the tracer cylinder, metres.
-@export var tracer_radius: float = 0.015
+var tracer_radius: float = 0.015
 ## Near-white, warmed a little so it belongs to the same shot as the flash.
-@export var tracer_color: Color = Color(1.0, 0.95, 0.86)
+var tracer_color: Color = Color(1.0, 0.95, 0.86)
 
-@export_group("Optional")
 ## An OmniLight3D at the muzzle for the length of the flash. OFF by default
 ## and deliberately so: the FPS target is low-end integrated graphics, a live
 ## light is a real cost, and render_probe.sh runs Compatibility so it cannot
-## verify what this would look like. Raise it in the editor and judge it on
-## screen. Shadows stay off either way.
-@export var flash_light_energy: float = 0.0
-@export var flash_light_range: float = 4.0
+## verify what this would look like. Raise it and judge it on screen; shadows
+## stay off either way.
+var flash_light_energy: float = 0.0
+var flash_light_range: float = 4.0
 
 ## One pool unit. Not a class of its own — it is three nodes and two clocks,
 ## and a Resource or a Node subclass for that would be a file to open every
@@ -122,7 +134,7 @@ func spawn_shot(
 
 	var flash: MeshInstance3D = unit["flash"]
 	flash.global_position = from
-	flash.scale = Vector3.ONE
+	flash.scale = Vector3.ONE * flash_size
 	flash.visible = flash_duration > 0.0
 
 	var light: OmniLight3D = unit["light"]
@@ -165,7 +177,7 @@ func _tick(unit: Dictionary, delta: float) -> void:
 				flash.global_position = source.get_muzzle_position()
 				light.global_position = flash.global_position
 			var life: float = _fraction_left(unit["flash_left"], flash_duration)
-			flash.scale = Vector3.ONE * lerpf(flash_end_scale, 1.0, life)
+			flash.scale = Vector3.ONE * flash_size * lerpf(flash_end_scale, 1.0, life)
 			light.light_energy = flash_light_energy * life
 
 	if unit["tracer_left"] > 0.0:
@@ -226,8 +238,9 @@ func _place_tracer(tracer: MeshInstance3D, from: Vector3, to: Vector3) -> bool:
 	tracer.global_position = from + delta * 0.5
 	tracer.look_at(to, up)
 	tracer.rotate_object_local(Vector3.RIGHT, PI * 0.5)
-	## The mesh is one metre tall, so the Y scale IS the length in metres.
-	tracer.scale = Vector3(1.0, length, 1.0)
+	## The mesh is a unit cylinder, so the Y scale IS the length in metres and
+	## the X/Z scale IS the diameter.
+	tracer.scale = Vector3(tracer_radius * 2.0, length, tracer_radius * 2.0)
 	return true
 
 
@@ -254,13 +267,18 @@ func _build_shared_resources() -> void:
 	_flash_texture.width = 64
 	_flash_texture.height = 64
 
+	## A ONE METRE quad, scaled on the node. The size used to be baked here,
+	## which meant flash_size was read once at _ready() and changing it later
+	## did nothing at all.
 	_flash_mesh = QuadMesh.new()
-	_flash_mesh.size = Vector2(flash_size, flash_size)
+	_flash_mesh.size = Vector2.ONE
 
+	## Unit cylinder — diameter 1, height 1 — so the node scale carries both
+	## the radius and the length, and both are read at spawn. Same fix and
+	## same reason as the flash quad above.
 	_tracer_mesh = CylinderMesh.new()
-	_tracer_mesh.top_radius = tracer_radius
-	_tracer_mesh.bottom_radius = tracer_radius
-	## One metre so the Y scale reads as the length in metres.
+	_tracer_mesh.top_radius = 0.5
+	_tracer_mesh.bottom_radius = 0.5
 	_tracer_mesh.height = 1.0
 	## Eight triangles. A tracer is on screen for four frames and is seen
 	## end-on; nobody is going to count its sides.
@@ -278,6 +296,10 @@ func _build_unit() -> Dictionary:
 	## source of truth about where a shot goes, which muzzle_offset is
 	## deliberately not (see ItemResource.muzzle_offset).
 	flash_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	## Without this the billboard basis REPLACES the node's scale, so both
+	## flash_size and the shrink over the flash's life are silently discarded
+	## and every flash draws one metre wide. Godot's default is false.
+	flash_material.billboard_keep_scale = true
 
 	var flash := MeshInstance3D.new()
 	flash.mesh = _flash_mesh
@@ -325,7 +347,6 @@ func _make_material() -> StandardMaterial3D:
 	material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.disable_receive_shadows = true
-	material.vertex_color_use_as_albedo = false
 	return material
 
 
