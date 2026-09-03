@@ -12,6 +12,19 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Key hints: blots first then text, text first then blots
+
+The order Stan asked for, and the order the draft did not have — it faded both
+in parallel with the text merely 20% shorter, which does not read as a sequence.
+Hiding is a chain now. Also fixed: the draft queued a change during a transition
+into a variable it never read, and cached the REQUESTED rows, so the re-read
+afterwards saw "nothing changed" and dropped it. One tween handle, killed before
+each transition — a fresh tween per rebuild is what cost CI a gated ERROR once.
+
+> *Порядок: сначала кляксы, потом текст; исчезает — сначала текст, потом кляксы.*
+
+---
+
 ## 2026-09-03 - Each key hint glyph gets its own box
 
 `[W / S / A / D]` becomes four bordered boxes joined by separators, from the

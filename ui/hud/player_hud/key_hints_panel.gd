@@ -1,10 +1,16 @@
 # =============================================================================
 # key_hints_panel.gd — KeyHintsPanel.
 #
-# Bottom-center strip of key hints, visible whenever InputSystems.
-# key_hints_enabled is true (docs/scope_horizon.md H2). A collaborator
-# cannot evaluate a build whose controls are undiscoverable — this is what
-# makes them discoverable.
+# Bottom-RIGHT corner column of key hints on an ink blot, visible whenever
+# InputSystems.key_hints_enabled is true (docs/scope_horizon.md H2). A
+# collaborator cannot evaluate a build whose controls are undiscoverable — this
+# is what makes them discoverable.
+#
+# THE ORDER OF THE TRANSITION IS THE CONTRACT, not decoration: ink in, then
+# text; text out, then ink. Hiding is a CHAIN rather than two parallel tweens
+# with the text merely running shorter — an overlap does not read as a sequence.
+# The ink itself is one ColorRect over vfx/shaders/key_hints_blot.gdshader,
+# driven by a single `progress` uniform.
 #
 # Instanced inside player_hud.tscn rather than added as a separate
 # WORLD_UI_SCENES entry — PlayerHUD already owns a world-UI lifecycle, a
@@ -133,6 +139,19 @@ class _Column:
 ## its blots hang off the edge; without this they stop dead at the margin.
 @export var blot_bleed: float = 28.0
 
+@export_group("Animation")
+## Ink in. The blobs' own stagger rides inside this, in the shader.
+@export var appear_duration: float = 0.8
+## How long after the ink starts before the text begins to arrive. The ORDER is
+## the point of this whole section — blots first, then text.
+@export var content_fade_in_delay: float = 0.3
+@export var content_fade_in_duration: float = 0.4
+## Text out. Runs to completion BEFORE the ink starts to go, which is the same
+## order reversed and is why this is a chain rather than two parallel tweens.
+@export var text_fade_out_duration: float = 0.22
+## Ink out, after the text has gone.
+@export var dissolve_duration: float = 0.35
+
 @onready var _blot_layer: ColorRect = $BlotLayer
 @onready var _content: VBoxContainer = $Content
 @onready var _title_label: Label = $Content/TitleLabel
@@ -144,6 +163,19 @@ var _mono_font: Font = null
 ## KeyHintEntry.Category → _Column, one per category, built once in
 ## _build_columns() and never recreated — only their contents change.
 var _columns: Dictionary = {}
+
+## The ONE tween this panel ever owns. Every transition kills it first.
+##
+## Not a courtesy: TargetIndicator built a fresh tween per frame on a per-frame
+## assertion and produced "27 resources still in use at exit", which is a gated
+## ERROR line in CI. A rebuild arriving mid-transition here is the same shape.
+## → docs/postmortems/verification_ladder.md
+var _transition: Tween = null
+## Row keys currently ON SCREEN, not the ones last requested. The difference
+## matters: caching the request means a change arriving mid-transition updates
+## the cache, and the re-read after the transition then sees "nothing changed"
+## and drops it.
+var _shown_row_keys: Array[StringName] = []
 
 
 func _ready() -> void:
@@ -166,9 +198,12 @@ func _ready() -> void:
 	InputSystems.key_hints_enabled_changed.connect(_on_enabled_changed)
 
 	visible = InputSystems.key_hints_enabled
-	_set_blot_progress(1.0 if visible else 0.0)
+	_set_blot_progress(0.0)
+	_content.modulate.a = 0.0
 	_rebuild()
 	_reposition()
+	if visible:
+		_begin_appear()
 
 
 ## The title is a landmark, not content: small, spaced out, and the same dim
@@ -245,13 +280,20 @@ func _on_aiming_changed(_is_aiming: bool) -> void:
 
 
 func _on_enabled_changed(enabled: bool) -> void:
-	visible = enabled
-	_set_blot_progress(1.0 if enabled else 0.0)
+	if enabled:
+		visible = true
+		_rebuild()
+		_begin_appear()
+	else:
+		_begin_hide()
 
 
-## Splits the newly-active KeyHintEntry set by category, then diffs each
-## column's share against its own rows already shown — adds/removes/
-## reorders only what changed, per column, never clears any list wholesale.
+## Decides WHETHER the rows on screen have to change, and if so runs the
+## transition around the change. The diffing itself is _apply_rebuild() below
+## and is unchanged.
+##
+## The comparison is against what is SHOWN, never against the last request —
+## see _shown_row_keys.
 func _rebuild() -> void:
 	if catalog == null:
 		push_warning("[KeyHintsPanel] no catalog assigned — panel stays empty")
@@ -259,7 +301,69 @@ func _rebuild() -> void:
 
 	var active := catalog.get_active_entries(
 			PlayerState.mode, PlayerState.view_mode, PlayerState.stance, PlayerState.is_aiming)
+	var wanted := _collect_row_keys(active)
+	if wanted == _shown_row_keys:
+		return
 
+	if not visible or _blot_progress() <= 0.01:
+		_apply_rebuild(active)
+		_shown_row_keys = wanted
+		return
+
+	## On screen already: text out, then ink out, then swap, then ink in, then
+	## text in. The swap happens while nothing is drawn.
+	_kill_transition()
+	_transition = create_tween()
+	_transition.tween_property(_content, "modulate:a", 0.0, text_fade_out_duration)
+	_transition.tween_method(_set_blot_progress, _blot_progress(), 0.0, dissolve_duration)
+	_transition.tween_callback(func() -> void:
+		_apply_rebuild(active)
+		_shown_row_keys = wanted
+		_begin_appear()
+	)
+
+
+func _collect_row_keys(active: Array[KeyHintEntry]) -> Array[StringName]:
+	var keys: Array[StringName] = []
+	for entry in active:
+		keys.append(entry.get_row_key())
+	return keys
+
+
+## Ink first, then text — the order Stan asked for, and the reason the text tween
+## carries a delay instead of starting with the blots.
+func _begin_appear() -> void:
+	_kill_transition()
+	_content.modulate.a = 0.0
+	_transition = create_tween()
+	_transition.set_parallel()
+	_transition.tween_method(_set_blot_progress, _blot_progress(), 1.0, appear_duration)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_transition.tween_property(_content, "modulate:a", 1.0, content_fade_in_duration)\
+			.set_delay(content_fade_in_delay)
+
+
+## Text out to completion, THEN the ink. A chain, not two parallel tweens with
+## the text merely running shorter — "text first, then blots" is the request,
+## and an overlap does not read as a sequence.
+func _begin_hide() -> void:
+	_kill_transition()
+	_transition = create_tween()
+	_transition.tween_property(_content, "modulate:a", 0.0, text_fade_out_duration)
+	_transition.tween_method(_set_blot_progress, _blot_progress(), 0.0, dissolve_duration)
+	_transition.tween_callback(func() -> void: visible = false)
+
+
+func _kill_transition() -> void:
+	if _transition != null and _transition.is_valid():
+		_transition.kill()
+	_transition = null
+
+
+## Splits the newly-active KeyHintEntry set by category, then diffs each
+## column's share against its own rows already shown — adds/removes/
+## reorders only what changed, per column, never clears any list wholesale.
+func _apply_rebuild(active: Array[KeyHintEntry]) -> void:
 	# get_active_entries() already returns entries sorted by sort_order, and
 	# filtering by category below preserves that relative order — no
 	# separate per-column sort needed.

@@ -4,11 +4,11 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-Task 4 — documentation split by genre. Five commits: `docs/postmortems/` and
-the camera audit into it, the `CHANGELOG` split, the `CLAUDE.md` diet, the two
-controller headers, plus a correction to a count I got wrong. Behind it in
-`main`: Tasks 0, 2, 3a, the tick→F sequencing, 3b's first half. Task 1 stays
-Stan's (H6 needs eyes).
+**Out of the September plan:** the key-hints panel restyled from Stan's own
+Frostpunk 2 reference and HTML study — ink-blot shader, bottom-right corner, one
+column, boxed key glyphs, and the appear/hide order (blots→text, text→blots).
+Four commits. Behind it in `main`: Tasks 0, 2, 3a, 3b's first half, the tick→F
+sequencing and the playtest batch. Task 1 stays Stan's (H6 needs eyes).
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -61,6 +61,11 @@ Stan's (H6 needs eyes).
   at **55%** and **44%** comment against a target of <30%: their inline comments
   are mostly present-tense rationale, not history, and hitting 30% means
   deleting ~557 and ~425 comment lines of it.
+
+- The key-hints panel's own header called it "a working tool for showing the
+  build to a reviewer, not final UI", and justified `SystemFont` on that basis.
+  After this work the first is no longer true and the second is arguable — a
+  bundled font is a separate decision, not made here.
 
 ## Open question for Stan
 
