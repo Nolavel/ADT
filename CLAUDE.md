@@ -200,12 +200,12 @@ one is how this file drifted four times.
 - **How two systems learn about each other — pick one, in this order:**
   - **`WorldContext`** — composition and runtime dependencies. Default choice.
   - **Autoload** — genuinely global state or service. Closed set: the existing
-    four plus the MCP helper. Additions require explicit discussion.
+	four plus the MCP helper. Additions require explicit discussion.
   - **Signal** — event notification, one-to-many, sender does not care who
-    listens.
+	listens.
   - **Group** — discovery and tagging, for nodes that never receive a
-    `WorldContext` (static scene instances such as `DroneBase`,
-    `PatrolDroneController`, `LodgingRoom`).
+	`WorldContext` (static scene instances such as `DroneBase`,
+	`PatrolDroneController`, `LodgingRoom`).
 - **No new autoloads.** Scene-scoped systems are plain Node instances owned by
   `world.gd` through the `WORLD_SYSTEM_SCRIPTS` list, created with `.new()` and
   initialized through `on_world_ready(context: WorldContext)`.

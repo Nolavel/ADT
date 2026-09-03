@@ -341,6 +341,7 @@ var _last_health_seen: float = -1.0
 ## see weapon_component.gd's own header on why a count cannot live on the
 ## item or in the slot.
 @onready var _weapon: WeaponComponent = $WeaponComponent
+@onready var tps_aim: TPSAimComponent = $TPSAimComponent
 ## Same node type npc_base.gd carries (core/components/votive_projector/) —
 ## driven every physics frame below, same "dumb component" pattern
 ## _animation_component already follows. Nothing drives its state past IDLE

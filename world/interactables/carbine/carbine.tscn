@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dom5frew5r74c"]
 
-[ext_resource type="Script" uid="uid://crb77033gqmom" path="res://world/interactables/interactables.gd" id="1_interactable"]
+[ext_resource type="Script" uid="uid://crb77033gqmom" path="res://world/interactables/Interactables.gd" id="1_interactable"]
 [ext_resource type="Script" uid="uid://bmjsijadfn8ws" path="res://world/interactables/interactive_visual_indicator.gd" id="2_indicator"]
 [ext_resource type="ArrayMesh" uid="uid://bqrjbf5nneai8" path="res://data/items/meshes/carbine_placeholder.res" id="3_mesh"]
 [ext_resource type="Resource" uid="uid://bpf2kfgn0ag5n" path="res://data/items/carbine.tres" id="4_item"]
@@ -40,3 +40,6 @@ script = ExtResource("2_indicator")
 indicator_sprite_texture = ExtResource("5_tick")
 base_height_offset = 0.45
 sprite_pixel_size = 0.004
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=148167575]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.528595, 0.021687508, 0)

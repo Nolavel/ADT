@@ -29,22 +29,6 @@ _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug]
 
-; GDScript analyzer warnings, enabled 2026-09-03 (work plan Task 3b). The
-; project's stated standard is strict static typing (docs/GDSCRIPT_STYLE.md)
-; and until now nothing enforced it — there was no [debug] section at all, so
-; engine defaults applied.
-;
-; WARNINGS, NOT ERRORS, deliberately. Flipping these to errors is a separate
-; decision and belongs to Stan; a warning that fails the build on day one just
-; gets switched off again.
-;
-; THESE ARE EDITOR-ONLY, AND THAT WAS MEASURED, NOT ASSUMED. The GDScript
-; analyzer prints its warnings into the editor's Script panel and nowhere else:
-; a deliberately untyped function added to an AUTOLOAD produced zero output on
-; both `godot --headless --editor` and `godot --headless` (2026-09-03). So this
-; is a standard for whoever has the project open, not a CI gate — CI's own
-; "Fail on a warning flood" step can never see them either. Do not read a green
-; CI run as saying anything about these two.
 gdscript/warnings/untyped_declaration=1
 gdscript/warnings/unsafe_method_access=1
 
