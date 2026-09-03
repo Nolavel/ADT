@@ -12,6 +12,18 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - Each key hint glyph gets its own box
+
+`[W / S / A / D]` becomes four bordered boxes joined by separators, from the
+study's `.key` rule. A grouped entry gets one box PER key rather than one wide
+frame around all four: a key is a thing you press, and four of them in one frame
+reads as a single strange key. `PanelContainer` + `StyleBoxFlat` sizes itself to
+the glyph, so `Space` and `W` both come out right with no width arithmetic.
+
+> *Каждая клавиша в своей рамке, как в прототипе.*
+
+---
+
 ## 2026-09-03 - Key hints move to the bottom-right corner, one column, on ink
 
 Root goes from `PanelContainer` to a plain `Control`: the container drew the flat

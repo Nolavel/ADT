@@ -87,12 +87,19 @@ class _Column:
 @export var catalog: KeyHintsCatalog
 
 @export_group("Style")
-@export var key_color: Color = Color(0.95, 0.82, 0.35, 1.0)
+@export var key_color: Color = Color(0.973, 0.910, 0.753, 1.0)
+## Fill behind a key glyph. From the study's `.key` rule.
+@export var key_box_color: Color = Color(0.118, 0.094, 0.063, 0.85)
+## Border of that box, same source.
+@export var key_border_color: Color = Color(0.706, 0.549, 0.275, 0.6)
 @export var description_color: Color = Color(0.88, 0.88, 0.88, 1.0)
 ## Deliberately dimmer/smaller than the descriptions: a column header is a
 ## landmark for the eye, not content to read.
 @export var header_color: Color = Color(0.55, 0.55, 0.55, 0.85)
 @export var font_size: int = 14
+## The glyph inside a key box. Smaller than the description on purpose — the box
+## already carries the emphasis, and a full-size glyph makes every row taller.
+@export var key_font_size: int = 12
 @export var header_font_size: int = 11
 ## Joins the individual key labels of a grouped entry (KeyHintEntry.
 ## action_names) into one cell, e.g. "W / A / S / D". The single place this
@@ -301,19 +308,28 @@ func _rebuild_column(column: _Column, active_entries: Array) -> void:
 	column.container.visible = not active_entries.is_empty()
 
 
+## A row is [key][key]… description, where each key is its OWN boxed glyph.
+##
+## A grouped entry (W/S/A/D) gets FOUR boxes joined by group_key_separator, not
+## one wide box holding all four: the study draws a key as a physical thing you
+## press, and four of them in one frame reads as a single strange key. It is also
+## the difference between legible and not once the row sits on dark ink.
 func _make_row(entry: KeyHintEntry) -> Control:
 	var row := HBoxContainer.new()
 	row.name = "Row_%s" % entry.get_row_key()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", int(key_description_gap))
 
-	var key_label := Label.new()
-	key_label.text = "[%s]" % _resolve_entry_key_label(entry)
-	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	key_label.add_theme_font_override("font", _mono_font)
-	key_label.add_theme_font_size_override("font_size", font_size)
-	key_label.add_theme_color_override("font_color", key_color)
-	row.add_child(key_label)
+	var labels := _resolve_entry_key_labels(entry)
+	for i in labels.size():
+		if i > 0:
+			var joiner := Label.new()
+			joiner.text = group_key_separator.strip_edges()
+			joiner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			joiner.add_theme_font_size_override("font_size", font_size)
+			joiner.add_theme_color_override("font_color", description_color)
+			row.add_child(joiner)
+		row.add_child(_make_key_box(labels[i]))
 
 	var desc_label := Label.new()
 	desc_label.text = entry.description
@@ -325,33 +341,47 @@ func _make_row(entry: KeyHintEntry) -> Control:
 	return row
 
 
-## The key cell for one entry: one resolved label for a single-action entry,
-## or every action's label joined by group_key_separator for a grouped one
-## (KeyHintEntry.action_names), e.g. "W / A / S / D".
-func _resolve_entry_key_label(entry: KeyHintEntry) -> String:
+## One key glyph in its box. A PanelContainer with a StyleBoxFlat rather than a
+## drawn rectangle: it sizes itself to the glyph, so "Space" and "W" both come
+## out right without any width arithmetic here.
+func _make_key_box(label_text: String) -> Control:
+	var box := PanelContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = key_box_color
+	style.border_color = key_border_color
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 6.0
+	style.content_margin_right = 6.0
+	style.content_margin_top = 1.0
+	style.content_margin_bottom = 1.0
+	box.add_theme_stylebox_override("panel", style)
+
+	var key_label := Label.new()
+	key_label.text = label_text
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	key_label.add_theme_font_override("font", _mono_font)
+	key_label.add_theme_font_size_override("font_size", key_font_size)
+	key_label.add_theme_color_override("font_color", key_color)
+	box.add_child(key_label)
+
+	return box
+
+
+## Every key label this entry needs, one per action — the caller boxes them
+## individually. Returns a list rather than a joined string because a grouped
+## entry is several keys, and the join used to hide that.
+func _resolve_entry_key_labels(entry: KeyHintEntry) -> Array[String]:
 	var labels: Array[String] = []
 	for action_name in entry.get_action_names():
 		labels.append(_resolve_key_label(action_name))
-	return _join_labels(labels, group_key_separator)
+	return labels
 
 
-func _join_labels(labels: Array[String], separator: String) -> String:
-	var joined := ""
-	for i in labels.size():
-		if i > 0:
-			joined += separator
-		joined += labels[i]
-	return joined
-
-
-## Resolves the on-screen label for one action straight from InputMap, so a
-## rebind is reflected without touching this panel or its catalog.
-##
-## An action can carry several bound events (keyboard, mouse, wheel, and in
-## principle a gamepad). Keyboard wins when there's a choice — it is always
-## the most universally-recognizable label — with the first event of any
-## other kind as fallback; no action in today's catalog is actually bound
-## to more than one device, so this only matters going forward.
 func _resolve_key_label(action_name: StringName) -> String:
 	if action_name == &"" or not InputMap.has_action(action_name):
 		return "?"
