@@ -12,6 +12,18 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - A shot is visible: flash at the barrel, streak to the impact
+
+`ShotEffectSystem` (`vfx/shot_effect/`), one line in `WORLD_SYSTEM_SCRIPTS`,
+found by group like `ComicEffectSystem`. Two effects with two lifetimes: the
+flash FOLLOWS the muzzle for ~0.05 s without being a child of the weapon (the
+held mesh is freed on holster and would take a child with it), the tracer is a
+snapshot taken once. One `_process()` and no tweens — a tween per effect is
+what once left 27 leaked resources in CI. No asset, no shader: a radial
+`GradientTexture2D` and a four-sided cylinder, both built in code.
+
+> *Вспышка следует за стволом, трассер — снимок. Ни ассета, ни шейдера.*
+
 ## 2026-09-03 - The carbine knows where its barrel ends
 
 `ItemResource.muzzle_offset` — a position on the item, not a `Marker3D` in a

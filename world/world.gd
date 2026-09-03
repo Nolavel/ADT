@@ -63,7 +63,8 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	LodgingSystem,                # ← durable per-room record; survives block unloading like IncidentRegistry
 	PlayerPersistenceSystem,     # ← the route the player's own components take into a save; SaveSystem never walks the scene tree
 	SaveSystem,                  # ← walks the systems above and moves dictionaries to/from disk; last on purpose
-	ComicEffectSystem            # ← floating reaction words; pure visual, resolved by group like IncidentRegistry
+	ComicEffectSystem,           # ← floating reaction words; pure visual, resolved by group like IncidentRegistry
+	ShotEffectSystem             # ← muzzle flash + tracer; same group-lookup scheme, same "decoration over an event that already happened"
 ]
 
 ## 2) Самостоятельные 3D-сцены — instantiate(), родитель = stream_container.
