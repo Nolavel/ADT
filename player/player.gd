@@ -317,6 +317,10 @@ var _air_time: float = 0.0
 ## instantiated by world.gd before the systems finish coming up, and this
 ## node never receives a WorldContext of its own. Null is a silent no-op.
 var _comic_effects: ComicEffectSystem = null
+## ShotEffectSystem, resolved lazily by group for the same reason and on the
+## same terms as _comic_effects above. Null is a silent no-op: a shot with no
+## streak is a shot that still happened.
+var _shot_effects: ShotEffectSystem = null
 
 ## Last health reading seen through health_changed, so a DECREASE can be
 ## told from a heal or from the initial paint. HealthComponent has no
@@ -336,6 +340,11 @@ var _last_health_seen: float = -1.0
 ## this character's belongings, and neither component should have to know the
 ## other exists. See store_item().
 @onready var _equipment: EquipmentComponent = $EquipmentComponent
+## Where the held weapon actually is on screen. Read for one thing only —
+## the barrel end a shot leaves from. This file asks it nothing about
+## state: EquipmentComponent above is still the only authority on what is
+## worn, stowed or drawn, and the visuals reflect that without owning it.
+@onready var _equipment_visuals: EquipmentVisualsComponent = $EquipmentVisualsComponent
 @onready var _inventory: InventoryComponent = $InventoryComponent
 ## How many rounds are in the magazine. Separate from equipment on purpose —
 ## see weapon_component.gd's own header on why a count cannot live on the
@@ -1515,6 +1524,13 @@ func _resolve_shot() -> void:
 		return
 
 	var target := _find_punch_target(shot_range, shot_angle_deg)
+
+	## Before every branch below, and once per shot. A round was spent at the
+	## trigger whatever happens here, so the streak is owed on a hit, on a
+	## miss and on a shot the wall ate alike — the same reasoning that makes
+	## a blocked shot still emit punch_missed rather than nothing.
+	_spawn_shot_visual(target)
+
 	if target == null:
 		## An air shot is as observable as an air swing, and reaches the
 		## same subscribers — see punch_missed's own comment on why neither
@@ -1530,6 +1546,52 @@ func _resolve_shot() -> void:
 
 	target.take_hit(global_position, item.ranged_damage)
 	shot_landed.emit(target.global_position)
+
+
+## Flash at the barrel, streak from the barrel to wherever the round stopped.
+##
+## Refused outright when there is no barrel to fire from: EquipmentVisuals
+## holds the held mesh back for draw_attach_delay after the weapon is out, and
+## an item can have no mesh at all. Both are the "the state is correct and
+## there is nothing to show" case held_mesh already answers with silence.
+func _spawn_shot_visual(target: NPCBase) -> void:
+	if _equipment_visuals == null or not _equipment_visuals.has_muzzle():
+		return
+	if _shot_effects == null:
+		_shot_effects = get_tree().get_first_node_in_group(
+			ShotEffectSystem.GROUP_SHOT_EFFECT_SYSTEM
+		) as ShotEffectSystem
+	if _shot_effects == null:
+		return
+	var muzzle := _equipment_visuals.get_muzzle_position()
+	_shot_effects.spawn_shot(muzzle, _shot_visual_endpoint(muzzle, target), _equipment_visuals)
+
+
+## Where the streak stops. The aim point is the target's shoulder, or the far
+## end of the weapon's range when there is no target; one ray from the muzzle
+## against CollisionLayers.SIGHT then stops it at the first wall, so a shot
+## into a doorway does not draw a line through the building.
+##
+## THIS RAY IS NOT THE SHOT. It starts at the muzzle, while _has_clear_shot()
+## runs shoulder to shoulder, and at a grazing angle the two can disagree —
+## the streak can stop on a corner the round cleared. _has_clear_shot() stays
+## the truth about whether the shot connected; this one only decides how long
+## to draw the line. Moving the hit check down to the muzzle would be a
+## behaviour change, and that function's own comment records why its endpoints
+## are where they are.
+func _shot_visual_endpoint(muzzle: Vector3, target: NPCBase) -> Vector3:
+	var aim: Vector3
+	if target != null:
+		aim = target.global_position + Vector3(0.0, target.get_shoulder_height(), 0.0)
+	else:
+		aim = muzzle + get_facing_direction() * shot_range
+
+	var query := PhysicsRayQueryParameters3D.create(muzzle, aim, CollisionLayers.SIGHT)
+	query.collide_with_areas = false
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return aim
+	return hit["position"]
 
 
 ## Whether a wall stands between this character's shoulders and the target's.

@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-03 - _resolve_shot() draws what it did
+
+The call site: one `_spawn_shot_visual()` before every branch, so the streak is
+owed on a hit, on a miss and on a shot the wall ate alike — a round was spent
+at the trigger whatever happens next. `_shot_visual_endpoint()` casts one ray
+from the MUZZLE so the line stops at a wall; `_has_clear_shot()` still runs
+shoulder to shoulder and stays the truth about whether the shot connected. The
+two can disagree at a grazing angle, and that is written down where it happens.
+
+> *Выстрел рисует то, что сделал. Луч визуала — не боевой луч.*
+
 ## 2026-09-03 - A shot is visible: flash at the barrel, streak to the impact
 
 `ShotEffectSystem` (`vfx/shot_effect/`), one line in `WORLD_SYSTEM_SCRIPTS`,
