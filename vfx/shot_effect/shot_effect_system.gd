@@ -8,8 +8,8 @@
 #
 # TWO EFFECTS, AND THEY DO NOT SHARE A PARENT OR A LIFETIME:
 #
-#   FLASH    at the barrel, ~0.08 s. FOLLOWS the muzzle while it is alive —
-#            the hand moves visibly inside that brief impulse, and a
+#   FLASH    at the barrel, ~0.05 s. FOLLOWS the muzzle while it is alive —
+#            the hand moves visibly inside a twentieth of a second, and a
 #            flash pinned to where the barrel WAS reads as a detached spark.
 #   TRACER   muzzle to impact, ~0.07 s. A SNAPSHOT, taken once when the
 #            trigger is pulled. It is a record of where the round went; a
@@ -66,10 +66,10 @@ const MIN_TRACER_LENGTH: float = 0.05
 
 ## Seconds the muzzle flash is on screen. Short on purpose — a flash that
 ## outlasts the frame it belongs to reads as a fire, not a shot.
-var flash_duration: float = 0.08
+var flash_duration: float = 0.05
 ## Width of the flash quad at birth, metres. It shrinks to flash_end_scale of
 ## this over its life.
-var flash_size: float = 0.56
+var flash_size: float = 0.28
 var flash_end_scale: float = 0.45
 ## Warm and saturated against a muted world — 3D_ART_BIBLE.md §10's "muted
 ## industrial palette + selective saturated accents". The shot IS the accent.

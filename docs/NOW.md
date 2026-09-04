@@ -1,6 +1,6 @@
 # NOW
 
-Last updated: 2026-09-05 by Codex
+Last updated: 2026-09-03 by code
 
 ## Current task
 
@@ -40,8 +40,7 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   code. The warnings-as-errors flip is still Stan's call, unasked.
 - `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
   the muzzle is a real cost at the FPS target and Compatibility cannot judge it.
-  Unreviewed on Forward+. The non-lighting flash is now 0.56 m for 0.08 s;
-  judge its Forward+ readability in-game before considering the light.
+  Unreviewed on Forward+.
 - The tick is only visible in a 0.5 m band between `intent_radius` (2.5 m) and
   `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
   seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay
