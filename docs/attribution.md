@@ -405,6 +405,60 @@ who is genuinely talking (not built) would still be tested against D's old
 expectation once that trigger exists; today D is the only concrete,
 reproducible test of the vision-cone gate itself.
 
+### Re-measured, 2026-09-04 (work plan Task 6a)
+
+Same method as the block above — a throwaway probe driving
+`IdleNPCController._on_incident_reported()` directly and reading the same debug
+getters — so the two are comparable rather than obtained different ways. Run
+against `Clerk1`, with the player parked 300 m away so `_decide()` could not
+interfere except where it is being tested.
+
+| Case | Expected | Measured 2026-09-04 | |
+|---|---|---|---|
+| A — 3 m, facing | IRIS | `CALLING`, ceiling IRIS, result IRIS | pass, unchanged |
+| B — 15 m | EQUIPMENT | `CALLING`, ceiling EQUIPMENT, result EQUIPMENT | pass, unchanged |
+| C — 35 m | SILHOUETTE | no reaction, no report | **still fails, unchanged** |
+| D — 3 m, facing away | no report at any quality | no report; `FROZEN` this run | pass, unchanged |
+| E — interrupted at 1.5 s | CANCELLED, nothing in registry | held report `CANCELLED`, panel `n/a` | pass, unchanged |
+
+Boundaries: **12 m gives EQUIPMENT**, **20 m gives no report** — both unchanged.
+D and the 20 m boundary landed on different reactions across two runs of this
+same probe (`FLEEING` once, `FROZEN` once), which is `flee_probability` = 0.30
+doing its job and was already called out above; it is recorded here as observed
+rather than assumed.
+
+**Case C has not moved, and could not have.** Nothing since 2026-08-26 touched
+`vision_range`, `earshot_radius` or the ceilings. The envelope is still 0-16 m.
+
+**The reachable ladder, measured by sweep rather than reasoned from the
+constants:**
+
+| distance | ceiling reached |
+|---|---|
+| 1, 3, 5 m | IRIS |
+| 7, 10 m | FACE |
+| 12, 14 m | EQUIPMENT |
+| 16 m and beyond | nothing at all |
+
+So the witness path can produce **IRIS, FACE and EQUIPMENT, and never
+SILHOUETTE**. That has a consequence outside this document: `ActorMemoryRegistry`
+maps `observation_level` to a memory lifetime, and its `SILHOUETTE` row (6 game
+hours) is **dead on the witness path** — the only way to reach it today would be
+a producer other than witnessing.
+
+**New since the last block: a memory now stops a witness from being one.**
+`_on_incident_reported()` has always returned early on
+`_reaction_state != ReactionState.NONE` — that gate is old and was documented.
+What Task 6b changed is that an NPC now has a *durable, self-triggering* reason
+to be in that state: it remembers the player and `_decide()` sends it to
+`FLEEING` on sight. Demonstrated end to end rather than asserted — a memory was
+filed, the player was walked into view, `_decide()` reached the memory branch on
+its own (`FLEEING`), and the incident that followed produced **no report**.
+
+Whether that is right is a design question, not a defect: a frightened witness
+running away instead of phoning it in is arguably correct, and it also means
+**the same NPC cannot testify about you twice**. Not decided here.
+
 ### The test that actually matters
 
 The registry is the lesser half. The real question is behavioural, and it is

@@ -4,14 +4,14 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Aiming, stage 1 — done and measured.** `get_aim_point()` from the camera, the
-shot and its target cone from the muzzle in full 3D, `_has_clear_shot()` moved to
-the same origin. **The gameplay shot is correct now; the weapon pose is not.**
-Re-measured in two states, because the first pass conflated them: at the FIRING
-frame it is **5.96 deg level, 30.61 up, 32.94 down**, and `dot(barrel, facing)`
-stays ~0.997 throughout — the pose locks the weapon to the body's horizontal
-axis, so the error at the shot is very nearly the camera pitch. Stage 2 is
-therefore **pitch only**. Branch `claude/aim-from-camera`, PR #63.
+**Task 6a closed — OBSERVE's half is done.** Its second checkbox turned out to
+be closed already by 6b (`observation_level` drives memory lifetime), and the
+five `attribution.md` §7 cases were re-measured: A/B/D/E unchanged, **C still
+fails and has not moved**. Two findings beyond the table: the witness path can
+never reach SILHOUETTE (envelope 0-16 m), so `LIFETIME_HOURS[SILHOUETTE]` is
+dead; and **an NPC that remembers you refuses to witness** — memory sends it to
+FLEEING and the "already reacting" gate closes. Branch
+`claude/observe-6a-retest`.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -34,25 +34,19 @@ therefore **pitch only**. Branch `claude/aim-from-camera`, PR #63.
 - `StreamingSystems` is an autoload with a default `process_mode`, so its
   polling halts under menu pause. Correct today; wrong once an inventory has to
   run over a live world. Design question, not a bug — see the plan, Out of plan.
-- The two `reset_physics_interpolation()` calls in `StreamingSystems` and the
-  player's `teleport_to()` are correct by construction but changed 0.02% of the
-  render probe's pixels — insurance, not a measured fix. The camera's
-  interpolation override is the whole of the visible change (15% of frame 1).
 - `grain_effect.gdshader`'s look is unreviewed: cyan `grain_color` at 0.3 mix,
   and the render probe is Compatibility, where colour is not trustworthy. Needs
   Stan's eye on Forward+ before any number moves.
-- The tick is only visible between `intent_radius` (2.5 m, where detection
-  starts) and `prompt_distance` (2.0 m, where F replaces it) — a 0.5 m band,
-  and the knock cycle waits 5 s before shaking. In practice the knock will
-  almost never be seen. `intent_radius` is the knob; raising it also lengthens
-  F's auto-approach, so it is a gameplay call, not mine.
-- GDScript analyzer warnings never reach the CLI — editor Script panel only,
-  proven with a deliberately untyped function in an autoload. So Task 3b buys a
-  standard for whoever has the project open, not a CI gate. **20** untyped
-  returns in game code — `target_indicator.gd` 15, `camera_follow.gd` 4,
-  `navigation_component.gd` 1. An earlier count of 35 here was wrong: the grep
-  read only the first line of each signature and missed `-> Type:` on the
-  closing line of a multi-line one.
+- Task 3b's warnings are editor-only, never CLI, so they buy a standard rather
+  than a CI gate. **20** untyped returns left — `target_indicator.gd` 15,
+  `camera_follow.gd` 4, `navigation_component.gd` 1.
+- `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
+  the muzzle is a real cost at the FPS target and Compatibility cannot judge it.
+  Unreviewed on Forward+.
+- The tick is only visible in a 0.5 m band between `intent_radius` (2.5 m) and
+  `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
+  seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay
+  call, unanswered since 2026-09-03.
 - `core/ui/target_indicator/target_indicator.gd` still carries the whole
   move-destination API (`show_at_position()`, `show_invalid_click()`,
   `set_player_reference()`, the ring and the arrow) with no caller since
@@ -69,11 +63,14 @@ therefore **pitch only**. Branch `claude/aim-from-camera`, PR #63.
 
 ## Open question for Stan
 
-- The carbine's `muzzle_offset` is measured here, not Stan's — his is not in the
-  repository. If he has numbers, they replace it.
-- `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
-  the muzzle is a real cost at the FPS target, and Compatibility cannot show
-  what it would look like. Needs Stan's eye on Forward+ before it moves.
+- **Witness envelope versus the quality ladder.** A Clerk's `vision_range` is
+  16 m but SILHOUETTE needs >30 m, so the top rung is unreachable and case C
+  cannot pass. Raise `earshot_radius`/`vision_range` above 30, or lower the
+  ceilings under 16? Deferred in H3/H4 since August; now it also leaves a dead
+  row in `ActorMemoryRegistry.LIFETIME_HOURS`.
+- **A remembering NPC refuses to witness** (measured 2026-09-04). Right, or
+  should memory-flight yield to a fresh incident? It means the same NPC cannot
+  testify about you twice.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?
