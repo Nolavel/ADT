@@ -83,11 +83,13 @@ var tracer_radius: float = 0.015
 ## Near-white, warmed a little so it belongs to the same shot as the flash.
 var tracer_color: Color = Color(1.0, 0.95, 0.86)
 
-## An OmniLight3D at the muzzle for the length of the flash. It is shadowless
-## and short-lived: a visible firing impulse needs to light nearby geometry,
-## while a per-shot shadow map would exceed the low-end FPS budget.
-var flash_light_energy: float = 4.0
-var flash_light_range: float = 3.0
+## An OmniLight3D at the muzzle for the length of the flash. OFF by default
+## and deliberately so: the FPS target is low-end integrated graphics, a live
+## light is a real cost, and render_probe.sh runs Compatibility so it cannot
+## verify what this would look like. Raise it and judge it on screen; shadows
+## stay off either way.
+var flash_light_energy: float = 0.0
+var flash_light_range: float = 4.0
 
 ## One pool unit. Not a class of its own — it is three nodes and two clocks,
 ## and a Resource or a Node subclass for that would be a file to open every
