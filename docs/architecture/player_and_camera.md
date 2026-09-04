@@ -113,30 +113,40 @@ camera yaw within a smoothing lag. Only the vertical half was missing outright.
 Target selection is a cone search and not a ray because **NPC bodies carry no
 collision layer a ray could select on** without inventing one. That is unchanged.
 
-### Measured: the weapon does not tilt at all
+### Measured: the weapon is locked to the body's horizontal facing
 
 The angle between the barrel (the held instance's local **+X**) and the aim line
-(muzzle to aim point), sampled in the running world:
+(muzzle to aim point), sampled in the running world. **Two states, not one** —
+merely holding the weapon and the frame the shot actually resolves are different
+poses and the first pass conflated them:
 
-| camera pitch | barrel vs aim line | barrel.y |
-|---|---|---|
-| 0 deg | **13.31 deg** | +0.157 |
-| +30 deg | **23.74 deg** | +0.159 |
-| -30 deg | **42.92 deg** | +0.158 |
+| camera pitch | held | **at the firing frame** | best over the clip | max `dot(barrel, facing)` |
+|---|---|---|---|---|
+| 0 deg | 13.40 | **5.96** | 5.61 | +0.997 |
+| +30 deg | 23.84 | **30.61** | 23.80 | +0.996 |
+| -30 deg | 43.01 | **32.94** | 31.40 | +0.996 |
 
-**`barrel.y` does not move.** The aim line swings +-0.51 in Y across that sweep
-and the barrel stays locked about 9 degrees above horizontal, because the pose
-comes from the animation and nothing corrects it. The gameplay shot is now
-correct; the visual is not, and this table is the size of what is left.
+**`dot(barrel, facing)` is ~0.997 at every pitch** — about 4.4 degrees off the
+body's horizontal facing, and it does not move when the camera does. The
+`rifle_shot` pose pulls the weapon onto the body's horizontal axis and holds it
+there. So **at the moment a round leaves, the visual error is very nearly the
+camera pitch itself**, and the residual at level aim is about 6 degrees.
 
-**What it implies for the next step, rather than a guess.** A spine-only
-`LookAtModifier3D` would have to carry 13 to 43 degrees. The head look already
-runs at 70/45 degree limits so a spine layer *could* physically reach it, but
-40-odd degrees of spine bend reads as the character folding rather than aiming.
-The 13.31 degrees at LEVEL aim is a separate, cheaper problem: it is a static
-offset in the rest pose, so `HeldFit.rotation_deg` may absorb most of it before
-any IK exists. `TwoBoneIK3D` ships with Godot 4.7 (verified in the binary) if the
-arms are needed after that.
+That the firing pose removes the hold pose's upward bias is visible in the table
+rather than asserted: aiming UP it makes things worse (23.84 held to 30.61 fired,
+because the bias was helping), aiming DOWN it makes them better (43.01 to 32.94).
+
+**What this sizes.** The gameplay shot is correct; the visual is not, and what is
+missing is **pitch and only pitch** — not a general "bring the weapon onto the aim
+line". Roughly 30 degrees of correction at a 30 degree look, plus a ~6 degree
+static residual that belongs to the firing pose itself.
+
+**What that implies for the next step, rather than a guess.** A spine
+`LookAtModifier3D` aimed at the same `get_aim_point()` has to carry the pitch
+alone, which is a far smaller ask than the 13-43 degree range the held-state
+numbers suggested. `TwoBoneIK3D` ships with Godot 4.7 (verified in the binary) if
+the arms are needed after that. The held-state column is a separate, cosmetic
+question about the idle pose and should not be used to size the shooting fix.
 
 Every modifier that ever gets added must sit on **`OriginalSkeleton`**, after
 `RetargetModifier3D`, where the existing `LookAt` already is — `Head` is bone 5

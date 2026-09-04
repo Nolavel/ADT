@@ -6,11 +6,12 @@ Last updated: 2026-09-03 by code
 
 **Aiming, stage 1 — done and measured.** `get_aim_point()` from the camera, the
 shot and its target cone from the muzzle in full 3D, `_has_clear_shot()` moved to
-the same origin. **The gameplay shot is correct now; the weapon pose is not** —
-measured barrel-vs-aim: **13.31 deg level, 23.74 up, 42.92 down**, with `barrel.y`
-constant, i.e. the weapon does not tilt at all. That table decides stage 2, and
-the 13.31 at level aim may be mostly a `HeldFit.rotation_deg` offset rather than
-anything needing IK. Branch `claude/aim-from-camera`.
+the same origin. **The gameplay shot is correct now; the weapon pose is not.**
+Re-measured in two states, because the first pass conflated them: at the FIRING
+frame it is **5.96 deg level, 30.61 up, 32.94 down**, and `dot(barrel, facing)`
+stays ~0.997 throughout — the pose locks the weapon to the body's horizontal
+axis, so the error at the shot is very nearly the camera pitch. Stage 2 is
+therefore **pitch only**. Branch `claude/aim-from-camera`, PR #63.
 
 ## Decided this week, not yet in CLAUDE.md
 

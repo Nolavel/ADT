@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Correction: the aim measurement was taken in the wrong state
+
+Yesterday's 13.31/23.74/42.92 were sampled while the weapon was merely HELD,
+and I wrote them into the architecture doc as "the size of what is left". At
+the FIRING frame it is 5.96/30.61/32.94, with `dot(barrel, facing)` ~0.997 at
+every pitch — the pose locks the weapon to the body's horizontal axis, so the
+error at the shot is very nearly the camera pitch and nothing else. Stage 2 is
+pitch only, and smaller than I sized it. Paragraph corrected in place.
+
+> *Замер был снят в позе удержания, а не в кадре выстрела. Исправлено на месте.*
+
 ## 2026-09-04 - project.godot does not keep comments, and that cost a measurement
 
 Task 3b's `[debug]` block had fifteen lines above it explaining why those
