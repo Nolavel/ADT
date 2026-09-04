@@ -25,13 +25,12 @@
 # Frames come from Godot's own --write-movie, which writes a PNG sequence.
 # No ffmpeg, xwd or ImageMagick in the container, and none needed.
 #
-# Usage:  sh tools/render_probe/render_probe.sh [frames] [out_dir] [scene]
+# Usage:  sh tools/render_probe/render_probe.sh [frames] [out_dir]
 # Default: 120 frames into a temp directory, path printed at the end.
 set -e
 
 FRAMES="${1:-120}"
 OUT_DIR="${2:-$(mktemp -d)}"
-SCENE="${3:-}"
 FPS=20
 
 if ! command -v xvfb-run >/dev/null 2>&1; then
@@ -45,24 +44,13 @@ mkdir -p "$OUT_DIR"
 # draws, so frame N is always the same moment of game time no matter how long
 # the machine took to get there. That is what makes two screenshots
 # comparable across runs.
-if [ -n "$SCENE" ]; then
-	xvfb-run -a -s "-screen 0 1280x720x24" \
-		godot --display-driver x11 --rendering-driver opengl3 \
-		--resolution 1280x720 \
-		--fixed-fps "$FPS" \
-		--write-movie "$OUT_DIR/frame.png" \
-		--quit-after "$FRAMES" \
-		"$SCENE" \
-		> "$OUT_DIR/render.log" 2>&1 || true
-else
-	xvfb-run -a -s "-screen 0 1280x720x24" \
-		godot --display-driver x11 --rendering-driver opengl3 \
-		--resolution 1280x720 \
-		--fixed-fps "$FPS" \
-		--write-movie "$OUT_DIR/frame.png" \
-		--quit-after "$FRAMES" \
-		> "$OUT_DIR/render.log" 2>&1 || true
-fi
+xvfb-run -a -s "-screen 0 1280x720x24" \
+	godot --display-driver x11 --rendering-driver opengl3 \
+	--resolution 1280x720 \
+	--fixed-fps "$FPS" \
+	--write-movie "$OUT_DIR/frame.png" \
+	--quit-after "$FRAMES" \
+	> "$OUT_DIR/render.log" 2>&1 || true
 
 LAST=$(ls "$OUT_DIR"/frame*.png 2>/dev/null | tail -n 1)
 if [ -z "$LAST" ]; then

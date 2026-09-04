@@ -42,8 +42,6 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   0.56 m muzzle flash (energy 4.0). Player receives it through `WorldContext`;
   shots use the shoulder fallback while a muzzle is unavailable. It needs an
   in-game Forward+ FPS/readability check; Compatibility capture cannot judge it.
-  CI now runs `tools/render_probe/shot_effect_probe.tscn` to prove the flash and
-  tracer draw at all, separately from the playable-world boot capture.
 - The tick is only visible in a 0.5 m band between `intent_radius` (2.5 m) and
   `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
   seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay
