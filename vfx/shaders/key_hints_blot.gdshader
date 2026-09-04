@@ -25,7 +25,7 @@ uniform vec4 blob_color : source_color = vec4(0.02, 0.015, 0.01, 0.94);
 // A plain multiplier on every radius. Named "softness" in the version this
 // came from, but it never softened anything — it only scaled the blobs, and
 // calling it softness is what sent me looking for the wrong fix first.
-uniform float radius_scale : hint_range(0.1, 2.0) = 1.0;
+uniform float radius_scale : hint_range(0.0, 2.0) = 1.0;
 // How far the contour is torn, in UV. 0 gives eight clean circles — that is
 // the "before" of this file's whole reason to exist.
 // The study displaces by 18 px on a 340 px box — about 5% — so that is the
@@ -93,8 +93,11 @@ float gradient_profile(float t) {
 // panel's proportions. Correcting the coordinates instead scales the centres
 // away from where they were authored.
 float blob(vec2 p, vec2 center, float radius, float aspect, float blob_progress) {
+	if (radius_scale <= 0.0) {
+		return 0.0;
+	}
 	vec2 diff = (p - center) * vec2(aspect, 1.0);
-	float t = length(diff) / max(radius * radius_scale, 0.001);
+	float t = length(diff) / (radius * radius_scale);
 	return gradient_profile(t) * blob_progress;
 }
 

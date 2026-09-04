@@ -13,8 +13,8 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
 
 ## Decided this week, not yet in CLAUDE.md
 
-- Key hints hold clear for 1.5 s on scene startup before their first ink
-  entrance; later reopens remain immediate.
+- Key hints hold clear for 1.0 s on scene startup, then their randomised blobs
+  grow from zero to 80% during the ink entrance; later reopens remain immediate.
 - Readability by rig (work plan 6a, archetype distinguishability at 30/10/5 m)
   is deferred as a separate art task, probably outside September. Consequence
   recorded in the plan: OBSERVE closes only half this month.

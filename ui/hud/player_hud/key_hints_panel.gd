@@ -142,12 +142,13 @@ class _Column:
 @export var appear_duration: float = 0.8
 ## The first panel entrance waits for the scene to settle. Later reopens stay
 ## immediate so toggling the hints does not repeat a startup-only pause.
-@export var initial_appear_delay: float = 1.5
+@export var initial_appear_delay: float = 1.0
 ## Text arrives by tween only after every ink piece has appeared.
 @export var content_fade_in_duration: float = 0.4
-## The fresh blot starts slightly undergrown, then spreads after its text has
-## arrived. This keeps the entrance legible instead of making one instant mass.
-@export var initial_blot_radius_scale: float = 0.8
+## Blobs grow from nothing to an undergrown assembled blot during the ink
+## entrance, then spread to full size after the text arrives.
+@export var initial_blot_radius_scale: float = 0.0
+@export var assembled_blot_radius_scale: float = 0.8
 @export var blot_settle_duration: float = 3.0
 ## Text out. Runs to completion BEFORE the ink starts to go, which is the same
 ## order reversed and is why this is a chain rather than two parallel tweens.
@@ -243,7 +244,7 @@ func _blot_radius_scale() -> float:
 func _set_blot_radius_scale(value: float) -> void:
 	var mat := _blot_layer.material as ShaderMaterial
 	if mat != null:
-		mat.set_shader_parameter("radius_scale", clampf(value, 0.1, 2.0))
+		mat.set_shader_parameter("radius_scale", clampf(value, 0.0, 2.0))
 
 
 func _set_blot_entrance_seed(value: float) -> void:
@@ -364,9 +365,17 @@ func _begin_appear(delay: float = 0.0) -> void:
 		_transition.tween_interval(delay)
 	_transition.tween_method(_set_blot_progress, _blot_progress(), 1.0, appear_duration)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_transition.parallel().tween_method(
+		_set_blot_radius_scale,
+		_blot_radius_scale(),
+		assembled_blot_radius_scale,
+		appear_duration
+	).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_transition.tween_property(_content, "modulate:a", 1.0, content_fade_in_duration)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	_transition.tween_method(_set_blot_radius_scale, _blot_radius_scale(), 1.0, blot_settle_duration)\
+	_transition.tween_method(
+		_set_blot_radius_scale, assembled_blot_radius_scale, 1.0, blot_settle_duration
+	)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
 

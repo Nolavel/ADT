@@ -12,6 +12,14 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - Key-hint blobs now grow from zero
+
+The startup hold is now 1.0 second. After it, each randomised ink piece grows
+from zero radius to the 80% assembled state during the entrance; text follows,
+then the existing three-second spread carries the blot to full size.
+
+> *После паузы в 1 секунду блобы растут с нуля до 80%, затем текст и растекание.*
+
 ## 2026-09-05 - Key hints wait before their first ink entrance
 
 The panel now holds fully clear for 1.5 seconds when the scene starts, then
