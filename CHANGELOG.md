@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Task 6a closed: §7 re-measured, and two findings beyond the table
+
+A/B/D/E pass unchanged, C still fails and has not moved — nothing since August
+touched the 0-16 m witness envelope. The second checkbox turned out closed by
+6b already: `observation_level` drives memory lifetime, which is the channel
+6a asked for. New: the witness path can never reach SILHOUETTE, so
+`LIFETIME_HOURS[SILHOUETTE]` is a dead row; and **an NPC that remembers you
+refuses to witness**, demonstrated end to end.
+
+> *§7 перепроверен, случай C не сдвинулся. Помнящий NPC свидетелем быть отказывается.*
+
 ## 2026-09-04 - Correction: the aim measurement was taken in the wrong state
 
 Yesterday's 13.31/23.74/42.92 were sampled while the weapon was merely HELD,

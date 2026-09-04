@@ -280,8 +280,12 @@ reaction is differentiated by it.
       art task and probably falls outside September.** `docs/3D_ART_BIBLE.md`
       silhouette → primary → secondary hierarchy remains the constraint when it
       is picked up.
-- [ ] Make `observation_level` change at least one reaction. One is enough — the
+- [x] Make `observation_level` change at least one reaction. One is enough — the
       point is the channel existing, not its breadth.
+      **Closed by Task 6b rather than by new code:** `ActorMemoryRegistry`
+      maps it to a memory lifetime (6/24/72/168 game hours), and a memory is
+      what makes an NPC flee on sight. It changes how LONG a reaction lasts,
+      not WHICH reaction fires — a second channel is a separate step.
 
 > **[unblocked 2026-09-03]** This collided with `incident_knowledge_model.md`
 > §8 ("must stay unread until Attribution exists"). Not a contradiction to
@@ -291,8 +295,11 @@ reaction is differentiated by it.
 > and not when a witness reads its own look quality to change its own
 > behaviour. §8 is narrowed to that; Stan, 2026-09-03. Task 6b's memory
 > duration is the first consumer.
-- [ ] Retest the five `attribution.md` §7 cases; case C is a known gap, say
-      whether it moved.
+- [x] Retest the five `attribution.md` §7 cases; case C is a known gap, say
+      whether it moved. **Done 2026-09-04: A/B/D/E pass unchanged, C still
+      fails and has not moved** (nothing touched `vision_range` 16 m,
+      `earshot_radius` 25 m or the ceilings). Two findings beyond the table are
+      in that document's new block.
 
 **Consequence, stated so it is not forgotten in a month: OBSERVE closes only half
 in September.** The channel starts working; archetype distinguishability does not
