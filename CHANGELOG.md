@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Not everyone in Blackrock is human, and that decides who can see what
+
+Humans, synthetics, robots — a field orthogonal to the archetype, because it
+sets what an actor can PERCEIVE. **Reading a retina is exclusively mechanical**:
+people remember your face, machines know your name. The Clerk is synthetic,
+which is what keeps `_distance_ceiling()`'s existing `IRIS` rung legitimate with
+no code change. BRPD walks in pairs — one human, one robot — so a patrol is two
+different sensors. Paper only.
+
+> *Сетчатку читает только машина. Клерк — синтет, поэтому код править не пришлось.*
+
 ## 2026-09-04 - BRPD, BRMA and the iris get names; sound's first gate closes
 
 `docs/blackrock_authorities.md`: BRPD responds to a PLACE and is already

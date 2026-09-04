@@ -163,6 +163,16 @@ Named here so the absence is deliberate rather than overlooked:
 Swept deliberately rather than recalled, because two of these had been
 discussed and then dropped out of every subsequent conversation.
 
+- **Actor nature: human / synthetic / robot.** A field orthogonal to the
+  archetype, because it decides what an actor can PERCEIVE — reading a retina is
+  mechanical only. Nothing built; the Clerk being synthetic is what keeps the
+  existing `IRIS` ceiling legitimate without a code change.
+- **`IrisAccess` has two sides:** a mechanical READER mountable anywhere (door,
+  terminal, camera, vending machine, hover door, bus, metro, pneumatic tube) and
+  a CREDENTIAL every character carries. Neither derives from the other.
+- **The Votive probably wants a seam of its own** — it is the human's channel,
+  carrying a picture rather than an identity. Today it is a projector with a
+  colour and says so.
 - **Law enforcement, named at last.** BRPD (drones, `Patrolman`, and cameras
   that do not exist yet) and BRMA (marshals as detectives, the actor for
   `attribution.md` §5's deferred Attribution), plus `IrisAccess` as the seam

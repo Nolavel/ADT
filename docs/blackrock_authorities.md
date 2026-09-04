@@ -10,6 +10,56 @@ This document is authoritative for nothing yet.
 
 ---
 
+## 0. Not everyone here is human
+
+Blackrock has **humans, synthetics and robots**, and that is not flavour — it
+decides **what an actor can perceive**, which is the currency this whole design
+trades in.
+
+**Reading a retina is exclusively mechanical.** A terminal can. A camera can. A
+drone can, up close. A police robot can. A synthetic clerk can. **A human
+cannot** — a human can only look at a face, and photograph the scene on their
+Votive.
+
+For the player that is one sentence: **people remember your face, machines know
+your name.**
+
+### Nature is a field, not a sixth archetype
+
+`NPCArchetypeData` describes a ROLE — vagrant, thug, commuter, clerk,
+patrolman. **Nature is orthogonal to it**: a clerk can be human or synthetic
+and behaves the same either way; what changes is the ceiling of what it can
+observe. Folding nature into the archetype list would double that table for
+every nature added, which is the signature of the wrong axis.
+
+| archetype | nature | why |
+|---|---|---|
+| Clerk | **synthetic** | the only `is_witness_caller` there is — see below |
+| Patrolman | human | the human half of a BRPD pair |
+| police drone | robot | mechanical by construction already |
+| Vagrant, Thug, Commuter | human | crowd background; ceiling FACE, nothing to report with |
+
+### This is why `IRIS` is legitimate today, and what would break it
+
+`IdleNPCController._distance_ceiling()` returns **`IRIS`** for an observer
+inside 3 m, and `NPCArchetypeData.is_witness_caller` is true for **Clerk and
+nothing else**. Under the rule above that would be wrong for a human — so **the
+Clerk is synthetic**, and the code needs no change at all.
+
+It reads better than a patch would: **the only thing in Blackrock that reports
+you is a machine.** Humans see; they cannot name.
+
+**What would make this wrong: the first HUMAN archetype with
+`is_witness_caller`.** At that moment the single ceiling ladder has to split —
+human observers topping out at `FACE`, mechanical ones reaching `IRIS` — and
+that must be a decision taken deliberately, not a discrepancy discovered later.
+Written here so it is the former.
+
+One appearance for every character is a prototype convenience and does not
+collide with any of this: nature is a field in data, not a silhouette.
+
+---
+
 ## 1. Two rungs, and the difference is what they know
 
 **BRPD — Blackrock Police Department.** Rank and file, drones, cameras. The
@@ -43,6 +93,22 @@ These are BRPD already, they simply have no word for the organisation:
   counterpart to the drone… a moving no-go zone", and it is the only archetype
   with `responds_by_approaching`, which is exactly BRPD behaviour: it runs to
   the place, it does not work out who.
+
+### BRPD walks in pairs, and the pair is two different sensors
+
+**Always two: one human and one robot.** That is a fiction rule with a
+mechanical consequence, which is why it is worth holding rather than decorating
+with.
+
+**A BRPD pair is one witness who can see your face and one who can read your
+iris.** Being seen by the human half and being seen by the pair are therefore
+different events at different prices. A patrol stops being a moving no-go zone
+and becomes **two sensors that can be separated** — which is a far more
+interesting thing to route around.
+
+Open: whether the robot half is the existing police drone, or a walking partner
+the drones are separate from. The drones currently patrol independently, so
+today's arrangement answers neither way.
 
 What is missing from BRPD is **cameras** — static sensors with no patrol and no
 reaction, whose only output is that they saw. A camera is the cheapest possible
@@ -78,6 +144,21 @@ feel like an institution rather than a timer:
 The iris is already in the fiction as **the credential the city reads**.
 `attribution.md` §5: changing one "wipes name, wallet, status and access", and
 "a report at 3 m holds an iris — that one dies with the old credential".
+
+### Two sides, and they must not be confused
+
+- **The reader** — `IrisAccess`, the seam that says "I can read a credential".
+  **Mechanical only**, per §0. Mounted anywhere in the world: a camera, a
+  terminal, a door, a vending machine, a hover door, a bus, the metro, a
+  pneumatic tube. The project already has a precedent for a thing-in-the-world
+  you deal with — `InteractableObject` — and this is the same shape with a
+  different question.
+- **The credential** — the eyes. **Every character carries one**, human and
+  synthetic alike. It is what gets read.
+
+A robot has **both**. A human has only the credential. A door has only the
+reader. Neither derives from the other and neither collapses into the other —
+writing that down because a single "IrisThing" is the obvious wrong turn.
 
 `IrisAccess` is therefore the **seam where something demands that credential**:
 a door, a terminal, a transit gate, a Marshal with a scanner. Abstract because
@@ -115,6 +196,37 @@ and the credential is what it is. That is a different act from Attribution, and
 the invariant is about the other one. Written down here because the two look
 similar from a distance and someone will otherwise "fix" it.
 
+## 4b. The Votive is the human's channel
+
+`VotiveProjector` (`core/components/votive_projector/`) is today the **visible
+half** and says so itself: state (`IDLE`/`TRANSMITTING`/`DARK`) plus a
+representation of it, "no `communication_state`, no `current_call`, **no
+identity binding**". Both `npc.tscn` and `player.tscn` carry one — everybody
+wears one.
+
+Under §0 it acquires a meaning it did not have: **the Votive is what a human
+uses INSTEAD of reading a retina.** It carries a picture of the incident, not an
+identity. Two capabilities, two seams — a machine reads the credential, a person
+photographs the scene — and that is why the Votive is likely to want an abstract
+seam of its own rather than staying a projector with a colour.
+
+### The question left open on purpose
+
+**Does a witness transmit iris data?**
+
+For a human the rule already answers it: there is nothing to transmit, because
+there was no way to acquire it. **It is open for a SYNTHETIC witness** — does
+its Votive carry the identity itself, or still only the picture, with resolution
+left to BRMA?
+
+The cost of the answer is what makes it worth leaving open: if a synthetic
+witness transmits an identity, **BRMA stops being the only place identity is
+produced**, and `incident_knowledge_model.md` §2 invariant 2 has to be revisited
+rather than quietly bypassed. Recorded with that price attached so the answer is
+chosen rather than drifted into.
+
+---
+
 ## 5. What is decided and what is not
 
 **Decided:** the two rungs and what separates them; that BRPD already exists in
@@ -122,8 +234,12 @@ part and is dispatched to places; that BRMA is §5's Attribution with a name;
 that `IrisAccess` is a seam that both grants access and records an observation
 at `IRIS` quality.
 
-**Not decided, deliberately:** whether cameras are `ActorBase` or something
-lighter; where an authority's own record lives, or whether it needs one beyond
+**Not decided, deliberately:** whether a synthetic witness transmits identity
+(§4b); whether the robot half of a BRPD pair is the existing drone or a walking
+partner; how many synthetics are in a crowd; what a device looks like (that is
+`docs/3D_ART_BIBLE.md`, not this); whether a credential can be borrowed or
+forged; whether passing a door reads you and whether that reaches a record;
+whether cameras are `ActorBase` or something lighter; where an authority's own record lives, or whether it needs one beyond
 `IncidentRegistry`; what a Marshal does when it resolves a person; whether the
 player can hold a forged or borrowed credential; how an authority's reaction is
 funded against the FPS target. None of these are answerable before there is a

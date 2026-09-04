@@ -76,6 +76,13 @@ credential, not a person. Identity is produced later, by attribution, from
 that observation. Getting this wrong in naming leads to getting it wrong in
 architecture.
 
+**The top rung needs a MECHANICAL observer.** Reading a retina is exclusively
+mechanical — a human tops out at a face and photographs the rest on their
+Votive. That does not contradict the ceilings below, because the only archetype
+that reports at all (`Clerk`) is synthetic; it would contradict them the day a
+HUMAN archetype gains `is_witness_caller`, and at that point this ladder splits
+in two. See `docs/blackrock_authorities.md` §0.
+
 ### Distance sets the ceiling
 
 | Distance | Maximum achievable |
