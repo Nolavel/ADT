@@ -136,6 +136,7 @@ func spawn_shot(
 	flash.visible = flash_duration > 0.0
 
 	var light: OmniLight3D = unit["light"]
+	light.global_position = from
 	light.omni_range = flash_light_range
 	light.light_energy = flash_light_energy
 	light.visible = flash_duration > 0.0 and flash_light_energy > 0.0
