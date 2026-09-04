@@ -17,10 +17,10 @@ shader_type canvas_item;
 // =============================================================================
 
 uniform float progress : hint_range(0.0, 1.0) = 0.0;
-// Spread of the eight entrances. The ORDER values below come from the study's
-// own transition-delays, so the ripple is the authored one rather than a
-// linear ramp.
-uniform float stagger : hint_range(0.0, 0.3) = 0.08;
+// Spread of the eight entrances. Each opening gets a fresh seed, so pieces
+// arrive across the whole blot rather than sweeping in from one direction.
+uniform float stagger : hint_range(0.0, 0.8) = 0.7;
+uniform float entrance_seed = 0.0;
 uniform vec4 blob_color : source_color = vec4(0.02, 0.015, 0.01, 0.94);
 // A plain multiplier on every radius. Named "softness" in the version this
 // came from, but it never softened anything — it only scaled the blobs, and
@@ -98,9 +98,10 @@ float blob(vec2 p, vec2 center, float radius, float aspect, float blob_progress)
 	return gradient_profile(t) * blob_progress;
 }
 
-// smoothstep window for one blob, given its place in the authored order.
-float entrance(float order, float p) {
-	float start = order * stagger;
+// One randomised smoothstep window per blob. The range leaves enough room for
+// the final window to finish before the text tween begins.
+float entrance(float blob_index, float p) {
+	float start = hash(vec2(blob_index, entrance_seed)) * stagger;
 	return smoothstep(start, start + 0.2, p);
 }
 
@@ -120,17 +121,17 @@ void fragment() {
 	// corner exactly as it does there. Radii are HALF-HEIGHT fractions (w/280/2
 	// etc.) to match blob()'s height-based units — reading them as width
 	// fractions is what shrank the whole thing to a smudge on the first try.
-	// Order = that element's transition-delay divided by 0.07s, the smallest
-	// non-zero one.
+	// Each index gets a random entrance window from entrance_seed. The spatial
+	// positions stay authored; only their order changes between appearances.
 	float field = 0.0;
-	field += blob(p, vec2(0.735, 0.768), 0.429, aspect, entrance(0.00, progress));
-	field += blob(p, vec2(0.559, 0.750), 0.357, aspect, entrance(1.00, progress));
-	field += blob(p, vec2(0.838, 0.554), 0.375, aspect, entrance(0.57, progress));
-	field += blob(p, vec2(0.515, 0.625), 0.304, aspect, entrance(1.57, progress));
-	field += blob(p, vec2(0.706, 0.464), 0.321, aspect, entrance(2.00, progress));
-	field += blob(p, vec2(0.485, 0.518), 0.268, aspect, entrance(1.29, progress));
-	field += blob(p, vec2(0.676, 0.357), 0.250, aspect, entrance(2.29, progress));
-	field += blob(p, vec2(0.868, 0.411), 0.232, aspect, entrance(0.86, progress));
+	field += blob(p, vec2(0.735, 0.768), 0.429, aspect, entrance(0.0, progress));
+	field += blob(p, vec2(0.559, 0.750), 0.357, aspect, entrance(1.0, progress));
+	field += blob(p, vec2(0.838, 0.554), 0.375, aspect, entrance(2.0, progress));
+	field += blob(p, vec2(0.515, 0.625), 0.304, aspect, entrance(3.0, progress));
+	field += blob(p, vec2(0.706, 0.464), 0.321, aspect, entrance(4.0, progress));
+	field += blob(p, vec2(0.485, 0.518), 0.268, aspect, entrance(5.0, progress));
+	field += blob(p, vec2(0.676, 0.357), 0.250, aspect, entrance(6.0, progress));
+	field += blob(p, vec2(0.868, 0.411), 0.232, aspect, entrance(7.0, progress));
 
 	field = clamp(field, 0.0, 1.0);
 	field = pow(field, 0.75);

@@ -7,7 +7,8 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_blot"]
 shader = ExtResource("3_blot")
 shader_parameter/progress = 0.0
-shader_parameter/stagger = 0.22
+shader_parameter/stagger = 0.7
+shader_parameter/entrance_seed = 0.0
 shader_parameter/blob_color = Color(0.02, 0.015, 0.01, 0.94)
 shader_parameter/radius_scale = 1.0
 shader_parameter/edge_ragged = 0.05

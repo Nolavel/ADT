@@ -12,6 +12,14 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Key hints scatter, speak, then spread
+
+Each opening now randomises the ink pieces' order across the panel instead of
+sweeping from one side. The compact scale was relaxed from 75% to 82%; blobs
+start at 80% radius and settle outward for three seconds after the text fades in.
+
+> *Чернильные куски появляются случайно, затем текст, затем три секунды растекания.*
+
 ## 2026-09-04 - Key hints assemble from ink pieces, then speak
 
 The compact HUD now staggers the ink blot long enough for its pieces to read,

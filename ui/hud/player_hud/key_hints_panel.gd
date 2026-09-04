@@ -119,7 +119,7 @@ class _Column:
 
 @export_group("Placement")
 ## Uniform visual scale for ink and text, keeping the whole panel compact.
-@export var panel_scale: float = 0.75
+@export var panel_scale: float = 0.82
 ## Distance from the right edge of the screen to the panel.
 @export var right_margin: float = 24.0
 ## Distance from the bottom of the screen to the panel.
@@ -142,6 +142,10 @@ class _Column:
 @export var appear_duration: float = 0.8
 ## Text arrives by tween only after every ink piece has appeared.
 @export var content_fade_in_duration: float = 0.4
+## The fresh blot starts slightly undergrown, then spreads after its text has
+## arrived. This keeps the entrance legible instead of making one instant mass.
+@export var initial_blot_radius_scale: float = 0.8
+@export var blot_settle_duration: float = 3.0
 ## Text out. Runs to completion BEFORE the ink starts to go, which is the same
 ## order reversed and is why this is a chain rather than two parallel tweens.
 @export var text_fade_out_duration: float = 0.22
@@ -224,6 +228,25 @@ func _set_blot_progress(value: float) -> void:
 	var mat := _blot_layer.material as ShaderMaterial
 	if mat != null:
 		mat.set_shader_parameter("progress", clampf(value, 0.0, 1.0))
+
+
+func _blot_radius_scale() -> float:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat == null:
+		return initial_blot_radius_scale
+	return float(mat.get_shader_parameter("radius_scale"))
+
+
+func _set_blot_radius_scale(value: float) -> void:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("radius_scale", clampf(value, 0.1, 2.0))
+
+
+func _set_blot_entrance_seed(value: float) -> void:
+	var mat := _blot_layer.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("entrance_seed", value)
 
 
 ## One block per KeyHintEntry.Category, in Category.values() order — the enum's
@@ -331,11 +354,15 @@ func _collect_row_keys(active: Array[KeyHintEntry]) -> Array[StringName]:
 func _begin_appear() -> void:
 	_kill_transition()
 	_content.modulate.a = 0.0
+	_set_blot_entrance_seed(randf())
+	_set_blot_radius_scale(initial_blot_radius_scale)
 	_transition = create_tween()
 	_transition.tween_method(_set_blot_progress, _blot_progress(), 1.0, appear_duration)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_transition.tween_property(_content, "modulate:a", 1.0, content_fade_in_duration)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	_transition.tween_method(_set_blot_radius_scale, _blot_radius_scale(), 1.0, blot_settle_duration)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
 
 ## Text out to completion, THEN the ink. A chain, not two parallel tweens with
