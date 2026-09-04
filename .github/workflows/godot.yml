@@ -211,25 +211,34 @@ jobs:
       - name: Render frames
         run: sh tools/render_probe/render_probe.sh 120 "$PWD/render-out"
 
+      # The ordinary render starts the game but cannot send an input event, so
+      # it cannot prove that a firing effect is visible. This small stage calls
+      # ShotEffectSystem.spawn_shot() repeatedly in view of its own camera.
+      - name: Render shot effects
+        run: >
+          sh tools/render_probe/render_probe.sh 60 "$PWD/shot-effect-out"
+          "res://tools/render_probe/shot_effect_probe.tscn"
+
       - name: Gate the render log
         run: |
-          log="render-out/render.log"
           # Environment noise, not the project's: this runner has no GPU, no
           # audio device and no Forward+ renderer.
           ignore='Screen-space AA is only available|Could not set V-Sync|All audio drivers failed|Vulkan|GPU'
-          if grep -E '^(ERROR|SCRIPT ERROR|USER ERROR|USER SCRIPT ERROR)' "$log" \
-              | grep -vE "$ignore"; then
-            echo "::error title=Render errors::The game drew with errors. Lines above."
-            exit 1
-          fi
-          worst=$(grep -hE '^WARNING' "$log" | grep -vE "$ignore" \
-            | sort | uniq -c | sort -rn | head -1 | awk '{print $1}')
-          worst=${worst:-0}
-          echo "most repeated render warning: ${worst}x"
-          if [ "$worst" -gt 50 ]; then
-            echo "::error title=Warning flood while drawing::One warning repeats ${worst} times."
-            exit 1
-          fi
+          for log in render-out/render.log shot-effect-out/render.log; do
+            if grep -E '^(ERROR|SCRIPT ERROR|USER ERROR|USER SCRIPT ERROR)' "$log" \
+                | grep -vE "$ignore"; then
+              echo "::error title=Render errors::The game drew with errors. Lines above."
+              exit 1
+            fi
+            worst=$(grep -hE '^WARNING' "$log" | grep -vE "$ignore" \
+              | sort | uniq -c | sort -rn | head -1 | awk '{print $1}')
+            worst=${worst:-0}
+            echo "${log}: most repeated render warning: ${worst}x"
+            if [ "$worst" -gt 50 ]; then
+              echo "::error title=Warning flood while drawing::One warning repeats ${worst} times."
+              exit 1
+            fi
+          done
 
       # The last frame is uploaded on every run, not only on failure: the
       # point is that a human can look at what the build looks like without
@@ -242,4 +251,14 @@ jobs:
           path: |
             render-out/frame*.png
             render-out/render.log
+          retention-days: 7
+
+      - name: Upload shot-effect frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shot-effect-frame
+          path: |
+            shot-effect-out/frame*.png
+            shot-effect-out/render.log
           retention-days: 7

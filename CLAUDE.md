@@ -99,7 +99,10 @@ and post are not.
 
 **CI runs the same ladder** (`.github/workflows/godot.yml`) on every pull
 request and on a push to `main`, plus a `Render` job that uploads the last frame
-on every run. It reuses `ensure_godot.sh`, so the engine version is pinned in
+on every run. It also renders `tools/render_probe/shot_effect_probe.tscn`, which
+calls `ShotEffectSystem.spawn_shot()` in a deterministic stage and uploads the
+frames separately; it proves the VFX draws in Compatibility, not its Forward+
+lighting. It reuses `ensure_godot.sh`, so the engine version is pinned in
 exactly one place. Warnings do not fail a run — two are long-standing on `main`
 — but they are reported **with their counts**, and one repeating more than 50
 times fails: at that volume it is per-frame code, not a notice. The push trigger

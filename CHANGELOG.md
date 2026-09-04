@@ -12,6 +12,14 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - CI renders a deterministic shot-effect probe
+
+The Render job now runs a dedicated `ShotEffectSystem` stage alongside the
+playable-world capture. It spawns a flash and tracer every half-second before a
+fixed camera, gates its log, and uploads a separate `shot-effect-frame` artifact.
+
+> *GitHub Actions теперь сам показывает вспышку и трассер отдельным артефактом.*
+
 ## 2026-09-05 - Muzzle flash readability tune
 
 The muzzle-flash quad now opens at 0.56 m instead of 0.28 m and lasts 0.08 s
