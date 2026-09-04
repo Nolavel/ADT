@@ -1511,20 +1511,32 @@ func _update_shot(delta: float) -> void:
 ## punch uses so knockdown, the witness chain and the comic layer all follow
 ## unchanged.
 ##
-## Target selection reuses _find_punch_target() at rifle range with a narrow
-## angle rather than raycasting for the NPC directly: that search already
-## filters GROUP_PERCEIVED_ACTOR to NPCBase and is already verified, and the
-## NPC bodies carry no collision layer a ray could select on without
-## inventing one. The ray that IS cast asks a different, smaller question —
-## is there a wall in the way — against CollisionLayers.SIGHT, the same
-## wall-only mask PerceptionComponent uses to decide whether an NPC can see
-## the player. Composing the two gives honest occlusion without a new mask.
+## THE SHOT LEAVES THE MUZZLE AND GOES TO WHERE THE CAMERA IS LOOKING. Both
+## halves matter and neither is decoration.
+##
+## Aiming used to be a horizontal cone off get_facing_direction(), which has
+## no Y component at all, against a search that additionally flattened the
+## target with to_target.y = 0.0 — so THERE WAS NO PITCH ANYWHERE. The camera
+## tilts and the character could not, which is why the barrel never met the
+## screen centre no matter how the muzzle marker was placed. The body already
+## tracked camera YAW in COMBAT (_face_camera at combat_face_camera_smoothing),
+## so horizontal alignment was only ever a smoothing lag; the vertical half was
+## missing outright.
+##
+## Target selection is still a cone search over GROUP_PERCEIVED_ACTOR, not a
+## ray: NPC bodies carry no collision layer a ray could select on without
+## inventing one. What changed is where the cone starts and which way it
+## points — the muzzle, and the aim line — see _find_shot_target(). The ray
+## that IS cast still asks the smaller question, is there a wall in the way,
+## against CollisionLayers.SIGHT.
 func _resolve_shot() -> void:
 	var item := get_drawn_firearm()
 	if item == null:
 		return
 
-	var target := _find_punch_target(shot_range, shot_angle_deg)
+	var origin := _shot_origin()
+	var direction := _shot_direction(origin)
+	var target := _find_shot_target(origin, direction, shot_range, shot_angle_deg)
 
 	## Before every branch below, and once per shot. A round was spent at the
 	## trigger whatever happens here, so the streak is owed on a hit, on a
@@ -1539,7 +1551,7 @@ func _resolve_shot() -> void:
 		punch_missed.emit(global_position)
 		return
 
-	if not _has_clear_shot(target):
+	if not _has_clear_shot(origin, target):
 		## The wall took it. Deliberately still a miss rather than nothing:
 		## the shot was fired, and anyone watching saw it happen.
 		punch_missed.emit(global_position)
@@ -1568,24 +1580,21 @@ func _spawn_shot_visual(target: NPCBase) -> void:
 	_shot_effects.spawn_shot(muzzle, _shot_visual_endpoint(muzzle, target), _equipment_visuals)
 
 
-## Where the streak stops. The aim point is the target's shoulder, or the far
-## end of the weapon's range when there is no target; one ray from the muzzle
-## against CollisionLayers.SIGHT then stops it at the first wall, so a shot
-## into a doorway does not draw a line through the building.
+## Where the streak stops. The target's shoulder when there is one, otherwise
+## the point the camera is looking at; one ray from the muzzle against
+## CollisionLayers.SIGHT then stops it at the first wall, so a shot into a
+## doorway does not draw a line through the building.
 ##
-## THIS RAY IS NOT THE SHOT. It starts at the muzzle, while _has_clear_shot()
-## runs shoulder to shoulder, and at a grazing angle the two can disagree —
-## the streak can stop on a corner the round cleared. _has_clear_shot() stays
-## the truth about whether the shot connected; this one only decides how long
-## to draw the line. Moving the hit check down to the muzzle would be a
-## behaviour change, and that function's own comment records why its endpoints
-## are where they are.
+## THIS RAY AND THE HIT CHECK NOW AGREE. Both start at the muzzle. They used
+## to disagree — this one left the barrel while _has_clear_shot() ran shoulder
+## to shoulder — and the wart that created (a streak stopping on a corner the
+## round cleared) is gone with the cause rather than documented around.
 func _shot_visual_endpoint(muzzle: Vector3, target: NPCBase) -> Vector3:
 	var aim: Vector3
 	if target != null:
 		aim = target.global_position + Vector3(0.0, target.get_shoulder_height(), 0.0)
 	else:
-		aim = muzzle + get_facing_direction() * shot_range
+		aim = muzzle + _shot_direction(muzzle) * shot_range
 
 	var query := PhysicsRayQueryParameters3D.create(muzzle, aim, CollisionLayers.SIGHT)
 	query.collide_with_areas = false
@@ -1595,21 +1604,120 @@ func _shot_visual_endpoint(muzzle: Vector3, target: NPCBase) -> Vector3:
 	return hit["position"]
 
 
-## Whether a wall stands between this character's shoulders and the target's.
+## Whether a wall stands between the muzzle and the target's shoulder.
 ##
-## Shoulder height on both ends rather than origin-to-origin: both origins
-## sit at the feet, and a floor-level line would be blocked by every kerb.
-## get_shoulder_height() specifically, not get_chest_height(): the player
-## carries all three body landmarks but NPCBase exposes only eye and
-## shoulder, and calling the missing one here silently failed the whole
-## check — every shot read as blocked, including across open sea. Shoulder
-## is also the landmark the TPS camera already pivots on.
-func _has_clear_shot(target: NPCBase) -> bool:
-	var from := global_position + Vector3(0.0, get_shoulder_height(), 0.0)
+## FROM THE MUZZLE, not from this character's shoulder. It ran shoulder to
+## shoulder until the aim chain landed, which made the hit check and the
+## tracer two different lines that could disagree at a grazing angle; one
+## origin removes that rather than documenting it. Measured before moving it:
+## the muzzle sits at 1.33 m against a 1.476 m shoulder, so the kerbs that a
+## floor-level line would catch — the reason the check was raised off the
+## origin in the first place — are still well below it.
+##
+## get_shoulder_height() on the target specifically, not get_chest_height():
+## the player carries all three body landmarks but NPCBase exposes only eye
+## and shoulder, and calling the missing one here silently failed the whole
+## check — every shot read as blocked, including across open sea.
+func _has_clear_shot(origin: Vector3, target: NPCBase) -> bool:
 	var to := target.global_position + Vector3(0.0, target.get_shoulder_height(), 0.0)
-	var query := PhysicsRayQueryParameters3D.create(from, to, CollisionLayers.SIGHT)
+	var query := PhysicsRayQueryParameters3D.create(origin, to, CollisionLayers.SIGHT)
 	query.collide_with_areas = false
+	query.exclude = [get_rid()]
 	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+## --- The aim chain: one point, read by the shot and by anything visual ---
+## The camera decides intent; the muzzle fires. Keeping those separate is what
+## stops the round landing on someone the barrel is visibly not pointing at.
+
+
+## Where a shot starts. The muzzle when a weapon is actually in the hand, the
+## shoulder otherwise — draw_attach_delay leaves ~0.22 s where the weapon is
+## out and the mesh is not built yet, and a shot in that window still has to
+## come from somewhere sane.
+func _shot_origin() -> Vector3:
+	if _equipment_visuals != null and _equipment_visuals.has_muzzle():
+		return _equipment_visuals.get_muzzle_position()
+	return global_position + Vector3(0.0, get_shoulder_height(), 0.0)
+
+
+## Where the player is aiming, as a world point: the camera's own ray through
+## the screen centre, resolved by TPSAimComponent.
+##
+## get_rid() is excluded and is not optional — the ray starts at the CAMERA,
+## which in third person sits behind the character, so without it every shot
+## would "aim" at the player's own back.
+##
+## Vector3.ZERO means the component could not answer (it returns that with no
+## camera). Callers treat that as no answer, not as the world origin.
+func get_aim_point() -> Vector3:
+	if tps_aim == null:
+		return Vector3.ZERO
+	return tps_aim.get_aim_target(shot_range, [get_rid()])
+
+
+## The direction a shot travels from `origin`, in FULL 3D — this is where the
+## pitch the character itself does not have comes from.
+##
+## Three refusals, all falling back to get_facing_direction(), which is
+## exactly the behaviour that existed before the aim chain:
+##   * no TPSAimComponent at all;
+##   * the component returned ZERO, meaning it found no camera;
+##   * the resulting direction points behind the character. In a TPS the
+##     camera looks roughly where the body does, so a backwards reading is
+##     the ray having caught geometry between the camera and the player, not
+##     an intention.
+func _shot_direction(origin: Vector3) -> Vector3:
+	var aim_point := get_aim_point()
+	if aim_point == Vector3.ZERO:
+		return get_facing_direction()
+	var direction := aim_point - origin
+	if direction.length() < 0.01:
+		return get_facing_direction()
+	direction = direction.normalized()
+	if direction.dot(get_facing_direction()) < 0.0:
+		return get_facing_direction()
+	return direction
+
+
+## Nearest NPC inside a cone around the aim line.
+##
+## Deliberately NOT a third mode on _find_punch_target(), and the reason is
+## geometry rather than taste: a punch measures a HORIZONTAL cone from the
+## body (that search sets to_target.y = 0.0), while a shot measures a full 3D
+## cone from the muzzle. One function switching between two geometries reads
+## worse than two functions, and keeping them apart is what guarantees the
+## punch is untouched by any of this.
+func _find_shot_target(
+	origin: Vector3, direction: Vector3, reach: float, angle_deg: float
+) -> NPCBase:
+	var best: NPCBase = null
+	var best_dist := INF
+
+	for candidate in get_tree().get_nodes_in_group(ActorBase.GROUP_PERCEIVED_ACTOR):
+		if not (candidate is NPCBase):
+			continue
+		var npc: NPCBase = candidate
+
+		## Aimed at the shoulder, the same landmark _has_clear_shot() uses on
+		## the far end. Against the feet, a target standing on a slope above
+		## or below would fall out of the cone for being the wrong height
+		## rather than the wrong direction.
+		var to_target := (
+			npc.global_position + Vector3(0.0, npc.get_shoulder_height(), 0.0)
+		) - origin
+		var dist := to_target.length()
+		if dist > reach or dist < 0.001:
+			continue
+
+		if rad_to_deg(direction.angle_to(to_target.normalized())) > angle_deg * 0.5:
+			continue
+
+		if dist < best_dist:
+			best_dist = dist
+			best = npc
+
+	return best
 
 
 ## --- Stamina consumption (drains while running) ---

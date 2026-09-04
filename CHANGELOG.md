@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - The shot leaves the muzzle and goes where the camera looks
+
+There was no pitch anywhere: `get_facing_direction()` has a structurally zero Y
+and the target search flattened the target too, so the barrel could never meet
+the screen centre. `get_aim_point()` (camera ray, player excluded) plus a 3D
+cone from the muzzle fixes it; `_has_clear_shot()` moves to the same origin, so
+the hit check and the tracer stop being two lines. The punch is untouched — a
+separate function, asserted rather than promised. 8/8 in-world.
+
+> *Выстрел выходит из дула и идёт туда, куда смотрит камера. Тангаж появился.*
+
 ## 2026-09-04 - The muzzle number comes from Stan's marker now, not my measurement
 
 `carbine.tscn`'s `Muzzle` marker is the source and `muzzle_offset` is derived

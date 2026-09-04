@@ -59,3 +59,87 @@ the contracts it describes.
   - **`PlayerState.is_aiming`** is a COMBAT-only modifier, not a third stance (`set_aiming()` silently clamps to `false` outside `Stance.COMBAT`/`Mode.ON_FOOT` — a held aim button crossing a stance change mid-press is ordinary input, not an error). Read by `player.gd` (`aim_speed_multiplier`, stacked on top of the COMBAT speed multiplier), `on_foot_camera_component.gd` (dollies TPS camera distance to `TPS_AIM_DISTANCE`, widens shoulder offset by `aim_shoulder_offset_multiplier` — wins even over an active lock-on), and `ui/hud/aim_reticle/` (a debug-grade screen-centre cross, visible only while aiming — confirms ADS reads on screen, not the final aiming UI).
 - **`KeyHintsPanel`** (`ui/hud/player_hud/key_hints_panel.gd`, instanced inside `player_hud.tscn`, H2 — `docs/scope_horizon.md`) shows the actions valid for the player's CURRENT `PlayerState` snapshot (`mode`/`view_mode`/`stance`/`is_aiming`), bottom-center, whenever `InputSystems.key_hints_enabled` is true, laid out as THREE COLUMNS — Movement / Action / System — not one horizontal ribbon: a flat row list only ever encoded meaning through `sort_order`, which the eye can't read at a glance, forcing a full scan every time. `KeyHintEntry.category` (`Category` enum: `MOVEMENT`, `ACTION`, `SYSTEM`) picks the column; column ORDER on screen is the enum's own declaration order (`KeyHintsPanel._build_columns()` iterates `Category.values()`, no case statement choosing order in the panel itself), and within a column rows still sort by `sort_order`. Three, not four: a dedicated camera/view column would only ever hold one or two rows, so those entries live in `ACTION`. A column with zero active rows hides itself (header included), never leaving an empty slot in the `HBoxContainer` of columns. Data-driven from `KeyHintEntry`/`KeyHintsCatalog` (`ui/hud/player_hud/`, populated in `res://data/key_hints.tres` — see the entry below for what's in it) rather than a hardcoded per-state switch — an entry's `modes`/`view_modes`/`stances` arrays are empty for "any", so an action valid everywhere doesn't have to enumerate every enum member. An entry can describe a GROUP of actions that share one meaning (`KeyHintEntry.action_names`, e.g. WASD → one "Move" row) instead of one action each — `get_action_names()` returns `action_names` if set, else the single `action_name`, so an ungrouped entry is unaffected; `get_row_key()` (the joined action names) is what the diffed rebuild tracks a row by, not `action_name` directly, precisely so a group gets one stable row identity. Key labels are resolved live from `InputMap`, never authored by hand, so a rebind cannot make the panel lie: keyboard wins when an action has more than one bound event (none do today), otherwise the first event of whatever else it's bound to; a keyboard event's `as_text()` has any trailing parenthetical stripped, a mouse button becomes LMB/RMB/MMB/MB4/MB5/`MB<n>`, and a wheel tick becomes `Wheel Up`/`Wheel Dn`/`Wheel Left`/`Wheel Right` — spelled out in ASCII rather than drawn with `↑`/`↓`/`←`/`→`, since the key label's font is a bare `SystemFont` request (`_build_mono_font()`) with no guarantee the resolved font actually carries the Arrows Unicode block; unverified hypothesis, not something checked by running the game. A group's per-action labels are joined by `group_key_separator` (one exported value, not repeated per call site). Rebuilds only on `PlayerState`'s four signals, diffed PER COLUMN against the rows already on screen in that column (keyed by `get_row_key()`) rather than cleared and rebuilt wholesale, so an unrelated stance flip doesn't flash rows that are still valid — same diffing shape as before columns existed, just scoped per column's own row list instead of one shared one (`_rebuild_column()`). Self-contained relative to the rest of `player_hud.gd`: reads `PlayerState`/`InputSystems` directly in `_ready()` instead of waiting on `on_world_ready(context)`, since both are autoloads and nothing here needs the player/camera a `WorldContext` would hand over.
   - **`res://data/key_hints.tres`** was trimmed from 39 rows to 22 `KeyHintEntry` resources, and to 20 on 2026-09-02 when the isometric-only rows (click-to-move, its stop/cancel, the duplicate ISO punch), the zoom pair and the ISO camera-step went with the camera itself; the `view_modes` filter on the remaining rows was dropped in the same pass, since both surviving view modes are the same camera and a filter that always matches is noise (movement/camera-pair actions collapsed into grouped rows; `inventory`/`map`/`status` removed outright — those systems don't exist, and a hint promising them is a lie; `toggle_stream_debug`/`toggle_perception_debug` removed as observer-only debug overlays, out of scope for "can a reviewer operate the build"; `toggle_follow`/`toggle_tabs`/`switch_shoulder` removed as low-value secondary camera preferences) so a state shows roughly ten rows instead of forty — the original per-action population proved unreadable on screen. `debug_save`/`debug_load` were briefly one grouped `K / L` row (`"Debug save / load"`) and were split back into two: the paired key label and the paired description didn't unambiguously say which key was which action, and the one row saved wasn't worth that ambiguity. Every entry carries a `category` (`MOVEMENT`/`ACTION`/`SYSTEM`) for its column; `lock_on` was the one genuinely debatable case — filed under `ACTION` (closer to targeting/combat than to `MOVEMENT`) rather than invented a fourth column for it. Actual per-state row counts (three-column layout): ISOMETRIC+PEACE 11, ISOMETRIC+COMBAT 10, TPS+PEACE 11, TPS+COMBAT 12, HOVER 8.
+
+---
+
+## The aim chain — one point, and where the pitch comes from
+
+**Added 2026-09-04.** The camera decides intent; the muzzle fires. Keeping those
+two separate is what stops a round landing on someone the barrel is visibly not
+pointing at.
+
+### The defect this replaced, stated so it is not reintroduced
+
+Aiming was a horizontal cone off `get_facing_direction()`, which returns
+`Vector3(sin(rotation.y), 0.0, cos(rotation.y))` — **Y is structurally zero** —
+against `_find_punch_target()`, which additionally flattens the target with
+`to_target.y = 0.0`. **There was no pitch anywhere.** The camera tilts and the
+character cannot, which is why the barrel never met the screen centre however the
+muzzle marker was placed.
+
+The horizontal half was never as broken as it looked: `_face_camera()` runs at
+`combat_face_camera_smoothing` (20.0) in COMBAT, so the body already tracked
+camera yaw within a smoothing lag. Only the vertical half was missing outright.
+
+### The chain
+
+- **`get_aim_point()`** wraps `TPSAimComponent.get_aim_target(shot_range, [get_rid()])`
+  — the camera's own ray through the screen centre. `get_rid()` is not optional:
+  the ray starts at the CAMERA, which in third person sits behind the character,
+  so without it every shot aims at the player's own back. `Vector3.ZERO` means the
+  component found no camera, and is treated as no answer rather than as the world
+  origin.
+- **`_shot_origin()`** is the muzzle when a weapon is in the hand, the shoulder
+  otherwise — `draw_attach_delay` leaves ~0.22 s where the weapon is out and the
+  mesh is not built.
+- **`_shot_direction(origin)`** is the full-3D direction from origin to the aim
+  point, with **three refusals that all fall back to `get_facing_direction()`**,
+  which is exactly the pre-existing behaviour: no component; a ZERO answer; and a
+  direction pointing behind the character, which in a TPS means the ray caught
+  geometry between camera and player rather than an intention.
+- **`_find_shot_target()`** is a cone around that line, from the muzzle, measured
+  in 3D and aimed at the target's SHOULDER — against the feet, a target on a slope
+  would fall out of the cone for being the wrong height rather than the wrong
+  direction. Deliberately **not** a third mode on `_find_punch_target()`: a punch
+  measures a horizontal cone from the body, a shot a 3D cone from the muzzle, and
+  keeping them apart is what guarantees the punch is untouched.
+- **`_has_clear_shot(origin, target)`** now casts from the same muzzle. It ran
+  shoulder-to-shoulder before, which made the hit check and the tracer two lines
+  free to disagree at a grazing angle; one origin removes that rather than
+  documenting it. Measured before moving it: the muzzle is at 1.33 m against a
+  1.476 m shoulder, so the kerbs the check was raised off the origin to clear are
+  still well below it.
+
+Target selection is a cone search and not a ray because **NPC bodies carry no
+collision layer a ray could select on** without inventing one. That is unchanged.
+
+### Measured: the weapon does not tilt at all
+
+The angle between the barrel (the held instance's local **+X**) and the aim line
+(muzzle to aim point), sampled in the running world:
+
+| camera pitch | barrel vs aim line | barrel.y |
+|---|---|---|
+| 0 deg | **13.31 deg** | +0.157 |
+| +30 deg | **23.74 deg** | +0.159 |
+| -30 deg | **42.92 deg** | +0.158 |
+
+**`barrel.y` does not move.** The aim line swings +-0.51 in Y across that sweep
+and the barrel stays locked about 9 degrees above horizontal, because the pose
+comes from the animation and nothing corrects it. The gameplay shot is now
+correct; the visual is not, and this table is the size of what is left.
+
+**What it implies for the next step, rather than a guess.** A spine-only
+`LookAtModifier3D` would have to carry 13 to 43 degrees. The head look already
+runs at 70/45 degree limits so a spine layer *could* physically reach it, but
+40-odd degrees of spine bend reads as the character folding rather than aiming.
+The 13.31 degrees at LEVEL aim is a separate, cheaper problem: it is a static
+offset in the rest pose, so `HeldFit.rotation_deg` may absorb most of it before
+any IK exists. `TwoBoneIK3D` ships with Godot 4.7 (verified in the binary) if the
+arms are needed after that.
+
+Every modifier that ever gets added must sit on **`OriginalSkeleton`**, after
+`RetargetModifier3D`, where the existing `LookAt` already is — `Head` is bone 5
+there and 6 in `GeneralSkeleton`, and a modifier on the wrong one is silently
+overwritten by the retarget every frame.
+
