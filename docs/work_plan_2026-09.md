@@ -239,11 +239,11 @@ Three candidate models, to be argued and chosen **in chat with Stan**:
 Model 3 is exactly the Ephemeral / Persistent / Simulated / Global classification
 H7 exists for — which is why H7 is not derivable today and comes after this.
 
-- [ ] Write the three models, their consequences and the recommendation into
+- [x] Write the three models, their consequences and the recommendation into
       `docs/architecture/npc_and_incidents.md` as a new section
-- [ ] Stan chooses one; the chosen one is stated in `CLAUDE.md` as **one
+- [x] Stan chooses one; the chosen one is stated in `CLAUDE.md` as **one
       invariant paragraph**, present tense, no argument text
-- [ ] The two rejected models go to `docs/postmortems/actor_identity.md`
+- [x] The two rejected models go to `docs/postmortems/actor_identity.md`
 
 **Done when:** the contract is written and chosen. **Zero lines of GDScript in
 this task.**
@@ -282,6 +282,15 @@ reaction is differentiated by it.
       is picked up.
 - [ ] Make `observation_level` change at least one reaction. One is enough — the
       point is the channel existing, not its breadth.
+
+> **[unblocked 2026-09-03]** This collided with `incident_knowledge_model.md`
+> §8 ("must stay unread until Attribution exists"). Not a contradiction to
+> pick a winner from: §8 banned more than its own reason in §3.3 supports.
+> The reason bites when a reaction reads `observation_level` as a proxy for
+> how identified the PLAYER is — Attribution done informally in a controller —
+> and not when a witness reads its own look quality to change its own
+> behaviour. §8 is narrowed to that; Stan, 2026-09-03. Task 6b's memory
+> duration is the first consumer.
 - [ ] Retest the five `attribution.md` §7 cases; case C is a known gap, say
       whether it moved.
 
@@ -295,10 +304,10 @@ Today ALERT dies on a timer and nothing outlives the encounter. With 6a halved,
 **this is the main substantive work of September** — it is what produces the one
 measurable result: punch someone, walk away, come back, the world is different.
 
-- [ ] Proposal: what a single NPC remembers, for how long, and in what unit
+- [x] Proposal: what a single NPC remembers, for how long, and in what unit
       (game-hours, per `GameClockSystem` — not engine uptime, per the
       `IncidentRegistry` precedent). Keyed on the identity model chosen in Task 5.
-- [ ] One consequence that survives a block unload and a save/load round trip
+- [x] One consequence that survives a block unload and a save/load round trip
 - [ ] No propagation between NPCs in this task. One NPC remembering is the slice.
 
 **Done when:** Stan can punch someone, walk away, come back, and the world is

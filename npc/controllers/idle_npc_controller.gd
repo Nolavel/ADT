@@ -33,9 +33,11 @@
 # the city, so no Incident and no memory — one "?" or a reduced-probability
 # roll into the same flee machine.
 #
-# WITNESS MEMORY: _remembers_player is set on ANY sighting during an incident,
-# never cleared, and dies with the NPC — it is what one passer-by remembers,
-# not what the city has on record.
+# WITNESS MEMORY: written on ANY sighting during an incident and on being
+# knocked down, and held in ActorMemoryRegistry rather than on this node, so
+# it outlives the NPC's own block streaming out. Still what one passer-by
+# remembers, not what the city has on record. It ages out on a schedule set by
+# how well this NPC saw — docs/architecture/npc_and_incidents.md.
 #
 # History: docs/postmortems/idle_npc_controller_history.md
 # =============================================================================
@@ -284,16 +286,17 @@ var _was_knocked_down: bool = false
 ## lasted," not a running total.
 var _visible_time: float = 0.0
 
-## Set once and never cleared, the moment this NPC actually sees an incident
-## (_on_incident_reported(), any archetype — see that method's own comment).
-## NPC_REACTIONS.md §4 extension: "увидел — запомнил" — once true, ordinary
-## player-sighting in _decide() no longer freezes/turns toward the player,
-## it flees on sight instead, with no incident needed. Lives on this
-## controller, which is a child of the NPC — gone the instant the NPC itself
-## is, same as every other per-instance decision-layer field here; NOT
-## carried into IncidentRegistry (that registry is what the CITY has on
-## record, this is what one passer-by personally remembers).
-var _remembers_player: bool = false
+## ActorMemoryRegistry, resolved lazily by group — the same "a static scene
+## instance never receives a WorldContext" situation _incident_registry is in,
+## and the same fix. Where this NPC's memory of the player actually lives.
+##
+## It used to be a bool on this controller, and that bool was gone the instant
+## the NPC was: "увидел — запомнил" only held until the block streamed out.
+## The behaviour it drives is unchanged (see _decide()) — only the storage
+## moved. Still NOT IncidentRegistry: that registry is what the CITY has on
+## record, this is what one passer-by personally remembers, and the two have
+## different lifetimes and no derivation between them.
+var _memory_registry: ActorMemoryRegistry = null
 
 ## The player node this controller is subscribed to punch_missed on,
 ## resolved lazily by group in _try_connect_player_swing() — the same
@@ -321,7 +324,7 @@ var _reaction_timer: float = 0.0
 ## The fixed point this FLEEING reaction is running from — an incident's
 ## position (_start_flee() from _on_incident_reported()/
 ## _abort_call_for_flee()) or the player's own position at the moment
-## memory-triggered flight starts (_decide()'s _remembers_player branch).
+## memory-triggered flight starts (_decide()'s _remembers_player() branch).
 ## Set once, at _start_flee(), and never moved afterward — see
 ## _set_flee_direction_from_threat()'s own comment.
 var _flee_threat_position: Vector3 = Vector3.ZERO
@@ -446,13 +449,13 @@ func _decide(delta: float) -> void:
 		_was_knocked_down = true
 		## Being put on the ground is first-hand knowledge and must not be
 		## lost to _on_incident_reported()'s own knocked-down guard, which
-		## returns BEFORE _remembers_player is ever reached — the victim is
+		## returns BEFORE the memory is ever written — the victim is
 		## down in the same frame its own assault is reported, so every
 		## bystander used to remember the player while the one NPC with the
 		## best reason to ran got up and stared. Set here rather than
 		## there: this needs no cone maths and no incident at all, and it
 		## also covers a punch from a player this NPC never saw coming.
-		_remembers_player = true
+		_record_memory(WitnessReport.ObservationLevel.FACE)
 		_cancel_active_witness_report()
 		if _votive:
 			_votive.go_dark()
@@ -497,8 +500,8 @@ func _decide(delta: float) -> void:
 		_decide_wander(delta)
 		return
 
-	if _remembers_player:
-		## This NPC witnessed an incident once and never forgot — no fresh
+	if _remembers_player():
+		## This NPC witnessed an incident and still remembers — no fresh
 		## incident needed, just seeing the player again is enough (this
 		## task's own "сразу бежит, без всякого инцидента" requirement).
 		## allow_backpedal=false: this isn't a fresh startle that might still
@@ -682,6 +685,7 @@ func _pick_new_wander_point() -> void:
 ## PatrolDroneController's _check_existing_incidents() — see the file header
 ## on why a stale incident shouldn't make an NPC flinch now.
 func _try_resolve_incident_registry() -> void:
+	_try_resolve_memory_registry()
 	if _incident_registry:
 		return
 	var found := get_tree().get_first_node_in_group(
@@ -691,6 +695,55 @@ func _try_resolve_incident_registry() -> void:
 		return
 	_incident_registry = found
 	_incident_registry.incident_reported.connect(_on_incident_reported)
+
+
+## Same lazy-by-group resolution, called from the same place, and nothing
+## subscribes: this registry is asked questions, it does not announce.
+func _try_resolve_memory_registry() -> void:
+	if _memory_registry:
+		return
+	_memory_registry = get_tree().get_first_node_in_group(
+		ActorMemoryRegistry.GROUP_ACTOR_MEMORY_REGISTRY
+	) as ActorMemoryRegistry
+
+
+## Whether this NPC still remembers the player. A question now rather than a
+## field: the answer ages out on its own schedule inside the registry, so a
+## caller never has to know a memory can expire.
+##
+## False when the registry has not resolved yet, which is the honest reading —
+## an NPC that cannot reach its own memory has none to act on, and _decide()
+## falls through to ordinary observation exactly as it did before any of this.
+func _remembers_player() -> bool:
+	if _memory_registry == null or _npc == null:
+		return false
+	var player_id := _player_actor_id()
+	if player_id == &"":
+		return false
+	return _memory_registry.remembers(_npc.get_actor_id(), player_id)
+
+
+## Files what this NPC just learned about the player. Silent no-op when the
+## registry is not up yet or the player carries no id — the same "unset is a
+## no-op" shape the rest of this controller uses, and a dropped memory is a
+## better failure than a crash in a bystander's decision layer.
+func _record_memory(level: WitnessReport.ObservationLevel) -> void:
+	if _memory_registry == null or _npc == null:
+		return
+	var player_id := _player_actor_id()
+	if player_id == &"":
+		return
+	_memory_registry.remember(_npc.get_actor_id(), player_id, level)
+
+
+## The player's stable id, resolved by group at the call site — the same
+## lookup _call_it_in() already does, and for the same reason: this
+## controller never receives a WorldContext.
+func _player_actor_id() -> StringName:
+	var player_node := get_tree().get_first_node_in_group("player")
+	if not (player_node and player_node.has_method(&"get_actor_id")):
+		return &""
+	return StringName(player_node.call(&"get_actor_id"))
 
 
 ## Subscribes to the player's punch_missed once the player node exists —
@@ -715,7 +768,7 @@ func _try_connect_player_swing() -> void:
 
 ## The one entry point for "the player swung at nothing while I was looking."
 ## A local observable event, gone the moment it is handled: no Incident, no
-## WitnessReport, no _remembers_player — witnessing an assault is what earns
+## WitnessReport, no memory — witnessing an assault is what earns
 ## a permanent grudge, and nobody was assaulted here.
 ##
 ## Gated on this NPC actually seeing the player RIGHT NOW, through the
@@ -818,8 +871,13 @@ func _on_incident_reported(incident: Incident) -> void:
 		## NPC_REACTIONS.md §4 extension: witnessing an incident at all is
 		## remembered forever, regardless of archetype or what this NPC does
 		## about it next (Call/Flee/Freeze/Respond) — "увидел — запомнил",
-		## this task's own words. See _remembers_player's own comment.
-		_remembers_player = true
+		## this task's own words. See _record_memory()'s own comment.
+		##
+		## _distance_ceiling() and not _resolve_observation_level(): the
+		## distance is already in `vision`, and that wrapper additionally
+		## writes the debug-panel fields, which belong to the report about to
+		## be resolved and not to this. Same number, no side effect.
+		_record_memory(_distance_ceiling(vision.distance))
 
 	if _npc.archetype.responds_by_approaching:
 		_log_incident_candidate(telemetry, vision, "RESPOND patrolman")
@@ -912,7 +970,7 @@ func _call_it_in(incident: Incident) -> void:
 ## player is approaching RIGHT NOW — a player merely standing nearby must
 ## not summon a backing-away crowd (this task's own requirement). A witness
 ## that flees while the player isn't approaching, or with allow_backpedal
-## false (memory-triggered flight — see _decide()'s _remembers_player
+## false (memory-triggered flight — see _decide()'s _remembers_player()
 ## branch, which isn't a fresh startle and skips the theatrics outright),
 ## goes straight to RUNNING. threat_position is fixed for the whole
 ## reaction (see _set_flee_direction_from_threat()), so RUNNING always ends

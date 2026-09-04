@@ -60,6 +60,7 @@ var WORLD_SYSTEM_SCRIPTS: Array[GDScript] = [
 	WorldBorderDebugSystem,
 	WorldBorderGuardSystem,
 	IncidentRegistry,            # ← what the city has on record; actors report, don't remember
+	ActorMemoryRegistry,         # ← what one actor personally remembers; NOT the city's record, different lifetime
 	LodgingSystem,                # ← durable per-room record; survives block unloading like IncidentRegistry
 	PlayerPersistenceSystem,     # ← the route the player's own components take into a save; SaveSystem never walks the scene tree
 	SaveSystem,                  # ← walks the systems above and moves dictionaries to/from disk; last on purpose

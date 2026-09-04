@@ -205,7 +205,11 @@ The following are named so they are not treated as omissions:
 - Attention modifiers beyond the current FOV gate.
 - Any field that is written but never read by a live system.
 
-`observation_level` is the one intentional deferred output already present in the vertical slice. It must stay unread until Attribution exists.
+**`observation_level` may not be read on the CITY's side.** Nothing may derive a suspect's identity from it, match reports against one another through it, or turn it into a single number gating the city's response. That is Attribution, it does not exist, and doing it informally in a controller is exactly what §3.3 forbids: collapsing "face seen / recognized / recorded / identity established" into one value destroys the decisions the player is supposed to make.
+
+**A witness may read its own.** How well *this* NPC saw something may change *this* NPC's own behaviour and its own private memory — how long it hesitates before transmitting, whether it runs or stares, how long it remembers a face. No identity is resolved, no `suspect_id` appears, and nothing crosses between actors.
+
+Stated as a narrowing on 2026-09-03 (work plan Task 6b). Until then this read "it must stay unread until Attribution exists", which banned more than §3.3's reasoning supports — and was already untrue of the build: `IdleNPCController._remembers_player` is recognition from a prior encounter, set on any sighting during an incident, and it has changed behaviour since it was written. The narrowing describes the door that is already open; it does not open a new one.
 
 ---
 

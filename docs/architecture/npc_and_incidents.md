@@ -35,3 +35,186 @@ the contracts it describes.
 
   All three paths funnel through one `_trigger_alert()`. Paths 2/3 additionally no-op while the drone is already `ALERT` — a catch-up finding what the drone already knows isn't a new provocation, and resetting `_alert_memory_timer` on every redundant catch-up would matter the moment ALERT's currently-disabled decay is re-enabled; path 1 has no such guard, since a genuinely new live report while already `ALERT` should extend the hold. Since the drone is a static scene instance and never receives a `WorldContext`, it resolves the registry via `get_tree().get_first_node_in_group(IncidentRegistry.GROUP_INCIDENT_REGISTRY)` instead — the same lookup pattern `PerceptionComponent` already uses to find the player. Designed as a first slice of the roadmap's `WitnessSystem`: `Kind` has exactly one value (`ASSAULT`) because nothing produces a second one yet. Implements the save contract below (`get_save_key()` → `"incident_registry"`), proving it on a hard payload.
 - **`ComicEffectSystem`** (`core/ui/comic_effect/`, a `WORLD_SYSTEM_SCRIPTS` entry) is floating reaction text — a screen-space word ("THUD", "RUN", "CALL") unprojected from a world point every frame, so it orbits on screen as the camera turns rather than being pinned to a viewport position. **Pure visual, and not audio**: a future audio pass may share the same event ids, but `ComicEffectDef` must not grow a sound field. Four files: `ComicEffectDef` (a `Resource` — the random `texts` pool, `radius`, a `visual_profile` and an `emphasis`), `ComicVisualProfile` (a `Resource` — how a whole CLASS of events is drawn: colours, type, border style/thickness/jitter, padding, grid step, and the pop/hold/fade timings), `ComicEffectLabel` (a pooled `Control` that draws its own panel in `_draw()` — background, print grid, inked border, text outline, text, in that order — positioned by `Camera3D.unproject_position()`, dying early when its source goes behind the camera or the followed node is freed), and `ComicEffectSystem` itself. Three rules inside the label are load-bearing and easy to undo by accident: the **outline is drawn before the text** (reversing them hides the glyphs inside their own outline, which at small outline sizes merely looks muddy), the **corner jitter is sampled once at `setup()`** (sampling it inside `_draw()` makes a hanging panel change shape whenever anything forces a redraw), and the **print grid is one tiled `draw_texture_rect`** off a static per-step `ImageTexture` cache, not a loop of `draw_rect` — eight live panels at a 5 px grid would otherwise be thousands of draw calls a frame. `ComicEffectDef.get_font_size()` is the single place the drawn size is decided (`profile.font_size * emphasis`); the label must not recompute it. **A def with no profile still renders**: `resolve_profile()` synthesises one from the legacy `color`/`font_size`/`duration`/`rise_px` fields and caches it, so migration is per-def and optional and no event silently stops drawing halfway through one. Three things are load-bearing and should not be "simplified" away: the **distance gate** (`ComicEffectDef.radius`, measured from the player — an event further than that never spawns a word at all, so a brawl fifty metres off doesn't litter the screen), the **fixed pool** (`POOL_SIZE` 12 / `MAX_ACTIVE` 8 — labels are reused, never freed mid-session, keeping the cost flat under the ~55 FPS target), and **anti-repeat** (`_last_text_by_id`, scoped per def id, so one id doesn't show the same string twice running). Consumers resolve it through `GROUP_COMIC_EFFECT_SYSTEM` and cache the reference, exactly as `PatrolDroneController`/`IdleNPCController` resolve `IncidentRegistry` — there is **no static facade**, that pattern exists for no other `WORLD_SYSTEM_SCRIPTS` entry. Its own `CanvasLayer` (index `45`) is built in `on_world_ready()` and parented to `get_tree().root`, the same deferred pattern `world.gd` uses for `UI_CANVAS_LAYER_INDEX` (`40`), so the words sit above the HUD. The vocabulary is **data, not code**: one `.tres` per event under `data/comic_effects/` (`npc_knockdown`/`npc_hit`/`npc_death`/`npc_freeze`/`npc_flee`/`npc_call`/`npc_transmit`/`npc_swing_noticed`), gathered by a `ComicEffectCatalog`, plus four shared looks under `data/comic_effects/profiles/` (`npc`, `player`, `player_hurt`, `environment` — the last has no consumer yet and is left without one rather than having an event invented for it) — same shape as `data/key_hints.tres`, same one-file-per-item convention as `data/npc_archetypes/`. The catalog is found by PATH (`CATALOG_PATH`), deliberately: this system is `.new()`-built from `WORLD_SYSTEM_SCRIPTS` and has no inspector, so the `@export` route `KeyHintsPanel` uses to reach `KeyHintsCatalog` is unavailable, and a `DirAccess` folder scan is a trap — an exported build converts `.tres` to binary behind `.remap`, so the scan would find every def in the editor and none in a shipped build. A missing catalog or an empty `texts` pool warns and makes that id unspawnable; neither is fatal. `register_def()` remains the runtime seam for adding a def without editing the catalog. Wired at eight sites, split by ownership on purpose — the body spawns what the body knows (`NPCBase.take_hit()`, on its two mutually exclusive branches: `npc_knockdown` on the hit that starts a knockdown, `npc_hit` on a hit landing on a body already down, the early `return` between them guaranteeing one hit never produces both; `_enter_down_phase()` → `npc_death`) and the decision layer spawns what it knows (`IdleNPCController._start_flee()`/`_start_freeze()`/`_start_calling()`, plus `npc_transmit` in `_commit_witness_report()` and `npc_swing_noticed` in `_on_player_punch_missed()`), neither routing through the other. The player is a consumer too, through five defs of his own (`player_hurt`/`player_death`/`player_winded`/`player_spent`/`player_combat`) wired in `player.gd` — every one on an EDGE, never a per-frame state read: a health DECREASE seen through `health_changed` (`_last_health_seen`, since `HealthComponent` has no `damaged` signal and gaining one for a decoration would be the wrong dependency direction), `sprint_allowed_changed(false)`, `stamina_depleted()`, `died()`, and `stance_changed` entering `COMBAT` only. `player_combat` used to borrow `StanceIndicator.combat_color`'s hue so the word and the HUD badge read as the same statement; since the panel work it sits in the shared `player` register instead, and that tie is now carried by the stance badge alone. That is a deliberate trade — thirteen per-event hues were a legend the player would have to memorise (`docs/visual_language.md` §7) — and it is the one thing in this change that gave something up. `npc_transmit` deliberately marks the moment the report actually reaches `IncidentRegistry`, NOT the start of transmission: `_start_calling()` decides to call and calls `_votive.start_transmitting()` in the same frame, so a `npc_transmit` placed there would put two words over one head in one frame, next to `npc_call`'s own. Commit time is the one genuinely separate event in this chain — and it is an event, not the "transmission is under way" state, which would break the word-on-event rule.
+
+
+---
+
+## Actor identity — authored, allocated, never recycled
+
+**Chosen 2026-09-03 (Stan), work plan Task 5: the hybrid, with the growth rule
+attached.** The two rejected models and why are in
+`docs/postmortems/actor_identity.md`. `CLAUDE.md` carries the one-paragraph
+invariant; this is the contract in full.
+
+### The three categories
+
+- **EPHEMERAL** — the ambient crowd. Carries no `actor_id`, has no record and no
+  memory. Nothing may file anything against an ephemeral actor; there is nothing
+  to file against.
+- **PERSISTENT, authored** — anything placed in a scene with its id written in
+  the file: the player (`player.gd`'s `ACTOR_ID`), the four drones, the eighteen
+  hand-placed NPCs in `world.tscn`. Unchanged by any of this.
+- **PERSISTENT, allocated** — an actor that was ephemeral and got promoted.
+
+Authored and allocated identities are the same thing to every consumer. The only
+difference is where the id came from, and no consumer may branch on it.
+
+### Promotion
+
+An ephemeral actor is promoted **once**, at the moment one of these happens to
+it:
+
+1. it commits a witness report (`WitnessReport.Status.COMMITTED`),
+2. it takes a hit,
+3. the player interacts with it.
+
+Promotion allocates an id and nothing else. It is not a decision about what the
+actor is, and it carries no gameplay meaning of its own — an actor is promoted
+because a record is about to name it, so promotion and the first record are one
+event.
+
+**Promotion is one-way.** The node returns to the pool; the identity does not.
+There is no demotion, and an actor is never promoted twice.
+
+### Allocation
+
+Allocated ids come from a **monotonic counter and are never reused**. A released
+identity's id is retired with it. This is the rule that makes a stale reference
+safe: a record naming a released identity resolves to nobody, which is correct,
+and can never silently resolve to a *different* person, which would be a bug no
+test would catch.
+
+### Growth — the bound, and why it is not a number of its own
+
+An allocated identity **lives exactly as long as some record still names it**,
+and is released once none does. It is not capped by count and not aged out on
+its own clock.
+
+That is deliberate. A promoted identity exists *because* a record was about to
+name it, so an identity nothing names any more has nothing left to be. The size
+of the persistent population therefore falls out of the bounds already on the
+records themselves — `IncidentRegistry` prunes at `max_incidents = 32` and
+`max_incident_age = 24.0` game hours — rather than being a second, independent
+number free to disagree with them.
+
+The obligation this puts on every future record type is the load-bearing half:
+**anything that names an allocated identity carries its own age or count bound.**
+A record with no bound pins its identities forever, and the population becomes
+unbounded through the back door. Task 6b's memory is the first such record and
+inherits this requirement.
+
+Release is a **sweep, not reference counting**: periodically, an allocated
+identity that no live record names is retired. A sweep cannot leak on a missed
+decrement, and it needs no coordination between the systems that hold records —
+which matters because those systems (`IncidentRegistry`, 6b's memory, later H7)
+are deliberately unaware of each other.
+
+### What this touches in code, when it is built
+
+One line, and it is the only one: `ActorBase._ready()` currently warns when
+`actor_id` is empty. Ephemeral is now a legitimate state, so that warning needs
+either a condition or an explicit sentinel to distinguish "ephemeral on purpose"
+from "someone forgot to author an id". Everything else in this section is a
+system that does not exist yet.
+
+### What this does not decide
+
+Model 2 — a roster of stable residents on `BlockData` — is **compatible with
+this and not rejected forever**. It is a third *source* of persistent identity
+alongside authoring and allocation, and it buys recognisable residents that
+promotion-on-involvement never will. Nothing here forbids adding it later.
+
+This contract says nothing about Attribution. `WitnessReport.witness_id` is the
+witness's own identity, not the suspect's, so it does not touch
+`docs/incident_knowledge_model.md` §2's invariant 2 ("REPORT never contains a
+resolved actor identity") — do not "fix" it in the name of that rule.
+
+
+---
+
+## Personal memory — what one actor remembers, and for how long
+
+**Proposed 2026-09-03 for work plan Task 6b.** The registry described here is
+not built yet; the behaviour it will feed already is.
+
+### It is not new behaviour. It is behaviour with nowhere to live.
+
+`IdleNPCController._remembers_player` already exists. It is set when the NPC
+sees an incident, and again when the NPC is knocked down, is never cleared, and
+already changes what the NPC does: seeing the player again sends it straight to
+`_start_flee(position, false)` — recognition, so no backpedal, straight to
+RUNNING. That file's own header states what it lacks: it "**dies with the
+NPC**".
+
+Task 6b gives that flag a clock, a durable home and a place in the save. The
+decision path in `_decide()` does not change; only where its answer comes from.
+
+### The record
+
+One row: **holder `holder_id` saw subject `subject_id` at this time, having got
+this good a look.**
+
+- `holder_id` — the remembering actor's own `actor_id`.
+- `subject_id` — who was seen. The player today.
+- `observation_level` — from the existing `_resolve_observation_level()`.
+- `timestamp` — `GameClockSystem.total_game_hours`. **Game hours, never engine
+  uptime**, for the reason `IncidentRegistry` already carries: only that clock
+  survives a save, and `Time.get_ticks_msec()` resets on launch.
+
+Nothing else. Not where, not what happened — `IncidentRegistry` holds that, and
+duplicating the city's record inside a passer-by's head buys nothing.
+
+### How long — and this is also the bound Task 5 demands
+
+A memory's lifetime is a function of how well the holder saw. This is one
+mechanism satisfying two separate requirements: the identity contract's rule
+that **anything naming an allocated identity carries its own age or count
+bound**, and `incident_knowledge_model.md` §8's narrowed permission for a
+witness to read its own observation quality.
+
+| Seen as | Remembered for, game hours |
+|---|---|
+| `SILHOUETTE` | 6 |
+| `EQUIPMENT` | 24 |
+| `FACE` | 72 |
+| `IRIS` | 168 |
+
+First approximations, to be tuned by playing. A hard count cap sits behind them,
+mirroring `IncidentRegistry.max_incidents`.
+
+**Being hit is its own case.** A knockdown files a memory at `FACE` strength
+whatever the cone said. The reasoning is already in the controller: the victim
+is on the ground in the same frame its own assault reaches the registry, so the
+ordinary sighting path never reaches it — and being punched is first-hand
+knowledge that needs no line of sight.
+
+### Where it lives
+
+`ActorMemoryRegistry` (`npc/memory/`), an entry in `WORLD_SYSTEM_SCRIPTS`
+alongside `IncidentRegistry`, resolved by group — the same lazy lookup
+`IdleNPCController._try_resolve_incident_registry()` already uses, and for the
+same reason: a static scene instance never receives a `WorldContext`. It carries
+`get_save_key()`/`get_save_data()` like every other system, so `SaveSystem`
+picks it up without knowing it exists.
+
+Named "Registry" and not "System" after `IncidentRegistry`: it is a store of
+records, not an orchestrator.
+
+### The line between this and IncidentRegistry
+
+`IncidentRegistry` is **what the city has on record**. This is **what one actor
+personally remembers**. They are different records with different lifetimes and
+different consumers, and neither is derived from the other. `_remembers_player`'s
+own comment already draws that line; this keeps it drawn.
+
+### What this deliberately does not do
+
+- **No propagation between actors.** A query is always about the caller's own
+  `holder_id`. One actor remembering is the whole slice — an actor learning what
+  another remembers is a later, separate decision.
+- **No promotion machinery.** All 18 hand-placed NPCs carry authored ids, so
+  this works on the existing diorama with no pooling. Promotion arrives with
+  Task 7, and the identity contract permits the gap because authored and
+  allocated identities are indistinguishable to a consumer.
+- **No Attribution.** `subject_id` is resolved at the call site from the player
+  node, the way `_call_it_in()` already does. Nothing is inferred from reports.

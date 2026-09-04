@@ -4,12 +4,14 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Out of the September plan:** a visible shot — muzzle flash and tracer.
-`ItemResource.muzzle_offset`, `ShotEffectSystem` (`vfx/shot_effect/`), and the
-call site in `_resolve_shot()`. Three commits. Behind it on this branch: the
-key-hints ink-blot panel (four commits, PR #59). Behind that in `main`: Tasks
-0, 2, 3a, 3b's first half, the tick→F sequencing and the playtest batch.
-Task 1 stays Stan's (H6 needs eyes).
+**Task 6b — memory that survives an encounter**, on branch
+`claude/npc-memory-survives-6b`. Not built from scratch:
+`IdleNPCController._remembers_player` already works and already changes
+behaviour; 6b gives it a clock, a durable home and a save, keyed on Task 5's
+identity model. Task 5 itself is PR #61, unmerged. In `main`: the shot visual
+(PR #60), Tasks 0, 2, 4, 3b's first half, and **only the third checkbox of
+3a** — the detector script and its CI step were never built. Task 1 stays
+Stan's.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -18,11 +20,17 @@ Task 1 stays Stan's (H6 needs eyes).
   recorded in the plan: OBSERVE closes only half this month.
 - 6b (memory surviving an encounter) is therefore the month's main substantive
   work, not a second half of 6.
-- Three documentation genres — invariant / chronicle / post-mortem. Done: the
-  rule is in `CLAUDE.md`'s own header and in `docs/postmortems/README.md`.
 
 ## Found, not fixed
 
+- **`queue_free()` on a live NPC mid-reaction crashes the engine.** Segfault
+  every time, three runs, no stack. Found while probing 6b; nothing in the game
+  does it (streaming frees whole cells), so it is not on the path of any task.
+- **The hand-placed crowd never streams out.** `DoggerlandCrowdBlock` sits
+  inside `StreamContainer` but is authored in `world.tscn`, so `StreamingSystems`
+  never frees it. "Survives a block unload" cannot be demonstrated on it — 6b
+  proves the equivalent instead: a memory is addressed by id and holds for an
+  actor with no node in the tree at all.
 - `StreamingSystems` is an autoload with a default `process_mode`, so its
   polling halts under menu pause. Correct today; wrong once an inventory has to
   run over a live world. Design question, not a bug — see the plan, Out of plan.
@@ -38,9 +46,6 @@ Task 1 stays Stan's (H6 needs eyes).
   and the knock cycle waits 5 s before shaking. In practice the knock will
   almost never be seen. `intent_radius` is the knob; raising it also lengthens
   F's auto-approach, so it is a gameplay call, not mine.
-- The work plan's "Done when" under Task 3b describes CI failing on an orphaned
-  file. That is Task **3a**'s criterion; 3b is about warnings. Plan file left
-  as written.
 - GDScript analyzer warnings never reach the CLI — editor Script panel only,
   proven with a deliberately untyped function in an autoload. So Task 3b buys a
   standard for whoever has the project open, not a CI gate. **20** untyped
@@ -53,15 +58,10 @@ Task 1 stays Stan's (H6 needs eyes).
   `set_player_reference()`, the ring and the arrow) with no caller since
   click-to-move was removed. Left intact on purpose; whether a destination
   marker returns is a design question.
-- `observation_level` is written and read only by the perception debug panel
-  and one log line. Task 6a gives it its first gameplay consumer.
-- Task 4 hits neither of its two numeric targets, and both need a decision
-  rather than more cutting. `CLAUDE.md` is **17 059 B** against a target of
-  8–10 KB: what is left after the archaeology went is rules, so closing the gap
-  means RELOCATING invariants into `docs/architecture/`. The two controllers are
-  at **55%** and **44%** comment against a target of <30%: their inline comments
-  are mostly present-tense rationale, not history, and hitting 30% means
-  deleting ~557 and ~425 comment lines of it.
+- Task 4 misses both numeric targets and both need a decision, not more
+  cutting: `CLAUDE.md` is ~17 KB against 8–10 KB, and the two controllers are
+  55% / 44% comment against <30%. Closing either means relocating or deleting
+  present-tense invariants.
 - The key-hints panel's own header called it "a working tool for showing the
   build to a reviewer, not final UI", and justified `SystemFont` on that basis.
   After this work the first is no longer true and the second is arguable — a
@@ -69,9 +69,8 @@ Task 1 stays Stan's (H6 needs eyes).
 
 ## Open question for Stan
 
-- The muzzle Stan said he had set up is not in this repository — a grep for
-  `Muzzle`/`muzzle` over `.gd`/`.tscn`/`.tres` finds nothing. The committed
-  offset is MEASURED here, not his; if he has numbers, they replace it.
+- The carbine's `muzzle_offset` is measured here, not Stan's — his is not in the
+  repository. If he has numbers, they replace it.
 - `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
   the muzzle is a real cost at the FPS target, and Compatibility cannot show
   what it would look like. Needs Stan's eye on Forward+ before it moves.

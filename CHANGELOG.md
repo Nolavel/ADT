@@ -12,6 +12,72 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Memory moves off the NPC and starts to age (work plan Task 6b)
+
+`_remembers_player` was a bool that died with its node; it is a query into
+`ActorMemoryRegistry` now, and the `_decide()` branch it drives is untouched.
+Behaviour DID change, deliberately: memory ages. A knockdown files at FACE
+(72 game hours) whatever the cone saw, a distant sighting at SILHOUETTE (6).
+Probed in-world: punch, flee on sight, a bystander that does not, save round
+trip, and expiry — 15 assertions, all passing.
+
+> *Память ушла с ноды в реестр и начала стареть. 15 проверок в мире, все зелёные.*
+
+## 2026-09-03 - ActorMemoryRegistry: personal memory gets a durable home
+
+A `WORLD_SYSTEM_SCRIPTS` entry beside `IncidentRegistry`, resolved by group,
+with the usual save pair. Every row ages at its OWN rate — the lifetime comes
+from `observation_level`, 6 game hours for a silhouette to 168 for an iris —
+so `_prune()` filters rather than popping the front, because append order is
+not expiry order here. A better look strengthens an existing memory; a worse
+one never downgrades it. Nothing reads it yet.
+
+> *Личная память получила дом и сейв. Каждая запись стареет по-своему.*
+
+## 2026-09-03 - What one actor remembers, proposed (work plan Task 6b)
+
+Not new behaviour — `_remembers_player` already works and already sends a
+recognising NPC straight to RUNNING; its own header says it "dies with the
+NPC". The proposal gives it a clock (`GameClockSystem` game hours), a durable
+home (`ActorMemoryRegistry`, resolved by group like `IncidentRegistry`) and a
+save. Lifetime scales with `observation_level`, which is one mechanism serving
+both Task 5's bound obligation and §8's narrowed permission.
+
+> *Память не пишется с нуля: существующей дают часы, дом и место в сейве.*
+
+## 2026-09-03 - incident_knowledge_model.md §8 narrowed to its own reason
+
+It banned reading `observation_level` outright until Attribution exists, which
+is broader than §3.3's reasoning supports and was already untrue of the build —
+`_remembers_player` is recognition from a prior encounter and has changed
+behaviour since it was written. Now: the CITY may not read it, a witness may
+read its own to change its own behaviour and its own private memory. Unblocks
+Task 6a's channel and Task 6b's memory duration. Stan's call.
+
+> *§8 сужен до собственной причины: город не читает, свидетель — свой взгляд.*
+
+## 2026-09-03 - Actor identity: the hybrid, chosen, with its growth rule (Task 5)
+
+Stan picked the hybrid. Ambient crowd is ephemeral and carries no id; an actor
+is promoted once, when a record is about to name it, from a monotonic counter
+that never reuses one. The growth bound is not a number of its own: an
+allocated identity lives as long as some record names it, which puts the
+obligation on every record type to carry its own bound. Rejected models in
+`docs/postmortems/actor_identity.md`. Still zero GDScript.
+
+> *Гибрид выбран. Рост ограничен не счётчиком, а сроком жизни самих записей.*
+
+## 2026-09-03 - Three actor-identity models, none chosen yet (work plan Task 5)
+
+Paper only, zero GDScript, as the task requires. Identity in the pool / in the
+block / hybrid, each with its consequences, written into
+`docs/architecture/npc_and_incidents.md` for Stan to choose from. Sharper framing
+than the plan's: the perpetrator is always the player and stable by construction,
+so pooling breaks the WITNESS, not the perpetrator. Recommendation is the hybrid,
+with its unbounded-growth risk stated rather than buried.
+
+> *Три модели идентичности, выбор за Стэном. Пул ломает свидетеля, а не виновника.*
+
 ## 2026-09-03 - ShotEffectSystem's tunables were half of them dead
 
 Found reading the file back, not on screen. `BILLBOARD_ENABLED` REPLACES a
