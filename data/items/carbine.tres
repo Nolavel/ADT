@@ -23,4 +23,4 @@ held_fit = SubResource("Resource_carbine_fit")
 ranged_damage = 150.0
 magazine_size = 8
 reserve_capacity = 80
-muzzle_offset = Vector3(0.4997, -0.0405, 0)
+muzzle_offset = Vector3(0.527037, -0.045992, 0)

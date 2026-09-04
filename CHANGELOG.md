@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - The muzzle number comes from Stan's marker now, not my measurement
+
+`carbine.tscn`'s `Muzzle` marker is the source and `muzzle_offset` is derived
+from it: `Mesh.transform.affine_inverse() * Muzzle.position`, needed because
+the marker is a child of the root while `Mesh` carries a 7.34 deg roll. Gives
+`(0.527037, -0.045992, 0)`. The two routes agree — my measured tip-ring centre
+sits 5.5 mm away in Y, and 2.73 cm short in X because a flash belongs just
+ahead of the barrel. Computed in code, not by hand.
+
+> *Дуло берётся с твоего маркера. Два пути сошлись в пределах 5.5 мм.*
+
 ## 2026-09-04 - Memory moves off the NPC and starts to age (work plan Task 6b)
 
 `_remembers_player` was a bool that died with its node; it is a query into
