@@ -234,13 +234,23 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## (see _is_incident_in_vision_cone()). Thresholds are @export, not
 ## constants, per attribution.md §7's own instruction: they are feel/scale
 ## values, not derived numbers.
-@export var witness_ceiling_equipment_distance: float = 30.0
+##
+## ALL THREE MUST FIT INSIDE THE WITNESS ENVELOPE, and that is what set the
+## current values. The only calling archetype is Clerk, whose
+## PerceptionComponent.vision_range is 16 m, so nothing beyond 16 m ever
+## reaches this ladder at all. The old thresholds (30 / 10 / 5) put SILHOUETTE
+## past 30 m and made the top rung unreachable by construction — measured, and
+## the reason attribution.md §7's case C failed from the day it was written.
+## Retuned 2026-09-04 (Stan: lower the ceilings rather than raise the vision)
+## so every rung has a band: IRIS <= 3, FACE 3-6, EQUIPMENT 6-11,
+## SILHOUETTE 11-16. Raising Clerk's vision_range means retuning these too.
+@export var witness_ceiling_equipment_distance: float = 11.0
 ## Beyond this distance (and within witness_ceiling_equipment_distance) the
 ## ceiling is EQUIPMENT.
-@export var witness_ceiling_face_distance: float = 10.0
+@export var witness_ceiling_face_distance: float = 6.0
 ## Beyond this distance (and within witness_ceiling_face_distance) the
 ## ceiling is FACE; within it, IRIS.
-@export var witness_ceiling_iris_distance: float = 5.0
+@export var witness_ceiling_iris_distance: float = 3.0
 
 @export_group("Witness Report (attribution.md §6/§7)")
 ## Seconds until a PENDING WitnessReport commits — "time until transmission

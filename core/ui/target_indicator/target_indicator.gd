@@ -83,7 +83,7 @@ var player_ref: Node3D = null
 # ============================================
 # ИНИЦИАЛИЗАЦИЯ
 # ============================================
-func _ready():
+func _ready() -> void:
 	visible = false
 	_create_ground()
 	if decal_only:
@@ -92,7 +92,7 @@ func _ready():
 	_create_arrow() 
 
 # === Ground Decal ===
-func _create_ground():
+func _create_ground() -> void:
 	if not ground_decal:
 		ground_decal = MeshInstance3D.new()
 		add_child(ground_decal)
@@ -133,7 +133,7 @@ void fragment() {
 	ground_decal.material_override = ground_material
 
 # === Hover Ring ===
-func _create_hover_ring():
+func _create_hover_ring() -> void:
 	hover_ring = MeshInstance3D.new()
 	add_child(hover_ring)
 
@@ -181,7 +181,7 @@ void fragment() {
 	hover_ring.material_override = ring_material
 
 # === Arrow ===
-func _create_arrow():
+func _create_arrow() -> void:
 	arrow_root = Node3D.new()
 	add_child(arrow_root)
 
@@ -247,7 +247,7 @@ void fragment() {
 # ============================================
 # ОСНОВНЫЕ МЕТОДЫ
 # ============================================
-func show_at_position(pos: Vector3, is_run: bool = false):
+func show_at_position(pos: Vector3, is_run: bool = false) -> void:
 	global_position = pos + Vector3.UP * hover_height
 	_is_candidate_role = false
 	is_running = is_run
@@ -255,7 +255,7 @@ func show_at_position(pos: Vector3, is_run: bool = false):
 		_appear()
 	_update_color()
 
-func hide_indicator():
+func hide_indicator() -> void:
 	if is_visible_indicator:
 		_disappear()
 
@@ -282,7 +282,7 @@ func show_candidate(pos: Vector3, in_reach: bool) -> void:
 		_appear()
 	_update_color()
 
-func show_invalid_click(pos: Vector3):
+func show_invalid_click(pos: Vector3) -> void:
 	global_position = pos + Vector3.UP * hover_height
 	_is_candidate_role = false
 	_update_color(true)
@@ -293,7 +293,7 @@ func show_invalid_click(pos: Vector3):
 # ============================================
 # АНИМАЦИИ
 # ============================================
-func _appear():
+func _appear() -> void:
 	if is_visible_indicator:
 		return
 	_kill_transition()
@@ -307,7 +307,7 @@ func _appear():
 	_transition = create_tween()
 	_transition.tween_method(_set_alpha, 0.0, 1.0, appear_duration).set_ease(Tween.EASE_OUT)
 
-func _set_alpha(v: float):
+func _set_alpha(v: float) -> void:
 	if ground_material:
 		ground_material.set_shader_parameter("global_alpha", v)
 	if ring_material:
@@ -325,7 +325,7 @@ func _set_alpha(v: float):
 ##
 ## Killing the in-flight tween rather than letting two run is the other half:
 ## a show landing mid-fade must take over the alpha, not fight it.
-func _disappear():
+func _disappear() -> void:
 	if not is_visible_indicator:
 		return
 	_kill_transition()
@@ -351,7 +351,7 @@ func _kill_transition() -> void:
 # ============================================
 # ОБНОВЛЕНИЕ
 # ============================================
-func _process(delta: float):
+func _process(delta: float) -> void:
 	if not is_visible_indicator:
 		return
 	time_alive += delta
@@ -399,7 +399,7 @@ func _process(delta: float):
 # ============================================
 # ЦВЕТ
 # ============================================
-func _update_color(is_error: bool = false):
+func _update_color(is_error: bool = false) -> void:
 	var target: Color
 	if is_error:
 		target = color_invalid
@@ -414,15 +414,15 @@ func _update_color(is_error: bool = false):
 	_update_ring_color(target)
 	_update_arrow_color(target)
 
-func _update_ground_color(c: Color):
+func _update_ground_color(c: Color) -> void:
 	if ground_material:
 		ground_material.set_shader_parameter("base_color", Vector3(c.r, c.g, c.b))
 
-func _update_ring_color(c: Color):
+func _update_ring_color(c: Color) -> void:
 	if ring_material:
 		ring_material.set_shader_parameter("base_color", Vector3(c.r, c.g, c.b))
 
-func _update_arrow_color(c: Color):
+func _update_arrow_color(c: Color) -> void:
 	if arrow_material:
 		arrow_material.set_shader_parameter("base_color", Vector3(c.r, c.g, c.b))
 

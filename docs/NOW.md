@@ -4,14 +4,12 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Task 6a closed — OBSERVE's half is done.** Its second checkbox turned out to
-be closed already by 6b (`observation_level` drives memory lifetime), and the
-five `attribution.md` §7 cases were re-measured: A/B/D/E unchanged, **C still
-fails and has not moved**. Two findings beyond the table: the witness path can
-never reach SILHOUETTE (envelope 0-16 m), so `LIFETIME_HOURS[SILHOUETTE]` is
-dead; and **an NPC that remembers you refuses to witness** — memory sends it to
-FLEEING and the "already reacting" gate closes. Branch
-`claude/observe-6a-retest`.
+**Stan's tuning calls, applied and measured.** Witness ceilings lowered to
+3 / 6 / 11 so all four rungs fit inside Clerk's 16 m vision — **`attribution.md`
+§7 case C passes for the first time since it was written**. Memory lifetimes put
+on a clean x3 with a floor of 12: **12 / 36 / 108 / 324** game hours. Next on the
+branch: the orphan-script CI detector (3a), then typing (3b), then the
+recognition proposal. Branch `claude/witness-ceilings-and-memory`.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -38,8 +36,8 @@ FLEEING and the "already reacting" gate closes. Branch
   and the render probe is Compatibility, where colour is not trustworthy. Needs
   Stan's eye on Forward+ before any number moves.
 - Task 3b's warnings are editor-only, never CLI, so they buy a standard rather
-  than a CI gate. **20** untyped returns left — `target_indicator.gd` 15,
-  `camera_follow.gd` 4, `navigation_component.gd` 1.
+  than a CI gate. All 20 untyped returns are typed now; **zero left** in game
+  code. The warnings-as-errors flip is still Stan's call, unasked.
 - `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
   the muzzle is a real cost at the FPS target and Compatibility cannot judge it.
   Unreviewed on Forward+.
@@ -47,11 +45,10 @@ FLEEING and the "already reacting" gate closes. Branch
   `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
   seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay
   call, unanswered since 2026-09-03.
-- `core/ui/target_indicator/target_indicator.gd` still carries the whole
-  move-destination API (`show_at_position()`, `show_invalid_click()`,
-  `set_player_reference()`, the ring and the arrow) with no caller since
-  click-to-move was removed. Left intact on purpose; whether a destination
-  marker returns is a design question.
+- `target_indicator.gd`'s move-destination HALF is unused (`show_at_position()`,
+  `show_invalid_click()`, `set_player_reference()`) since click-to-move went.
+  **The file itself is live** — `hud_component.tscn` runs it and calls
+  `hide_indicator()`. I called the whole file dead twice; it is not.
 - Task 4 misses both numeric targets and both need a decision, not more
   cutting: `CLAUDE.md` is ~17 KB against 8–10 KB, and the two controllers are
   55% / 44% comment against <30%. Closing either means relocating or deleting
@@ -63,14 +60,14 @@ FLEEING and the "already reacting" gate closes. Branch
 
 ## Open question for Stan
 
-- **Witness envelope versus the quality ladder.** A Clerk's `vision_range` is
-  16 m but SILHOUETTE needs >30 m, so the top rung is unreachable and case C
-  cannot pass. Raise `earshot_radius`/`vision_range` above 30, or lower the
-  ceilings under 16? Deferred in H3/H4 since August; now it also leaves a dead
-  row in `ActorMemoryRegistry.LIFETIME_HOURS`.
-- **A remembering NPC refuses to witness** (measured 2026-09-04). Right, or
-  should memory-flight yield to a fresh incident? It means the same NPC cannot
-  testify about you twice.
+- **`core/map_source/map_data.gd` is an orphan** — a `MapData` resource schema
+  with no producer and no consumer, found by the new CI detector. It sits in the
+  level-design tool set `CLAUDE.md` marks do-not-refactor, so it is whitelisted
+  rather than deleted. Wire it or drop it?
+- **Recognition** — proposal written into `docs/architecture/npc_and_incidents.md`,
+  awaiting Stan. Note before approving: **only the weapon lever is playable**;
+  there is no second garment to change into, so the garment half of the
+  signature is inert until one ships.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?

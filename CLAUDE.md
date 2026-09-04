@@ -106,9 +106,15 @@ times fails: at that volume it is per-frame code, not a notice. The push trigger
 is deliberately restricted to `main`; `entire/checkpoints/v1` must never be
 checked out by CI. **Do not widen it.**
 
-A green check does not cover an **orphan script**: a `.gd` file nothing
-references is never compiled, so a syntax error in it passes. A new file wired
-to nothing is checked by hand. → `docs/postmortems/orphan_scripts.md`
+**An orphan script is a machine rule now, not a habit.** A `.gd` nothing
+references is never compiled, so a syntax error in it passes the import pass —
+`tools/ci/find_orphan_scripts.py` runs in CI and fails on one. It matches by
+path, by `uid://` and by `class_name`, and is deliberately biased toward
+silence: a bare mention in a comment counts, because a check that fails on a
+live file gets switched off and is then worse than none. Entry points that have
+no caller by design (`EditorScript`s under `tools/`) live in that file's
+`ALLOWED_ORPHANS`, one line and one reason each — never a blanket glob.
+→ `docs/postmortems/orphan_scripts.md`
 
 ## Observability (Entire checkpoints)
 

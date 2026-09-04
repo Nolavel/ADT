@@ -98,6 +98,15 @@ jobs:
             exit 1
           fi
 
+      # A .gd nothing references is never compiled by the import pass above, so
+      # a syntax error inside one passes both of them green. This is the only
+      # step that can see that — CLAUDE.md documents the gap and
+      # docs/postmortems/orphan_scripts.md is why it was worth closing.
+      - name: Orphan scripts
+        run: |
+          set -o pipefail
+          python3 tools/ci/find_orphan_scripts.py
+
       # Autoloads, _ready(), physics and every print/push_warning are live
       # here; only rendering is not.
       - name: Boot world.tscn

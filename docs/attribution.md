@@ -345,11 +345,18 @@ rule by eye.
 
 | Case | Setup | Expected |
 |---|---|---|
-| A | incident 3 m from an idle NPC facing it | IRIS |
-| B | 15 m | EQUIPMENT |
-| C | 35 m | SILHOUETTE |
-| D | 3 m, witness facing away | does not become a witness — no report at any quality |
+| A | incident 2 m from an idle NPC facing it | IRIS |
+| B | 7 m | EQUIPMENT |
+| C | 12 m | SILHOUETTE |
+| D | 2 m, witness facing away | does not become a witness — no report at any quality |
 | E | interrupted at 1.5 s | CANCELLED, nothing in registry |
+
+**The distances moved on 2026-09-04 and the old ones are not a lost baseline** —
+they were 3 / 15 / 35 m, chosen against ceilings of 5 / 10 / 30 that put
+SILHOUETTE past 30 m while no witness can see past 16. Case C was therefore
+untestable from the day it was written, which is what the two dated blocks below
+record. The ceilings are now 3 / 6 / 11 and every rung has a band inside the
+envelope, so these five sample the ladder that actually exists.
 
 ### Measured, 2026-08-26
 
@@ -458,6 +465,43 @@ its own (`FLEEING`), and the incident that followed produced **no report**.
 Whether that is right is a design question, not a defect: a frightened witness
 running away instead of phoning it in is arguably correct, and it also means
 **the same NPC cannot testify about you twice**. Not decided here.
+
+### Re-measured after the ceiling retune, 2026-09-04
+
+Stan's call: lower the ceilings rather than raise the vision. Now
+`iris <= 3`, `face <= 6`, `equipment <= 11`, against Clerk's unchanged 16 m
+`vision_range` and unchanged 25 m `earshot_radius`.
+
+**Every rung is reachable now — swept, not argued:**
+
+| distance | rung |
+|---|---|
+| 1, 2, 3 m | IRIS |
+| 4 m | FACE |
+| 6, 7, 9 m | EQUIPMENT |
+| 11, 12, 14, 15 m | **SILHOUETTE** |
+| 16 m and beyond | nothing (vision gate) |
+
+| Case | Expected | Measured | |
+|---|---|---|---|
+| A — 2 m, facing | IRIS | `CALLING`, IRIS | pass |
+| B — 7 m | EQUIPMENT | `CALLING`, EQUIPMENT | pass |
+| C — 12 m | SILHOUETTE | `CALLING`, SILHOUETTE | **pass — first time** |
+| D — 2 m, facing away | no report | no report; `FROZEN` this run | pass |
+| E — interrupted at 1.5 s | CANCELLED | not re-run: it tests cancellation timing, which no distance threshold touches | unchanged |
+
+At the OLD sample distances the retune reads as: 3 m still IRIS, **15 m becomes
+SILHOUETTE** where it used to be EQUIPMENT, and 35 m still produces nothing —
+now because it is past the 16 m vision gate rather than because the ladder ran
+out. That is why the case distances in the table above moved with it.
+
+**Case C passes for the first time since it was written.** The gap was never in
+the chain; the ladder was taller than the room it stood in.
+
+**Consequence outside this document:** `ActorMemoryRegistry`'s `SILHOUETTE`
+lifetime row is no longer dead — the witness path reaches it between 11 and
+16 m. Its value moved the same day, from 6 to 12 game hours, as part of putting
+that table on a clean x3 progression.
 
 ### The test that actually matters
 

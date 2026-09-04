@@ -12,6 +12,49 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Recognition proposed: a memory has to match who you are now
+
+Stan's ask — flight on memory should need the NPC to recognise the player as
+they are NOW. Written, not built. The memory gains a signature of what was
+worn and held; how well the holder saw decides what can break it: a face
+nothing, `EQUIPMENT` the weapon, `SILHOUETTE` either. Stated honestly: only the
+weapon lever is playable today, since no second garment exists to change into.
+
+> *Узнавание: память должна совпасть с тем, кто ты сейчас. Пока рычаг один — оружие.*
+
+## 2026-09-04 - Every function in game code declares what it returns (Task 3b)
+
+The 20 remaining untyped returns typed: `target_indicator.gd` 15,
+`camera_follow.gd` 4, `navigation_component.gd` 1. Zero left outside `tools/`.
+The plan said 38; the real count was 20. Correcting myself twice over: I called
+`target_indicator.gd` dead code — it is live, `hud_component.tscn` runs it, so
+15 of these were on a working file. Diff touches nothing but signatures,
+checked line by line.
+
+> *Все функции игрового кода объявляют тип возврата. `target_indicator` живой.*
+
+## 2026-09-04 - Orphan scripts are a CI failure now (work plan Task 3a)
+
+`tools/ci/find_orphan_scripts.py` plus a step in `godot.yml`. Matches by path,
+`uid://` and `class_name`, and is biased toward silence on purpose — a check
+that fails on a live file gets switched off. Both halves of the criterion
+verified: a deliberately orphaned file fails, `main` passes. It immediately
+found one the plan did not know about, `core/map_source/map_data.gd`, which is
+whitelisted rather than decided.
+
+> *Сирота теперь роняет CI. Нашлась ещё одна, судьбу её решает Стэн.*
+
+## 2026-09-04 - Witness ceilings fit the envelope; memory lifetimes go x3
+
+Stan's two tuning calls. Ceilings 30/10/5 -> 11/6/3, so all four rungs land
+inside Clerk's 16 m vision instead of SILHOUETTE sitting past 30 m where no
+witness can see — **`attribution.md` §7 case C passes for the first time since
+it was written**. Memory lifetimes 6/24/72/168 -> **12/36/108/324**: the old
+set decelerated (x4, x3, x2.3) and only looked like a progression. Swept, not
+argued; §7's sample distances moved with the tuning.
+
+> *Потолки влезли в конверт, все четыре ступени достижимы. Память — ровное ×3.*
+
 ## 2026-09-04 - Task 6a closed: §7 re-measured, and two findings beyond the table
 
 A/B/D/E pass unchanged, C still fails and has not moved — nothing since August
