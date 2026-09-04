@@ -227,3 +227,68 @@ own comment already draws that line; this keeps it drawn.
   allocated identities are indistinguishable to a consumer.
 - **No Attribution.** `subject_id` is resolved at the call site from the player
   node, the way `_call_it_in()` already does. Nothing is inferred from reports.
+
+---
+
+## Recognition — proposed, not built
+
+**Proposed 2026-09-04 (Stan). No code yet.** Flight on memory should fire only
+when the NPC actually *recognises* the player as they are now, because the
+player may have changed since.
+
+This is the gameplay surface `docs/incident_knowledge_model.md` §2 invariant 5
+already names — *"change appearance, discard distinctive equipment"* — and §8's
+narrowed wording permits it: a witness reading its own observation quality to
+change its own behaviour and its own private memory. **The city resolves
+nothing here.** No `suspect_id`, no matching of reports against each other.
+
+### The signature
+
+Two observable traits exist today and both come from `EquipmentComponent`:
+what is **worn** (`get_equipped()` across `layout.body_slots`) and what is
+**in hand** (`get_drawn()`). `ActorMemory` gains a snapshot of both, taken at
+the moment of witnessing.
+
+The player exposes it as one method, resolved the duck-typed way
+`get_actor_id()` already is — the controller finds the player by group and asks.
+`IdleNPCController` does not reach into another actor's components.
+
+### What breaks recognition, by how well the holder saw
+
+Monotone on purpose: the better the look, the fewer things can break it.
+
+| Remembered as | Recognised when | The player's out |
+|---|---|---|
+| `IRIS`, `FACE` | always | none — a face is a face |
+| `EQUIPMENT` | the drawn item still matches | holster or drop the weapon |
+| `SILHOUETTE` | the drawn item **and** the garments match | change either |
+
+It reads off the distance bands directly: up close they saw *you*; at 6-11 m
+they read the gun; at 11-16 m all they had was an outline, so any change to it
+loses you.
+
+**This closes the caveat left in Task 6a.** `observation_level` currently
+changes how LONG a reaction lasts. With this it also changes WHICH reaction
+fires — recognised, and the NPC flees; not recognised, and it treats you as a
+stranger.
+
+### Honest about what is playable today
+
+**Only one of the two levers exists.** The player owns exactly two garments
+(`starter_jumpsuit`, `starter_boots`), there is no second garment to change
+into and no UI to change with, so the garment half of the signature is inert.
+The weapon half is real now: holstering the carbine defeats an `EQUIPMENT`
+memory, and that is testable the day it is built.
+
+The garment half is written the same way regardless and becomes live the moment
+a second garment ships, with no code change. Building only the weapon half
+would mean revisiting the record format later, which is the more expensive
+mistake.
+
+### What it does not change
+
+The identity contract is untouched: a memory still names an identity, so it
+still carries its own age bound, and `LIFETIME_HOURS` still governs. Recognition
+decides whether a *live* memory applies to the person standing there, not how
+long the memory lives.
+

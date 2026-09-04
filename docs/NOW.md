@@ -64,9 +64,10 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   with no producer and no consumer, found by the new CI detector. It sits in the
   level-design tool set `CLAUDE.md` marks do-not-refactor, so it is whitelisted
   rather than deleted. Wire it or drop it?
-- **Recognition, not just memory** (Stan, 2026-09-04): flight should fire only
-  if the NPC recognises the player as they are NOW — proposal pending, see the
-  plan. Memory eating the witness report is accepted as correct.
+- **Recognition** — proposal written into `docs/architecture/npc_and_incidents.md`,
+  awaiting Stan. Note before approving: **only the weapon lever is playable**;
+  there is no second garment to change into, so the garment half of the
+  signature is inert until one ships.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?

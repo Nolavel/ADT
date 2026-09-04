@@ -12,6 +12,16 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Recognition proposed: a memory has to match who you are now
+
+Stan's ask — flight on memory should need the NPC to recognise the player as
+they are NOW. Written, not built. The memory gains a signature of what was
+worn and held; how well the holder saw decides what can break it: a face
+nothing, `EQUIPMENT` the weapon, `SILHOUETTE` either. Stated honestly: only the
+weapon lever is playable today, since no second garment exists to change into.
+
+> *Узнавание: память должна совпасть с тем, кто ты сейчас. Пока рычаг один — оружие.*
+
 ## 2026-09-04 - Every function in game code declares what it returns (Task 3b)
 
 The 20 remaining untyped returns typed: `target_indicator.gd` 15,
