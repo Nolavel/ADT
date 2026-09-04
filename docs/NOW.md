@@ -61,6 +61,10 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
 
 ## Open question for Stan
 
+- **`core/map_source/map_data.gd` is an orphan** — a `MapData` resource schema
+  with no producer and no consumer, found by the new CI detector. It sits in the
+  level-design tool set `CLAUDE.md` marks do-not-refactor, so it is whitelisted
+  rather than deleted. Wire it or drop it?
 - **Recognition, not just memory** (Stan, 2026-09-04): flight should fire only
   if the NPC recognises the player as they are NOW — proposal pending, see the
   plan. Memory eating the witness report is accepted as correct.

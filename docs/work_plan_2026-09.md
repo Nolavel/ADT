@@ -134,14 +134,18 @@ references is never compiled by the import pass, so a syntax error in it passes
 CI. Confirmed instance right now: `ui/hud/fade_by_distance/fade_by_distance.gd`,
 210 lines, referenced by nothing.
 
-- [ ] `tools/ci/find_orphan_scripts.py` (~20–30 lines): collect every `.gd`
+- [x] `tools/ci/find_orphan_scripts.py` (~20–30 lines): collect every `.gd`
       outside `addons/`, subtract everything referenced by `.tscn`, `.tres`,
       `project.godot` and other `.gd` — by path, by `uid://`, and by `class_name`
       — fail on a non-empty remainder. Whitelist `tools/**` EditorScripts as an
       **explicit list with a comment per entry**, not a blanket glob.
-- [ ] Wire it into `.github/workflows/godot.yml` as a third step
-- [ ] Ask Stan whether `fade_by_distance.gd` gets wired to something or deleted.
-      Do not decide.
+- [x] Wire it into `.github/workflows/godot.yml` as a third step
+- [x] Ask Stan whether `fade_by_distance.gd` gets wired to something or deleted.
+      Do not decide. **Done** — it became `vfx/grain_effect/` and is wired.
+      The detector then found a SECOND one the plan did not know about:
+      `core/map_source/map_data.gd`, a `MapData` resource schema with neither
+      producer nor consumer. Same rule applied — not decided, whitelisted with
+      that stated as the reason, question raised in `docs/NOW.md`.
 
 ### 3b. Warnings
 

@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Orphan scripts are a CI failure now (work plan Task 3a)
+
+`tools/ci/find_orphan_scripts.py` plus a step in `godot.yml`. Matches by path,
+`uid://` and `class_name`, and is biased toward silence on purpose — a check
+that fails on a live file gets switched off. Both halves of the criterion
+verified: a deliberately orphaned file fails, `main` passes. It immediately
+found one the plan did not know about, `core/map_source/map_data.gd`, which is
+whitelisted rather than decided.
+
+> *Сирота теперь роняет CI. Нашлась ещё одна, судьбу её решает Стэн.*
+
 ## 2026-09-04 - Witness ceilings fit the envelope; memory lifetimes go x3
 
 Stan's two tuning calls. Ceilings 30/10/5 -> 11/6/3, so all four rungs land
