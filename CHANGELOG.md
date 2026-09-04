@@ -12,6 +12,14 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - Key hints wait before their first ink entrance
+
+The panel now holds fully clear for 1.5 seconds when the scene starts, then
+runs the existing random ink → text → spread sequence. Later reopens remain
+immediate; the pause belongs only to scene startup.
+
+> *При старте сцены блобы ждут 1,5 секунды; повторные открытия без задержки.*
+
 ## 2026-09-04 - Key hints scatter, speak, then spread
 
 Each opening now randomises the ink pieces' order across the panel instead of

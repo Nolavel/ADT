@@ -140,6 +140,9 @@ class _Column:
 @export_group("Animation")
 ## Ink in. The blobs' own stagger rides inside this, in the shader.
 @export var appear_duration: float = 0.8
+## The first panel entrance waits for the scene to settle. Later reopens stay
+## immediate so toggling the hints does not repeat a startup-only pause.
+@export var initial_appear_delay: float = 1.5
 ## Text arrives by tween only after every ink piece has appeared.
 @export var content_fade_in_duration: float = 0.4
 ## The fresh blot starts slightly undergrown, then spreads after its text has
@@ -203,7 +206,7 @@ func _ready() -> void:
 	_rebuild()
 	_reposition()
 	if visible:
-		_begin_appear()
+		_begin_appear(initial_appear_delay)
 
 
 ## The title is a landmark, not content: small, spaced out, and the same dim
@@ -351,12 +354,14 @@ func _collect_row_keys(active: Array[KeyHintEntry]) -> Array[StringName]:
 
 ## Ink first, then text. The content tween is chained after the full ink tween,
 ## so the text cannot fade in over a partially assembled blot.
-func _begin_appear() -> void:
+func _begin_appear(delay: float = 0.0) -> void:
 	_kill_transition()
 	_content.modulate.a = 0.0
 	_set_blot_entrance_seed(randf())
 	_set_blot_radius_scale(initial_blot_radius_scale)
 	_transition = create_tween()
+	if delay > 0.0:
+		_transition.tween_interval(delay)
 	_transition.tween_method(_set_blot_progress, _blot_progress(), 1.0, appear_duration)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_transition.tween_property(_content, "modulate:a", 1.0, content_fade_in_duration)\
