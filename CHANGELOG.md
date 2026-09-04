@@ -12,6 +12,14 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - Muzzle flash readability tune
+
+The non-lighting muzzle-flash quad now opens at 0.56 m instead of 0.28 m and
+lasts 0.08 s instead of 0.05 s. It remains a short shot impulse, while staying
+visible across more rendered frames; the performance-costly OmniLight3D stays off.
+
+> *Вспышка выстрела стала вдвое больше и видна дольше; динамический свет выключен.*
+
 ## 2026-09-04 - Key hints scatter, speak, then spread
 
 Each opening now randomises the ink pieces' order across the panel instead of
