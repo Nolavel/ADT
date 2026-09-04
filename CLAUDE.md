@@ -285,6 +285,16 @@ one is how this file drifted four times.
 
 - **`docs/NOW.md` is read first in every session and updated last.** Capped at
   80 lines.
+- **Claude Code and Codex operate as peer implementation agents.** The author
+  owns priorities and approvals; neither agent silently overrules the other's
+  recorded work. Before overlapping a live change, read the working tree,
+  `docs/NOW.md`, and the relevant `CHANGELOG.md` entries to establish a clear
+  file boundary or handoff.
+- **Use OODA for every non-trivial task:** **Observe** the live tree, current
+  contracts, and runnable evidence; **Orient** against scope and invariants;
+  **Decide** a smallest verifiable step and its acceptance criteria; **Act** by
+  changing, verifying, and recording that step. New evidence restarts the loop;
+  it is never rationalised away.
 - **`CHANGELOG.md` entries are 3–6 lines.** Anything longer — measurements, what
   turned out false, why it was hard — belongs in `docs/postmortems/`.
 - **`CLAUDE.md` carries invariants only, in the present tense.** No history, no

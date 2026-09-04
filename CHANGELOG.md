@@ -12,6 +12,15 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Claude Code and Codex share the OODA operating loop
+
+`CLAUDE.md` now states that Claude Code and Codex are peer implementation
+agents, with the author retaining priorities and approvals. Non-trivial work
+uses Observe → Orient → Decide → Act: establish live evidence, test the scope
+against invariants, take the smallest verifiable step, then record its result.
+
+> *Claude Code и Codex работают на равных по циклу OODA; приоритеты и решения остаются за автором.*
+
 ## 2026-09-04 - Recognition proposed: a memory has to match who you are now
 
 Stan's ask — flight on memory should need the NPC to recognise the player as
