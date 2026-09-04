@@ -3,34 +3,6 @@
 [ext_resource type="Script" uid="uid://dxfo0lkh8qq6" path="res://ui/hud/player_hud/key_hint_entry.gd" id="1_entry"]
 [ext_resource type="Script" uid="uid://de37mj8lo13e1" path="res://ui/hud/player_hud/key_hints_catalog.gd" id="2_catalog"]
 
-[sub_resource type="Resource" id="Resource_kh01"]
-script = ExtResource("1_entry")
-action_name = &"pause"
-description = "Pause menu"
-category = 2
-sort_order = 900
-
-[sub_resource type="Resource" id="Resource_kh02"]
-script = ExtResource("1_entry")
-action_name = &"debug_save"
-description = "Debug save"
-category = 2
-sort_order = 910
-
-[sub_resource type="Resource" id="Resource_kh03"]
-script = ExtResource("1_entry")
-action_name = &"debug_load"
-description = "Debug load"
-category = 2
-sort_order = 911
-
-[sub_resource type="Resource" id="Resource_kh04"]
-script = ExtResource("1_entry")
-action_name = &"toggle_key_hints"
-description = "Toggle this panel"
-category = 2
-sort_order = 920
-
 [sub_resource type="Resource" id="Resource_kh05"]
 script = ExtResource("1_entry")
 action_name = &"interact"
@@ -154,4 +126,4 @@ sort_order = 26
 
 [resource]
 script = ExtResource("2_catalog")
-entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh01"), SubResource("Resource_kh02"), SubResource("Resource_kh03"), SubResource("Resource_kh04"), SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21"), SubResource("Resource_kh22"), SubResource("Resource_kh23"), SubResource("Resource_kh24")])
+entries = Array[ExtResource("1_entry")]([SubResource("Resource_kh05"), SubResource("Resource_kh06"), SubResource("Resource_kh07"), SubResource("Resource_kh12"), SubResource("Resource_kh13"), SubResource("Resource_kh14"), SubResource("Resource_kh15"), SubResource("Resource_kh16"), SubResource("Resource_kh17"), SubResource("Resource_kh18"), SubResource("Resource_kh19"), SubResource("Resource_kh20"), SubResource("Resource_kh21"), SubResource("Resource_kh22"), SubResource("Resource_kh23"), SubResource("Resource_kh24")])

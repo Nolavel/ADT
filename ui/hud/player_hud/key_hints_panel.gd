@@ -9,19 +9,16 @@
 # THE ORDER OF THE TRANSITION IS THE CONTRACT, not decoration: ink in, then
 # text; text out, then ink. Hiding is a CHAIN rather than two parallel tweens
 # with the text merely running shorter — an overlap does not read as a sequence.
-# The ink itself is one ColorRect over vfx/shaders/key_hints_blot.gdshader,
-# driven by a single `progress` uniform.
+# The ink itself is one ColorRect over vfx/shaders/key_hints_blot.gdshader.
+# Its eight pieces share one progress scale, but a wide stagger makes their
+# assembly visible before they fuse into the finished blot.
 #
 # Instanced inside player_hud.tscn rather than added as a separate
 # WORLD_UI_SCENES entry — PlayerHUD already owns a world-UI lifecycle, a
 # second one would duplicate it for no reason.
 #
-# THREE COLUMNS, NOT ONE RIBBON: a flat horizontal row list forces the eye
-# to scan the whole thing, since left-to-right position only ever encoded
-# sort_order, not meaning. One column per KeyHintEntry.Category
-# (MOVEMENT/ACTION/SYSTEM), built by iterating Category.values() — so
-# column ORDER comes from the enum's declaration order, not a case
-# statement here. Within a column, rows still sort by sort_order.
+# TWO SECTIONS, NOT A RIBBON: movement and action hints stack in the narrow
+# corner panel. System/debug controls are deliberately not advertised here.
 #
 # DATA-DRIVEN: rows come from a KeyHintsCatalog resource (catalog export,
 # res://data/key_hints.tres by convention), not a hardcoded per-state
@@ -115,13 +112,14 @@ class _Column:
 @export var key_description_gap: float = 6.0
 ## Vertical gap between rows within one column.
 @export var row_gap: float = 8.0
-## Vertical gap between one category block and the next. The three categories
-## are stacked, not side by side — see _build_columns().
+## Vertical gap between the movement and action blocks.
 @export var category_gap: float = 14.0
 ## Space between the text and the edge of the panel's own rect.
 @export var content_padding: Vector2 = Vector2(18.0, 14.0)
 
 @export_group("Placement")
+## Uniform visual scale for ink and text, keeping the whole panel compact.
+@export var panel_scale: float = 0.75
 ## Distance from the right edge of the screen to the panel.
 @export var right_margin: float = 24.0
 ## Distance from the bottom of the screen to the panel.
@@ -142,9 +140,7 @@ class _Column:
 @export_group("Animation")
 ## Ink in. The blobs' own stagger rides inside this, in the shader.
 @export var appear_duration: float = 0.8
-## How long after the ink starts before the text begins to arrive. The ORDER is
-## the point of this whole section — blots first, then text.
-@export var content_fade_in_delay: float = 0.3
+## Text arrives by tween only after every ink piece has appeared.
 @export var content_fade_in_duration: float = 0.4
 ## Text out. Runs to completion BEFORE the ink starts to go, which is the same
 ## order reversed and is why this is a chain rather than two parallel tweens.
@@ -330,17 +326,16 @@ func _collect_row_keys(active: Array[KeyHintEntry]) -> Array[StringName]:
 	return keys
 
 
-## Ink first, then text — the order Stan asked for, and the reason the text tween
-## carries a delay instead of starting with the blots.
+## Ink first, then text. The content tween is chained after the full ink tween,
+## so the text cannot fade in over a partially assembled blot.
 func _begin_appear() -> void:
 	_kill_transition()
 	_content.modulate.a = 0.0
 	_transition = create_tween()
-	_transition.set_parallel()
 	_transition.tween_method(_set_blot_progress, _blot_progress(), 1.0, appear_duration)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	_transition.tween_property(_content, "modulate:a", 1.0, content_fade_in_duration)\
-			.set_delay(content_fade_in_delay)
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 
 
 ## Text out to completion, THEN the ink. A chain, not two parallel tweens with
@@ -556,11 +551,12 @@ func _reposition() -> void:
 	_content.position = content_padding
 	_content.size = content_min
 	size = content_min + content_padding * 2.0
+	scale = Vector2.ONE * panel_scale
 
 	var viewport_size := get_viewport_rect().size
 	global_position = Vector2(
-			viewport_size.x - size.x - right_margin,
-			viewport_size.y - size.y - bottom_margin
+			viewport_size.x - size.x * panel_scale - right_margin,
+			viewport_size.y - size.y * panel_scale - bottom_margin
 	)
 
 	## The ink is anchored to the panel's bottom-right and grows up and left,

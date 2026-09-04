@@ -12,6 +12,15 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Key hints assemble from ink pieces, then speak
+
+The compact HUD now staggers the ink blot long enough for its pieces to read,
+then fades the text in only after the blot has fully assembled; hiding reverses
+that sequence. The System section and its debug rows are gone, leaving only
+Movement and Action hints. `docs/scope_horizon.md` records the visible contract.
+
+> *Подсказки собираются из чернильных кусков, затем проявляют текст; системные строки убраны.*
+
 ## 2026-09-04 - Claude Code and Codex share the OODA operating loop
 
 `CLAUDE.md` now states that Claude Code and Codex are peer implementation

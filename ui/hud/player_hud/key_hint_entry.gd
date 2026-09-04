@@ -26,13 +26,9 @@ class_name KeyHintEntry
 ## A plain bool on the entry itself could not express "don't care".
 enum AimRequirement { ANY, AIMING_ONLY, NOT_AIMING }
 
-## Which column of the panel this entry belongs to. Column order on screen
-## follows THIS ENUM'S DECLARATION ORDER (KeyHintsPanel builds one column
-## per Category.values(), in that order) — reordering the panel's columns
-## means reordering these members, not touching KeyHintsPanel. Three, not
-## four: a dedicated camera column would only ever hold one or two rows, so
-## camera/view entries live in ACTION.
-enum Category { MOVEMENT, ACTION, SYSTEM }
+## Section order follows THIS ENUM'S declaration order. Camera/view actions
+## live in ACTION; system and debug controls are deliberately not advertised.
+enum Category { MOVEMENT, ACTION }
 
 ## Action name as registered in InputMap (Project Settings → Input Map).
 ## Used when this entry describes a SINGLE action. Ignored (action_names
@@ -50,8 +46,8 @@ enum Category { MOVEMENT, ACTION, SYSTEM }
 ## ACTION, not MOVEMENT's or Category's own first member: chosen so every
 ## entry authored before this field existed — none of which set it — lands
 ## somewhere plausible rather than in a column its content doesn't suggest.
-## Column order is still MOVEMENT/ACTION/SYSTEM (Category's declaration
-## order); this default is a separate choice from that order.
+## Section order is MOVEMENT/ACTION (Category's declaration order); this
+## default is a separate choice from that order.
 @export var category: Category = Category.ACTION
 
 @export_group("Visible when")
