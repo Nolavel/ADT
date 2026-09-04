@@ -63,8 +63,10 @@ archetype whose density needs tuning.
 strata where they belong. Worth more, likelier to notice an approach in
 time.
 
-**Patrolman.** Human counterpart to the drone. Does not need to see anything
-to matter — the archetype is a moving no-go zone. Must be identifiable at
+**Patrolman.** Human counterpart to the drone, and — with the drones — this is
+**BRPD**, the lower rung of law enforcement: it is dispatched to a PLACE and
+never receives a suspect (`docs/blackrock_authorities.md`). Does not need to
+see anything to matter — the archetype is a moving no-go zone. Must be identifiable at
 maximum distance: the player has to be able to route around one before
 committing to anything.
 

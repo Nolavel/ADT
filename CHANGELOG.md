@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - BRPD, BRMA and the iris get names; sound's first gate closes
+
+`docs/blackrock_authorities.md`: BRPD responds to a PLACE and is already
+half-built (drones + `Patrolman`), BRMA resolves a PERSON and is
+`attribution.md` §5's deferred Attribution with a name, `IrisAccess` is a
+credential seam whose every check is also an `IRIS`-quality observation — a
+door is a perfect witness. Sound: `visual_language.md` §5 now records which
+onomatopoeia survive audio. Reinforcement, not duplication. Paper only.
+
+> *У правопорядка появились имена. Звук — усиление, а не дублирование.*
+
 ## 2026-09-04 - Recognition proposed: a memory has to match who you are now
 
 Stan's ask — flight on memory should need the NPC to recognise the player as

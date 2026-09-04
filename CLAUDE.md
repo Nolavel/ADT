@@ -37,6 +37,7 @@ Startup scene: `res://world/world.tscn`.
 | `docs/GDSCRIPT_STYLE.md` | Code conventions; stricter than the official Godot guide in places |
 | `input_map.md` | Single source of truth for input bindings |
 | `docs/COLLISION_LAYERS.md` | Single source of truth for 3D physics layers and the named query-mask profiles |
+| `docs/blackrock_authorities.md` | BRPD / BRMA / `IrisAccess` — the two rungs of law enforcement and the credential seam. Design only; BRPD is the half that already exists. |
 | `docs/attribution.md` | Observation → Incident → Report → Attribution design. Only §7 is in the horizon; the rest is deliberately unbuilt. |
 | `docs/visual_language.md` | How the game looks and states things — comic/noir frame, onomatopoeia rules. Artist-facing. |
 | `docs/3D_ART_BIBLE.md` | **Immutable visual style contract.** Read before any asset-creation or Blender task; `docs/blender_task_template.md` says how to apply it. |

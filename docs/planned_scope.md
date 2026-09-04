@@ -158,6 +158,44 @@ next review, they go.
 
 Named here so the absence is deliberate rather than overlooked:
 
+### On the table as of 2026-09-04
+
+Swept deliberately rather than recalled, because two of these had been
+discussed and then dropped out of every subsequent conversation.
+
+- **Law enforcement, named at last.** BRPD (drones, `Patrolman`, and cameras
+  that do not exist yet) and BRMA (marshals as detectives, the actor for
+  `attribution.md` §5's deferred Attribution), plus `IrisAccess` as the seam
+  where a credential is demanded. Design written, nothing built —
+  `docs/blackrock_authorities.md`. BRPD is the one item here that is already
+  half-real in code.
+- **Sound.** Condition (1) of `work_plan_2026-09.md`'s Out-of-plan entry is
+  **closed** as of 2026-09-04: `visual_language.md` §5 now records which
+  onomatopoeia survive audio and that the answer is reinforcement. Condition
+  (2) — `SoundSystems` as an argued amendment to the closed autoload set —
+  stands, and is the actual gate. **I had read that entry and never raised it;
+  Stan did.**
+- **Cameras.** The cheapest BRPD unit and the thing that turns "surveillance
+  density" from a word into a gradient. No design beyond the paragraph in
+  `blackrock_authorities.md` §2.
+- **Recognition.** Proposed 2026-09-04 in
+  `docs/architecture/npc_and_incidents.md` — a memory must match who the player
+  is NOW. Awaiting approval. Note before building: only the weapon lever is
+  playable, since no second garment exists.
+- **Aim, stage 2.** The gameplay shot is correct; the weapon pose is not.
+  Measured at the firing frame: 5.96 deg level, 30.61 up, 32.94 down, with the
+  barrel locked to the body's horizontal axis. What is missing is pitch and
+  only pitch — `docs/architecture/player_and_camera.md`.
+- **NPC spawn (work plan Task 7).** Deferred 2026-09-04 **for lack of content,
+  not lack of intent**: there is no block worth spawning into until level
+  design produces a tower block. The distinction matters — "postponed because
+  nothing to spawn into" and "postponed because we changed our minds" look
+  identical a month later.
+- **`core/map_source/map_data.gd`.** A `MapData` resource schema with no
+  producer and no consumer, found by the new orphan detector and whitelisted
+  rather than deleted, since it sits in the level-design tool set `CLAUDE.md`
+  marks do-not-refactor. Wire it or drop it — Stan's call.
+
 - **NPC and AI (remaining).** Real navigation (navmesh, not single raycast),
   memory beyond one ALERT timer, reaction that spreads beyond one drone's
   radius, full witness system. Design: `NPC_REACTIONS.md`, `core_loop.md` §7.

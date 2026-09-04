@@ -4,12 +4,13 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Stan's tuning calls, applied and measured.** Witness ceilings lowered to
-3 / 6 / 11 so all four rungs fit inside Clerk's 16 m vision — **`attribution.md`
-§7 case C passes for the first time since it was written**. Memory lifetimes put
-on a clean x3 with a floor of 12: **12 / 36 / 108 / 324** game hours. Next on the
-branch: the orphan-script CI detector (3a), then typing (3b), then the
-recognition proposal. Branch `claude/witness-ceilings-and-memory`.
+**Paper: the authorities, and the sound decision.** BRPD / BRMA / `IrisAccess`
+written into `docs/blackrock_authorities.md` — BRPD turns out to be half-built
+already (drones + `Patrolman`), BRMA is `attribution.md` §5's deferred
+Attribution with a name, and the iris is a credential whose every check is also
+an `IRIS`-quality observation. Sound: condition (1) of the work plan's
+Out-of-plan entry is closed — reinforcement, not duplication. Branch
+`claude/authorities-and-sound`.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -18,6 +19,9 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   recorded in the plan: OBSERVE closes only half this month.
 - 6b (memory surviving an encounter) is therefore the month's main substantive
   work, not a second half of 6.
+- **Sound is reinforcement, not duplication** (Stan, 2026-09-04). The comic word
+  survives audio; `ComicEffectData` still grows no sound field. `SoundSystems`
+  as an autoload is the remaining gate and needs an argued amendment.
 
 ## Found, not fixed
 
