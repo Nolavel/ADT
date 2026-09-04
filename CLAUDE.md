@@ -141,6 +141,11 @@ is in `docs/ENTIRE_SETUP.md`.
   banner header on systems, `TODO(scope):` form. If it deviates, say so and
   offer the correction as a separate step. Do not silently reformat, and do not
   bundle a style pass into a behaviour change.
+- **Never write reasoning into `project.godot`.** The editor rewrites that file
+  from `ProjectSettings` whenever settings are saved, and the serialiser emits
+  key/value pairs only — comments do not survive, and the settings do. Values
+  there, rationale in `docs/`.
+  → `docs/postmortems/project_godot_comments.md`
 - **`*.import` files are committed; `.godot/` is not.** Godot 4 stores an
   asset's UID inside its `.import` file, so ignoring them makes every clone mint
   its own while the `.tscn` files keep the committed ones.

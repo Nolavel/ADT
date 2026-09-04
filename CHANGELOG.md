@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - project.godot does not keep comments, and that cost a measurement
+
+Task 3b's `[debug]` block had fifteen lines above it explaining why those
+warnings are warnings and — established by measurement — that they are
+editor-only so CI can never see them. Commit `e3a2be4` shows the file at -16
+lines with both settings intact: the editor rewrites `project.godot` from
+`ProjectSettings` and the serialiser emits key/value pairs only. Rule in
+`CLAUDE.md`, evidence in a post-mortem.
+
+> *Редактор переписывает project.godot и стирает комментарии. Значения туда, обоснование — нет.*
+
 ## 2026-09-04 - The shot leaves the muzzle and goes where the camera looks
 
 There was no pitch anywhere: `get_facing_direction()` has a structurally zero Y
