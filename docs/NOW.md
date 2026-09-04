@@ -23,6 +23,14 @@ Stan's.
 
 ## Found, not fixed
 
+- **`queue_free()` on a live NPC mid-reaction crashes the engine.** Segfault
+  every time, three runs, no stack. Found while probing 6b; nothing in the game
+  does it (streaming frees whole cells), so it is not on the path of any task.
+- **The hand-placed crowd never streams out.** `DoggerlandCrowdBlock` sits
+  inside `StreamContainer` but is authored in `world.tscn`, so `StreamingSystems`
+  never frees it. "Survives a block unload" cannot be demonstrated on it — 6b
+  proves the equivalent instead: a memory is addressed by id and holds for an
+  actor with no node in the tree at all.
 - `StreamingSystems` is an autoload with a default `process_mode`, so its
   polling halts under menu pause. Correct today; wrong once an inventory has to
   run over a live world. Design question, not a bug — see the plan, Out of plan.
@@ -50,15 +58,10 @@ Stan's.
   `set_player_reference()`, the ring and the arrow) with no caller since
   click-to-move was removed. Left intact on purpose; whether a destination
   marker returns is a design question.
-- `observation_level` is written and read only by the perception debug panel
-  and one log line. Task 6a gives it its first gameplay consumer.
-- Task 4 hits neither of its two numeric targets, and both need a decision
-  rather than more cutting. `CLAUDE.md` is **17 059 B** against a target of
-  8–10 KB: what is left after the archaeology went is rules, so closing the gap
-  means RELOCATING invariants into `docs/architecture/`. The two controllers are
-  at **55%** and **44%** comment against a target of <30%: their inline comments
-  are mostly present-tense rationale, not history, and hitting 30% means
-  deleting ~557 and ~425 comment lines of it.
+- Task 4 misses both numeric targets and both need a decision, not more
+  cutting: `CLAUDE.md` is ~17 KB against 8–10 KB, and the two controllers are
+  55% / 44% comment against <30%. Closing either means relocating or deleting
+  present-tense invariants.
 - The key-hints panel's own header called it "a working tool for showing the
   build to a reviewer, not final UI", and justified `SystemFont` on that basis.
   After this work the first is no longer true and the second is arguable — a

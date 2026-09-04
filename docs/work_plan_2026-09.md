@@ -307,7 +307,7 @@ measurable result: punch someone, walk away, come back, the world is different.
 - [x] Proposal: what a single NPC remembers, for how long, and in what unit
       (game-hours, per `GameClockSystem` — not engine uptime, per the
       `IncidentRegistry` precedent). Keyed on the identity model chosen in Task 5.
-- [ ] One consequence that survives a block unload and a save/load round trip
+- [x] One consequence that survives a block unload and a save/load round trip
 - [ ] No propagation between NPCs in this task. One NPC remembering is the slice.
 
 **Done when:** Stan can punch someone, walk away, come back, and the world is

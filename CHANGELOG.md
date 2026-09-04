@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Memory moves off the NPC and starts to age (work plan Task 6b)
+
+`_remembers_player` was a bool that died with its node; it is a query into
+`ActorMemoryRegistry` now, and the `_decide()` branch it drives is untouched.
+Behaviour DID change, deliberately: memory ages. A knockdown files at FACE
+(72 game hours) whatever the cone saw, a distant sighting at SILHOUETTE (6).
+Probed in-world: punch, flee on sight, a bystander that does not, save round
+trip, and expiry — 15 assertions, all passing.
+
+> *Память ушла с ноды в реестр и начала стареть. 15 проверок в мире, все зелёные.*
+
 ## 2026-09-03 - ActorMemoryRegistry: personal memory gets a durable home
 
 A `WORLD_SYSTEM_SCRIPTS` entry beside `IncidentRegistry`, resolved by group,
