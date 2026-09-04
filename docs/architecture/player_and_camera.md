@@ -92,11 +92,6 @@ camera yaw within a smoothing lag. Only the vertical half was missing outright.
 - **`_shot_origin()`** is the muzzle when a weapon is in the hand, the shoulder
   otherwise — `draw_attach_delay` leaves ~0.22 s where the weapon is out and the
   mesh is not built.
-- **Shot feedback is not conditional on the held mesh.** `ShotEffectSystem` is
-  passed directly through `WorldContext`, not discovered as a best-effort group
-  lookup. If the mesh is still in `draw_attach_delay`, the flash and tracer use
-  `_shot_origin()`'s shoulder fallback instead of disappearing; once the muzzle
-  exists, the flash follows it for its brief lifetime.
 - **`_shot_direction(origin)`** is the full-3D direction from origin to the aim
   point, with **three refusals that all fall back to `get_facing_direction()`**,
   which is exactly the pre-existing behaviour: no component; a ZERO answer; and a
@@ -157,3 +152,4 @@ Every modifier that ever gets added must sit on **`OriginalSkeleton`**, after
 `RetargetModifier3D`, where the existing `LookAt` already is — `Head` is bone 5
 there and 6 in `GeneralSkeleton`, and a modifier on the wrong one is silently
 overwritten by the retarget every frame.
+

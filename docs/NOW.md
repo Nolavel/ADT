@@ -39,9 +39,8 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   than a CI gate. All 20 untyped returns are typed now; **zero left** in game
   code. The warnings-as-errors flip is still Stan's call, unasked.
 - `ShotEffectSystem` now uses a shadowless 3 m `OmniLight3D` for its 0.08 s,
-  0.56 m muzzle flash (energy 4.0). Player receives it through `WorldContext`;
-  shots use the shoulder fallback while a muzzle is unavailable. It needs an
-  in-game Forward+ FPS/readability check; Compatibility capture cannot judge it.
+  0.56 m muzzle flash (energy 4.0). It needs an in-game Forward+ FPS/readability
+  check; Compatibility capture cannot judge the light itself.
 - The tick is only visible in a 0.5 m band between `intent_radius` (2.5 m) and
   `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
   seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay

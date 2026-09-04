@@ -317,9 +317,9 @@ var _air_time: float = 0.0
 ## instantiated by world.gd before the systems finish coming up, and this
 ## node never receives a WorldContext of its own. Null is a silent no-op.
 var _comic_effects: ComicEffectSystem = null
-## ShotEffectSystem is supplied by WorldContext. A firearm shot owes visual
-## feedback even while its held mesh is still attaching, so this is not a
-## best-effort group lookup like the optional comic reactions.
+## ShotEffectSystem, resolved lazily by group for the same reason and on the
+## same terms as _comic_effects above. Null is a silent no-op: a shot with no
+## streak is a shot that still happened.
 var _shot_effects: ShotEffectSystem = null
 
 ## Last health reading seen through health_changed, so a DECREASE can be
@@ -489,7 +489,6 @@ func _physics_process(delta: float) -> void:
 func on_world_ready(context: WorldContext) -> void:
 	var clock := context.get_system(GameClockSystem) as GameClockSystem
 	_health.setup(clock)
-	_shot_effects = context.get_system(ShotEffectSystem) as ShotEffectSystem
 
 	## HealthComponent and StaminaComponent know nothing about each other —
 	## player.gd owns both, so it's the only place the tie belongs. See
@@ -1564,21 +1563,21 @@ func _resolve_shot() -> void:
 
 ## Flash at the barrel, streak from the barrel to wherever the round stopped.
 ##
-## The held mesh is absent during draw_attach_delay, but a round can still be
-## fired then. In that short window the shoulder origin is a visible fallback;
-## visual readiness must not erase the firing feedback.
+## Refused outright when there is no barrel to fire from: EquipmentVisuals
+## holds the held mesh back for draw_attach_delay after the weapon is out, and
+## an item can have no mesh at all. Both are the "the state is correct and
+## there is nothing to show" case held_mesh already answers with silence.
 func _spawn_shot_visual(target: NPCBase) -> void:
+	if _equipment_visuals == null or not _equipment_visuals.has_muzzle():
+		return
 	if _shot_effects == null:
-		var fallback_effects := get_tree().get_first_node_in_group(
+		_shot_effects = get_tree().get_first_node_in_group(
 			ShotEffectSystem.GROUP_SHOT_EFFECT_SYSTEM
 		) as ShotEffectSystem
-		_shot_effects = fallback_effects
 	if _shot_effects == null:
 		return
-	var has_muzzle := _equipment_visuals != null and _equipment_visuals.has_muzzle()
-	var origin := _shot_origin()
-	var muzzle_source: EquipmentVisualsComponent = _equipment_visuals if has_muzzle else null
-	_shot_effects.spawn_shot(origin, _shot_visual_endpoint(origin, target), muzzle_source)
+	var muzzle := _equipment_visuals.get_muzzle_position()
+	_shot_effects.spawn_shot(muzzle, _shot_visual_endpoint(muzzle, target), _equipment_visuals)
 
 
 ## Where the streak stops. The target's shoulder when there is one, otherwise
