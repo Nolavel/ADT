@@ -65,7 +65,7 @@ var state_target_transform: Transform3D
 var state_duration: float = 0.6
 
 
-func _ready():
+func _ready() -> void:
 	projection = PROJECTION_PERSPECTIVE
 
 	_on_foot = OnFootCameraComponent.new()
@@ -99,7 +99,7 @@ func _ready():
 	make_current()
 
 
-func _process(delta):
+func _process(delta: float) -> void:
 	if not target:
 		return
 
@@ -120,7 +120,7 @@ func _process(delta):
 	_apply_shake_on_top(delta)
 
 
-func _physics_process(delta):
+func _physics_process(delta: float) -> void:
 	if not target:
 		return
 	if state_animating or current_state == CameraState.MENU_PAUSE:
@@ -184,7 +184,7 @@ func _on_player_state_mode_changed(old_mode, new_mode) -> void:
 # ============================================
 # УНИФИЦИРОВАННАЯ АНИМАЦИЯ GAME <-> MENU_PAUSE (25% - 50% - 25%)
 # ============================================
-func _update_state_animation(delta: float):
+func _update_state_animation(delta: float) -> void:
 	state_anim_time += delta
 	var t: float = 0.0
 	var phase1 = state_duration * 0.33

@@ -163,7 +163,9 @@ already records as unreached code.
 
 - [ ] Enable `untyped_declaration` and `unsafe_method_access` as **warnings** in
       `project.godot`. Do **not** enable warnings-as-errors.
-- [ ] Separate commit: fix the 38 sites outside `tools/`
+- [x] Separate commit: fix the 38 sites outside `tools/`. **Done 2026-09-04 —
+      the real count was 20**, not 38: `target_indicator.gd` 15,
+      `camera_follow.gd` 4, `navigation_component.gd` 1. Zero left.
 - [ ] Then propose the warnings-as-errors flip to Stan as its own decision
 
 **Done when:** CI fails on a deliberately orphaned test file and passes on `main`.

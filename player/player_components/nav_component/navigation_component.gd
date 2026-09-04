@@ -22,7 +22,7 @@ signal destination_reached
 signal waypoint_reached(index: int)
 
 # --- Initialization ---
-func _ready():
+func _ready() -> void:
 	parent_body = get_parent() as Node3D
 	
 	if not parent_body:

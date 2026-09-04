@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Every function in game code declares what it returns (Task 3b)
+
+The 20 remaining untyped returns typed: `target_indicator.gd` 15,
+`camera_follow.gd` 4, `navigation_component.gd` 1. Zero left outside `tools/`.
+The plan said 38; the real count was 20. Correcting myself twice over: I called
+`target_indicator.gd` dead code — it is live, `hud_component.tscn` runs it, so
+15 of these were on a working file. Diff touches nothing but signatures,
+checked line by line.
+
+> *Все функции игрового кода объявляют тип возврата. `target_indicator` живой.*
+
 ## 2026-09-04 - Orphan scripts are a CI failure now (work plan Task 3a)
 
 `tools/ci/find_orphan_scripts.py` plus a step in `godot.yml`. Matches by path,

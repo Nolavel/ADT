@@ -36,8 +36,8 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   and the render probe is Compatibility, where colour is not trustworthy. Needs
   Stan's eye on Forward+ before any number moves.
 - Task 3b's warnings are editor-only, never CLI, so they buy a standard rather
-  than a CI gate. **20** untyped returns left — `target_indicator.gd` 15,
-  `camera_follow.gd` 4, `navigation_component.gd` 1.
+  than a CI gate. All 20 untyped returns are typed now; **zero left** in game
+  code. The warnings-as-errors flip is still Stan's call, unasked.
 - `ShotEffectSystem.flash_light_energy` ships at 0.0 — a live `OmniLight3D` at
   the muzzle is a real cost at the FPS target and Compatibility cannot judge it.
   Unreviewed on Forward+.
@@ -45,11 +45,10 @@ recognition proposal. Branch `claude/witness-ceilings-and-memory`.
   `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
   seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay
   call, unanswered since 2026-09-03.
-- `core/ui/target_indicator/target_indicator.gd` still carries the whole
-  move-destination API (`show_at_position()`, `show_invalid_click()`,
-  `set_player_reference()`, the ring and the arrow) with no caller since
-  click-to-move was removed. Left intact on purpose; whether a destination
-  marker returns is a design question.
+- `target_indicator.gd`'s move-destination HALF is unused (`show_at_position()`,
+  `show_invalid_click()`, `set_player_reference()`) since click-to-move went.
+  **The file itself is live** — `hud_component.tscn` runs it and calls
+  `hide_indicator()`. I called the whole file dead twice; it is not.
 - Task 4 misses both numeric targets and both need a decision, not more
   cutting: `CLAUDE.md` is ~17 KB against 8–10 KB, and the two controllers are
   55% / 44% comment against <30%. Closing either means relocating or deleting
