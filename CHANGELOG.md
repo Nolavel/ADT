@@ -12,6 +12,17 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Witness ceilings fit the envelope; memory lifetimes go x3
+
+Stan's two tuning calls. Ceilings 30/10/5 -> 11/6/3, so all four rungs land
+inside Clerk's 16 m vision instead of SILHOUETTE sitting past 30 m where no
+witness can see — **`attribution.md` §7 case C passes for the first time since
+it was written**. Memory lifetimes 6/24/72/168 -> **12/36/108/324**: the old
+set decelerated (x4, x3, x2.3) and only looked like a progression. Swept, not
+argued; §7's sample distances moved with the tuning.
+
+> *Потолки влезли в конверт, все четыре ступени достижимы. Память — ровное ×3.*
+
 ## 2026-09-04 - Task 6a closed: §7 re-measured, and two findings beyond the table
 
 A/B/D/E pass unchanged, C still fails and has not moved — nothing since August

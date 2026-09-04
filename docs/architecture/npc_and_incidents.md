@@ -174,13 +174,22 @@ witness to read its own observation quality.
 
 | Seen as | Remembered for, game hours |
 |---|---|
-| `SILHOUETTE` | 6 |
-| `EQUIPMENT` | 24 |
-| `FACE` | 72 |
-| `IRIS` | 168 |
+| `SILHOUETTE` | 12 |
+| `EQUIPMENT` | 36 |
+| `FACE` | 108 |
+| `IRIS` | 324 |
 
-First approximations, to be tuned by playing. A hard count cap sits behind them,
-mirroring `IncidentRegistry.max_incidents`.
+**A clean x3, and the shape is the point.** The first pass was 6 / 24 / 72 / 168,
+which reads as a rising progression and is not one: its ratios are x4, x3, x2.3,
+so it DECELERATES and each better look bought proportionally less than the one
+before. Retuned 2026-09-04 (Stan: exponential, floor 12 rather than 6). Values
+tune by playing; what does not move is that a worse look must decay faster, or
+`observation_level` is not doing anything and the channel is decorative. A hard
+count cap sits behind them, mirroring `IncidentRegistry.max_incidents`.
+
+The `SILHOUETTE` row was unreachable on the witness path until the same day: the
+quality ceilings were retuned to 3 / 6 / 11 so every rung fits inside the 16 m
+witness envelope. See `docs/attribution.md` §7.
 
 **Being hit is its own case.** A knockdown files a memory at `FACE` strength
 whatever the cone said. The reasoning is already in the controller: the victim

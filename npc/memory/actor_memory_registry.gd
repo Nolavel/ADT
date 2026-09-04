@@ -44,19 +44,27 @@ signal memory_recorded(memory: ActorMemory)
 
 ## How long a memory lasts, in GAME hours, by how well the holder saw.
 ##
-## First approximations, to be tuned by playing — the same status
-## IncidentRegistry.max_incident_age has always had. What is NOT arbitrary is
-## the shape: a worse look must decay faster, or observation_level is not
-## actually doing anything and the whole channel is decorative.
+## THE SHAPE IS THE POINT, and it is a clean x3 rather than a hand-picked
+## curve. The first pass was 6 / 24 / 72 / 168, which reads as a rising
+## progression and is not one — the ratios there are x4, x3, x2.3, i.e. it
+## DECELERATES, so each better look bought proportionally less than the one
+## before. Retuned 2026-09-04 (Stan: exponential, and the floor is 12 rather
+## than 6): a face is worth three equipments, an iris three faces, all the way
+## up. 324 game hours is 13.5 in-game days.
+##
+## Values tune by playing, the same status IncidentRegistry.max_incident_age
+## has always had. What does NOT move is that a worse look must decay faster —
+## without that, observation_level is not doing anything and the channel is
+## decorative.
 ##
 ## NONE is absent on purpose rather than mapped to zero: an actor that did
 ## not see anything files no memory, and remember() refuses that case at the
 ## door instead of writing a row that expires immediately.
 const LIFETIME_HOURS: Dictionary = {
-	WitnessReport.ObservationLevel.SILHOUETTE: 6.0,
-	WitnessReport.ObservationLevel.EQUIPMENT: 24.0,
-	WitnessReport.ObservationLevel.FACE: 72.0,
-	WitnessReport.ObservationLevel.IRIS: 168.0,
+	WitnessReport.ObservationLevel.SILHOUETTE: 12.0,
+	WitnessReport.ObservationLevel.EQUIPMENT: 36.0,
+	WitnessReport.ObservationLevel.FACE: 108.0,
+	WitnessReport.ObservationLevel.IRIS: 324.0,
 }
 
 ## Oldest memories are dropped past this count regardless of age — the hard
