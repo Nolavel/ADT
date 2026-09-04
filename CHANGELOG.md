@@ -12,6 +12,50 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Correction: the aim measurement was taken in the wrong state
+
+Yesterday's 13.31/23.74/42.92 were sampled while the weapon was merely HELD,
+and I wrote them into the architecture doc as "the size of what is left". At
+the FIRING frame it is 5.96/30.61/32.94, with `dot(barrel, facing)` ~0.997 at
+every pitch — the pose locks the weapon to the body's horizontal axis, so the
+error at the shot is very nearly the camera pitch and nothing else. Stage 2 is
+pitch only, and smaller than I sized it. Paragraph corrected in place.
+
+> *Замер был снят в позе удержания, а не в кадре выстрела. Исправлено на месте.*
+
+## 2026-09-04 - project.godot does not keep comments, and that cost a measurement
+
+Task 3b's `[debug]` block had fifteen lines above it explaining why those
+warnings are warnings and — established by measurement — that they are
+editor-only so CI can never see them. Commit `e3a2be4` shows the file at -16
+lines with both settings intact: the editor rewrites `project.godot` from
+`ProjectSettings` and the serialiser emits key/value pairs only. Rule in
+`CLAUDE.md`, evidence in a post-mortem.
+
+> *Редактор переписывает project.godot и стирает комментарии. Значения туда, обоснование — нет.*
+
+## 2026-09-04 - The shot leaves the muzzle and goes where the camera looks
+
+There was no pitch anywhere: `get_facing_direction()` has a structurally zero Y
+and the target search flattened the target too, so the barrel could never meet
+the screen centre. `get_aim_point()` (camera ray, player excluded) plus a 3D
+cone from the muzzle fixes it; `_has_clear_shot()` moves to the same origin, so
+the hit check and the tracer stop being two lines. The punch is untouched — a
+separate function, asserted rather than promised. 8/8 in-world.
+
+> *Выстрел выходит из дула и идёт туда, куда смотрит камера. Тангаж появился.*
+
+## 2026-09-04 - The muzzle number comes from Stan's marker now, not my measurement
+
+`carbine.tscn`'s `Muzzle` marker is the source and `muzzle_offset` is derived
+from it: `Mesh.transform.affine_inverse() * Muzzle.position`, needed because
+the marker is a child of the root while `Mesh` carries a 7.34 deg roll. Gives
+`(0.527037, -0.045992, 0)`. The two routes agree — my measured tip-ring centre
+sits 5.5 mm away in Y, and 2.73 cm short in X because a flash belongs just
+ahead of the barrel. Computed in code, not by hand.
+
+> *Дуло берётся с твоего маркера. Два пути сошлись в пределах 5.5 мм.*
+
 ## 2026-09-04 - Memory moves off the NPC and starts to age (work plan Task 6b)
 
 `_remembers_player` was a bool that died with its node; it is a query into

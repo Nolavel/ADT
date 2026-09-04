@@ -4,14 +4,14 @@ Last updated: 2026-09-03 by code
 
 ## Current task
 
-**Task 6b — memory that survives an encounter**, on branch
-`claude/npc-memory-survives-6b`. Not built from scratch:
-`IdleNPCController._remembers_player` already works and already changes
-behaviour; 6b gives it a clock, a durable home and a save, keyed on Task 5's
-identity model. Task 5 itself is PR #61, unmerged. In `main`: the shot visual
-(PR #60), Tasks 0, 2, 4, 3b's first half, and **only the third checkbox of
-3a** — the detector script and its CI step were never built. Task 1 stays
-Stan's.
+**Aiming, stage 1 — done and measured.** `get_aim_point()` from the camera, the
+shot and its target cone from the muzzle in full 3D, `_has_clear_shot()` moved to
+the same origin. **The gameplay shot is correct now; the weapon pose is not.**
+Re-measured in two states, because the first pass conflated them: at the FIRING
+frame it is **5.96 deg level, 30.61 up, 32.94 down**, and `dot(barrel, facing)`
+stays ~0.997 throughout — the pose locks the weapon to the body's horizontal
+axis, so the error at the shot is very nearly the camera pitch. Stage 2 is
+therefore **pitch only**. Branch `claude/aim-from-camera`, PR #63.
 
 ## Decided this week, not yet in CLAUDE.md
 

@@ -122,6 +122,11 @@ class_name ItemResource
 ## the flash appears at the mesh's own pivot until someone measures the real
 ## number.
 ##
+## DERIVED, NOT AUTHORED, where a pickup scene marks its own muzzle. The
+## carbine's number is its `Muzzle` marker in carbine.tscn converted into mesh
+## space — see docs/architecture/items_and_equipment.md. Move the marker and
+## this is recomputed; do not tune the two apart.
+##
 ## Scaling is not applied here. The offset is read in the held instance's
 ## local space, and that instance already carries HeldFit.scale, so the
 ## muzzle shrinks with the weapon without this field knowing about it.
