@@ -373,7 +373,10 @@ Recorded here so they have somewhere to be, and so nobody mistakes them for
 scheduled work.
 
 **Sound.** Extra-scope, taken up in free time, not sequenced. Two conditions when
-it happens: (1) `docs/visual_language.md` first records which onomatopoeia survive
+it happens — **(1) is closed as of 2026-09-04**: `visual_language.md` §5 now
+records which onomatopoeia survive audio, and the answer is reinforcement rather
+than duplication, split three ways across the current thirteen effects. **(2)
+still gates everything and is Stan's to grant.** Original wording: (1) `docs/visual_language.md` first records which onomatopoeia survive
 the arrival of audio — `ComicEffectSystem` currently stands in for sound, and after
 audio each word is either duplication or reinforcement, which is a decision, not a
 consequence; (2) `SoundSystems` as an autoload is an **explicit, argued amendment**

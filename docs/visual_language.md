@@ -104,10 +104,48 @@ argument any other art-direction change would.
 
 The comic word is **visual**. A future audio pass may key off the same event
 identifiers — that is a convenience, not a coupling — but the effect
-definition stays visual and must never grow a sound field.
+definition stays visual and **must never grow a sound field**. That rule is
+about the DATA and does not soften below: `ComicEffectData` gains no
+`AudioStream`, no bus name, no volume. The two layers meet on an event id and
+nowhere else.
 
 A drawn `THUD` and a heard thud are two different statements about the same
 event, and the game may well want one without the other.
+
+### Which words survive audio — decided 2026-09-04 (Stan)
+
+`work_plan_2026-09.md`'s Out-of-plan Sound entry makes this a prerequisite:
+`ComicEffectSystem` currently stands in for sound, so once audio exists every
+word is either duplication or reinforcement, **and that is a decision rather
+than a consequence**. The decision is **reinforcement**, and it splits the
+current thirteen effects three ways.
+
+**Both — the word and the sound.** Events with a real physical noise that the
+word is presently standing in for. The word survives because a comic page gets
+loud on purpose; the sound arrives underneath it, not instead of it.
+`npc_hit`, `npc_knockdown`, `npc_death`, `player_hurt`, `player_death`.
+
+**Word only.** Events that make no noise at all. A drawn word is the ONLY way
+these can be stated, which is exactly why they were drawn first.
+`npc_swing_noticed` (someone noticed), `npc_freeze`, `npc_flee`,
+`player_combat`, `player_spent`, `player_winded`. Giving any of these a sound
+would be inventing a noise the world does not make.
+
+**Word plus a sound that is already someone else's.** `npc_call` and
+`npc_transmit` are the Votive speaking. The transmission has a visible layer
+already (§6, the projector) and will have an audible one; the comic word marks
+the MOMENT it starts, which neither of the other two do.
+
+**The gates do not loosen because sound arrived.** §4's distance, count and
+cooldown limits are what keep the page readable, and "a page with eight sound
+effects on it is a page with none" is the same arithmetic whether the effects
+are drawn or heard. Audio inherits those gates; it does not get its own,
+looser set.
+
+**Still open, and not decided here:** sounds with no word at all — footsteps,
+the carbine's report, ambience per stratum. They need no comic effect and must
+never be given one to "keep the systems symmetrical"; they belong to the audio
+design pass `planned_scope.md` names, not to this document.
 
 ---
 

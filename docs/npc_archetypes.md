@@ -63,8 +63,19 @@ archetype whose density needs tuning.
 strata where they belong. Worth more, likelier to notice an approach in
 time.
 
-**Patrolman.** Human counterpart to the drone. Does not need to see anything
-to matter — the archetype is a moving no-go zone. Must be identifiable at
+**Patrolman.** Human counterpart to the drone, and — with the drones — this is
+**BRPD**, the lower rung of law enforcement: it is dispatched to a PLACE and
+never receives a suspect (`docs/blackrock_authorities.md`). BRPD works in pairs,
+one human and one robot, which makes a patrol two different sensors rather than
+one. Does not need to see anything to matter — the archetype is a moving no-go
+zone.
+
+**Nature is orthogonal to all of the above.** Human, synthetic or robot is a
+separate axis from the role, because it changes what an actor can PERCEIVE
+rather than how it behaves — reading a retina is exclusively mechanical. The
+Clerk is synthetic, which is what makes it the only archetype that can report
+an identity at all. Assignments and the rule: `docs/blackrock_authorities.md`
+§0. Must be identifiable at
 maximum distance: the player has to be able to route around one before
 committing to anything.
 
