@@ -49,8 +49,9 @@ horizon has somewhere to go instead of just disappearing from the page.
 
 - **H2. Key hints HUD.** `KeyHintsPanel` reads `PlayerState`
   (`mode`/`view_mode`/`stance`/`is_aiming`) and shows the currently valid
-  actions, data-driven from `data/key_hints.tres`, three columns
-  (Movement/Action/System). See `CHANGELOG.md`'s "H2" entries.
+  actions, data-driven from `data/key_hints.tres`, two stacked sections
+  (Movement/Action). System and debug controls are deliberately absent. See
+  `CHANGELOG.md`'s "H2" entries.
 
 - **H5. EquipmentComponent.** What is held, what is stowed, draw/holster
   state. Distinct from `InventoryComponent`. Full vertical slice delivered
