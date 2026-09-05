@@ -105,7 +105,7 @@ argument any other art-direction change would.
 The comic word is **visual**. A future audio pass may key off the same event
 identifiers — that is a convenience, not a coupling — but the effect
 definition stays visual and **must never grow a sound field**. That rule is
-about the DATA and does not soften below: `ComicEffectData` gains no
+about the DATA and does not soften below: `ComicEffectDef` gains no
 `AudioStream`, no bus name, no volume. The two layers meet on an event id and
 nowhere else.
 

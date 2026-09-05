@@ -4,19 +4,12 @@ Last updated: 2026-09-05 by Codex
 
 ## Current task
 
-**Paper: the authorities, natures, and the sound decision.** BRPD / BRMA /
-`IrisAccess` in `docs/blackrock_authorities.md`. Blackrock has humans,
-synthetics and robots, and **reading a retina is mechanical only** — which is
-why the Clerk is synthetic and the existing `IRIS` ceiling needs no code change.
-BRPD walks in pairs, one human and one robot, so a patrol is two different
-sensors. Sound: condition (1) closed — reinforcement, not duplication. Branch
-`claude/authorities-and-sound`.
-
-**Project Scanner now rejects service content before recursion.** `docs`,
-`addons`, `tools`, `.claude`, `.codex`, `.entire` and `.github` contribute no
-folders, files, scripts/LOC, scenes or bytes; notably, the full repository copy
-under `.claude/worktrees` is no longer counted twice. Formulas and UI are
-unchanged; Stan's in-editor check is pending, as is the drone crash check.
+**PR #66 is integrated; its first executable seam is Actor Nature.** The merged
+paper defines humans, synthetics and robots as an axis separate from archetype,
+with retina reading reserved for machines. The next code change will put that
+contract on `ActorBase`, mark both Clerks synthetic and police drones robotic,
+and cap human witness observations at `FACE`. The changelog entries lost during
+conflict resolution and the stale class name in the sound decision are repaired.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -38,7 +31,7 @@ unchanged; Stan's in-editor check is pending, as is the drone crash check.
   in two the day a HUMAN archetype gains `is_witness_caller`** — a decision to
   take, not a discrepancy to find.
 - **Sound is reinforcement, not duplication** (Stan, 2026-09-04). The comic word
-  survives audio; `ComicEffectData` still grows no sound field. `SoundSystems`
+  survives audio; `ComicEffectDef` still grows no sound field. `SoundSystems`
   as an autoload is the remaining gate and needs an argued amendment.
 
 ## Found, not fixed
