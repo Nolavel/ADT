@@ -44,9 +44,21 @@
 extends CharacterBody3D
 class_name ActorBase
 
+## Physical nature is orthogonal to an NPC's role/archetype. It defines
+## perception capabilities shared by every actor type.
+enum Nature {
+	HUMAN,
+	SYNTHETIC,
+	ROBOT,
+}
+
 ## Shared actor-discovery group — see the file header for why this is not
 ## "lockable" and why firearm targeting still needs can_receive_shot().
 const GROUP_PERCEIVED_ACTOR: StringName = &"perceived_actor"
+
+## Authored per actor instance rather than inherited from NPCArchetypeData:
+## role and physical nature are independent axes.
+@export var nature: Nature = Nature.HUMAN
 
 ## Stable id for this actor, authored per-instance — see the file header.
 ## Empty by default; every ActorBase placed in a scene that might ever
@@ -66,6 +78,11 @@ func _ready() -> void:
 ## player carries the same method without extending this class.
 func get_actor_id() -> StringName:
 	return actor_id
+
+
+## Whether this actor has a mechanical sensor capable of reading an iris.
+func can_read_iris() -> bool:
+	return nature != Nature.HUMAN
 
 
 ## Whether firearm target discovery may select this actor. False by default:

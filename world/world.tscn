@@ -127,6 +127,7 @@ actor_id = &"commuter_3"
 
 [node name="Clerk1" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000015 instance=ExtResource("6_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 240, 126.179, -115)
+nature = 1
 archetype = ExtResource("10_clerk")
 debug_show_health = true
 debug_show_action = true
@@ -134,6 +135,7 @@ actor_id = &"clerk_1"
 
 [node name="Clerk2" parent="StreamContainer/DoggerlandCrowdBlock" unique_id=900000016 instance=ExtResource("6_npc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 203, 141.866, -100)
+nature = 1
 archetype = ExtResource("10_clerk")
 debug_show_health = true
 debug_show_action = true

@@ -223,6 +223,13 @@ one is how this file drifted four times.
   initialized through `on_world_ready(context: WorldContext)`.
 - Prefer **explicit reference passing** over group lookups or singleton access
   by class name.
+- **Actor nature is instance data, not an archetype.** `ActorBase.Nature`
+  (`HUMAN` / `SYNTHETIC` / `ROBOT`) is authored on the concrete actor and
+  defaults to `HUMAN`; `can_read_iris()` is true only for mechanical natures.
+  Human observers therefore top out at `FACE`, while synthetics and robots may
+  reach `IRIS`. Do not put this axis on `NPCArchetypeData`: role and physical
+  nature vary independently.
+  → `docs/architecture/npc_and_incidents.md`
 - **Firearm targets opt in through `ActorBase`.** Membership in
   `GROUP_PERCEIVED_ACTOR` supplies discovery only; `can_receive_shot()` gates
   selection, `get_shot_target_point()` supplies one landmark to selection,

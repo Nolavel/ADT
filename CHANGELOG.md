@@ -12,6 +12,16 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - Actor nature enforces the mechanical iris ceiling
+
+`ActorBase.Nature` now separates HUMAN, SYNTHETIC and ROBOT from NPC role.
+Both placed Clerks are synthetic and the shared police-drone scene is robotic;
+all other actors default to human. The existing 3 / 6 / 11 m witness bands stay
+intact, but humans now stop at FACE while mechanical observers may reach IRIS.
+No autoload, manager, UI, group or resource was added; Godot was not run.
+
+> *Природа актора стала исполняемым контрактом: человек видит лицо, машина читает сетчатку.*
+
 ## 2026-09-05 - Project Scanner excludes service directories and worktrees
 
 `ProjectScanner` now skips `docs`, `addons`, `tools` and the hidden service

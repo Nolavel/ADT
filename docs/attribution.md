@@ -78,10 +78,9 @@ architecture.
 
 **The top rung needs a MECHANICAL observer.** Reading a retina is exclusively
 mechanical — a human tops out at a face and photographs the rest on their
-Votive. That does not contradict the ceilings below, because the only archetype
-that reports at all (`Clerk`) is synthetic; it would contradict them the day a
-HUMAN archetype gains `is_witness_caller`, and at that point this ladder splits
-in two. See `docs/blackrock_authorities.md` §0.
+Votive. `ActorBase.can_read_iris()` now enforces that cap on the shared distance
+ladder: a human inside the nearest band resolves `FACE`, while a synthetic or
+robot may resolve `IRIS`. See `docs/blackrock_authorities.md` §0.
 
 ### Distance sets the ceiling
 
@@ -357,7 +356,7 @@ rule by eye.
 
 | Case | Setup | Expected |
 |---|---|---|
-| A | incident 2 m from an idle NPC facing it | IRIS |
+| A | incident 2 m from a synthetic idle NPC facing it | IRIS |
 | B | 7 m | EQUIPMENT |
 | C | 12 m | SILHOUETTE |
 | D | 2 m, witness facing away | does not become a witness — no report at any quality |

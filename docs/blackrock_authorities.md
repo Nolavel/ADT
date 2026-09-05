@@ -1,12 +1,14 @@
 # Blackrock authorities — BRPD, BRMA, and the iris
 
-**Design specification. Not built.** Named here so the shape is decided before
-anything is written against it, the same way `docs/attribution.md` §5 records
-Attribution without scheduling it. Where this describes something that already
-exists, it says so and names the file.
+**Design specification with one implemented seam.** Actor nature and the
+mechanical iris ceiling described in §0 are built; BRPD / BRMA / `IrisAccess`
+remain design. Named here so the larger shape is decided before anything is
+written against it, the same way `docs/attribution.md` §5 records Attribution
+without scheduling it. Where this describes something that already exists, it
+says so and names the file.
 
 `CLAUDE.md` and `docs/architecture/*` stay authoritative for what is built.
-This document is authoritative for nothing yet.
+This document remains authoritative for the unbuilt authority design.
 
 ---
 
@@ -32,28 +34,32 @@ and behaves the same either way; what changes is the ceiling of what it can
 observe. Folding nature into the archetype list would double that table for
 every nature added, which is the signature of the wrong axis.
 
+Built contract: `ActorBase.Nature` contains `HUMAN`, `SYNTHETIC` and `ROBOT`;
+its exported `nature` defaults to `HUMAN`, and `can_read_iris()` is true for
+the two mechanical natures. The field is authored on the concrete actor scene
+or instance, not on `NPCArchetypeData`.
+
 | archetype | nature | why |
 |---|---|---|
-| Clerk | **synthetic** | the only `is_witness_caller` there is — see below |
+| Clerk1 / Clerk2 | **synthetic** | the only placed `is_witness_caller` actors — see below |
 | Patrolman | human | the human half of a BRPD pair |
 | police drone | robot | mechanical by construction already |
 | Vagrant, Thug, Commuter | human | crowd background; ceiling FACE, nothing to report with |
 
-### This is why `IRIS` is legitimate today, and what would break it
+### This is why `IRIS` is legitimate today
 
-`IdleNPCController._distance_ceiling()` returns **`IRIS`** for an observer
-inside 3 m, and `NPCArchetypeData.is_witness_caller` is true for **Clerk and
-nothing else**. Under the rule above that would be wrong for a human — so **the
-Clerk is synthetic**, and the code needs no change at all.
+`IdleNPCController._distance_ceiling()` returns **`IRIS`** inside 3 m only when
+the observing actor's `can_read_iris()` is true. A human at the same distance
+is capped at `FACE`. `NPCArchetypeData.is_witness_caller` is true for Clerk and
+nothing else, while the two placed Clerk actors are authored `SYNTHETIC`.
 
-It reads better than a patch would: **the only thing in Blackrock that reports
-you is a machine.** Humans see; they cannot name.
+That preserves the current witness result while making the rule executable:
+**the only things in Blackrock that report you are machines.** Humans see; they
+cannot name.
 
-**What would make this wrong: the first HUMAN archetype with
-`is_witness_caller`.** At that moment the single ceiling ladder has to split —
-human observers topping out at `FACE`, mechanical ones reaching `IRIS` — and
-that must be a decision taken deliberately, not a discrepancy discovered later.
-Written here so it is the former.
+The first human actor assigned a calling archetype is already safe: its nature
+caps the shared distance ladder at `FACE` without requiring another archetype
+or a caller-specific branch.
 
 One appearance for every character is a prototype convenience and does not
 collide with any of this: nature is a field in data, not a silhouette.
@@ -232,7 +238,8 @@ chosen rather than drifted into.
 **Decided:** the two rungs and what separates them; that BRPD already exists in
 part and is dispatched to places; that BRMA is §5's Attribution with a name;
 that `IrisAccess` is a seam that both grants access and records an observation
-at `IRIS` quality.
+at `IRIS` quality. **Built from this document:** actor nature and the human
+`FACE` / mechanical `IRIS` observation ceiling described in §0.
 
 **Not decided, deliberately:** whether a synthetic witness transmits identity
 (§4b); whether the robot half of a BRPD pair is the existing drone or a walking

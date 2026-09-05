@@ -17,6 +17,7 @@ material = SubResource("StandardMaterial3D_bx8n8")
 collision_layer = 256
 collision_mask = 7
 script = ExtResource("1_drone")
+nature = 2
 
 [node name="DroneMesh" type="MeshInstance3D" parent="." unique_id=382597592]
 mesh = SubResource("SphereMesh_5h11f")

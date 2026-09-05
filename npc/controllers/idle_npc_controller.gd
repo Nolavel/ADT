@@ -242,14 +242,15 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## past 30 m and made the top rung unreachable by construction — measured, and
 ## the reason attribution.md §7's case C failed from the day it was written.
 ## Retuned 2026-09-04 (Stan: lower the ceilings rather than raise the vision)
-## so every rung has a band: IRIS <= 3, FACE 3-6, EQUIPMENT 6-11,
-## SILHOUETTE 11-16. Raising Clerk's vision_range means retuning these too.
+## so every rung has a band for a mechanical observer: IRIS <= 3, FACE 3-6,
+## EQUIPMENT 6-11, SILHOUETTE 11-16. Humans share the same distances but cap
+## at FACE. Raising Clerk's vision_range means retuning these too.
 @export var witness_ceiling_equipment_distance: float = 11.0
 ## Beyond this distance (and within witness_ceiling_equipment_distance) the
 ## ceiling is EQUIPMENT.
 @export var witness_ceiling_face_distance: float = 6.0
 ## Beyond this distance (and within witness_ceiling_face_distance) the
-## ceiling is FACE; within it, IRIS.
+## ceiling is FACE; within it, IRIS for mechanical actors and FACE for humans.
 @export var witness_ceiling_iris_distance: float = 3.0
 
 @export_group("Witness Report (attribution.md §6/§7)")
@@ -1142,6 +1143,8 @@ func _distance_ceiling(distance: float) -> WitnessReport.ObservationLevel:
 	if distance > witness_ceiling_face_distance:
 		return WitnessReport.ObservationLevel.EQUIPMENT
 	if distance > witness_ceiling_iris_distance:
+		return WitnessReport.ObservationLevel.FACE
+	if not _npc.can_read_iris():
 		return WitnessReport.ObservationLevel.FACE
 	return WitnessReport.ObservationLevel.IRIS
 
