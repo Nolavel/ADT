@@ -52,7 +52,8 @@ signal punch_landed(position: Vector3)
 ## connecting to it the same lazy way it resolves IncidentRegistry (see that
 ## file's _try_connect_player_swing()); player.gd never learns who listened.
 signal punch_missed(position: Vector3)
-## Emitted once per shot that actually hits an NPC, after take_hit() has run
+## Emitted once per shot that actually hits a damageable actor, after
+## take_hit() has run
 ## — the ranged twin of punch_landed, and subscribed to by IncidentRegistry
 ## the same duck-typed way. A separate signal rather than reusing
 ## punch_landed: a shot is not a punch, and a registry reading a truthful
@@ -1524,11 +1525,11 @@ func _update_shot(delta: float) -> void:
 ## missing outright.
 ##
 ## Target selection is still a cone search over GROUP_PERCEIVED_ACTOR, not a
-## ray: NPC bodies carry no collision layer a ray could select on without
-## inventing one. What changed is where the cone starts and which way it
-## points — the muzzle, and the aim line — see _find_shot_target(). The ray
-## that IS cast still asks the smaller question, is there a wall in the way,
-## against CollisionLayers.SIGHT.
+## ray: damageable actors do not share a collision layer a ray can select.
+## can_receive_shot() is the explicit combat gate. What changed is where the
+## cone starts and which way it points — the muzzle, and the aim line — see
+## _find_shot_target(). The ray that IS cast still asks the smaller question,
+## is there a wall in the way, against CollisionLayers.SIGHT.
 func _resolve_shot() -> void:
 	var item := get_drawn_firearm()
 	if item == null:
@@ -1567,7 +1568,7 @@ func _resolve_shot() -> void:
 ## holds the held mesh back for draw_attach_delay after the weapon is out, and
 ## an item can have no mesh at all. Both are the "the state is correct and
 ## there is nothing to show" case held_mesh already answers with silence.
-func _spawn_shot_visual(target: NPCBase) -> void:
+func _spawn_shot_visual(target: ActorBase) -> void:
 	if _equipment_visuals == null or not _equipment_visuals.has_muzzle():
 		return
 	if _shot_effects == null:
@@ -1589,10 +1590,10 @@ func _spawn_shot_visual(target: NPCBase) -> void:
 ## to disagree — this one left the barrel while _has_clear_shot() ran shoulder
 ## to shoulder — and the wart that created (a streak stopping on a corner the
 ## round cleared) is gone with the cause rather than documented around.
-func _shot_visual_endpoint(muzzle: Vector3, target: NPCBase) -> Vector3:
+func _shot_visual_endpoint(muzzle: Vector3, target: ActorBase) -> Vector3:
 	var aim: Vector3
 	if target != null:
-		aim = target.global_position + Vector3(0.0, target.get_shoulder_height(), 0.0)
+		aim = target.get_shot_target_point()
 	else:
 		aim = muzzle + _shot_direction(muzzle) * shot_range
 
@@ -1614,12 +1615,10 @@ func _shot_visual_endpoint(muzzle: Vector3, target: NPCBase) -> Vector3:
 ## floor-level line would catch — the reason the check was raised off the
 ## origin in the first place — are still well below it.
 ##
-## get_shoulder_height() on the target specifically, not get_chest_height():
-## the player carries all three body landmarks but NPCBase exposes only eye
-## and shoulder, and calling the missing one here silently failed the whole
-## check — every shot read as blocked, including across open sea.
-func _has_clear_shot(origin: Vector3, target: NPCBase) -> bool:
-	var to := target.global_position + Vector3(0.0, target.get_shoulder_height(), 0.0)
+## The target owns its landmark through get_shot_target_point(): NPCs expose
+## the shoulder while a drone's origin already sits at its body centre.
+func _has_clear_shot(origin: Vector3, target: ActorBase) -> bool:
+	var to := target.get_shot_target_point()
 	var query := PhysicsRayQueryParameters3D.create(origin, to, CollisionLayers.SIGHT)
 	query.collide_with_areas = false
 	query.exclude = [get_rid()]
@@ -1680,7 +1679,7 @@ func _shot_direction(origin: Vector3) -> Vector3:
 	return direction
 
 
-## Nearest NPC inside a cone around the aim line.
+## Nearest opted-in ActorBase inside a cone around the aim line.
 ##
 ## Deliberately NOT a third mode on _find_punch_target(), and the reason is
 ## geometry rather than taste: a punch measures a HORIZONTAL cone from the
@@ -1690,22 +1689,21 @@ func _shot_direction(origin: Vector3) -> Vector3:
 ## punch is untouched by any of this.
 func _find_shot_target(
 	origin: Vector3, direction: Vector3, reach: float, angle_deg: float
-) -> NPCBase:
-	var best: NPCBase = null
+) -> ActorBase:
+	var best: ActorBase = null
 	var best_dist := INF
 
 	for candidate in get_tree().get_nodes_in_group(ActorBase.GROUP_PERCEIVED_ACTOR):
-		if not (candidate is NPCBase):
+		if not (candidate is ActorBase):
 			continue
-		var npc: NPCBase = candidate
+		var actor: ActorBase = candidate
+		if not actor.can_receive_shot():
+			continue
 
-		## Aimed at the shoulder, the same landmark _has_clear_shot() uses on
-		## the far end. Against the feet, a target standing on a slope above
-		## or below would fall out of the cone for being the wrong height
-		## rather than the wrong direction.
-		var to_target := (
-			npc.global_position + Vector3(0.0, npc.get_shoulder_height(), 0.0)
-		) - origin
+		## Uses the same actor-owned landmark as the wall check and tracer.
+		## A target at another elevation therefore leaves the cone only for
+		## its real direction, not because this path guessed at its origin.
+		var to_target := actor.get_shot_target_point() - origin
 		var dist := to_target.length()
 		if dist > reach or dist < 0.001:
 			continue
@@ -1715,7 +1713,7 @@ func _find_shot_target(
 
 		if dist < best_dist:
 			best_dist = dist
-			best = npc
+			best = actor
 
 	return best
 

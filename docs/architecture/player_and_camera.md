@@ -44,6 +44,12 @@ the contracts it describes.
 
 **Stamina is drawn in the HUD, the cursor only aims.** `StaminaGauge` (`ui/hud/stamina_gauge/`) renders the stamina ring as the first cell of `PlayerHUD`'s `StatusStack/HealthRow`, left of the health bar — four quarter arcs whose length is the remaining ratio and whose colour walks full → yellow → orange → red, the two chasing recovery sweeps with their pulse and inner glow, the jump-charge arc, and the walk/sprint/no-stamina icon **inside** the ring. It owns **no arithmetic**: `StaminaComponent` keeps all of it and this widget subscribes, bound by `PlayerHUD.on_world_ready()` through `bind(player)` rather than by hunting for the player through a group. Every radius and thickness is still expressed in the original cursor's pixels around an 8 px centre and multiplied by `gauge_scale`, so the proportions cannot drift from what they were. **It has been in three places, and the middle one is why the rule matters.** It started on `MouseCursorUI`, moved to the ground as `StaminaIndicator3D` (2026-08-28) to stop the cursor saying two things at once, and moved into the HUD on 2026-09-02 because the ground version needed `depth_test_disabled` to stay visible at all and therefore drew straight **through the character it was under** — a trade dressed as a fix. On a flat canvas there is no depth to test and nothing to draw over, so that failure is structurally absent rather than tuned away. The move-target group `TargetIndicator.GROUP_MOVE_TARGET` lost its only reader with that deletion and is kept only until click-to-move goes with the isometric removal. `MouseCursorUI` was where all of this lived until 2026-08-28 and now holds no reference to `StaminaComponent` at all: it says one thing, which is what the player is pointing at — dim grey, brighter over an NPC or item, and `[ ✛ ]` brackets while a firearm is drawn, opening and settling on a spring driven by the **continuous** speed rather than by `is_running`. **In TPS it is pinned to screen centre**, since the mouse is captured there and the camera is what aims. **What is under it is decided by TYPE, not by mask**: the island terrain carries `collision_layer = 3` and so sits on `CHARACTERS` alongside real characters, which no mask can separate — the cursor therefore accepts only `NPCBase`, `InteractableObject` or an interactable's `Area`, which also gives honest occlusion for free, since the ray returns the nearest hit. That terrain layer is still wrong and is not fixed by this.
 
+The ring and firearm brackets are one interruption-safe visual state, not two
+swapped glyphs. Drawing or holstering a firearm carries it through a 320 ms
+stretch-and-split morph with a short punch, glow and ripple; the final arcs keep
+the same speed-driven spring. The trigger remains a firearm actually in hand,
+so `COMBAT` with empty hands still shows the ring.
+
 `TpsShoulderCameraState` (left/right shoulder) and `TpsCombatCameraState` (Explore ⇄ Locked, lock-on) are unchanged by the migration; the audit confirmed neither ever touched the isometric state. `CONFLICT-1` — `TpsCombatCameraState`'s blended yaw being computed during `TRANSITION` but applied only while `LOCKED` — was **deliberately left as it is** and is tracked separately, so that this migration neither silently fixes nor silently loses it.
 
 ### Transport (`core/controllers/transport/`)
@@ -98,11 +104,12 @@ camera yaw within a smoothing lag. Only the vertical half was missing outright.
   direction pointing behind the character, which in a TPS means the ray caught
   geometry between camera and player rather than an intention.
 - **`_find_shot_target()`** is a cone around that line, from the muzzle, measured
-  in 3D and aimed at the target's SHOULDER — against the feet, a target on a slope
-  would fall out of the cone for being the wrong height rather than the wrong
-  direction. Deliberately **not** a third mode on `_find_punch_target()`: a punch
-  measures a horizontal cone from the body, a shot a 3D cone from the muzzle, and
-  keeping them apart is what guarantees the punch is untouched.
+  in 3D over `ActorBase.GROUP_PERCEIVED_ACTOR`. Membership only discovers an
+  actor; `can_receive_shot()` explicitly opts it into firearm combat, and
+  `get_shot_target_point()` supplies one world landmark to selection, occlusion
+  and the tracer. NPCs use the shoulder; the drone uses its centred body origin.
+  Deliberately **not** a third mode on `_find_punch_target()`: a punch measures a
+  horizontal cone from the body, remains NPC-only, and is unaffected by drones.
 - **`_has_clear_shot(origin, target)`** now casts from the same muzzle. It ran
   shoulder-to-shoulder before, which made the hit check and the tracer two lines
   free to disagree at a grazing angle; one origin removes that rather than
@@ -110,8 +117,9 @@ camera yaw within a smoothing lag. Only the vertical half was missing outright.
   1.476 m shoulder, so the kerbs the check was raised off the origin to clear are
   still well below it.
 
-Target selection is a cone search and not a ray because **NPC bodies carry no
-collision layer a ray could select on** without inventing one. That is unchanged.
+Target selection is a cone search and not a ray because damageable actors do not
+share a collision layer a ray could select on. The wall query remains a ray against
+`CollisionLayers.SIGHT`; it answers only whether the selected path is blocked.
 
 ### Measured: the weapon is locked to the body's horizontal facing
 
@@ -152,4 +160,3 @@ Every modifier that ever gets added must sit on **`OriginalSkeleton`**, after
 `RetargetModifier3D`, where the existing `LookAt` already is — `Head` is bone 5
 there and 6 in `GeneralSkeleton`, and a modifier on the wrong one is silently
 overwritten by the retarget every frame.
-

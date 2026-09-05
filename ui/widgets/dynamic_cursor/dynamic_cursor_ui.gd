@@ -23,6 +23,10 @@
 # REAL speed rather than off is_running, so the movement reads as continuous
 # rather than as two states.
 #
+# Drawing or holstering a firearm morphs that one shape over 320 ms: the ring
+# pulls wide, tears at the top and bottom, then settles as the same two arcs.
+# The trigger remains the firearm in hand, not COMBAT itself.
+#
 # Dependencies: PlayerState (mode), the player (parent — speed, and
 # get_drawn_firearm() for the bracket state).
 # =============================================================================
@@ -41,6 +45,9 @@ const BRACKET_ARC_HALF_ANGLE: float = 0.62
 ## Straight segments the arc is built from. Enough to read as a curve at the
 ## sizes this is drawn, few enough that six of them cost nothing.
 const BRACKET_ARC_SEGMENTS: int = 10
+const MORPH_CIRCLE_SEGMENTS: int = 32
+const MORPH_RIPPLE_DURATION: float = 0.42
+const MORPH_OPEN_PATH_THRESHOLD: float = 0.035
 
 # === НАСТРОЙКИ КУРСОРА ===
 @export_group("Основной курсор")
@@ -53,6 +60,16 @@ const BRACKET_ARC_SEGMENTS: int = 10
 ## Скорость перехода между ними. Не мгновенно: подсветка, появляющаяся
 ## рывком, читается как мигание, а не как отклик.
 @export var cursor_color_speed: float = 10.0
+
+@export_group("Weapon morph")
+@export_range(0.05, 1.0, 0.01) var morph_duration: float = 0.32
+@export_range(1.0, 4.0, 0.1) var morph_ease_power: float = 2.4
+@export_range(1.0, 2.2, 0.05) var morph_stretch: float = 1.55
+@export_range(0.0, 0.8, 0.01) var morph_split_delay: float = 0.18
+@export_range(1.0, 1.35, 0.01) var morph_punch: float = 1.12
+@export_range(0.0, 0.45, 0.01) var morph_overshoot: float = 0.18
+@export_range(0.0, 1.2, 0.05) var morph_glow: float = 0.55
+@export_range(0.0, 1.5, 0.05) var morph_ripple: float = 0.7
 
 @export_group("Прицельные скобки")
 ## Смещение скобок от центра, когда персонаж стоит.
@@ -116,6 +133,12 @@ var has_firearm: bool = false
 ## Разведение прицельных скобок и его скорость (пружина).
 var aim_bracket_offset: float = 0.0
 var _aim_bracket_velocity: float = 0.0
+var _firearm_state_initialized: bool = false
+var _morph_progress: float = 0.0
+var _morph_from: float = 0.0
+var _morph_target: float = 0.0
+var _morph_elapsed: float = 0.0
+var _ripple_progress: float = 1.0
 
 
 func _ready() -> void:
@@ -156,6 +179,7 @@ func _process(delta: float) -> void:
 
 	_update_target_state(delta)
 	_update_firearm_state()
+	_update_weapon_morph(delta)
 	_update_aim_brackets(delta, lin_speed)
 	_update_3d_ui_state(delta)
 
@@ -236,13 +260,47 @@ func _update_firearm_state() -> void:
 	## not the same as the hands being empty.
 	if not drawn and _weapon_gesture_active():
 		return
+
+	## The first stable sample is setup, not a player action. Snapping both
+	## values here prevents a loaded scene from playing a draw ripple on boot.
+	if not _firearm_state_initialized:
+		_firearm_state_initialized = true
+		has_firearm = drawn
+		_morph_progress = 1.0 if drawn else 0.0
+		_morph_from = _morph_progress
+		_morph_target = _morph_progress
+		return
+
+	if drawn == has_firearm:
+		return
 	has_firearm = drawn
+	_morph_from = _morph_progress
+	_morph_target = 1.0 if drawn else 0.0
+	_morph_elapsed = 0.0
+	_ripple_progress = 0.0
 
 
 func _weapon_gesture_active() -> bool:
 	if not player.has_method(&"is_weapon_gesture_active"):
 		return false
 	return bool(player.call(&"is_weapon_gesture_active"))
+
+
+## Advances one interruptible scalar rather than owning two circle/arc
+## animations. A reversal therefore begins at the shape currently on screen.
+func _update_weapon_morph(delta: float) -> void:
+	if not is_equal_approx(_morph_progress, _morph_target):
+		_morph_elapsed += maxf(delta, 0.0)
+		var raw: float = clampf(_morph_elapsed / maxf(morph_duration, 0.001), 0.0, 1.0)
+		var eased: float = _morph_ease_in_out(raw, morph_ease_power)
+		_morph_progress = lerpf(_morph_from, _morph_target, eased)
+		if raw >= 1.0:
+			_morph_progress = _morph_target
+
+	if _ripple_progress < 1.0:
+		_ripple_progress = minf(
+			_ripple_progress + maxf(delta, 0.0) / MORPH_RIPPLE_DURATION, 1.0
+		)
 
 
 ## Разведение ведётся от НЕПРЕРЫВНОЙ скорости, а не от is_running: между
@@ -273,14 +331,7 @@ func _update_aim_brackets(delta: float, lin_speed: float) -> void:
 
 
 func _draw() -> void:
-	if has_firearm:
-		## Огнестрел в руках — вместо кружка прицельные скобки.
-		_draw_aim_brackets()
-	else:
-		_draw_circle_outline(cursor_position, cursor_radius, current_cursor_color, cursor_thickness)
-		var inner_color: Color = current_cursor_color
-		inner_color.a *= 0.3
-		draw_circle(cursor_position, cursor_radius * 0.3, inner_color)
+	_draw_weapon_morph()
 
 	## Скобки 3D-UI живут отдельно от прицельных: это указатель на кнопку в
 	## мире, а не на цель, и он должен работать и с пустыми руками.
@@ -288,18 +339,149 @@ func _draw() -> void:
 		_draw_3d_ui_brackets()
 
 
-func _draw_aim_brackets() -> void:
-	var color: Color = bracket_color
+## One parametric shape owns both endpoints. The horizontal axis arrives early,
+## the vertical axis catches up, then the top and bottom tear open. At t = 0
+## this is the old 32-segment circle; at t = 1 the angles, radius and stroke are
+## exactly the old speed-driven aim brackets.
+func _draw_weapon_morph() -> void:
+	var t: float = clampf(_morph_progress, 0.0, 1.0)
+	var base_radius: float = lerpf(
+		cursor_radius, aim_bracket_offset, _morph_ease_in_out(t, morph_ease_power)
+	)
+	var stretch_in: float = _morph_ease_in_out(minf(t / 0.55, 1.0), 1.8)
+	var stretch_out_raw: float = maxf((t - 0.55) / 0.45, 0.0)
+	var stretch_out: float = _morph_ease_in_out(minf(stretch_out_raw, 1.0), 1.8)
+	var stretch_weight: float = stretch_in * (1.0 - stretch_out)
+	var stretch_factor: float = lerpf(1.0, morph_stretch, stretch_weight)
+	var radius_x: float = base_radius * stretch_factor
+	var radius_y: float = base_radius / sqrt(maxf(stretch_factor, 0.001))
+	var open: float = (PI * 0.5 - BRACKET_ARC_HALF_ANGLE) * _morph_gap_curve(t)
+	var punch_scale: float = _morph_scale_curve(t)
+
+	var aim_color: Color = bracket_color
 	if is_over_target:
-		color = bracket_color.lightened(0.35)
-	_draw_bracket_left(
-		cursor_position.x - aim_bracket_offset, cursor_position.y,
-		bracket_width, bracket_height, color
+		aim_color = bracket_color.lightened(0.35)
+	var shape_color: Color = current_cursor_color.lerp(aim_color, t)
+	var bracket_thickness: float = maxf(bracket_width * 0.3, 1.5)
+	var line_width: float = lerpf(cursor_thickness, bracket_thickness, t)
+	var paths: Array[PackedVector2Array] = _build_morph_paths(
+		radius_x, radius_y, open, punch_scale
 	)
-	_draw_bracket_right(
-		cursor_position.x + aim_bracket_offset, cursor_position.y,
-		bracket_width, bracket_height, color
-	)
+
+	_draw_morph_ripple(base_radius, shape_color, line_width, punch_scale)
+
+	var juice: float = sin(t * PI)
+	if juice > 0.001 and morph_glow > 0.0:
+		_draw_morph_paths(
+			paths, _color_with_alpha(shape_color, 0.08 * morph_glow * juice), line_width * 3.6
+		)
+		_draw_morph_paths(
+			paths, _color_with_alpha(shape_color, 0.14 * morph_glow * juice), line_width * 2.2
+		)
+
+	_draw_morph_paths(paths, shape_color, line_width)
+
+	if juice > 0.001:
+		_draw_morph_paths(
+			paths,
+			_color_with_alpha(shape_color.lightened(0.35), 0.22 * juice),
+			maxf(line_width * 0.35, 1.0)
+		)
+
+	var dot_visibility: float = 1.0 - _morph_gap_curve(t)
+	if dot_visibility > 0.001:
+		var dot_color: Color = _color_with_alpha(current_cursor_color, 0.3 * dot_visibility)
+		draw_circle(cursor_position, cursor_radius * 0.3 * punch_scale, dot_color)
+
+
+func _build_morph_paths(
+		radius_x: float, radius_y: float, open: float, shape_scale: float
+	) -> Array[PackedVector2Array]:
+	var paths: Array[PackedVector2Array] = []
+	if open < MORPH_OPEN_PATH_THRESHOLD:
+		paths.append(_build_ellipse_arc(
+			radius_x, radius_y, 0.0, TAU, shape_scale, MORPH_CIRCLE_SEGMENTS
+		))
+		return paths
+
+	var right_start: float = -PI * 0.5 + open
+	var right_end: float = PI * 0.5 - open
+	paths.append(_build_ellipse_arc(
+		radius_x, radius_y, right_start, right_end, shape_scale, BRACKET_ARC_SEGMENTS
+	))
+	paths.append(_build_ellipse_arc(
+		radius_x,
+		radius_y,
+		PI * 0.5 + open,
+		PI * 1.5 - open,
+		shape_scale,
+		BRACKET_ARC_SEGMENTS
+	))
+	return paths
+
+
+func _build_ellipse_arc(
+		radius_x: float,
+		radius_y: float,
+		start_angle: float,
+		end_angle: float,
+		shape_scale: float,
+		segments: int
+	) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in range(segments + 1):
+		var weight: float = float(i) / float(segments)
+		var angle: float = lerpf(start_angle, end_angle, weight)
+		var offset := Vector2(cos(angle) * radius_x, sin(angle) * radius_y) * shape_scale
+		points.append(cursor_position + offset)
+	return points
+
+
+func _draw_morph_paths(
+		paths: Array[PackedVector2Array], color: Color, width: float
+	) -> void:
+	for points in paths:
+		draw_polyline(points, color, width, true)
+
+
+func _draw_morph_ripple(
+		base_radius: float, color: Color, line_width: float, shape_scale: float
+	) -> void:
+	if _ripple_progress >= 1.0 or morph_ripple <= 0.0:
+		return
+	var fade: float = 1.0 - _ripple_progress
+	if fade <= 0.001:
+		return
+	var radius: float = base_radius * (1.1 + _ripple_progress * 1.8) * shape_scale
+	var ripple_color: Color = _color_with_alpha(color, fade * 0.35 * morph_ripple)
+	var ripple_width: float = maxf(line_width * 0.6 * fade, 0.5)
+	_draw_circle_outline(cursor_position, radius, ripple_color, ripple_width)
+
+
+func _morph_gap_curve(t: float) -> float:
+	var span: float = maxf(1.0 - morph_split_delay, 0.001)
+	var delayed: float = clampf((t - morph_split_delay) / span, 0.0, 1.0)
+	return _morph_ease_in_out(delayed, 2.1)
+
+
+func _morph_scale_curve(t: float) -> float:
+	var pulse: float = sin(t * PI)
+	var settle: float = 1.0 if t < 0.7 else 0.4
+	var peak: float = morph_punch + morph_overshoot * sin(t * PI * 1.4) * settle
+	return 1.0 + (peak - 1.0) * pulse
+
+
+static func _morph_ease_in_out(t: float, power: float) -> float:
+	var clamped: float = clampf(t, 0.0, 1.0)
+	if clamped < 0.5:
+		return pow(2.0 * clamped, power) * 0.5
+	return 1.0 - pow(2.0 * (1.0 - clamped), power) * 0.5
+
+
+static func _color_with_alpha(color: Color, alpha_scale: float) -> Color:
+	var result: Color = color
+	result.a *= clampf(alpha_scale, 0.0, 1.0)
+	return result
 
 
 func _update_3d_ui_state(delta: float) -> void:

@@ -9,8 +9,9 @@ signal scene_stats_completed(scene_count: int, project_size_bytes: int)
 
 # === НАСТРОЙКИ ===
 @export var excluded_folders: Array[String] = [
-	".git", ".godot", ".mono", "bin", "obj", "shader_cache",
-	"temp", "addons", "metadata", "Debug", "ref", "refint", "builds"
+	".git", ".godot", ".mono", ".claude", ".codex", ".entire", ".github",
+	"bin", "obj", "shader_cache",
+	"temp", "addons", "docs", "tools", "metadata", "Debug", "ref", "refint", "builds"
 ]
 
 @export var target_extensions: Array[String] = [".gd", ".cs", ".gdshader"]

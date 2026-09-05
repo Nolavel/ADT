@@ -12,6 +12,17 @@ and `CHANGELOG.md` in the same commit as any change they describe).
 contribution rules, scope) — follow those links from there rather than from
 here.
 
-Do not duplicate `CLAUDE.md`'s content into this file. If something here ever
-needs to say more than "go read `CLAUDE.md`", that content belongs in
-`CLAUDE.md` itself, not here.
+Do not duplicate `CLAUDE.md`'s project content into this file. The operational
+boundary below is intentionally Codex-only and therefore does not belong in
+the shared Claude instructions.
+
+## Codex-only verification boundary
+
+- Rendering, in-editor inspection, and Godot runtime verification belong to
+  Stan. Report what needs visual checking and leave that check to him.
+- Do not download, install, or launch Godot or another rendering/runtime tool.
+  Do not start the project or a render probe unless Stan explicitly requests
+  that exact action in the current conversation.
+- An unavailable MCP/editor endpoint proves only that Codex cannot reach the
+  endpoint. Never infer or state that the editor itself is closed.
+- Static analysis and repository-only checks remain Codex responsibilities.

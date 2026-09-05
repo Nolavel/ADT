@@ -12,6 +12,34 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - Project Scanner excludes service directories and worktrees
+
+`ProjectScanner` now skips `docs`, `addons`, `tools` and the hidden service
+directories `.claude`, `.codex`, `.entire`, `.github` at the directory boundary.
+This prevents `.claude/worktrees` from counting a second repository copy in
+every metric. Counting formulas and UI remain unchanged; Godot was not run.
+
+> *Сканер не учитывает служебные папки и повторную копию репозитория в `.claude/worktrees`.*
+
+## 2026-09-05 - Police drones take firearm damage and crash
+
+`ActorBase` now exposes an opt-in firearm target contract shared by NPCs and
+live drones. Police drones carry 100 plain HP; death cuts altitude hold, brakes
+their remaining horizontal motion under gravity, disables their controller and
+hard-switches the spotlight and both light-bar lamps off. Godot was not run.
+
+> *Дрон получает урон от выстрела, при смерти гаснет и падает, не возвращаясь в полёт.*
+
+## 2026-09-05 - Firearm cursor morphs between its ring and aim arcs
+
+`MouseCursorUI` now carries one interruption-safe 320 ms shape from the idle
+ring through an early stretch and delayed split into its existing speed-driven
+aim arcs. A restrained punch, glow, inner highlight and 420 ms ripple supply
+the transition juice; weapon gestures still suppress false holster flashes.
+Stan verified the result in the already-open editor; Codex did not run Godot.
+
+> *Круг плавно растягивается и раскрывается в дуги; быстрый разворот перехода не скачет.*
+
 ## 2026-09-05 - Key-hint blobs now grow from zero
 
 The startup hold is now 1.0 second. After it, each randomised ink piece grows

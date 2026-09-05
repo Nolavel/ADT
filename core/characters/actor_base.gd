@@ -6,8 +6,9 @@
 # integrate movement completely differently — a capsule that walks and a
 # drone that hovers — but a controller and a perception component never need
 # more than this much of either: where it is, which way it faces, where its
-# sensor sits, and a way to hand it a movement/look intent. Every method here
-# is a stub meant to be overridden; nothing on ActorBase itself runs a body.
+# sensor sits, a way to hand it a movement/look intent, and an opt-in contract
+# for firearm hits. Every method here is a stub meant to be overridden;
+# nothing on ActorBase itself runs a body.
 #
 # Introduced instead of widening NPCControllerBase/PerceptionComponent's
 # "parent is NPCBase" checks to a hand-enumerated type union, so a future
@@ -18,8 +19,10 @@
 # same group as NPCBase's own "lockable" — "lockable" is the TPS combat
 # camera's lock-on target pool (camera/tps_combat_camera_state.gd); making
 # every ActorBase a combat target would hand the drone lock-on-able status
-# nobody asked for. This group exists only so debug tooling can enumerate
-# every perceived actor without depending on a combat-specific group.
+# nobody asked for. This group lets perception/debug tooling and firearm target
+# discovery enumerate actors without depending on a combat-specific group.
+# can_receive_shot() is the second gate, so joining this group alone never
+# makes an actor damageable.
 # Subclasses that want combat lock-on join "lockable" themselves, as NPCBase
 # already does.
 #
@@ -41,8 +44,8 @@
 extends CharacterBody3D
 class_name ActorBase
 
-## Debug-tooling enumeration group — see the file header for why this is not
-## "lockable".
+## Shared actor-discovery group — see the file header for why this is not
+## "lockable" and why firearm targeting still needs can_receive_shot().
 const GROUP_PERCEIVED_ACTOR: StringName = &"perceived_actor"
 
 ## Stable id for this actor, authored per-instance — see the file header.
@@ -63,6 +66,24 @@ func _ready() -> void:
 ## player carries the same method without extending this class.
 func get_actor_id() -> StringName:
 	return actor_id
+
+
+## Whether firearm target discovery may select this actor. False by default:
+## perception membership alone is not consent to participate in combat.
+func can_receive_shot() -> bool:
+	return false
+
+
+## World-space landmark used consistently by shot selection, wall occlusion
+## and the tracer endpoint. Only read when can_receive_shot() is true.
+func get_shot_target_point() -> Vector3:
+	return global_position + Vector3(0.0, get_eye_height(), 0.0)
+
+
+## Receives a firearm hit after the player has selected this actor and proved
+## the path clear. Damageable subclasses own what damage and death look like.
+func take_hit(_from_position: Vector3, _damage: float = 25.0) -> void:
+	pass
 
 
 ## Movement intent for this frame, written by whatever controller drives

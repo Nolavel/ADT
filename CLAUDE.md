@@ -222,6 +222,11 @@ one is how this file drifted four times.
   initialized through `on_world_ready(context: WorldContext)`.
 - Prefer **explicit reference passing** over group lookups or singleton access
   by class name.
+- **Firearm targets opt in through `ActorBase`.** Membership in
+  `GROUP_PERCEIVED_ACTOR` supplies discovery only; `can_receive_shot()` gates
+  selection, `get_shot_target_point()` supplies one landmark to selection,
+  occlusion and the tracer, and `take_hit()` lets each body own its response.
+  This does not imply membership in the camera's separate `lockable` group.
 - `PlayerState` is the single source of truth for `Mode` and `ViewMode`. Do not
   create parallel state enums.
 - **`ViewMode` is a FRAMING, and only the camera may read it.** There is one

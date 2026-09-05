@@ -1,19 +1,19 @@
 # =============================================================================
 # health_component.gd — HealthComponent
 #
-# Shared health for the player and for NPCs. Pure logic: no UI, no input, no
+# Shared health for the player and AI actors. Pure logic: no UI, no input, no
 # animation. Owners subscribe to the signals and decide what a hit or a death
 # looks like on their side (the player plays a death clip, NPCBase locks its
-# knockdown state machine in a terminal phase).
+# knockdown state machine in a terminal phase, DroneBase drops from flight).
 #
-# ATTACHING: a child Node of the actor (player.tscn, npc.tscn). max_health and
-# enable_conditions are set per scene, so the component itself never needs to
-# know who owns it.
+# ATTACHING: a child Node of the actor (player.tscn, npc.tscn,
+# PoliceDrone.tscn). max_health and enable_conditions are set per scene, so the
+# component itself never needs to know who owns it.
 #
 # CONDITIONS (bleeding / fracture) are a PLAYER feature: while at least one is
 # active AND health is below the CRITICAL band, health ticks down on its own.
-# NPCs run with enable_conditions = false — plain hit points, no ticking, no
-# clock dependency. That is why setup() is optional.
+# NPCs and drones run with enable_conditions = false — plain hit points, no
+# ticking, no clock dependency. That is why setup() is optional.
 #
 # TIME: the drain is driven by GameClockSystem.minute_passed, never by _process.
 # One game minute is ~2 real seconds (48 real minutes per game day), which is
@@ -51,7 +51,7 @@ signal died()
 
 @export var max_health: float = 100.0
 
-## Off for NPCs: they take damage and die, but never bleed or tick.
+## Off for NPCs and drones: they take damage and die, but never bleed or tick.
 @export var enable_conditions: bool = true
 
 ## Health per GAME hour drained while an injury is active and the band is

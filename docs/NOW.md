@@ -4,15 +4,19 @@ Last updated: 2026-09-05 by Codex
 
 ## Current task
 
-**Stan's tuning calls, applied and measured.** Witness ceilings lowered to
-3 / 6 / 11 so all four rungs fit inside Clerk's 16 m vision — **`attribution.md`
-§7 case C passes for the first time since it was written**. Memory lifetimes put
-on a clean x3 with a floor of 12: **12 / 36 / 108 / 324** game hours. Next on the
-branch: the orphan-script CI detector (3a), then typing (3b), then the
-recognition proposal. Branch `claude/witness-ceilings-and-memory`.
+**Project Scanner now rejects service content before recursion.** `docs`,
+`addons`, `tools`, `.claude`, `.codex`, `.entire` and `.github` contribute no
+folders, files, scripts/LOC, scenes or bytes; notably, the full repository copy
+under `.claude/worktrees` is no longer counted twice. Formulas and UI are
+unchanged; Stan's in-editor check is pending, as is the drone crash check.
 
 ## Decided this week, not yet in CLAUDE.md
 
+- The cursor keeps its game colours, radii and speed-reactive final arcs; the
+  supplied HTML contributes the transition timing and juice, not a replacement
+  visual language.
+- Drones are firearm targets but not TPS lock-on or punch targets. Their crash
+  is kinematic with no tumble or rigid-body handoff, and is not persisted yet.
 - Key hints hold clear for 1.0 s on scene startup, then their randomised blobs
   grow from zero to 80% during the ink entrance; later reopens remain immediate.
 - Readability by rig (work plan 6a, archetype distinguishability at 30/10/5 m)

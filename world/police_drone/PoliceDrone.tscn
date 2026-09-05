@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://567hvtoiyi6r" path="res://world/police_drone/drone_base.gd" id="1_drone"]
 [ext_resource type="Script" uid="uid://bsneijs4fit0u" path="res://world/police_drone/controllers/patrol_drone_controller.gd" id="2_patrol"]
 [ext_resource type="Script" uid="uid://chvbplapmqidu" path="res://npc/npc_components/perception_component/perception_component.gd" id="3_perception"]
+[ext_resource type="Script" uid="uid://dwl3tpwar2sjn" path="res://core/components/health_component/health_component.gd" id="4_health"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bx8n8"]
 albedo_color = Color(0, 0, 0, 1)
@@ -52,3 +53,8 @@ script = ExtResource("2_patrol")
 script = ExtResource("3_perception")
 vision_range = 180.0
 vision_angle_deg = 150.0
+
+[node name="HealthComponent" type="Node" parent="." unique_id=1900000003]
+script = ExtResource("4_health")
+max_health = 100.0
+enable_conditions = false

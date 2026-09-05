@@ -39,12 +39,11 @@
 # rig landed (see the npc.tscn commit) — the public contract didn't change,
 # only where the turning happens.
 #
-# take_hit()/is_knocked_down() are a new contract, NPCBase-only rather than
-# on ActorBase: DroneBase has no animation component to play a fall/getup
-# clip on, and a flying body being knocked to the ground is a bigger,
-# separate feature (real falling physics, a "crashed" state) this doesn't
-# build. A punch that reaches a drone in flight just doesn't connect — see
-# player.gd's own hit-detection comment.
+# ActorBase owns the opt-in firearm contract; NPCBase supplies its shoulder
+# landmark and maps take_hit() onto health plus knockdown. is_knocked_down()
+# remains NPC-only because DroneBase has no fall/getup animation state: its own
+# take_hit() uses the same HealthComponent but zero health enters a terminal
+# kinematic crash instead. Punch target detection still filters to NPCBase.
 #
 # The knockdown sequence is three fixed-duration phases (FALLING/LYING/
 # GETTING_UP, see KnockdownPhase and _update_knockdown()) plus a fourth,
@@ -308,6 +307,19 @@ func set_move_intent(direction: Vector3, speed_ratio: float, face_direction: boo
 ## 0..1 fraction of walk_speed set_move_intent() was given.
 func get_move_speed_ratio() -> float:
 	return _move_speed_ratio
+
+
+## NPCs remain valid firearm targets throughout their existing knockdown state,
+## including the terminal DOWN phase. This preserves the previous selection
+## behaviour while ActorBase's default keeps unrelated actor types out.
+func can_receive_shot() -> bool:
+	return true
+
+
+## Shoulder is the existing firearm landmark used by selection, wall checks
+## and shot visuals. Keeping it here prevents those three paths from drifting.
+func get_shot_target_point() -> Vector3:
+	return global_position + Vector3(0.0, get_shoulder_height(), 0.0)
 
 
 ## Knocked down by a hit and, if a HealthComponent is attached, damaged by

@@ -375,6 +375,7 @@ func _ready() -> void:
 	_drone = _actor as DroneBase
 	if not _drone:
 		return
+	_drone.destroyed.connect(_on_drone_destroyed)
 	for child in _drone.get_children():
 		if child is PerceptionComponent:
 			_perception = child
@@ -416,7 +417,7 @@ func _ready() -> void:
 
 
 func _decide(delta: float) -> void:
-	if not _drone:
+	if not _drone or _drone.is_destroyed():
 		return
 
 	if not _incident_registry:
@@ -521,7 +522,7 @@ func _try_resolve_incident_registry() -> void:
 ## not gated on current state, since ALERT outranks both PATROL and OBSERVE
 ## unconditionally.
 func _on_incident_reported(incident: Incident) -> void:
-	if not _drone:
+	if not _drone or _drone.is_destroyed():
 		return
 	## Two channels, deliberately not one radius (Incident.Source):
 	## DIRECT is this drone noticing something within its own
@@ -633,6 +634,8 @@ func _update_patrol_scan(delta: float) -> void:
 ## code path. See _check_existing_incidents()'s own comment for why all
 ## three hooks into it are needed and what each one covers.
 func _on_incidents_restored() -> void:
+	if not _drone or _drone.is_destroyed():
+		return
 	_check_existing_incidents()
 
 
@@ -912,6 +915,8 @@ func _raw_separation_offset() -> Vector3:
 		if candidate == _drone or not (candidate is DroneBase):
 			continue
 		var other: DroneBase = candidate
+		if other.is_destroyed():
+			continue
 		var away := _drone.global_position - other.global_position
 		away.y = 0.0
 		var dist := away.length()
@@ -1036,6 +1041,26 @@ func _update_light_bar(delta: float) -> void:
 	var blue_on := _light_bar_phase < light_bar_period * 0.5
 	_light_bar_blue.visible = blue_on
 	_light_bar_red.visible = not blue_on
+
+
+## The body owns death; this controller owns every powered presentation node.
+## Shutdown is immediate rather than using the ordinary alert fade because a
+## destroyed drone has no control system left to finish that animation.
+func _on_drone_destroyed() -> void:
+	_light_bar_phase = 0.0
+	for bar_light in [_light_bar_blue, _light_bar_red]:
+		if bar_light:
+			bar_light.light_energy = 0.0
+			bar_light.visible = false
+
+	_spotlight_open = 0.0
+	if _spotlight:
+		_spotlight.spot_angle = spotlight_angle_closed_deg
+		_spotlight.spot_range = spotlight_range_closed
+		_spotlight.light_energy = 0.0
+		_spotlight.visible = false
+
+	set_physics_process(false)
 
 
 func _decide_patrol(_delta: float) -> void:

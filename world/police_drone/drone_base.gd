@@ -37,6 +37,11 @@
 # frame rather than captured once. That resampling is the one piece
 # HoverBase's own altitude hold has no equivalent for.
 #
+# Health and destruction remain body responsibilities. HealthComponent emits
+# the terminal edge; this body drops its control intent, stops altitude hold
+# and falls kinematically while PatrolDroneController reacts to destroyed by
+# shutting down its own decision loop and lights.
+#
 # Mesh orientation (set_look_target) is intentionally NOT body rotation:
 # this body's own rotation.y never moves — there is no equivalent of
 # NPCBase's _face_move_direction here — only DroneMesh turns to face the
@@ -47,6 +52,8 @@
 # =============================================================================
 extends ActorBase
 class_name DroneBase
+
+signal destroyed()
 
 @export_group("Flight")
 ## Height this drone holds above the ground directly beneath it, sampled by
@@ -69,6 +76,11 @@ class_name DroneBase
 ## Smoothing.damp_factor() rate.
 @export var mesh_turn_smoothing: float = 5.0
 
+@export_group("Crash")
+## Downward acceleration after HealthComponent reaches zero. The body remains
+## kinematic so its authored collision and existing move_and_slide path survive.
+@export var crash_gravity: float = 20.0
+
 @export_group("Sensor")
 ## Height of this drone's sensor point above its own origin. Origin already
 ## sits at the drone body's centre (DroneMesh is centred on it, same as the
@@ -89,16 +101,55 @@ var _move_speed_ratio: float = 0.0
 ## DroneMesh at its last orientation instead of manufacturing one.
 var _has_look_target: bool = false
 var _look_target_point: Vector3 = Vector3.ZERO
+var _destroyed: bool = false
 
 @onready var _height_ray: RayCast3D = $HeightRayCast
 @onready var _mesh: Node3D = $DroneMesh
+@onready var _health: HealthComponent = get_node_or_null("HealthComponent")
+
+
+func _ready() -> void:
+	super._ready()
+	if _health == null:
+		push_warning("[DroneBase] HealthComponent not found - this drone cannot be destroyed")
+		return
+	_health.died.connect(_on_health_died)
 
 
 func _physics_process(delta: float) -> void:
+	if _destroyed:
+		_process_crash(delta)
+		move_and_slide()
+		return
+
 	_process_horizontal(delta)
 	_process_altitude(delta)
 	move_and_slide()
 	_update_mesh_look(delta)
+
+
+## Alive drones opt into firearm targeting; a wreck remains in the shared actor
+## group for identity/debug purposes but no longer intercepts later shots.
+func can_receive_shot() -> bool:
+	return not _destroyed
+
+
+## DroneMesh and the collision sphere are centred on the actor origin. The
+## exported sensor offset remains the one adjustment for a future real model.
+func get_shot_target_point() -> Vector3:
+	return global_position + Vector3(0.0, get_eye_height(), 0.0)
+
+
+## Damage is plain hit points: drones do not inherit NPC knockdown, injury or
+## get-up behaviour. HealthComponent owns the one-shot death edge.
+func take_hit(_from_position: Vector3, damage: float = 25.0) -> void:
+	if _destroyed or _health == null:
+		return
+	_health.apply_damage(damage)
+
+
+func is_destroyed() -> bool:
+	return _destroyed
 
 
 
@@ -174,6 +225,17 @@ func _process_altitude(_delta: float) -> void:
 	velocity.y = error * altitude_hold_stiffness
 
 
+## Destruction keeps the current horizontal velocity for a short physical
+## carry, then lets the existing braking response settle it while gravity owns
+## the vertical axis. There is no rigid-body handoff and no invented tumble.
+func _process_crash(delta: float) -> void:
+	if is_on_floor():
+		velocity = Vector3.ZERO
+		return
+	_process_horizontal(delta)
+	velocity.y -= crash_gravity * delta
+
+
 ## Turns DroneMesh to face _look_target_point, projected onto the mesh's own
 ## height so it turns rather than pitches. Never snaps.
 func _update_mesh_look(delta: float) -> void:
@@ -187,3 +249,14 @@ func _update_mesh_look(delta: float) -> void:
 	var target_transform := _mesh.global_transform.looking_at(target_point, Vector3.UP)
 	var t := Smoothing.damp_factor(mesh_turn_smoothing, delta)
 	_mesh.global_transform = _mesh.global_transform.interpolate_with(target_transform, t)
+
+
+func _on_health_died() -> void:
+	if _destroyed:
+		return
+	_destroyed = true
+	_move_direction = Vector3.ZERO
+	_move_speed_ratio = 0.0
+	velocity.y = minf(velocity.y, 0.0)
+	clear_look_target()
+	destroyed.emit()
