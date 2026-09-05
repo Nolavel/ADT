@@ -76,6 +76,13 @@ credential, not a person. Identity is produced later, by attribution, from
 that observation. Getting this wrong in naming leads to getting it wrong in
 architecture.
 
+**The top rung needs a MECHANICAL observer.** Reading a retina is exclusively
+mechanical — a human tops out at a face and photographs the rest on their
+Votive. That does not contradict the ceilings below, because the only archetype
+that reports at all (`Clerk`) is synthetic; it would contradict them the day a
+HUMAN archetype gains `is_witness_caller`, and at that point this ladder splits
+in two. See `docs/blackrock_authorities.md` §0.
+
 ### Distance sets the ceiling
 
 | Distance | Maximum achievable |
@@ -188,6 +195,11 @@ was told, not what the city concluded.
 
 Not scheduled. Written down so it is not re-derived from scratch later, and so
 that §7 can be built without foreclosing it.
+
+**Who does this has a name now: BRMA, the Blackrock Marshal Authority** — see
+`docs/blackrock_authorities.md`, which also names its lower rung (BRPD: the
+drones and the `Patrolman` archetype that already exist) and the iris
+credential as a seam. Naming the actor does not schedule the system.
 
 Attribution takes the reports on an incident and attempts to resolve an actor.
 It is a separate system with a one-way dependency: it reads the registry, the

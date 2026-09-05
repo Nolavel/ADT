@@ -12,6 +12,11 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-04 - Not everyone in Blackrock is human, and that decides who can see what
+
+Humans, synthetics, robots — a field orthogonal to the archetype, because it
+sets what an actor can PERCEIVE. **Reading a retina is exclusively mechanical**:
+
 ## 2026-09-05 - Project Scanner excludes service directories and worktrees
 
 `ProjectScanner` now skips `docs`, `addons`, `tools` and the hidden service
@@ -42,45 +47,25 @@ Stan verified the result in the already-open editor; Codex did not run Godot.
 
 ## 2026-09-05 - Key-hint blobs now grow from zero
 
-The startup hold is now 1.0 second. After it, each randomised ink piece grows
-from zero radius to the 80% assembled state during the entrance; text follows,
-then the existing three-second spread carries the blot to full size.
+Humans, synthetics, robots — a field orthogonal to the archetype, because it
+sets what an actor can PERCEIVE. **Reading a retina is exclusively mechanical**:
+people remember your face, machines know your name. The Clerk is synthetic,
+which is what keeps `_distance_ceiling()`'s existing `IRIS` rung legitimate with
+no code change. BRPD walks in pairs — one human, one robot — so a patrol is two
+different sensors. Paper only.
 
-> *После паузы в 1 секунду блобы растут с нуля до 80%, затем текст и растекание.*
+> *Сетчатку читает только машина. Клерк — синтет, поэтому код править не пришлось.*
 
-## 2026-09-05 - Key hints wait before their first ink entrance
+## 2026-09-04 - BRPD, BRMA and the iris get names; sound's first gate closes
 
-The panel now holds fully clear for 1.5 seconds when the scene starts, then
-runs the existing random ink → text → spread sequence. Later reopens remain
-immediate; the pause belongs only to scene startup.
+`docs/blackrock_authorities.md`: BRPD responds to a PLACE and is already
+half-built (drones + `Patrolman`), BRMA resolves a PERSON and is
+`attribution.md` §5's deferred Attribution with a name, `IrisAccess` is a
+credential seam whose every check is also an `IRIS`-quality observation — a
+door is a perfect witness. Sound: `visual_language.md` §5 now records which
+onomatopoeia survive audio. Reinforcement, not duplication. Paper only.
 
-> *При старте сцены блобы ждут 1,5 секунды; повторные открытия без задержки.*
-
-## 2026-09-04 - Key hints scatter, speak, then spread
-
-Each opening now randomises the ink pieces' order across the panel instead of
-sweeping from one side. The compact scale was relaxed from 75% to 82%; blobs
-start at 80% radius and settle outward for three seconds after the text fades in.
-
-> *Чернильные куски появляются случайно, затем текст, затем три секунды растекания.*
-
-## 2026-09-04 - Key hints assemble from ink pieces, then speak
-
-The compact HUD now staggers the ink blot long enough for its pieces to read,
-then fades the text in only after the blot has fully assembled; hiding reverses
-that sequence. The System section and its debug rows are gone, leaving only
-Movement and Action hints. `docs/scope_horizon.md` records the visible contract.
-
-> *Подсказки собираются из чернильных кусков, затем проявляют текст; системные строки убраны.*
-
-## 2026-09-04 - Claude Code and Codex share the OODA operating loop
-
-`CLAUDE.md` now states that Claude Code and Codex are peer implementation
-agents, with the author retaining priorities and approvals. Non-trivial work
-uses Observe → Orient → Decide → Act: establish live evidence, test the scope
-against invariants, take the smallest verifiable step, then record its result.
-
-> *Claude Code и Codex работают на равных по циклу OODA; приоритеты и решения остаются за автором.*
+> *У правопорядка появились имена. Звук — усиление, а не дублирование.*
 
 ## 2026-09-04 - Recognition proposed: a memory has to match who you are now
 

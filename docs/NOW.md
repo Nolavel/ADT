@@ -4,6 +4,14 @@ Last updated: 2026-09-05 by Codex
 
 ## Current task
 
+**Paper: the authorities, natures, and the sound decision.** BRPD / BRMA /
+`IrisAccess` in `docs/blackrock_authorities.md`. Blackrock has humans,
+synthetics and robots, and **reading a retina is mechanical only** — which is
+why the Clerk is synthetic and the existing `IRIS` ceiling needs no code change.
+BRPD walks in pairs, one human and one robot, so a patrol is two different
+sensors. Sound: condition (1) closed — reinforcement, not duplication. Branch
+`claude/authorities-and-sound`.
+
 **Project Scanner now rejects service content before recursion.** `docs`,
 `addons`, `tools`, `.claude`, `.codex`, `.entire` and `.github` contribute no
 folders, files, scripts/LOC, scenes or bytes; notably, the full repository copy
@@ -24,17 +32,22 @@ unchanged; Stan's in-editor check is pending, as is the drone crash check.
   recorded in the plan: OBSERVE closes only half this month.
 - 6b (memory surviving an encounter) is therefore the month's main substantive
   work, not a second half of 6.
+- **People remember your face, machines know your name** (Stan, 2026-09-04).
+  Retina reading is exclusively mechanical; the Clerk is synthetic, which is
+  what keeps `_distance_ceiling()`'s `IRIS` rung legitimate. **The ladder splits
+  in two the day a HUMAN archetype gains `is_witness_caller`** — a decision to
+  take, not a discrepancy to find.
+- **Sound is reinforcement, not duplication** (Stan, 2026-09-04). The comic word
+  survives audio; `ComicEffectData` still grows no sound field. `SoundSystems`
+  as an autoload is the remaining gate and needs an argued amendment.
 
 ## Found, not fixed
 
-- **`queue_free()` on a live NPC mid-reaction crashes the engine.** Segfault
-  every time, three runs, no stack. Found while probing 6b; nothing in the game
-  does it (streaming frees whole cells), so it is not on the path of any task.
-- **The hand-placed crowd never streams out.** `DoggerlandCrowdBlock` sits
-  inside `StreamContainer` but is authored in `world.tscn`, so `StreamingSystems`
-  never frees it. "Survives a block unload" cannot be demonstrated on it — 6b
-  proves the equivalent instead: a memory is addressed by id and holds for an
-  actor with no node in the tree at all.
+- **The hand-placed crowd never streams out** — `DoggerlandCrowdBlock` is
+  authored in `world.tscn` though it sits inside `StreamContainer`, so nothing
+  frees it. Will bite Task 7.
+- **`queue_free()` on a live NPC mid-reaction segfaults the engine** — three
+  runs, no stack. Nothing in the game does it; streaming frees whole cells.
 - `StreamingSystems` is an autoload with a default `process_mode`, so its
   polling halts under menu pause. Correct today; wrong once an inventory has to
   run over a live world. Design question, not a bug — see the plan, Out of plan.
@@ -51,18 +64,15 @@ unchanged; Stan's in-editor check is pending, as is the drone crash check.
   `prompt_distance` (2.0 m), and the knock waits 5 s. It will almost never be
   seen. Raising `intent_radius` also lengthens F's auto-approach — a gameplay
   call, unanswered since 2026-09-03.
-- `target_indicator.gd`'s move-destination HALF is unused (`show_at_position()`,
-  `show_invalid_click()`, `set_player_reference()`) since click-to-move went.
-  **The file itself is live** — `hud_component.tscn` runs it and calls
-  `hide_indicator()`. I called the whole file dead twice; it is not.
+- `target_indicator.gd`'s move-destination half is unused since click-to-move
+  went, but **the file is live** — `hud_component.tscn` runs it.
 - Task 4 misses both numeric targets and both need a decision, not more
   cutting: `CLAUDE.md` is ~17 KB against 8–10 KB, and the two controllers are
   55% / 44% comment against <30%. Closing either means relocating or deleting
   present-tense invariants.
-- The key-hints panel's own header called it "a working tool for showing the
-  build to a reviewer, not final UI", and justified `SystemFont` on that basis.
-  After this work the first is no longer true and the second is arguable — a
-  bundled font is a separate decision, not made here.
+- The key-hints panel no longer matches its own header ("a working tool, not
+  final UI"), which is what justified `SystemFont`. A bundled font is a separate
+  decision.
 
 ## Open question for Stan
 
@@ -74,6 +84,10 @@ unchanged; Stan's in-editor check is pending, as is the drone crash check.
   awaiting Stan. Note before approving: **only the weapon lever is playable**;
   there is no second garment to change into, so the garment half of the
   signature is inert until one ships.
+- **Does a synthetic witness transmit identity, or only a picture?** If it
+  transmits identity, BRMA stops being the only place identity is produced and
+  `incident_knowledge_model.md` §2 invariant 2 needs revisiting. Left open on
+  purpose — `blackrock_authorities.md` §4b.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?
