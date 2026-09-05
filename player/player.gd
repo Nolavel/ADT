@@ -366,6 +366,7 @@ var _last_health_seen: float = -1.0
 ## --- Initialization ---
 func _ready() -> void:
 	add_to_group("player")
+	_votive.configure_available(true)
 	if navigation_component:
 		navigation_component.path_updated.connect(_on_path_updated)
 		navigation_component.destination_reached.connect(_on_destination_reached)

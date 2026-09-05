@@ -6,7 +6,9 @@
 #
 # Shared between the player and NPCs, same reasoning as HealthComponent
 # (core/components/health_component/): both player.tscn and npc.tscn carry
-# one, and neither owner needs to know it's a shared node type.
+# the node type. Ownership is configured once by the body. Human owners build
+# the projection; synthetic and robot owners allocate no mesh or material and
+# every state transition remains a no-op.
 #
 # Deliberately NOT VotiveProjectorComponent — GDSCRIPT_STYLE.md's "Component"
 # suffix convention is a default, not a law, and docs/attribution.md §6/§8
@@ -148,6 +150,8 @@ enum State { IDLE, TRANSMITTING, DARK }
 var _state: State = State.IDLE
 var _transmit_duration: float = 3.0
 var _transmit_timer: float = 0.0
+var _configured: bool = false
+var _available: bool = false
 var _mesh_instance: MeshInstance3D = null
 var _material: StandardMaterial3D = null
 
@@ -156,6 +160,71 @@ func _ready() -> void:
 	position = bone_local_offset
 	rotation_degrees = bone_rotation_compensation_deg
 
+
+## Configures whether the owner has a Votive. This is a one-time ownership
+## decision: unavailable projectors allocate no geometry or material and every
+## later state transition remains a no-op.
+func configure_available(is_available: bool) -> void:
+	if _configured:
+		if _available != is_available:
+			push_warning("[VotiveProjector] availability cannot change after configuration")
+		return
+	_configured = true
+	_available = is_available
+	if not _available:
+		_state = State.DARK
+		return
+	_build_projection()
+	_apply_idle_visual()
+
+## Called once per physics frame by the owning body — see the file header.
+## No-op outside TRANSMITTING: IDLE/DARK apply their visual once, at the
+## moment go_idle()/go_dark() is called, not every frame.
+func update_projection(delta: float) -> void:
+	if not _available or _state != State.TRANSMITTING:
+		return
+	_transmit_timer = minf(_transmit_timer + delta, _transmit_duration)
+	_update_transmit_visual()
+
+
+## Starts (or restarts) the transmission animation over duration seconds —
+## the controller's own call_report_duration, passed in rather than owned
+## here, so the visual countdown and the actual PENDING window can never
+## drift apart into two different "how long is this" numbers.
+func start_transmitting(duration: float) -> void:
+	if not _available:
+		return
+	_state = State.TRANSMITTING
+	_transmit_duration = maxf(duration, 0.01)
+	_transmit_timer = 0.0
+
+
+## Human owner's baseline — also what interrupts
+## a TRANSMITTING animation: update_projection() only advances/animates
+## while _state == TRANSMITTING, so calling this (or go_dark()) mid-flicker
+## simply stops the countdown where it stands.
+func go_idle() -> void:
+	if not _available:
+		return
+	_state = State.IDLE
+	_transmit_timer = 0.0
+	_apply_idle_visual()
+
+
+## Terminal blacks out — see the file header on DARK's own meaning.
+func go_dark() -> void:
+	if not _available:
+		return
+	_state = State.DARK
+	_transmit_timer = 0.0
+	_apply_dark_visual()
+
+
+func get_state() -> State:
+	return _state
+
+
+func _build_projection() -> void:
 	var quad := QuadMesh.new()
 	quad.size = Vector2(projection_size, projection_size)
 
@@ -175,49 +244,6 @@ func _ready() -> void:
 	_mesh_instance.material_override = _material
 	_mesh_instance.rotation_degrees.y = 180.0 if flip_facing else 0.0
 	add_child(_mesh_instance)
-
-	_apply_idle_visual()
-
-
-## Called once per physics frame by the owning body — see the file header.
-## No-op outside TRANSMITTING: IDLE/DARK apply their visual once, at the
-## moment go_idle()/go_dark() is called, not every frame.
-func update_projection(delta: float) -> void:
-	if _state != State.TRANSMITTING:
-		return
-	_transmit_timer = minf(_transmit_timer + delta, _transmit_duration)
-	_update_transmit_visual()
-
-
-## Starts (or restarts) the transmission animation over duration seconds —
-## the controller's own call_report_duration, passed in rather than owned
-## here, so the visual countdown and the actual PENDING window can never
-## drift apart into two different "how long is this" numbers.
-func start_transmitting(duration: float) -> void:
-	_state = State.TRANSMITTING
-	_transmit_duration = maxf(duration, 0.01)
-	_transmit_timer = 0.0
-
-
-## Baseline, on everyone, always (attribution.md §6) — also what interrupts
-## a TRANSMITTING animation: update_projection() only advances/animates
-## while _state == TRANSMITTING, so calling this (or go_dark()) mid-flicker
-## simply stops the countdown where it stands.
-func go_idle() -> void:
-	_state = State.IDLE
-	_transmit_timer = 0.0
-	_apply_idle_visual()
-
-
-## Terminal blacks out — see the file header on DARK's own meaning.
-func go_dark() -> void:
-	_state = State.DARK
-	_transmit_timer = 0.0
-	_apply_dark_visual()
-
-
-func get_state() -> State:
-	return _state
 
 
 func _apply_idle_visual() -> void:

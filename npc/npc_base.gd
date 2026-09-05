@@ -68,15 +68,14 @@
 extends ActorBase
 class_name NPCBase
 
-## Clearance above BodyMetrics' head-top landmark for DebugHealthLabel — an
+## Clearance above BodyMetrics' head-top landmark for ActorInfoLabel — an
 ## interface offset, not a body measurement, so it lives here rather than as
 ## another BodyMetrics ratio.
-const DEBUG_LABEL_CLEARANCE: float = 0.25
-## Additional clearance stacking DebugActionLabel above DebugHealthLabel's own
+const ACTOR_INFO_LABEL_CLEARANCE: float = 0.25
+## Additional clearance stacking DebugActionLabel above ActorInfoLabel's own
 ## position, not another independent offset from head-top — keeps the two
-## labels from overlapping when both debug_show_health and debug_show_action
-## are on at once, and DebugActionLabel is the one that can run to two lines
-## (word + reason), so it gets the higher slot.
+## labels from overlapping when DebugActionLabel is enabled. The action label
+## can run to two lines (word + reason), so it gets the higher slot.
 const DEBUG_ACTION_LABEL_CLEARANCE: float = 0.35
 
 ## Body meshes opt in through this group in npc.tscn. Placeholder archetype
@@ -123,20 +122,19 @@ const GROUP_ARCHETYPE_BODY_MESH: StringName = &"archetype_body_mesh"
 ## as before this field existed.
 @export var archetype: NPCArchetypeData = null
 
+@export_group("Patrol Pair")
+## Stable actor id of this Patrolman's authored partner. Empty means ordinary
+## solo behaviour. IdleNPCController validates the reciprocal HUMAN + ROBOT
+## relationship before using it.
+@export var patrol_partner_id: StringName = &""
+
 @export_group("Debug")
-## Shows a floating Label3D above the NPC with current/max health and the
-## active knockdown phase — a quick way to see hit points land without
-## attaching a debugger. Off by default; while false the label stays
-## hidden and its text is not recomputed at all.
-@export var debug_show_health: bool = false
-## Shows a second floating Label3D, stacked above DebugHealthLabel, with a
+## Shows a second floating Label3D, stacked above ActorInfoLabel, with a
 ## short word for what this NPC is doing right now (see
 ## _resolve_debug_action_text()'s own comment for the vocabulary) — the only
 ## way today to tell "the reaction didn't fire" apart from "it fired but has
-## no visible effect yet". Independent @export from debug_show_health: the
-## two get switched on at different times (verifying a reaction vs.
-## verifying damage). Off by default; while false the label stays hidden and
-## nothing is recomputed.
+## no visible effect yet". Off by default; while false the label stays hidden
+## and nothing is recomputed.
 @export var debug_show_action: bool = false
 
 ## Movement intent for this frame, written by whatever controller drives
@@ -188,6 +186,10 @@ var _facing_target_point: Vector3 = Vector3.ZERO
 var _has_look_target: bool = false
 var _look_target_point: Vector3 = Vector3.ZERO
 
+## Cached permanent ActorInfoLabel text. Health changes and knockdown phase
+## edges refresh it; no string is rebuilt in the physics loop.
+var _actor_info_label_text: String = ""
+
 ## Cached text from the last DebugActionLabel refresh, so
 ## _update_debug_action_label() only touches .text (and only recomputes the
 ## billboard-visible string) on an actual state change instead of every
@@ -223,11 +225,11 @@ var _comic_effects: ComicEffectSystem = null
 @onready var _health: HealthComponent = get_node_or_null("HealthComponent")
 
 ## Resolved once via @onready, same defensive pattern as _animation/_health.
-## Null (and debug_show_health silently has no effect) if the scene has no
-## DebugHealthLabel.
-@onready var _debug_health_label: Label3D = get_node_or_null("DebugHealthLabel")
+## Null is tolerated for stripped-down NPC scenes that omit the permanent
+## ActorInfoLabel.
+@onready var _actor_info_label: Label3D = get_node_or_null("ActorInfoLabel")
 
-## Resolved once via @onready, same defensive pattern as _debug_health_label.
+## Resolved once via @onready, same defensive pattern as _actor_info_label.
 ## Null (and debug_show_action silently has no effect) if the scene has no
 ## DebugActionLabel.
 @onready var _debug_action_label: Label3D = get_node_or_null("DebugActionLabel")
@@ -248,17 +250,24 @@ func _ready() -> void:
 	add_to_group("lockable")
 	if _health == null:
 		push_warning("[NPCBase] HealthComponent not found - knockdowns will loop forever, no terminal DOWN phase")
-	if _debug_health_label:
-		_debug_health_label.position.y = get_head_top_height() + DEBUG_LABEL_CLEARANCE
+	else:
+		_health.health_changed.connect(_on_health_changed)
+	if _actor_info_label:
+		_actor_info_label.position.y = get_head_top_height() + ACTOR_INFO_LABEL_CLEARANCE
 	if _debug_action_label:
 		_debug_action_label.position.y = (
-			get_head_top_height() + DEBUG_LABEL_CLEARANCE + DEBUG_ACTION_LABEL_CLEARANCE
+			get_head_top_height()
+			+ ACTOR_INFO_LABEL_CLEARANCE
+			+ DEBUG_ACTION_LABEL_CLEARANCE
 		)
 	for child in get_children():
 		if child.has_method(&"get_debug_action_text"):
 			_debug_action_source = child
 			break
 	_apply_archetype()
+	if _votive:
+		_votive.configure_available(has_votive())
+	_update_actor_info_label()
 
 
 func _physics_process(delta: float) -> void:
@@ -280,10 +289,6 @@ func _physics_process(delta: float) -> void:
 		_animation.update_head_look(delta)
 	if _votive:
 		_votive.update_projection(delta)
-	if _debug_health_label:
-		_debug_health_label.visible = debug_show_health
-		if debug_show_health:
-			_update_debug_health_label()
 	if _debug_action_label:
 		_debug_action_label.visible = debug_show_action
 		if debug_show_action:
@@ -346,6 +351,7 @@ func take_hit(from_position: Vector3, damage: float = 25.0) -> void:
 	_knocked_down = true
 	_knockdown_phase = KnockdownPhase.FALLING
 	_knockdown_phase_timer = 0.0
+	_update_actor_info_label()
 	_move_direction = Vector3.ZERO
 	_move_speed_ratio = 0.0
 	clear_look_target()
@@ -411,6 +417,7 @@ func _update_knockdown(delta: float) -> void:
 
 			_knockdown_phase = KnockdownPhase.LYING
 			_knockdown_phase_timer = 0.0
+			_update_actor_info_label()
 
 			if _animation:
 				_animation.play_lying()
@@ -421,6 +428,7 @@ func _update_knockdown(delta: float) -> void:
 
 			_knockdown_phase = KnockdownPhase.GETTING_UP
 			_knockdown_phase_timer = 0.0
+			_update_actor_info_label()
 
 			if _animation:
 				_animation.play_getup()
@@ -431,6 +439,7 @@ func _update_knockdown(delta: float) -> void:
 
 			_knocked_down = false
 			_knockdown_phase_timer = 0.0
+			_update_actor_info_label()
 
 
 func _is_health_depleted() -> bool:
@@ -445,6 +454,7 @@ func _enter_down_phase() -> void:
 	var was_lying := _knockdown_phase == KnockdownPhase.LYING
 	_knockdown_phase = KnockdownPhase.DOWN
 	_knockdown_phase_timer = 0.0
+	_update_actor_info_label()
 	if _animation and not was_lying:
 		_animation.play_lying()
 	_try_spawn_comic_effect(&"npc_death")
@@ -462,25 +472,33 @@ func _try_spawn_comic_effect(id: StringName) -> void:
 		_comic_effects.try_spawn(id, global_position, self)
 
 
-## Refreshes DebugHealthLabel's text. Only called while debug_show_health is
-## true (see _physics_process()) — the knockdown phase name is shown only
-## while actually knocked down, since _knockdown_phase otherwise still holds
-## a stale value from the last knockdown rather than a meaningful "current"
-## one.
-func _update_debug_health_label() -> void:
-	var phase_text: String = KnockdownPhase.keys()[_knockdown_phase] if _knocked_down else "-"
+## Refreshes the permanent nature/archetype/health label only on an owning
+## state edge. The phase is meaningful only while knocked down; otherwise the
+## enum still contains the last completed phase.
+func _update_actor_info_label() -> void:
+	if not _actor_info_label:
+		return
+	var nature_text := String(Nature.keys()[nature])
+	var archetype_text := archetype.archetype_name.to_upper() if archetype else "NPC"
+	var health_text := "HP --"
 	if _health:
-		_debug_health_label.text = "%.0f/%.0f  %s" % [
-			_health.current_health, _health.max_health, phase_text
-		]
-	else:
-		_debug_health_label.text = "no HealthComponent  %s" % phase_text
+		health_text = "HP %.0f/%.0f" % [_health.current_health, _health.max_health]
+	if _knocked_down:
+		health_text += " · %s" % KnockdownPhase.keys()[_knockdown_phase]
+	var text := "%s · %s\n%s" % [nature_text, archetype_text, health_text]
+	if text == _actor_info_label_text:
+		return
+	_actor_info_label_text = text
+	_actor_info_label.text = text
+
+
+func _on_health_changed(_current: float, _maximum: float) -> void:
+	_update_actor_info_label()
 
 
 ## Refreshes DebugActionLabel's text — but only writes .text when the
-## resolved string actually changed, unlike _update_debug_health_label()
-## above, which re-stringifies unconditionally every frame it's shown (see
-## debug_show_action's own comment on why this label is event-driven).
+## resolved string actually changed. Like ActorInfoLabel, it avoids writes
+## when the visible state has not changed.
 ## Reads only state that already exists elsewhere: is_knocked_down() (this
 ## body's own knockdown flag) for DOWN, or the optional
 ## get_debug_action_text() a controller may implement for everything else

@@ -13,7 +13,7 @@ Companion pages: `core_loop.md` (why the player is out here at all),
 `NPC_REACTIONS.md` (what the crowd *does*). This page is only about what the
 crowd *looks like*.
 
-Data resources and flat-colour placeholders are implemented. Full silhouette / gait / clothing pass is not. Last reviewed: 2026-08-25
+Data resources and flat-colour placeholders are implemented. Full silhouette / gait / clothing pass is not. Last reviewed: 2026-09-05
 
 ---
 
@@ -63,18 +63,18 @@ archetype whose density needs tuning.
 strata where they belong. Worth more, likelier to notice an approach in
 time.
 
-**Patrolman.** Human counterpart to the drone, and — with the drones — this is
-**BRPD**, the lower rung of law enforcement: it is dispatched to a PLACE and
-never receives a suspect (`docs/blackrock_authorities.md`). BRPD works in pairs,
-one human and one robot, which makes a patrol two different sensors rather than
-one. Does not need to see anything to matter — the archetype is a moving no-go
-zone.
+**Patrolman.** Walking BRPD, the lower rung of law enforcement: it is dispatched
+to a PLACE and never receives a suspect (`docs/blackrock_authorities.md`). The
+placed Patrolmen form two authored pairs, each one human leader plus one robot
+follower; police drones remain separate units. A pair is two different sensors
+rather than one and is a moving no-go zone even before it sees anything.
 
 **Nature is orthogonal to all of the above.** Human, synthetic or robot is a
 separate axis from the role, because it changes what an actor can PERCEIVE
-rather than how it behaves — reading a retina is exclusively mechanical. The
-two placed Clerk actors are synthetic; the Clerk archetype only supplies their
-caller role and does not own their nature. Assignments and the rule:
+rather than how it behaves — reading a retina is exclusively mechanical. All
+four placed Clerk actors are human; the Clerk archetype supplies their caller
+role but does not own their nature. The two robot Patrolmen prove the same role
+can span natures. Assignments and the rule:
 `docs/blackrock_authorities.md` §0. Must be identifiable at
 maximum distance: the player has to be able to route around one before
 committing to anything.
@@ -93,7 +93,10 @@ would clear sightlines and the crowd would become a puzzle.
 > someone is*, continuously; a comic word says *what just happened*, once.
 
 
-No profiler overlay, no scan mode, no highlight. Four channels:
+`ActorInfoLabel` is the one deliberate stress-build exception: it permanently
+states nature, archetype and health while the 36-NPC prototype is measured. It
+is not a scan mode and is not the finished readability solution. Four world
+channels still carry the player-facing vocabulary:
 
 | Channel | Carries | Implementation |
 |---|---|---|
@@ -180,7 +183,7 @@ assignment, anything touching `PerceptionComponent` or `IncidentRegistry`.
 
 ## 7. The test this page has to pass
 
-Walking one street, before any UI exists, the player should be able to
+Walking one street with the prototype labels ignored, the player should be able to
 think:
 
 > That one has something worth taking.

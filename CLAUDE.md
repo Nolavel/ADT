@@ -227,9 +227,22 @@ one is how this file drifted four times.
   (`HUMAN` / `SYNTHETIC` / `ROBOT`) is authored on the concrete actor and
   defaults to `HUMAN`; `can_read_iris()` is true only for mechanical natures.
   Human observers therefore top out at `FACE`, while synthetics and robots may
-  reach `IRIS`. Do not put this axis on `NPCArchetypeData`: role and physical
+  reach `IRIS`. `has_votive()` is the inverse ownership rule: only humans own
+  the terminal, and a Call requires both a calling archetype and that
+  capability. Do not put this axis on `NPCArchetypeData`: role and physical
   nature vary independently.
   → `docs/architecture/npc_and_incidents.md`
+- **Walking BRPD Patrolmen are authored reciprocal pairs.**
+  `NPCBase.patrol_partner_id` links exactly one human leader to one robot
+  follower; the follower holds a 1.5 m side slot, the leader waits across a
+  4.0 m break and resumes inside 2.5 m, and either member falls back to the
+  existing solo behaviour while its partner is absent or knocked down. Police
+  drones are separate units, not the robotic half of these pairs.
+- **The current hand-placed crowd is a 36-NPC stress diorama**, distributed
+  12 Vagrant / 10 Thug / 6 Commuter / 4 Clerk / 4 Patrolman. Every NPC carries
+  a permanent `ActorInfoLabel` with nature, archetype and event-updated health;
+  this explicitly exceeds the future 24-live-agent streaming budget and does
+  not replace the planned silhouette/clothing/gait readability pass.
 - **Firearm targets opt in through `ActorBase`.** Membership in
   `GROUP_PERCEIVED_ACTOR` supplies discovery only; `can_receive_shot()` gates
   selection, `get_shot_target_point()` supplies one landmark to selection,

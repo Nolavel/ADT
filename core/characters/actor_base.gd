@@ -85,6 +85,12 @@ func can_read_iris() -> bool:
 	return nature != Nature.HUMAN
 
 
+## Whether this actor owns a Votive terminal. The device belongs to humans;
+## mechanical natures can perceive an iris but cannot transmit through one.
+func has_votive() -> bool:
+	return nature == Nature.HUMAN
+
+
 ## Whether firearm target discovery may select this actor. False by default:
 ## perception membership alone is not consent to participate in combat.
 func can_receive_shot() -> bool:

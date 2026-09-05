@@ -12,6 +12,16 @@ touched, and — where relevant — which parallel track it came from.
 
 ---
 
+## 2026-09-05 - Crowd doubles and BRPD walks in mixed pairs
+
+The hand-placed stress crowd now has 36 unique NPCs in the 12 / 10 / 6 / 4 / 4
+archetype mix. Every NPC permanently labels nature, role and event-updated health;
+all Clerks are human Votive callers, while two human Patrolmen lead two robot
+partners with wait/catch-up formation behaviour. Drones remain separate; Godot
+was not run.
+
+> *Толпа удвоена до 36; пешие пары BRPD состоят из человека и робота, а Votive остаётся только у людей.*
+
 ## 2026-09-05 - Actor nature enforces the mechanical iris ceiling
 
 `ActorBase.Nature` now separates HUMAN, SYNTHETIC and ROBOT from NPC role.

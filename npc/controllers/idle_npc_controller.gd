@@ -19,7 +19,7 @@
 # resolves lazily by group; there is deliberately NO catch-up replay of
 # incidents predating this NPC noticing them.
 #
-# WITNESS CALL needs BOTH is_witness_caller (Clerk only today) and having
+# WITNESS CALL needs is_witness_caller, a human-owned Votive, and having
 # actually seen the incident; the report is held PENDING for
 # call_report_duration and can still be stopped by a knockdown or by the player
 # closing in — which hands off into the SAME flee machine. The sibling
@@ -105,6 +105,8 @@ const OBSTACLE_RAY_FORWARD: Vector3 = Vector3(0.0, 0.0, OBSTACLE_CHECK_DISTANCE)
 ## during a backpedal is exactly the direction of travel.
 const OBSTACLE_RAY_BACKWARD: Vector3 = Vector3(0.0, 0.0, -OBSTACLE_CHECK_DISTANCE)
 const INCIDENT_TELEMETRY_PREFIX: String = "[WitnessTelemetry]"
+const PATROL_PAIR_SLOT_ARRIVAL_DISTANCE: float = 0.4
+const PATROL_PAIR_NOTICE_HOLD: float = 0.15
 
 static var _next_telemetry_sequence: int = 1
 static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
@@ -215,6 +217,18 @@ static var _telemetry_entries: Array[IncidentTelemetryEntry] = []
 ## scene reads as holding back a couple of metres, not walking up nose to
 ## nose with whoever/whatever is there. A feel value.
 @export var respond_arrival_distance: float = 2.0
+
+@export_group("Patrol Pair")
+## Robot's lateral offset from its human leader.
+@export var patrol_pair_spacing: float = 1.5
+## Gap at which the human leader stops and waits for its partner.
+@export var patrol_pair_wait_distance: float = 4.0
+## Gap at which a waiting leader resumes, providing distance hysteresis.
+@export var patrol_pair_resume_distance: float = 2.5
+## Robot catch-up pace as a fraction of NPCBase.walk_speed.
+@export var patrol_pair_catchup_speed_ratio: float = 1.0
+## Delay before one unresolved authored partner produces a single warning.
+@export var patrol_pair_search_timeout: float = 3.0
 
 @export_group("Incident Registry")
 ## Seconds to keep retrying the group lookup before giving up and warning
@@ -363,6 +377,18 @@ var _respond_target: Vector3 = Vector3.ZERO
 ## arrival hold's own timer.
 var _respond_arrived: bool = false
 
+## Authored partner resolved lazily from ActorBase's existing discovery group.
+## No new registry owns patrol formation.
+var _patrol_partner: NPCBase = null
+var _patrol_partner_controller: IdleNPCController = null
+var _patrol_partner_search_time: float = 0.0
+var _warned_missing_patrol_partner: bool = false
+var _patrol_pair_invalid: bool = false
+var _leader_waiting_for_partner: bool = false
+## Brief notification from the partner that it currently sees the player.
+## It synchronizes stopping without borrowing the partner's observation data.
+var _patrol_pair_notice_timer: float = 0.0
+
 ## Resolved lazily via a group lookup, retried from _decide() until it
 ## succeeds — same reasoning and same pattern as
 ## PatrolDroneController._incident_registry; see that file's header for why
@@ -444,6 +470,8 @@ func _ready() -> void:
 func _decide(delta: float) -> void:
 	if not _npc:
 		return
+	_patrol_pair_notice_timer = maxf(_patrol_pair_notice_timer - delta, 0.0)
+	_try_resolve_patrol_partner(delta)
 
 	## A knocked-down body isn't deciding anything — it can't move, and
 	## NPCBase already ignores movement intent while down (see its own
@@ -480,6 +508,8 @@ func _decide(delta: float) -> void:
 		if _votive:
 			_votive.go_idle()
 
+	_try_join_partner_response()
+
 	_try_connect_player_swing()
 
 	if not _incident_registry:
@@ -508,6 +538,9 @@ func _decide(delta: float) -> void:
 		_visible_time = 0.0
 		_npc.clear_look_target()
 		_npc.clear_facing_target()
+		if _patrol_pair_notice_timer > 0.0 and _is_patrol_pair_operational():
+			_npc.set_move_intent(Vector3.ZERO, 0.0)
+			return
 		_decide_wander(delta)
 		return
 
@@ -522,6 +555,7 @@ func _decide(delta: float) -> void:
 
 	## Stops in place the instant it notices someone — see the file header.
 	_npc.set_move_intent(Vector3.ZERO, 0.0)
+	_notify_patrol_partner_player_seen()
 	_npc.set_look_target(observation.position)
 	_visible_time += delta
 
@@ -638,6 +672,17 @@ func get_witness_observation_level_name() -> String:
 
 
 func _decide_wander(delta: float) -> void:
+	if _is_patrol_pair_operational():
+		if _is_patrol_pair_follower():
+			_step_patrol_pair_follower(patrol_pair_catchup_speed_ratio)
+			return
+		if _should_patrol_leader_wait():
+			_npc.set_move_intent(Vector3.ZERO, 0.0)
+			_wander_state = State.IDLE
+			return
+	else:
+		_leader_waiting_for_partner = false
+
 	match _wander_state:
 		State.IDLE:
 			_npc.set_move_intent(Vector3.ZERO, 0.0)
@@ -686,6 +731,146 @@ func _pick_new_wander_point() -> void:
 	var r := wander_radius * sqrt(randf())
 	var offset := Vector3(cos(angle) * r, 0.0, sin(angle) * r)
 	_wander_target = _wander_origin + offset
+
+
+## Resolves the authored reciprocal Patrolman pair through ActorBase's existing
+## discovery group. Missing actors keep retrying for future streaming; malformed
+## authored relationships warn once and stay solo.
+func _try_resolve_patrol_partner(delta: float) -> void:
+	if _npc.patrol_partner_id == &"" or _patrol_pair_invalid:
+		return
+	if is_instance_valid(_patrol_partner) and is_instance_valid(_patrol_partner_controller):
+		return
+	_patrol_partner = null
+	_patrol_partner_controller = null
+	for node in get_tree().get_nodes_in_group(ActorBase.GROUP_PERCEIVED_ACTOR):
+		var candidate := node as NPCBase
+		if candidate == null or candidate == _npc:
+			continue
+		if candidate.get_actor_id() != _npc.patrol_partner_id:
+			continue
+		if not _is_valid_patrol_partner(candidate):
+			_patrol_pair_invalid = true
+			push_warning(
+				"[IdleNPCController] %s: invalid patrol pair with '%s'" % [
+					_npc.name, candidate.name,
+				]
+			)
+			return
+		var candidate_controller := _find_idle_controller(candidate)
+		if candidate_controller == null:
+			_patrol_pair_invalid = true
+			push_warning(
+				"[IdleNPCController] %s: partner '%s' has no IdleNPCController" % [
+					_npc.name, candidate.name,
+				]
+			)
+			return
+		_patrol_partner = candidate
+		_patrol_partner_controller = candidate_controller
+		return
+
+	_patrol_partner_search_time += delta
+	if not _warned_missing_patrol_partner \
+			and _patrol_partner_search_time >= patrol_pair_search_timeout:
+		_warned_missing_patrol_partner = true
+		push_warning(
+			"[IdleNPCController] %s: patrol partner '%s' not found after %.1fs" % [
+				_npc.name, _npc.patrol_partner_id, _patrol_partner_search_time,
+			]
+		)
+
+
+func _is_valid_patrol_partner(candidate: NPCBase) -> bool:
+	if candidate.patrol_partner_id != _npc.get_actor_id():
+		return false
+	if _npc.archetype == null or candidate.archetype == null:
+		return false
+	if candidate.archetype != _npc.archetype or not _npc.archetype.responds_by_approaching:
+		return false
+	return (
+		_npc.nature == ActorBase.Nature.HUMAN
+		and candidate.nature == ActorBase.Nature.ROBOT
+	) or (
+		_npc.nature == ActorBase.Nature.ROBOT
+		and candidate.nature == ActorBase.Nature.HUMAN
+	)
+
+
+func _find_idle_controller(actor: NPCBase) -> IdleNPCController:
+	for child in actor.get_children():
+		if child is IdleNPCController:
+			return child as IdleNPCController
+	return null
+
+
+func _is_patrol_pair_operational() -> bool:
+	return is_instance_valid(_patrol_partner) \
+			and is_instance_valid(_patrol_partner_controller) \
+			and not _npc.is_knocked_down() \
+			and not _patrol_partner.is_knocked_down()
+
+
+func _is_patrol_pair_follower() -> bool:
+	return _npc.nature == ActorBase.Nature.ROBOT
+
+
+func _should_patrol_leader_wait() -> bool:
+	var gap := _npc.global_position.distance_to(_patrol_partner.global_position)
+	if _leader_waiting_for_partner:
+		if gap <= patrol_pair_resume_distance:
+			_leader_waiting_for_partner = false
+	else:
+		_leader_waiting_for_partner = gap > patrol_pair_wait_distance
+	return _leader_waiting_for_partner
+
+
+## Moves the robot toward a lateral slot based on the human leader's current
+## facing. The slot is recomputed continuously, so turns remain a formation
+## rather than two independent destinations.
+func _step_patrol_pair_follower(speed_ratio: float) -> void:
+	var slot := _get_patrol_pair_slot()
+	var to_slot := slot - _npc.global_position
+	to_slot.y = 0.0
+	if to_slot.length() <= PATROL_PAIR_SLOT_ARRIVAL_DISTANCE:
+		_npc.set_move_intent(Vector3.ZERO, 0.0)
+		_wander_state = State.IDLE
+		return
+	if _obstacle_ray and _obstacle_ray.is_colliding():
+		_npc.set_move_intent(Vector3.ZERO, 0.0)
+		_wander_state = State.IDLE
+		return
+	_npc.set_move_intent(to_slot.normalized(), speed_ratio)
+	_wander_state = State.WALKING
+
+
+func _get_patrol_pair_slot() -> Vector3:
+	var forward := _patrol_partner.get_facing_direction()
+	var right := Vector3(forward.z, 0.0, -forward.x).normalized()
+	return _patrol_partner.global_position + right * patrol_pair_spacing
+
+
+func _notify_patrol_partner_player_seen() -> void:
+	if not _is_patrol_pair_operational():
+		return
+	_patrol_partner_controller._receive_patrol_partner_player_seen()
+
+
+func _receive_patrol_partner_player_seen() -> void:
+	_patrol_pair_notice_timer = PATROL_PAIR_NOTICE_HOLD
+	if _reaction_state == ReactionState.NONE and not _npc.is_knocked_down():
+		_npc.set_move_intent(Vector3.ZERO, 0.0)
+
+
+## Rejoins an active response after an ordinary get-up or late pair resolve.
+## The partner shares only the destination/state; observation quality remains
+## local to each controller.
+func _try_join_partner_response() -> void:
+	if _reaction_state != ReactionState.NONE or not _is_patrol_pair_operational():
+		return
+	if _patrol_partner_controller._reaction_state != ReactionState.RESPONDING:
+		return
+	_start_responding(_patrol_partner_controller._respond_target, false)
 
 
 # ── Incident reaction (NPC_REACTIONS.md §4) ─────────────────────────────────
@@ -928,6 +1113,8 @@ func _on_incident_reported(incident: Incident) -> void:
 		)
 	elif not _npc.archetype.is_witness_caller:
 		_log_incident_candidate(telemetry, vision, "SEES  REJECT archetype")
+	elif not _npc.has_votive():
+		_log_incident_candidate(telemetry, vision, "SEES  REJECT no-votive")
 	else:
 		_log_incident_candidate(
 			telemetry, vision,
@@ -1068,11 +1255,25 @@ func _start_freeze(incident_position: Vector3) -> void:
 	_try_spawn_comic_effect(&"npc_freeze")
 
 
-func _start_responding(incident_position: Vector3) -> void:
+func _start_responding(incident_position: Vector3, sync_partner: bool = true) -> void:
 	_reaction_state = ReactionState.RESPONDING
 	_reaction_timer = 0.0
 	_respond_target = incident_position
 	_respond_arrived = false
+	if not sync_partner or not _is_patrol_pair_operational():
+		return
+	## Defer the pair sync until IncidentRegistry finishes notifying every
+	## listener. The partner must evaluate the incident with its own perception
+	## before formation state can make it look already occupied.
+	_patrol_partner_controller.call_deferred(
+		&"_start_responding_from_partner", incident_position
+	)
+
+
+func _start_responding_from_partner(incident_position: Vector3) -> void:
+	if _reaction_state != ReactionState.NONE or not _is_patrol_pair_operational():
+		return
+	_start_responding(incident_position, false)
 
 
 ## Witness decided to call (docs/attribution.md §7) — stares at the incident
@@ -1294,6 +1495,16 @@ func _step_freeze(delta: float) -> void:
 ## export, since nothing about this task calls for combat behaviour on
 ## arrival, only visible acknowledgement that it got there.
 func _step_respond(delta: float) -> void:
+	if _is_patrol_pair_operational():
+		if _is_patrol_pair_follower():
+			_step_patrol_pair_respond_follower()
+			return
+		if _should_patrol_leader_wait():
+			_npc.set_move_intent(Vector3.ZERO, 0.0)
+			return
+	else:
+		_leader_waiting_for_partner = false
+
 	if _respond_arrived:
 		_reaction_timer += delta
 		if _reaction_timer >= freeze_duration:
@@ -1319,6 +1530,24 @@ func _step_respond(delta: float) -> void:
 		return
 
 	_npc.set_move_intent(to_target.normalized(), respond_speed_ratio)
+
+
+func _step_patrol_pair_respond_follower() -> void:
+	if _patrol_partner_controller._reaction_state != ReactionState.RESPONDING:
+		_end_reaction()
+		return
+	_step_patrol_pair_follower(patrol_pair_catchup_speed_ratio)
+	if not _patrol_partner_controller._respond_arrived:
+		_respond_arrived = false
+		return
+	var to_slot := _get_patrol_pair_slot() - _npc.global_position
+	to_slot.y = 0.0
+	if to_slot.length() > PATROL_PAIR_SLOT_ARRIVAL_DISTANCE:
+		return
+	_respond_arrived = true
+	_npc.set_move_intent(Vector3.ZERO, 0.0)
+	_npc.set_facing_target(_respond_target)
+	_npc.set_look_target(_respond_target)
 
 
 ## PENDING -> COMMITTED once call_report_duration elapses without

@@ -330,10 +330,11 @@ different in one readable way.
 
 ## Task 7 — NPC spawn on the streaming conveyor
 
-**State.** No streamed block contains an NPC. All 18 live NPCs are hand-placed in
-`world.tscn` under `DoggerlandCrowdBlock`, whose own `editor_description` says to
-remove it once a spawn system exists. The island is 3500×2500 m; the crowd exists
-within about forty metres of one point.
+**State.** No streamed block contains an NPC. All 36 live NPCs are hand-placed in
+`world.tscn` under `DoggerlandCrowdBlock` as an intentional stress diorama above
+the planned 24-agent runtime budget. Its `editor_description` says to remove it
+once a spawn system exists. The island is 3500×2500 m; the crowd exists within
+about forty metres of one point.
 
 Shape to propose, from established practice, not invention:
 

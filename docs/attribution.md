@@ -86,10 +86,10 @@ robot may resolve `IRIS`. See `docs/blackrock_authorities.md` §0.
 
 | Distance | Maximum achievable |
 |---|---|
-| > 30 m | SILHOUETTE |
-| 10–30 m | EQUIPMENT |
-| 5–10 m | FACE |
-| < 5 m | IRIS |
+| > 11 m | SILHOUETTE |
+| 6–11 m | EQUIPMENT |
+| 3–6 m | FACE |
+| ≤ 3 m | IRIS for mechanical observers; FACE for humans |
 
 ### Not seeing it and seeing it worse are different cases
 
@@ -261,9 +261,10 @@ EyeCredential                    VotiveTerminal
 
 Game code must not let these two touch.
 
-Default state is a steady blue projection, on everyone. That baseline is what
-makes the alert state legible: if only witnesses lit up, any light would mean
-trouble and there would be nothing to read against.
+Default state is a steady blue projection on every human. That baseline is what
+makes the alert state legible: if only human witnesses lit up, any light would
+mean trouble and there would be nothing to read against. Synthetics and robots
+do not own Votives; their projector carrier node allocates no visual resources.
 
 Transmission reads as:
 
@@ -292,8 +293,8 @@ recursion should be allowed to happen rather than designed: the city keeps
 functioning, and cleaning up creates more to clean up.
 
 Whether the Votive later becomes a slot on `EquipmentComponent` (H5) is an open
-question deferred on purpose — it is worn always, by everyone, and is not meant
-to be removable in this first iteration, so it does not belong to the same
+question deferred on purpose — it is worn by every human and is not meant to be
+removable in this first iteration, so it does not belong to the same
 "what's held, what's stowed" contract equipment governs. Revisit once H5 exists
 and the witness chain already works, not before.
 
@@ -309,6 +310,8 @@ NPC perception
 incident observed?
     ↓
 observation quality resolved (distance ceiling, attention modifier)
+    ↓
+calling archetype + human-owned Votive?
     ↓
 WitnessReport created
     ↓
@@ -356,11 +359,16 @@ rule by eye.
 
 | Case | Setup | Expected |
 |---|---|---|
-| A | incident 2 m from a synthetic idle NPC facing it | IRIS |
+| A | incident 2 m from a human Clerk facing it | FACE |
 | B | 7 m | EQUIPMENT |
 | C | 12 m | SILHOUETTE |
 | D | 2 m, witness facing away | does not become a witness — no report at any quality |
 | E | interrupted at 1.5 s | CANCELLED, nothing in registry |
+
+The dated measurements below preserve the synthetic-Clerk configuration that
+was live when they were taken. Since 2026-09-05 all placed Clerks are human, so
+their current nearest-band acceptance result is `FACE`; the old `IRIS` rows are
+history, not the present contract.
 
 **The distances moved on 2026-09-04 and the old ones are not a lost baseline** —
 they were 3 / 15 / 35 m, chosen against ceilings of 5 / 10 / 30 that put

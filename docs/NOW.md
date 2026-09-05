@@ -4,13 +4,13 @@ Last updated: 2026-09-05 by Codex
 
 ## Current task
 
-**Actor Nature is the first executable seam from PR #66.** `ActorBase` now owns
-the per-instance `HUMAN` / `SYNTHETIC` / `ROBOT` axis and exposes
-`can_read_iris()`. Both placed Clerks are synthetic, the shared police-drone
-scene is robotic, and humans are capped at `FACE` without changing the existing
-3 / 6 / 11 m bands. `NPCArchetypeData` remains unchanged. Static verification
-is complete; Stan's in-editor check is pending. The remaining BRPD / BRMA /
-`IrisAccess` design stays unimplemented.
+**The hand-placed crowd is now a 36-NPC stress diorama.** Its exact mix is
+12 Vagrant / 10 Thug / 6 Commuter / 4 Clerk / 4 Patrolman. Every NPC permanently
+labels nature, archetype and event-updated health. All Clerks are HUMAN Votive
+callers capped at FACE; Votive visuals allocate only for humans. Patrolmen form
+the reciprocal walking pairs `1 ↔ 3` and `2 ↔ 4`, each HUMAN leader plus ROBOT
+follower; drones stay separate. Static verification is complete without Godot;
+Stan's in-editor formation, label, terrain-settle and FPS checks are pending.
 
 ## Decided this week, not yet in CLAUDE.md
 
@@ -73,10 +73,6 @@ is complete; Stan's in-editor check is pending. The remaining BRPD / BRMA /
   awaiting Stan. Note before approving: **only the weapon lever is playable**;
   there is no second garment to change into, so the garment half of the
   signature is inert until one ships.
-- **Does a synthetic witness transmit identity, or only a picture?** If it
-  transmits identity, BRMA stops being the only place identity is produced and
-  `incident_knowledge_model.md` §2 invariant 2 needs revisiting. Left open on
-  purpose — `blackrock_authorities.md` §4b.
 - Grain: the "Fade In Animation" is a fade-OUT — it starts at full-screen grain
   and opens the clear hole over the character in 2 s. Authored that way, left
   alone. Is that the intent?

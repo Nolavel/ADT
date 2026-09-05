@@ -1,8 +1,8 @@
 # Blackrock authorities — BRPD, BRMA, and the iris
 
-**Design specification with one implemented seam.** Actor nature and the
-mechanical iris ceiling described in §0 are built; BRPD / BRMA / `IrisAccess`
-remain design. Named here so the larger shape is decided before anything is
+**Design specification with implemented nature, Votive and walking-pair seams.**
+Actor nature, the perception ceiling and the two walking BRPD pairs described
+below are built; BRMA / `IrisAccess` remain design. Named here so the larger shape is decided before anything is
 written against it, the same way `docs/attribution.md` §5 records Attribution
 without scheduling it. Where this describes something that already exists, it
 says so and names the file.
@@ -41,25 +41,24 @@ or instance, not on `NPCArchetypeData`.
 
 | archetype | nature | why |
 |---|---|---|
-| Clerk1 / Clerk2 | **synthetic** | the only placed `is_witness_caller` actors — see below |
-| Patrolman | human | the human half of a BRPD pair |
+| Clerk1–Clerk4 | **human** | current callers; Votive-equipped and capped at FACE |
+| Patrolman1 / Patrolman2 | human | leaders of the two walking BRPD pairs |
+| Patrolman3 / Patrolman4 | robot | mechanical followers in those pairs |
 | police drone | robot | mechanical by construction already |
-| Vagrant, Thug, Commuter | human | crowd background; ceiling FACE, nothing to report with |
+| Vagrant, Thug, Commuter | human | crowd background; ceiling FACE |
 
 ### This is why `IRIS` is legitimate today
 
 `IdleNPCController._distance_ceiling()` returns **`IRIS`** inside 3 m only when
 the observing actor's `can_read_iris()` is true. A human at the same distance
 is capped at `FACE`. `NPCArchetypeData.is_witness_caller` is true for Clerk and
-nothing else, while the two placed Clerk actors are authored `SYNTHETIC`.
+nothing else, while `ActorBase.has_votive()` is true only for humans. A Call
+requires both contracts, so the four human Clerks report at no better than
+`FACE`; robot Patrolmen may observe `IRIS` but cannot transmit it themselves.
 
-That preserves the current witness result while making the rule executable:
-**the only things in Blackrock that report you are machines.** Humans see; they
-cannot name.
-
-The first human actor assigned a calling archetype is already safe: its nature
-caps the shared distance ladder at `FACE` without requiring another archetype
-or a caller-specific branch.
+The executable rule is therefore asymmetric: **people report what they saw;
+machines can know more, but have no Votive channel.** Attribution still decides
+whether a human report can eventually be tied to a person.
 
 One appearance for every character is a prototype convenience and does not
 collide with any of this: nature is a field in data, not a silhouette.
@@ -95,8 +94,8 @@ These are BRPD already, they simply have no word for the organisation:
   paths by which a drone learns of an incident, and the dispatch that breaks
   patrol and flies to the point a committed witness report names.
   → `docs/architecture/npc_and_incidents.md`
-- **The `Patrolman` archetype** — `docs/npc_archetypes.md` calls it "the human
-  counterpart to the drone… a moving no-go zone", and it is the only archetype
+- **The `Patrolman` archetype** — the walking half of BRPD and a moving no-go
+  zone. It is the only archetype
   with `responds_by_approaching`, which is exactly BRPD behaviour: it runs to
   the place, it does not work out who.
 
@@ -112,9 +111,11 @@ different events at different prices. A patrol stops being a moving no-go zone
 and becomes **two sensors that can be separated** — which is a far more
 interesting thing to route around.
 
-Open: whether the robot half is the existing police drone, or a walking partner
-the drones are separate from. The drones currently patrol independently, so
-today's arrangement answers neither way.
+The robotic half is a walking Patrolman, not a drone. `patrol_partner_id`
+authors the reciprocal pairs `1 ↔ 3` and `2 ↔ 4`: the human selects the route,
+the robot holds the side slot, and either member falls back to solo behaviour
+while the other is missing or down. Police drones patrol independently as
+separate BRPD units.
 
 What is missing from BRPD is **cameras** — static sensors with no patrol and no
 reaction, whose only output is that they saw. A camera is the cheapest possible
@@ -207,29 +208,16 @@ similar from a distance and someone will otherwise "fix" it.
 `VotiveProjector` (`core/components/votive_projector/`) is today the **visible
 half** and says so itself: state (`IDLE`/`TRANSMITTING`/`DARK`) plus a
 representation of it, "no `communication_state`, no `current_call`, **no
-identity binding**". Both `npc.tscn` and `player.tscn` carry one — everybody
-wears one.
+identity binding**". Both `npc.tscn` and `player.tscn` contain the carrier node,
+but only a human owner activates it. Synthetic and robot
+owners allocate no projection mesh or material, and its state calls are no-ops.
 
 Under §0 it acquires a meaning it did not have: **the Votive is what a human
 uses INSTEAD of reading a retina.** It carries a picture of the incident, not an
 identity. Two capabilities, two seams — a machine reads the credential, a person
-photographs the scene — and that is why the Votive is likely to want an abstract
-seam of its own rather than staying a projector with a colour.
-
-### The question left open on purpose
-
-**Does a witness transmit iris data?**
-
-For a human the rule already answers it: there is nothing to transmit, because
-there was no way to acquire it. **It is open for a SYNTHETIC witness** — does
-its Votive carry the identity itself, or still only the picture, with resolution
-left to BRMA?
-
-The cost of the answer is what makes it worth leaving open: if a synthetic
-witness transmits an identity, **BRMA stops being the only place identity is
-produced**, and `incident_knowledge_model.md` §2 invariant 2 has to be revisited
-rather than quietly bypassed. Recorded with that price attached so the answer is
-chosen rather than drifted into.
+photographs the scene. Mechanical actors do not transmit iris data through a
+Votive because they do not own one; identity resolution remains BRMA's deferred
+job rather than leaking into the terminal.
 
 ---
 
@@ -238,12 +226,11 @@ chosen rather than drifted into.
 **Decided:** the two rungs and what separates them; that BRPD already exists in
 part and is dispatched to places; that BRMA is §5's Attribution with a name;
 that `IrisAccess` is a seam that both grants access and records an observation
-at `IRIS` quality. **Built from this document:** actor nature and the human
-`FACE` / mechanical `IRIS` observation ceiling described in §0.
+at `IRIS` quality. **Built from this document:** actor nature, human-only Votive
+ownership, the human `FACE` / mechanical `IRIS` observation ceiling, and the two
+walking `HUMAN + ROBOT` Patrolman pairs described in §0/§2.
 
-**Not decided, deliberately:** whether a synthetic witness transmits identity
-(§4b); whether the robot half of a BRPD pair is the existing drone or a walking
-partner; how many synthetics are in a crowd; what a device looks like (that is
+**Not decided, deliberately:** how many synthetics are in a crowd; what a device looks like (that is
 `docs/3D_ART_BIBLE.md`, not this); whether a credential can be borrowed or
 forged; whether passing a door reads you and whether that reaches a record;
 whether cameras are `ActorBase` or something lighter; where an authority's own record lives, or whether it needs one beyond

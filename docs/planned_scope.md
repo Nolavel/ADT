@@ -158,27 +158,18 @@ next review, they go.
 
 Named here so the absence is deliberate rather than overlooked:
 
-### On the table as of 2026-09-04
+### On the table as of 2026-09-05
 
 Swept deliberately rather than recalled, because two of these had been
 discussed and then dropped out of every subsequent conversation.
 
-- **Actor nature: human / synthetic / robot.** A field orthogonal to the
-  archetype, because it decides what an actor can PERCEIVE — reading a retina is
-  mechanical only. Nothing built; the Clerk being synthetic is what keeps the
-  existing `IRIS` ceiling legitimate without a code change.
 - **`IrisAccess` has two sides:** a mechanical READER mountable anywhere (door,
   terminal, camera, vending machine, hover door, bus, metro, pneumatic tube) and
   a CREDENTIAL every character carries. Neither derives from the other.
-- **The Votive probably wants a seam of its own** — it is the human's channel,
-  carrying a picture rather than an identity. Today it is a projector with a
-  colour and says so.
-- **Law enforcement, named at last.** BRPD (drones, `Patrolman`, and cameras
-  that do not exist yet) and BRMA (marshals as detectives, the actor for
-  `attribution.md` §5's deferred Attribution), plus `IrisAccess` as the seam
-  where a credential is demanded. Design written, nothing built —
-  `docs/blackrock_authorities.md`. BRPD is the one item here that is already
-  half-real in code.
+- **Law-enforcement remainder.** BRPD drones and two walking HUMAN + ROBOT
+  Patrolman pairs exist; static cameras do not. BRMA (marshals as detectives,
+  the actor for `attribution.md` §5's deferred Attribution) and `IrisAccess`
+  remain design in `docs/blackrock_authorities.md`.
 - **Sound.** Condition (1) of `work_plan_2026-09.md`'s Out-of-plan entry is
   **closed** as of 2026-09-04: `visual_language.md` §5 now records which
   onomatopoeia survive audio and that the answer is reinforcement. Condition

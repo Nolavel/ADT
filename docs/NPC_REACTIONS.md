@@ -12,7 +12,7 @@ Read `CONTRIBUTING.md` before picking any of it up. This page also assumes
 and `npc_archetypes.md` (what the crowd looks like before any of this
 triggers) — read those first if you have not.
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-09-05
 
 ---
 
@@ -21,20 +21,19 @@ Last reviewed: 2026-08-16
 Built:
 
 - `IncidentRegistry` (`core/world/incident_registry/`) — a bounded, aging log
-  of reported facts. Deliberately not player-specific: `report()` takes any
-  perpetrator, so a future witness reports through the same call. Today the
-  only caller is the player's own `punch_landed`.
+  of reported facts. Deliberately not player-specific: the player's direct hit
+  and a committed human Clerk Votive report use the same `report()` path.
 - `PatrolDroneController` — goes ALERT on an incident within
   `alert_incident_radius`, with OBSERVE a rung below, spotlights the player
   while alerted, and reverts after a memory timer.
 - NPCs — the player's rig, idle/walk animation, head turn via
-  `LookAtModifier3D`, a wander around the spawn point, and `take_hit()`:
-  they fall and get up.
+  `LookAtModifier3D`, wandering, damage/knockdown, durable personal memory,
+  permanent actor labels, and two walking HUMAN + ROBOT Patrolman pairs.
 - The player's punch (`COMBAT` stance, `mouse_left_button`).
 
 Not built: navigation (both controllers substitute a single forward raycast
-for a navmesh), memory beyond one ALERT timer, reaction spreading past one
-drone's radius, the witness flag, and everything in sections 2, 3, 5, 6, 7.
+for a navmesh), a general witness flag beyond the current Clerk caller role,
+and the finished player-facing systems in sections 2, 3, 5, 6, 7.
 
 Design rule: `mouse_left_button` splits by `PlayerState.Stance`, not by
 camera view. In `COMBAT` it throws the punch; in `PEACE` it is unclaimed.
@@ -65,7 +64,7 @@ more here than an NPC that plans well.
 
 ---
 
-## 2. Readability — the crowd must be legible without UI
+## 2. Readability — the crowd must remain legible beyond prototype UI
 
 > How a reaction is *stated* on screen — the comic onomatopoeia layer, its
 > word-on-event rule and its distance gate — is in
@@ -78,8 +77,10 @@ six named archetypes built against these channels, plus placeholder colours
 for prototyping before meshes exist. Kept here for the reasoning behind why
 readability matters at all.
 
-There is no profiler overlay, no scan mode, no highlight. The player learns
-to read the crowd by looking at it. Four channels carry that information:
+The permanent `ActorInfoLabel` is a deliberate stress-build exception: nature,
+archetype and health are exposed while 36 live NPCs and the new pair behaviour
+are judged. It is not a scan mode or the final answer. The player must still
+learn to read the crowd itself through these four channels:
 
 | Channel | Reads as | Carried by |
 |---|---|---|
@@ -133,9 +134,11 @@ every time. Within earshot of an incident, an NPC picks a response:
 | Freeze and stare | Stays, no report, blocks flow |
 | Call | Reports the incident |
 
-**Only NPCs carrying a witness flag can produce the Call response.** The
-flag is assigned to a minority of the population. The rest are shocked but
-useless to the authorities.
+**The current Call requires both a calling role and a human-owned Votive.**
+`NPCArchetypeData.is_witness_caller` supplies the role (Clerk today), while
+`ActorBase.has_votive()` excludes synthetics and robots. The broader witness
+flag described below is still a future population rule; the current four
+human Clerks are its deterministic vertical-slice stand-in.
 
 The reason for the flag is design, not performance: if every bystander could
 report, the player would optimise by clearing lines of sight, and the crowd
